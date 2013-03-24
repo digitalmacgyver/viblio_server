@@ -1,0 +1,2 @@
+<h3>[% c.loc( 'Welcome to viblio [_1]!', c.user.fullname ) %]</h3>
+

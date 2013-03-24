@@ -1,0 +1,67 @@
+application_name: Viblio!
+
+viblio_return_email_address: noreply@viblio.com
+
+roles:
+  tester:
+    - aqpeeb@gmail.com
+    - vaadmin@viblio.com
+
+authentication:
+  default_realm: facebook
+  realms:
+    db:
+      credential:
+        class: Password
+        password_field: password
+        password_type: self_check
+      store:
+        class: DBIx::Class
+        user_model: DB::User
+        role_relation: roles
+        role_field: role
+    facebook:
+      credential:
+        class: FacebookToken
+        application_id: 357358674377173
+        application_secret: f22db0e8b2b38194d7ede5ce2d2df9e5
+      store:
+        class: DBIx::Class
+        user_model: DB::User
+      auto_create_user: 1
+    facebook_dev:
+      credential:
+        class: FacebookToken
+        application_id: 566096966734454
+        application_secret: 7c48152f970b953f6a7c835b2f92bdcd
+      store:
+        class: DBIx::Class
+        user_model: DB::User
+      auto_create_user: 1
+    facebook_web:
+      credential:
+        class: Facebook::OAuth2
+        application_id: 566096966734454
+        application_secret: 7c48152f970b953f6a7c835b2f92bdcd
+      store:
+        class: DBIx::Class
+        user_model: DB::User
+      auto_create_user: 1
+#    dropbox:
+#      credential:
+#        class: DropboxToken
+#        application_id: 3zjnqgrjaybqt0l
+#        application_secret: 399pry24hq7p9vm
+#      store:
+#        class: DBIx::Class
+#        user_model: DB::User
+#      auto_create_user: 1
+
+# Where uploads go before controller sees them
+#
+uploadtmp: /tmp
+
+# Where media files are stored.  This is the root,
+# under the root files are stored under userid/mediaid.
+#
+mediapath: uploads

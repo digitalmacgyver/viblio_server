@@ -1,0 +1,170 @@
+GET /services/na/logout
+{}
+
+GET /services/(anything while not authenticated)
+{
+   "detail" : "No session or session expired.",
+   "error" : 1,
+   "message" : "Authentication Failure",
+   "code" : 401
+}
+
+** NOTE: The error response is slightly different.  error==true still indicates error.
+** message still has a reason for the error.  detail may be set, and if it is, contains
+** more detail, probably of more interest to a developer.  code is set to the HTTP code
+** this type of an error would have delivered if the request was for text/html.
+
+GET /services/na/authenticate?realm=facebook
+{
+   "user": {
+      "provider" => "facebook",
+      "active" => "2013-03-23 23:38:13",
+      "accepted_terms" => undef,
+      "provider_id" => "100005451434129",
+      "uuid" => "BADCB4A6-9412-11E2-ADDF-209629C23E77",
+      "username" => "andrew.peebles.9843",
+      "email" => undef,
+      "id" => "5",
+      "displayname" => "Andrew Peebles"
+   }
+}
+
+** NOTE: We will have different ways to authenticate.  The "realm" parameter tells the server
+** which one to try.  Depending on the realm, other parameters may be needed.
+** displayName is now displayname (sorry about that).  This user record is very likey to go through
+** changes.
+
+GET /services/user/meXX (a non-existent endpoint)
+{
+   "detail" : "services/user/meXX",
+   "error" : 1,
+   "message" : "Page not found"
+}
+
+GET /services/user/me
+{
+   "user": {
+      "provider" => "facebook",
+      "active" => "2013-03-23 23:38:13",
+      "accepted_terms" => undef,
+      "provider_id" => "100005451434129",
+      "uuid" => "BADCB4A6-9412-11E2-ADDF-209629C23E77",
+      "username" => "andrew.peebles.9843",
+      "email" => undef,
+      "id" => "5",
+      "displayname" => "Andrew Peebles"
+   }
+}
+
+GET  /file/download?id=id
+** Same as before, but you can call it in a variety of ways:
+
+  /file/download/2
+  /file/download?id=2
+  /file/download/07B1A938-9401-11E2-8E1A-CC9329C23E77
+  /file/download?uuid=0866D66E-9401-11E2-82B1-CC9329C23E77
+
+POST /file/upload
+
+** Can use it same as before, but return looks different:
+
+{
+   "media" : [
+      {
+         "filename" : "facebook-connect2.png",
+         "id" : "12",
+         "user_id" : "3",
+         "path" : "/home/peebles/viblio-server/uploads/3/3B45E052-941A-11E2-AEE5-EF9629C23E77",
+         "uuid" : "3B45E052-941A-11E2-AEE5-EF9629C23E77",
+         "mimetype" : "image/png",
+         "size" : 3343
+      }
+   ]
+}
+
+** It is possible to upload multiple files in one post.  The files will be
+** uploaded sequencially as they are encountered in the post body, but the
+** operation is atomic w/respect to database and file store.  Might be useful.
+** Just do single uploads for now.  But note that the response is an array!!
+
+GET /services/user/media
+
+{
+   "media" : [
+      {
+         "filename" : "facebook-connect2.png",
+         "user_id" : "3",
+         "path" : "/home/peebles/viblio-server/uploads/3/2CC7C252-93FC-11E2-83AF-729329C23E77",
+         "id" : "1",
+         "uuid" : "2CC7C252-93FC-11E2-83AF-729329C23E77",
+         "mimetype" : "image/png",
+         "size" : "130119"
+      },
+      {
+         "filename" : "facebook-connect2.png",
+         "user_id" : "3",
+         "path" : "/home/peebles/viblio-server/uploads/3/9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
+         "id" : "2",
+         "uuid" : "9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
+         "mimetype" : "image/png",
+         "size" : "130119"
+      }
+   ]
+}
+
+** When called with no arguments, returns an array of all of the user's media files.
+** However, this is expected to be a large dataset, so paging is supported.  You can
+** call this api with page=<page-number> and rows=<number-of-items-to-return>.  If
+** page is specified, rows is optional and defaults to 10.  You can call like this:
+
+  /services/user/media?page=1&rows=10
+  /services/user/media/1/10
+
+** If you include the page param (and optionally the rows param, you will
+** get something like this:
+**
+{
+   "media" : [
+      {
+         "filename" : "facebook-connect2.png",
+         "user_id" : "3",
+         "path" : "/home/peebles/viblio-server/uploads/3/2CC7C252-93FC-11E2-83AF-729329C23E77",
+         "id" : "1",
+         "uuid" : "2CC7C252-93FC-11E2-83AF-729329C23E77",
+         "mimetype" : "image/png",
+         "size" : "130119"
+      },
+      {
+         "filename" : "facebook-connect2.png",
+         "user_id" : "3",
+         "path" : "/home/peebles/viblio-server/uploads/3/9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
+         "id" : "2",
+         "uuid" : "9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
+         "mimetype" : "image/png",
+         "size" : "130119"
+      },
+      {
+         "filename" : "facebook-connect2.png",
+         "user_id" : "3",
+         "path" : "/home/peebles/viblio-server/uploads/3/DD9C82FC-93FC-11E2-B947-7F9329C23E77",
+         "id" : "3",
+         "uuid" : "DD9C82FC-93FC-11E2-B947-7F9329C23E77",
+         "mimetype" : "image/png",
+         "size" : "130119"
+      }
+   ],
+   "pager" : {
+      "entries_per_page" : "3",
+      "total_entries" : "12",
+      "current_page" : "1",
+      "entries_on_this_page" : 3,
+      "first_page" : 1,
+      "last_page" : 4,
+      "next_page" : 2,
+      "previous_page" : null,
+      "first" : 1,
+      "last" : 3
+   }
+}
+
+** The pager object can be used for infinite scrolling logic.

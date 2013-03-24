@@ -1,0 +1,11 @@
+# To re-create from scratch, required if existing tables change and you
+# are not using 'alter' to create new columns:
+#
+echo "Destroying VADB and re-creating ..."
+mysql -u root --password=mysql < sql/create-db.sql
+
+echo "Populating VADB ..."
+mysql -u vaadmin --password=viblio vadb < sql/vadb.sql
+
+echo "Re-generating DBIx classes ..."
+./script/db2dbix.sh

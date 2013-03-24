@@ -1,0 +1,3 @@
+[% META title = 'Home' %]
+[% PROCESS banner.tt %]
+

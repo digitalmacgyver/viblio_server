@@ -1,0 +1,152 @@
+# Swedish translations for PACKAGE package.
+# Copyright (C) 2012 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2012.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: sv\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. ($user->email)
+#: lib/VA/Controller/Services/User.pm:114
+msgid "%1 does not have a profile"
+msgstr ""
+
+#. ($args->{email})
+#: lib/VA/Controller/Services/NA.pm:181
+msgid "A pending user with email=%1 already exists."
+msgstr ""
+
+#. ($args->{email})
+#: lib/VA/Controller/Services/NA.pm:166
+msgid "A user with email='%1' already exists."
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:39
+msgid "Bad Creds"
+msgstr ""
+
+#. ($args->{email})
+#: lib/VA/Controller/Services/NA.pm:159
+msgid "Email address '%1' appears to be invalid."
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:266
+msgid "Email does not match for given code."
+msgstr ""
+
+#. ($params->{username})
+#: lib/VA/Controller/Services/User.pm:51
+msgid "Failed to create username='%1'"
+msgstr ""
+
+#: lib/VA/Controller/Services.pm:229
+msgid "Fatal server error"
+msgstr ""
+
+#: lib/VA/Controller/Services/Test.pm:51
+msgid "Guest"
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:208
+msgid "Invitation to join Viblio"
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:144 lib/VA/Controller/Services/NA.pm:239
+msgid "Missing email address field."
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:249
+msgid "Missing invite code field."
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:149 lib/VA/Controller/Services/NA.pm:244
+msgid "Missing password field."
+msgstr ""
+
+#. ($arg)
+#: lib/VA/Controller/Services/User.pm:25
+msgid "Missing required '%1' parameter."
+msgstr ""
+
+#: lib/VA/Controller/Services/User.pm:140
+msgid "Missing upload field"
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:45
+msgid "Missing username and/or password"
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:262
+msgid "No matching pending user for email/code."
+msgstr ""
+
+#: lib/VA/Controller/Services/User.pm:16
+msgid "Only users with 'admin' role can add new users."
+msgstr ""
+
+#: lib/VA/Controller/Services/User.pm:90
+msgid "Only users with 'admin' role can change someone else's photo."
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:200
+msgid "Server Error: Failed to create pending user!"
+msgstr ""
+
+#: lib/VA/Controller/Services/NA.pm:284
+msgid "Unable to create new user."
+msgstr ""
+
+#. ($uid)
+#: lib/VA/Controller/Services/User.pm:108
+#: lib/VA/Controller/Services/User.pm:239
+#: lib/VA/Controller/Services/User.pm:272
+#: lib/VA/Controller/Services/User.pm:293
+msgid "User for uid=%1 not found!"
+msgstr ""
+
+#. ($username)
+#: lib/VA/Controller/Services/NA.pm:173
+msgid "User name '%1' is already taken."
+msgstr ""
+
+#. ($params->{username})
+#: lib/VA/Controller/Services/User.pm:33
+msgid "User with username='%1' already exists"
+msgstr ""
+
+#. ($name)
+#: lib/VA/Controller/Services/Test.pm:53
+msgid "Welcome %1!"
+msgstr ""
+
+#: root/templates/email/invitation.tt:2
+msgid "Welcome to Viblio!  Please enter the following invitation code:"
+msgstr ""
+
+#. (c.user.fullname)
+#: root/templates/test-email.tt:1
+msgid "Welcome to viblio %1!"
+msgstr ""
+
+#: lib/VA/Controller/Services/User.pm:153
+msgid "no photo available"
+msgstr ""
+
+#. ($role)
+#: lib/VA/Controller/Services/User.pm:62
+msgid "role '%1' not found"
+msgstr ""
+
+#: lib/VA/Controller/Services/Test.pm:45
+msgid "test"
+msgstr ""

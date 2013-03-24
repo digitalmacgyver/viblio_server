@@ -1,0 +1,12 @@
+root/static/Blueprint-0.6/
+*~
+blib/
+Makefile.old
+pm_to_blib
+VA-0.01.tar.gz
+MANIFEST.bak
+inc/
+META.yml
+MYMETA.json
+MYMETA.yml
+

@@ -1,0 +1,186 @@
+[% META title = 'Viblio Login' %]
+
+<style>
+
+#login span {
+float: left;
+margin-top: 0px;
+padding-left: 10px;
+}
+
+#login input {
+width: 120px;
+}
+
+#login button {
+margin-top: 20px;
+margin-left: 10px;
+}
+
+#headline {
+line-height: 1.45;
+vertical-align: top;
+text-shadow: 1px 1px 2px #cccccc;
+text-align: center;
+font-size: 400%;
+margin-bottom: 30px;
+}
+
+#sub-heading {
+font-size: 200%;
+}
+
+form div {
+margin-bottom: 5px;
+}
+
+#va-search {
+text-align: center;
+}
+
+#va-search img {
+margin: 0;
+vertical-align: middle;
+}
+
+#va-search input {
+width: 200px;
+display: inline;
+}
+
+#va-search button {
+float: none;
+display: inline;
+}
+
+#va-search span {
+font-weight: bold;
+margin-left: 3px;
+}
+
+</style>
+
+<!-- Facebook stuff -->
+
+<div id="fb-root"></div>
+<script>
+    var fb_status = "undetermined";
+    window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "566096966734454",
+            channelUrl : "[% c.uri_for( '/static/channel.html' ) %]",
+            status     : true, // check login status
+            cookie     : true, // enable cookies to allow the server to access the session
+            xfbml      : true  // parse XFBML
+        });
+        FB.getLoginStatus(function(response) {
+            if (response.status === 'connected') {
+		fb_status = "connected";
+            } else if (response.status === 'not_authorized') {
+		fb_status = "not_authorized";
+            } else {
+		fb_status = "not_logged_in";
+            }
+        });
+
+    };
+
+    (function(d){
+        var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement('script'); js.id = id; js.async = true;
+        js.src = "//connect.facebook.net/en_US/all.js";
+        ref.parentNode.insertBefore(js, ref);
+    }(document));
+
+    function facebook_login() {
+        FB.login(function(response) {
+            if (response.authResponse) {
+                // connected
+                console.log( "calling login" );
+                $.ajax({
+                    url: "/services/na/authenticate",
+                    data: { realm: 'facebook_dev',
+                            access_token: response.authResponse.accessToken },
+                    dataType: 'json',
+                    success: function( json ) {
+                        console.log( "I'm BACK" );
+                        if ( json.error ) {
+                            alert( "Success but with error: " + json.message );
+			}
+                        else {
+                            console.log( "logged in as " + json.user.username );
+			    window.location = "[% c.uri_for( '/' ) %]";
+			}
+                    },
+                    error: function( x, e, t ) {
+                        console.log( "I'm BACK, with error!" );
+                        alert( "error: " + e );
+                    }
+                });
+            } else {
+                alert( "User Cancelled? " + response.status );
+            }
+        });
+    }
+
+</script>
+</div>
+
+<!-- END Facebook stuff -->
+
+<div class="column span-12">
+  <a style="margin-left: 20px;" href="javascript: facebook_login();">
+    <img style="margin: 0;" src="[% c.uri_for('/static/images/facebook-connect2.png') %]" />
+  </a>
+</div>
+<div id="login" class="column span-12 last">
+  <form method="post" action="[% c.uri_for('/login') %]">
+    <input type="hidden" name="realm" value="db" />
+    <span [% IF missing_email %]class="error"[% END %]>
+      <label for="username">Email</label><br />
+      <input type="text" class="text" id="username" name="username" />
+    </span>
+    <span [% IF missing_password %]class="error"[% END %]>
+      <label for="password">Password</label><br />
+      <input type="password" class="text" id="password" name="password" />
+    </span>
+    <button type="submit" class="button positive">
+      Login
+    </button>
+  </form>
+</div>
+<hr />
+<div id="headline" class="span-24 last">
+  Make Something Cool!
+</div>
+<div class="column span-1">
+  &nbsp;
+</div>
+<div class="column span-10 colborder">
+  <img src="[% c.uri_for('/static/images/viblio-logo-blue-circle.png') %]" />
+</div>
+<div id="register" class="column span-12 last">
+  <div id="sub-heading">
+    Get started - it's free!
+  </div>
+  <p>Registration takes less than a minute.</p>
+  <form method="post" action="[% c.uri_for('/register') %]">
+      <div [% IF missing_name %]class="error"[% END %]>
+	<label for="fullname">Name</label><br />
+	<input type="text" class="text" id="fullname" name="fullname" />
+      </div>
+      <div [% IF missing_email %]class="error"[% END %]>
+	<label for="email">Email</label><br />
+	<input type="text" class="text" id="email" name="email" />
+      </div>
+      <div [% IF missing_password %]class="error"[% END %]>
+	<label for="password">Password</label><br />
+	<input type="password" class="text" id="password" name="password" />
+      </div>
+      <div style="margin-bottom: 15px;">&nbsp;</div>
+      <button type="submit" class="button positive">
+	Join Now
+      </button>
+  </form>
+</div>

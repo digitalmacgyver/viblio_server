@@ -1,0 +1,6 @@
+<p>
+[% c.loc( "Welcome to Viblio!  Please enter the following invitation code:" ) %]
+</p>
+<ul>
+  <b>[% user.code %]</b>
+</ul>

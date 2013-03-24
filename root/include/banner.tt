@@ -1,0 +1,10 @@
+<div id="page-banner">
+  <div class="column span-12">
+    <img style="margin: 0;" src="[% c.uri_for('/static/images/viblio-banner.png') %]" />
+  </div>
+  <div class="column span-12 last">
+    <span>Welcome [% c.user.displayname %]</span><br/>
+    <a href="[% c.uri_for( '/logout' ) %]">logout</a>
+  </div>
+</div>
+<hr />

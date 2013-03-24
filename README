@@ -1,0 +1,73 @@
+Run script/va_server.pl to test the application.
+
+  script/va_server.pl [-d] [-r] [-k]
+
+  -d: turn on debug
+  -r: auto-restart when source files change
+  -k: enable keep-alive (useful for web service testing, but not required)
+
+Adding New Users
+----------------
+Can be done using a command line tool that operates directly on the database
+and does not require a running va_server, or can be done via web service if
+the server is running.
+
+1. Direct:
+
+  script/add_user.pl -u <username> -f <fullname> \
+    [-e <email>] [-p <password] [-r <list,of,roles>]
+
+2. Web service:
+
+  script/wsclient.pl [connection options] [service] -- [service options]
+  (options shown with defaults)
+
+  --quiet    (default will print result on screen)
+  --url=http://localhost
+  --port=80
+  --user=    (no default, user name to connect as)
+  --pass=    (no default, password for user, prompted for if not supplied)
+  --service= (default is the base service, informational)
+  [arg1=val1 [arg2=val2 ...]] arguments to service
+
+Web service example:
+
+  script/wsclient.pl --port=3000 --user=joe@email.com --pass=blow \
+    --service=add_user -- username=sally@email.com password=secret \
+    		          fullname='Sally Field' email_address=sally@email.com \
+			  role=dbadmin role=instructor
+
+
+
+
+
+Deployment
+---------
+
+Instructions from a clean Ubuntu 12.03 install:
+
+apt-get install build-essential
+apt-get install apache2 \
+  mysql-server \
+  mysql-client \
+  libmysqlclient-dev \
+  libreadline-dev \
+  libjpeg-dev libpng-dev libgif-dev libt1-dev \
+  libfreetype6-dev libtiff-dev
+# will be prompted for mysql root password: mysql
+wget http://search.cpan.org/CPAN/authors/id/A/AP/APEIRON/local-lib-1.008004.tar.gz
+tar zxf local-lib-1.008004.tar.gz 
+cd local-lib-1.008004/
+sudo mkdir /opt/local-lib
+sudo chown peebles:peebles /opt/local-lib
+perl Makefile.PL --bootstrap=/opt/local-lib
+make install
+echo 'eval $(perl -I/opt/local-lib/lib/perl5 -Mlocal::lib=/opt/local-lib)'  >> ~/.bashrc
+cpan
+> install CPAN
+> reload cpan
+PERL_MM_USE_DEFAULT=1 cpan Catalyst::Runtime Catalyst::Devel
+
+# in cat app:
+perl Makefile.PL
+PERL_MM_USE_DEFAULT=1 make installdeps
