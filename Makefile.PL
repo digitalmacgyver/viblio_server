@@ -62,6 +62,8 @@ requires 'Catalyst::Authentication::Credential::Facebook::OAuth2';
 requires 'Catalyst::Plugin::Facebook';
 requires 'File::Path';
 requires 'Try::Tiny';
+requires 'Catalyst::Helper';
+requires 'DBD::mysql';
 
 test_requires 'Test::More' => '0.88';
 catalyst;

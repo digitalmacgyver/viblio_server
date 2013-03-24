@@ -2,7 +2,7 @@ package VA::Model::DB;
 
 use strict;
 use base 'Catalyst::Model::DBIC::Schema';
-
+=perl
 __PACKAGE__->config(
     schema_class => 'VA::Schema',
     
@@ -14,7 +14,7 @@ __PACKAGE__->config(
         AutoCommit => q{1},
     }
 );
-
+=cut
 =head1 NAME
 
 VA::Model::DB - Catalyst DBIC Schema Model

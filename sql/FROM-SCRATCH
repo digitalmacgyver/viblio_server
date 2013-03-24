@@ -6,6 +6,7 @@ mysql -u root --password=mysql < sql/create-db.sql
 
 echo "Populating VADB ..."
 mysql -u vaadmin --password=viblio vadb < sql/vadb.sql
+mysql -u vaadmin --password=viblio vadb_staging < sql/vadb.sql
 
 echo "Re-generating DBIx classes ..."
 ./script/db2dbix.sh

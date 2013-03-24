@@ -9,4 +9,8 @@ inc/
 META.yml
 MYMETA.json
 MYMETA.yml
-
+API.txt
+Makefile
+cookie-jar.txt
+uploads/
+MANIFEST

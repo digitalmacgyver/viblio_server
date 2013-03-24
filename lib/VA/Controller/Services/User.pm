@@ -5,6 +5,28 @@ use MIME::Base64;
 
 BEGIN { extends 'VA::Controller::Services' }
 
+=head2 /services/user/me
+
+Get the database record for the logged in user.
+
+=head3 Example Response
+
+  {
+     "user": {
+        "provider" => "facebook",
+        "active" => "2013-03-23 23:38:13",
+        "accepted_terms" => undef,
+        "provider_id" => "100005451434129",
+        "uuid" => "BADCB4A6-9412-11E2-ADDF-209629C23E77",
+        "username" => "andrew.peebles.9843",
+        "email" => undef,
+        "id" => "5",
+        "displayname" => "Andrew Peebles"
+     }
+  }
+
+=cut
+
 sub me :Local {
     my( $self, $c ) = @_;
     $self->status_ok( $c, { user => $c->user->obj } );
@@ -307,6 +329,96 @@ sub accept_terms :Local {
     $c->persist_user;
     $self->status_ok( $c, { accepted => sprintf( "%s", $c->user->accepted_terms) } );
 }
+
+=head2 /services/user/media
+
+Return a list of media files belonging to the logged in user.  Supports
+optional paging.  With no parameters, returns all media files owned by
+the user.  With paging parameters, returns paged results and a pager.
+
+=head3 Parameters
+
+=over
+
+=item page (optional)
+
+The page number to fetch items from.  The number of items per page
+is specified by the 'rows' parameter.
+
+=item rows (optional, defaults to 10)
+
+Ignored unless 'page' is specified.  Specifies number of items per page.
+This number of items (or less) will be delivered back to the client.
+
+This is another description
+
+=back
+
+=head3 Example Response
+
+Without paging:
+
+  {
+     "media" : [
+        {
+           "filename" : "facebook-connect2.png",
+           "user_id" : "3",
+           "path" : "/home/peebles/viblio-server/uploads/3/2CC7C252-93FC-11E2-83AF-729329C23E77",
+           "id" : "1",
+           "uuid" : "2CC7C252-93FC-11E2-83AF-729329C23E77",
+           "mimetype" : "image/png",
+           "size" : "130119"
+        },
+        {
+           "filename" : "facebook-connect2.png",
+           "user_id" : "3",
+           "path" : "/home/peebles/viblio-server/uploads/3/9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
+           "id" : "2",
+           "uuid" : "9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
+           "mimetype" : "image/png",
+           "size" : "130119"
+        }
+     ]
+  }
+
+With paging:
+
+  {
+     "media" : [
+        {
+           "filename" : "facebook-connect2.png",
+           "user_id" : "3",
+           "path" : "/home/peebles/viblio-server/uploads/3/2CC7C252-93FC-11E2-83AF-729329C23E77",
+           "id" : "1",
+           "uuid" : "2CC7C252-93FC-11E2-83AF-729329C23E77",
+           "mimetype" : "image/png",
+           "size" : "130119"
+        },
+        {
+           "filename" : "facebook-connect2.png",
+           "user_id" : "3",
+           "path" : "/home/peebles/viblio-server/uploads/3/9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
+           "id" : "2",
+           "uuid" : "9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
+           "mimetype" : "image/png",
+           "size" : "130119"
+        }
+     ],
+     "pager" : {
+        "entries_per_page" : "3",
+        "total_entries" : "12",
+        "current_page" : "1",
+        "entries_on_this_page" : 3,
+        "first_page" : 1,
+        "last_page" : 4,
+        "next_page" : 2,
+        "previous_page" : null,
+        "first" : 1,
+        "last" : 3
+     }
+  }
+
+=cut
 
 # Return list of media
 #

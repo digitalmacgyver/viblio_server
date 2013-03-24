@@ -67,7 +67,7 @@ margin-left: 3px;
     var fb_status = "undetermined";
     window.fbAsyncInit = function() {
         FB.init({
-            appId      : "566096966734454",
+            appId      : "[% c.config.authentication.realms.facebook.credential.application_id %]",
             channelUrl : "[% c.uri_for( '/static/channel.html' ) %]",
             status     : true, // check login status
             cookie     : true, // enable cookies to allow the server to access the session
@@ -100,13 +100,13 @@ margin-left: 3px;
                 console.log( "calling login" );
                 $.ajax({
                     url: "/services/na/authenticate",
-                    data: { realm: 'facebook_dev',
+                    data: { realm: 'facebook',
                             access_token: response.authResponse.accessToken },
                     dataType: 'json',
                     success: function( json ) {
                         console.log( "I'm BACK" );
                         if ( json.error ) {
-                            alert( "Success but with error: " + json.message );
+                            alert( "Success but with error: " + json.message + "\n" + json.detail );
 			}
                         else {
                             console.log( "logged in as " + json.user.username );

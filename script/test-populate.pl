@@ -10,7 +10,12 @@ use VA::Schema;
 use FileHandle;
 use Email::Address;
 
-my $schema = VA::Schema->connect( 'dbi:mysql:vadb', 'vaadmin', 'viblio' );
+my $db = $ARGV[0];
+unless( $db ) {
+    die "Usage: $0 <db> where db is vadb or vadb_staging";
+}
+
+my $schema = VA::Schema->connect( "dbi:mysql:$db", 'vaadmin', 'viblio' );
 
 die "Cannot connect to database!"
     unless( $schema );
@@ -26,10 +31,12 @@ foreach my $rname ( @roles ) {
     die "Could not find role: $rname"
 	unless( $roles->{ $rname } );
 }
+my $user;
 
 # Andrew Peebles
 #
-my $user = $schema->resultset( 'User' )
+=perl
+$user = $schema->resultset( 'User' )
     ->find_or_create({ username => 'aqpeeb',
 		       email => 'aqpeeb@gmail.com',
 		       provider => 'local',
@@ -40,6 +47,7 @@ die "Could not create admin user: $!"
 
 $user->add_to_roles( $roles->{admin} );
 $user->update;
+=cut
 
 # vaadmin
 #
