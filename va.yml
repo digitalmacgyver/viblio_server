@@ -56,3 +56,9 @@ Model::DB:
     password: viblio
     mysql_enable_utf8: 1
     AutoCommit: 1
+
+Log::Handler:
+  filename: /tmp/va.log
+  fileopen: 1
+  mode: append
+  newline: 1

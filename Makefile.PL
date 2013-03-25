@@ -64,6 +64,8 @@ requires 'File::Path';
 requires 'Try::Tiny';
 requires 'Catalyst::Helper';
 requires 'DBD::mysql';
+requires 'FCGI::ProcManager';
+requires 'Catalyst::Plugin::Log::Handler';
 
 test_requires 'Test::More' => '0.88';
 catalyst;

@@ -24,6 +24,7 @@ use Catalyst qw/
     Redirect
 
     StackTrace
+    Log::Handler
 
     Authentication
     AdditionalRoles
