@@ -1,0 +1,6 @@
+Log::Handler:
+  filename: /tmp/va-app.log
+  fileopen: 1
+  mode: append
+  newline: 1
+
