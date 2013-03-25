@@ -66,6 +66,7 @@ requires 'Catalyst::Helper';
 requires 'DBD::mysql';
 requires 'FCGI::ProcManager';
 requires 'Catalyst::Plugin::Log::Handler';
+requires 'Catalyst::Plugin::Log::Log4perlSimple';
 
 test_requires 'Test::More' => '0.88';
 catalyst;

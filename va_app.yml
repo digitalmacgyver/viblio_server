@@ -1,6 +1,7 @@
-Log::Handler:
-  filename: /tmp/va-app.log
-  fileopen: 1
-  mode: append
-  newline: 1
-
+Plugin::Log::Log4perlSimple:
+  catalyst_debug: 0
+  catalyst_stats: 0
+# (trace, debug, info, warn)
+  log_level: warn
+  screen: 0
+  file: /tmp/va-app.log

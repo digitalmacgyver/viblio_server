@@ -57,8 +57,10 @@ Model::DB:
     mysql_enable_utf8: 1
     AutoCommit: 1
 
-Log::Handler:
-  filename: /tmp/va.log
-  fileopen: 1
-  mode: append
-  newline: 1
+Plugin::Log::Log4perlSimple:
+  catalyst_debug: 1
+  catalyst_stats: 0
+# (trace, debug, info, warn)
+  log_level: debug
+  screen: 1
+# file: /path

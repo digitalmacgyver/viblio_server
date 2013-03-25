@@ -24,7 +24,7 @@ use Catalyst qw/
     Redirect
 
     StackTrace
-    Log::Handler
+    Log::Log4perlSimple
 
     Authentication
     AdditionalRoles
@@ -125,6 +125,7 @@ __PACKAGE__->config(
 	dbic_class => 'DB::Session',
 	expires    => 3600,
     },
+
 );
 
 # Start the application

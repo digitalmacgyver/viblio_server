@@ -16,12 +16,13 @@
 APPNAME=VA
 APPDIR=/deploy/app/viblio-server
 PROCS=4
-SOCKET=/tmp/viblio.app.socket
+SOCKET=localhost:30001
 # Set this if you have more than one instance of the app and you don't want
 # them to step on each other's pidfile.
 PIDSUFFIX=app
 
-export VA_CONFIG_LOCAL_SUFFIX=app
+VA_CONFIG_LOCAL_SUFFIX=app
+export VA_CONFIG_LOCAL_SUFFIX
 
 PATH=/home/ubuntu/perl5/perlbrew/bin:/home/ubuntu/perl5/perlbrew/perls/perl-5.16.0/bin:$PATH
 export PATH
