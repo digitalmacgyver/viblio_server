@@ -2,60 +2,60 @@
 
 <style>
 
+body {
+    margin-top: 20px;
+}
+
 #login span {
-float: left;
-margin-top: 0px;
-padding-left: 10px;
 }
 
 #login input {
-width: 120px;
+    width: 120px;
 }
 
 #login button {
-margin-top: 20px;
-margin-left: 10px;
+    margin-left: 10px;
 }
 
 #headline {
-line-height: 1.45;
-vertical-align: top;
-text-shadow: 1px 1px 2px #cccccc;
-text-align: center;
-font-size: 400%;
-margin-bottom: 30px;
+    line-height: 1.45;
+    vertical-align: top;
+    text-shadow: 1px 1px 2px #cccccc;
+    text-align: center;
+    font-size: 400%;
+    margin-bottom: 30px;
 }
 
 #sub-heading {
-font-size: 200%;
+    font-size: 200%;
 }
 
 form div {
-margin-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 #va-search {
-text-align: center;
+    text-align: center;
 }
 
 #va-search img {
-margin: 0;
-vertical-align: middle;
+    margin: 0;
+    vertical-align: middle;
 }
 
 #va-search input {
-width: 200px;
-display: inline;
+    width: 200px;
+    display: inline;
 }
 
 #va-search button {
-float: none;
-display: inline;
+    float: none;
+    display: inline;
 }
 
 #va-search span {
-font-weight: bold;
-margin-left: 3px;
+    font-weight: bold;
+    margin-left: 3px;
 }
 
 </style>
@@ -125,62 +125,66 @@ margin-left: 3px;
     }
 
 </script>
-</div>
 
 <!-- END Facebook stuff -->
 
-<div class="column span-12">
-  <a style="margin-left: 20px;" href="javascript: facebook_login();">
-    <img style="margin: 0;" src="[% c.uri_for('/static/images/facebook-connect2.png') %]" />
-  </a>
-</div>
-<div id="login" class="column span-12 last">
-  <form method="post" action="[% c.uri_for('/login') %]">
-    <input type="hidden" name="realm" value="db" />
-    <span [% IF missing_email %]class="error"[% END %]>
-      <label for="username">Email</label><br />
-      <input type="text" class="text" id="username" name="username" />
-    </span>
-    <span [% IF missing_password %]class="error"[% END %]>
-      <label for="password">Password</label><br />
-      <input type="password" class="text" id="password" name="password" />
-    </span>
-    <button type="submit" class="button positive">
-      Login
-    </button>
-  </form>
-</div>
-<hr />
-<div id="headline" class="span-24 last">
-  Make Something Cool!
-</div>
-<div class="column span-1">
-  &nbsp;
-</div>
-<div class="column span-10 colborder">
-  <img src="[% c.uri_for('/static/images/viblio-logo-blue-circle.png') %]" />
-</div>
-<div id="register" class="column span-12 last">
-  <div id="sub-heading">
-    Get started - it's free!
+<div class="row">
+  <div class="span4">
+    <a style="margin-left: 20px;" href="javascript: facebook_login();">
+      <img style="margin: 0;" src="[% c.uri_for('/static/images/facebook-connect2.png') %]" />
+    </a>
   </div>
-  <p>Registration takes less than a minute.</p>
-  <form method="post" action="[% c.uri_for('/register') %]">
+  <div class="span2">
+    <p class="lead">or...</p>
+  </div>
+  <div id="login" class="form-inline span6">
+    <form method="post" action="[% c.uri_for('/login') %]">
+      <input type="hidden" name="realm" value="db" />
+      <span [% IF missing_email %]class="error"[% END %]>
+	<input type="text" class="text" id="username" name="username" placeholder="Email" />
+      </span>
+      <span [% IF missing_password %]class="error"[% END %]>
+	<input type="password" class="text" id="password" name="password" placeholder="Password" />
+      </span>
+      <button type="submit" class="btn">
+	Login
+      </button>
+    </form>
+  </div>
+</div>
+
+<hr />
+
+<div class="row">
+  <div id="headline" class="span12">
+    Make Something Cool!
+  </div>
+</div>
+
+<div class="row">
+  <div class="span6">
+    <img src="[% c.uri_for('/static/images/viblio-logo-blue-circle.png') %]" />
+  </div>
+  <div id="register" class="span6">
+    <div id="sub-heading">
+      Get started - it's free!
+    </div>
+    <p>Registration takes less than a minute.</p>
+    <form method="post" action="[% c.uri_for('/register') %]" class="form-inline">
       <div [% IF missing_name %]class="error"[% END %]>
-	<label for="fullname">Name</label><br />
-	<input type="text" class="text" id="fullname" name="fullname" />
+	<input type="text" class="input-xlarge" id="fullname" name="fullname" placeholder="Full Name" />
       </div>
       <div [% IF missing_email %]class="error"[% END %]>
-	<label for="email">Email</label><br />
-	<input type="text" class="text" id="email" name="email" />
+	<input type="text" class="input-xlarge" id="email" name="email" placeholder="Email" />
       </div>
       <div [% IF missing_password %]class="error"[% END %]>
-	<label for="password">Password</label><br />
-	<input type="password" class="text" id="password" name="password" />
+	<input type="password" class="input-xlarge" id="password" name="password" placeholder="Password" />
       </div>
       <div style="margin-bottom: 15px;">&nbsp;</div>
-      <button type="submit" class="button positive">
+      <button type="submit" class="btn">
 	Join Now
       </button>
-  </form>
+    </form>
+  </div>
 </div>
+

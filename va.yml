@@ -23,8 +23,8 @@ authentication:
     facebook:
       credential:
         class: FacebookToken
-        application_id: 357358674377173
-        application_secret: f22db0e8b2b38194d7ede5ce2d2df9e5
+        application_id: 566096966734454
+        application_secret: 7c48152f970b953f6a7c835b2f92bdcd
       store:
         class: DBIx::Class
         user_model: DB::User
