@@ -35,7 +35,6 @@ my $user;
 
 # Andrew Peebles
 #
-=perl
 $user = $schema->resultset( 'User' )
     ->find_or_create({ username => 'aqpeeb',
 		       email => 'aqpeeb@gmail.com',
@@ -47,7 +46,6 @@ die "Could not create admin user: $!"
 
 $user->add_to_roles( $roles->{admin} );
 $user->update;
-=cut
 
 # vaadmin
 #

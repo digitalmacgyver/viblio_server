@@ -156,6 +156,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 pffiles
+
+Type: has_many
+
+Related object: L<VA::Schema::Result::Pffile>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pffiles",
+  "VA::Schema::Result::Pffile",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 user_roles
 
 Type: has_many
@@ -171,6 +186,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 workorders
+
+Type: has_many
+
+Related object: L<VA::Schema::Result::Workorder>
+
+=cut
+
+__PACKAGE__->has_many(
+  "workorders",
+  "VA::Schema::Result::Workorder",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 roles
 
 Type: many_to_many
@@ -182,8 +212,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-23 13:46:56
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Mlha/4Zl7CK0fZOcRNlk8A
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-27 21:01:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:pAzPT6chXJ3QsIKYhGtCvA
 
 sub TO_JSON {
     my $self = shift;

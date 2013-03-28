@@ -46,11 +46,6 @@ CREATE TABLE IF NOT EXISTS `user_roles` (
     KEY `role_id` (`role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- So we can use photos in many other places, there will
--- be no foriegn key, and the id is manually set to the 
--- id of the owner.  A might_have or has_a relationship is
--- set up manually on the table class.
---
 CREATE TABLE IF NOT EXISTS `mediafile` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `mimetype` VARCHAR(64) NOT NULL,
@@ -62,6 +57,33 @@ CREATE TABLE IF NOT EXISTS `mediafile` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS `pffiles` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `uuid` text,
+    `mimetype` VARCHAR(64) NOT NULL,
+    `filename` VARCHAR(64) NOT NULL,
+    `url` text,
+    `key` text,
+    `size` int(11) DEFAULT 0,
+    `iswritable` int(4) DEFAULT 1,
+    `user_id` int(11) NOT NULL DEFAULT '0',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `workorders` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `uuid` text,
+    `user_id` int(11) NOT NULL DEFAULT '0',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `pffile_workorders` (
+    `pffile_id` int(11) NOT NULL DEFAULT '0',
+    `workorder_id` int(11) NOT NULL DEFAULT '0',
+    PRIMARY KEY (`pffile_id`,`workorder_id`),
+    KEY `workorder_id` (`workorder_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 --
 -- Add foreign key constraints last, so the order of table
 -- definition doesn't matter.
@@ -69,6 +91,7 @@ CREATE TABLE IF NOT EXISTS `mediafile` (
 
 -- User Roles
 --
+
 ALTER TABLE `user_roles`
    ADD CONSTRAINT `user_role_ibfk_2` 
      FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) 
@@ -77,10 +100,28 @@ ALTER TABLE `user_roles`
    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) 
      ON DELETE CASCADE ON UPDATE CASCADE;
 
+ALTER TABLE `pffile_workorders`
+   ADD CONSTRAINT `pffile_workorder_ibfk_2` 
+     FOREIGN KEY (`workorder_id`) REFERENCES `workorders` (`id`) 
+     ON DELETE CASCADE ON UPDATE CASCADE,
+   ADD CONSTRAINT `pffile_workorder_ibfk_1` 
+   FOREIGN KEY (`pffile_id`) REFERENCES `pffiles` (`id`) 
+     ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- Media
 --
 ALTER TABLE `mediafile`
    ADD CONSTRAINT `mediafile_ibfk_2` 
+     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) 
+     ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `pffiles`
+   ADD CONSTRAINT `pffile_ibfk_2` 
+     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) 
+     ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `workorders`
+   ADD CONSTRAINT `workorder_ibfk_2` 
      FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) 
      ON DELETE CASCADE ON UPDATE CASCADE;
 

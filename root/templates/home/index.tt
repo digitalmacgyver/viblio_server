@@ -1,3 +1,175 @@
 [% META title = 'Home' %]
 [% PROCESS banner.tt %]
 
+<!-- Templates -->
+<script src="/static/js/ICanHaz.min.js"></script>
+
+<script id="media_file_video" type="text/html">
+  <div class="media">
+    <a class="pull-left" href="{{ url }}?qt=true" rel="prettyPhoto[pp_gal]">
+      <img id="{{ id }}" class="media-object" data-src="" src="/static/images/vid.png" />
+    </a>
+    <div class="media-body">
+      <h4 class="media-heading">{{ filename }}</h4>
+      <p>
+        type: {{ mimetype }}<br />
+        size: {{ size }}
+      </p>
+    </div>
+  </div>
+</script>
+
+<script id="media_file_audio" type="text/html">
+  <div class="media">
+    <a class="pull-left" href="{{ url }}?qt=true" rel="prettyPhoto[pp_gal]">
+      <img id="{{ id }}" class="media-object" data-src="" src="/static/images/mnote.png" />
+    </a>
+    <div class="media-body">
+      <h4 class="media-heading">{{ filename }}</h4>
+      <p>
+        type: {{ mimetype }}<br />
+        size: {{ size }}
+      </p>
+    </div>
+  </div>
+</script>
+
+<script id="media_file_image" type="text/html">
+  <div class="media">
+    <a class="pull-left media-file-image" href="{{ url }}" rel="prettyPhoto[pp_gal]">
+      <img id="{{ id }}" class="media-object" data-src="" src="/static/images/loading-64x64.gif" />
+    </a>
+    <div class="media-body">
+      <h4 class="media-heading">{{ filename }}</h4>
+      <p>
+        type: {{ mimetype }}<br />
+        size: {{ size }}
+      </p>
+    </div>
+  </div>
+</script>
+
+<script>
+var picker_key = "AUBFLi68nRXe7sDddBPBVz";
+
+$(document).ready( function() {
+    filepicker.setKey( picker_key );
+    list();
+});
+
+function tryit() {
+    filepicker.pickMultiple( 
+        function( fpfiles ) {
+            console.log( json2string(fpfiles) );
+	    var num = fpfiles.length;
+            for( var i=0; i<fpfiles.length; i++ ) {
+                var url = fpfiles[i].url;
+                $.ajax({
+                    url: "/services/pf/create",
+                    method: "POST",
+                    dataType: "json",
+                    data: fpfiles[i],
+                    success: function( json ) {
+			if ( json.error ) {
+			    dialogManager.error( json.message );
+			}
+			else {
+                            console.log( "stored " + json.media.id );
+			}
+			if ( --num == 0 ) {
+			    list();
+			}
+                    },
+                    error: function() {
+                        dialogManager.error( "failed to store " + url );
+			if ( --num == 0 ) {
+			    list();
+			}
+                    }
+                });
+            }
+        },
+        function( err ) {
+            dialogManager.error( json2string( err ) );
+        }
+    );
+    return;
+}
+
+// Get the list of media files that have been uploaded.  The
+// answer looks like:
+// { files: [] }
+// where each item in the array is a FPFile object, along with
+// "id" from the server-side database.
+//
+function list() {
+    console.log( 'getting list...' );
+    $.ajax({
+        url: "/services/pf/list",
+        dataType: 'json',
+        success: function( json ) {
+            console.log( "back" );
+            if ( json.error ) {
+                dialogManager.error( json.message );
+            }
+            else {
+                $("#media-list").empty();
+                for( var i=0; i<json.media.length; i++ ) {
+                    // Use a client-side template to create a media-object
+                    if ( json.media[i].mimetype.indexOf('image') == 0 )
+                        $("#media-list").append( ich.media_file_image(json.media[i]) );
+                    else if ( json.media[i].mimetype.indexOf('audio') == 0 )
+                        $("#media-list").append( ich.media_file_audio(json.media[i]) );
+                    else
+                        $("#media-list").append( ich.media_file_video(json.media[i]) );
+                    // Do this weird anon function def/call to keep the i'th
+                    // variable in scope for the picker convertion callback.
+                    (function(f) {
+                        var mid = f.id; // file id from local server
+                        // do a conversion to get a thumbnail
+			if ( f.mimetype.indexOf('image') == 0 ) {
+                            filepicker.convert( f, { width: 64, height: 64 },
+						function( thumb ) {
+                                                    console.log( "setting " + mid + " to " + thumb.url );
+                                                    $("#" + mid).attr( "src", thumb.url );
+						});
+			}
+                    })(json.media[i]);
+                }
+                // apply the pretty photo plugin
+                $("#media-list a[rel^='prettyPhoto']").prettyPhoto({
+		    allow_resize: true,
+		    overlay_gallery: false
+		});
+            }
+        }
+    });
+}
+
+</script>
+
+<h1>Your Media Files</h1>
+<div id="media-list" class="well">
+</div>
+<button class="btn btn-primary" type="button"
+        onclick="tryit();">Add Media Files</button>
+<!--
+<button class="btn btn-primary" type="button"
+        onclick="list();">List</button>
+-->
+<div id="message"></div>
+
+<!-- Dialogs -->
+<div id="dialog-error" class="modal hide">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Error</h3>
+  </div>
+  <div class="modal-body">
+    <p>One fine body…</p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+  </div>
+</div>
+

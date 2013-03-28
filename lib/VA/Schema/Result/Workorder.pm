@@ -1,12 +1,12 @@
 use utf8;
-package VA::Schema::Result::UserRole;
+package VA::Schema::Result::Workorder;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::Schema::Result::UserRole
+VA::Schema::Result::Workorder
 
 =cut
 
@@ -41,22 +41,26 @@ __PACKAGE__->load_components(
   "UUIDColumns",
 );
 
-=head1 TABLE: C<user_roles>
+=head1 TABLE: C<workorders>
 
 =cut
 
-__PACKAGE__->table("user_roles");
+__PACKAGE__->table("workorders");
 
 =head1 ACCESSORS
 
-=head2 user_id
+=head2 id
 
   data_type: 'integer'
-  default_value: 0
-  is_foreign_key: 1
+  is_auto_increment: 1
   is_nullable: 0
 
-=head2 role_id
+=head2 uuid
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 user_id
 
   data_type: 'integer'
   default_value: 0
@@ -66,14 +70,11 @@ __PACKAGE__->table("user_roles");
 =cut
 
 __PACKAGE__->add_columns(
+  "id",
+  { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
+  "uuid",
+  { data_type => "text", is_nullable => 1 },
   "user_id",
-  {
-    data_type      => "integer",
-    default_value  => 0,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
-  "role_id",
   {
     data_type      => "integer",
     default_value  => 0,
@@ -86,31 +87,29 @@ __PACKAGE__->add_columns(
 
 =over 4
 
-=item * L</user_id>
-
-=item * L</role_id>
+=item * L</id>
 
 =back
 
 =cut
 
-__PACKAGE__->set_primary_key("user_id", "role_id");
+__PACKAGE__->set_primary_key("id");
 
 =head1 RELATIONS
 
-=head2 role
+=head2 pffile_workorders
 
-Type: belongs_to
+Type: has_many
 
-Related object: L<VA::Schema::Result::Role>
+Related object: L<VA::Schema::Result::PffileWorkorder>
 
 =cut
 
-__PACKAGE__->belongs_to(
-  "role",
-  "VA::Schema::Result::Role",
-  { id => "role_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+__PACKAGE__->has_many(
+  "pffile_workorders",
+  "VA::Schema::Result::PffileWorkorder",
+  { "foreign.workorder_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
 );
 
 =head2 user
@@ -128,10 +127,27 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+=head2 pffiles
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-27 20:58:57
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9Cx88s214Qzk0vH6xMV7vA
+Type: many_to_many
 
+Composing rels: L</pffile_workorders> -> pffile
+
+=cut
+
+__PACKAGE__->many_to_many("pffiles", "pffile_workorders", "pffile");
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-27 21:01:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ErGqlGyu8bhsnFpeQgV8vA
+
+__PACKAGE__->uuid_columns( 'uuid' );
+
+sub TO_JSON {
+    my $self = shift;
+    my $hash = $self->{_column_data};
+    return $hash;
+}
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;

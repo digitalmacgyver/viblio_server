@@ -394,6 +394,73 @@ sub new_password :Local {
     }
 }
 
+# For the test app, which cannot handle cookies for authenticated downloads, provile
+# a hook here that can do unauthenticated downloads.
+#
+sub download :Local {
+    my( $self, $c, $uid, $id ) = @_;
+    $uid = $c->req->param( 'uid' ) unless( $uid );
+    $id  = $c->req->param( 'id' ) unless( $id );
+    $id  = $c->req->param( 'uuid' ) unless( $id );
+
+    unless( $uid && $id ) {
+	my $err = $c->loc( "Missing input params: need userid and media id" );
+	$c->res->status( 404 );
+	$c->res->body( "404 Not Found\n\n$err" );
+	$c->detach;
+    }
+
+    my $user = $c->model( 'DB::User' )->find($uid);
+    unless( $user ) {
+	my $err = $c->loc( "Cannot find user for uid [_1]", $uid );
+	$c->res->status( 404 );
+	$c->res->body( "404 Not Found\n\n$err" );
+	$c->detach;
+    }
+
+    my $mediafile = $user->mediafiles->find({ id => $id });
+    # try uuid if not found
+    unless( $mediafile ) {
+	$mediafile = $user->mediafiles->find({ uuid => $id });
+    }
+
+    # Not found should return a real html-based 404
+    #
+    if ( ! $mediafile ||
+	 ! -f $mediafile->path ) {
+	my $err = $c->loc( "No media file found at id/uuid [_1]", $id );
+	$c->res->status( 404 );
+	$c->res->body( "404 Not Found\n\n$err" );
+	$c->detach;
+    }
+
+    my $type = $mediafile->mimetype;
+    my $len  = $mediafile->size;
+
+    $c->res->body( "Content-type: $type\015\012\015\012" );
+
+    $c->res->headers->header( 'Content-Type' => $type );
+    $c->res->headers->header( 'Content-Length' => $len );
+
+    my $f = new FileHandle $mediafile->path;
+    unless( $f ) {
+	my $err = $c->loc( "No media file found at id/uuid [_1]", $id );
+	$c->res->status( 404 );
+	$c->res->body( "404 Not Found\n\n$err" );
+	$c->detach;
+    }
+
+    my $blk_size = 1024 * 4;
+    my $data;
+    my $sz = $f->read( $data, $blk_size );
+    while( $sz > 0 ) {
+        $c->res->write( $data );
+        $sz = $f->read( $data, $blk_size );
+    }
+
+    $f->close();
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

@@ -1,12 +1,12 @@
 use utf8;
-package VA::Schema::Result::Mediafile;
+package VA::Schema::Result::Pffile;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::Schema::Result::Mediafile
+VA::Schema::Result::Pffile
 
 =cut
 
@@ -41,11 +41,11 @@ __PACKAGE__->load_components(
   "UUIDColumns",
 );
 
-=head1 TABLE: C<mediafile>
+=head1 TABLE: C<pffiles>
 
 =cut
 
-__PACKAGE__->table("mediafile");
+__PACKAGE__->table("pffiles");
 
 =head1 ACCESSORS
 
@@ -54,6 +54,11 @@ __PACKAGE__->table("mediafile");
   data_type: 'integer'
   is_auto_increment: 1
   is_nullable: 0
+
+=head2 uuid
+
+  data_type: 'text'
+  is_nullable: 1
 
 =head2 mimetype
 
@@ -67,7 +72,12 @@ __PACKAGE__->table("mediafile");
   is_nullable: 0
   size: 64
 
-=head2 path
+=head2 url
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 key
 
   data_type: 'text'
   is_nullable: 1
@@ -78,9 +88,10 @@ __PACKAGE__->table("mediafile");
   default_value: 0
   is_nullable: 1
 
-=head2 uuid
+=head2 iswritable
 
-  data_type: 'text'
+  data_type: 'integer'
+  default_value: 1
   is_nullable: 1
 
 =head2 user_id
@@ -95,16 +106,20 @@ __PACKAGE__->table("mediafile");
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
+  "uuid",
+  { data_type => "text", is_nullable => 1 },
   "mimetype",
   { data_type => "varchar", is_nullable => 0, size => 64 },
   "filename",
   { data_type => "varchar", is_nullable => 0, size => 64 },
-  "path",
+  "url",
+  { data_type => "text", is_nullable => 1 },
+  "key",
   { data_type => "text", is_nullable => 1 },
   "size",
   { data_type => "integer", default_value => 0, is_nullable => 1 },
-  "uuid",
-  { data_type => "text", is_nullable => 1 },
+  "iswritable",
+  { data_type => "integer", default_value => 1, is_nullable => 1 },
   "user_id",
   {
     data_type      => "integer",
@@ -128,6 +143,21 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 RELATIONS
 
+=head2 pffile_workorders
+
+Type: has_many
+
+Related object: L<VA::Schema::Result::PffileWorkorder>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pffile_workorders",
+  "VA::Schema::Result::PffileWorkorder",
+  { "foreign.pffile_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 user
 
 Type: belongs_to
@@ -143,9 +173,19 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+=head2 workorders
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-27 21:01:06
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:G5Qjq0LWDJX5wihyT36Ofg
+Type: many_to_many
+
+Composing rels: L</pffile_workorders> -> workorder
+
+=cut
+
+__PACKAGE__->many_to_many("workorders", "pffile_workorders", "workorder");
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-27 21:01:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:7Zj/0TRJjR+aSATDxk+8pQ
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
