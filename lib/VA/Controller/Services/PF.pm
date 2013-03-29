@@ -12,12 +12,26 @@ sub create :Local {
 
     my $rw = $params->{isWriteable};
     delete $params->{isWriteable};
+    $params->{iswritable} = 1;
     if ( $rw ne 'true' ) {
 	$params->{iswritable} = 0;
     }
 
-    my $pffile = $c->model( 'DB::Pffile' )->create($params);
+    my $pffile = $c->model( 'DB::Pffile' )->create({
+	filename => $params->{filename},
+	mimetype => $params->{mimetype},
+	url => $params->{url},
+	s3key => $params->{key},
+	size => int($params->{size}),
+	iswritable => $params->{iswritable},
+	user_id => $c->user->obj->id });
     if ( $pffile ) {
+	if ( $params->{workorder_id} ) {
+	    # being added into a workorder
+	    $c->model( 'DB::PffileWorkorder')->create(
+		{ workorder_id => $params->{workorder_id},
+		  pffile_id => $pffile->id } );
+	}
 	$self->status_ok( $c, { media => $pffile } );
     }
     else {
@@ -25,6 +39,17 @@ sub create :Local {
 		( $c,
 		  $c->loc( "Unable to create PFFile" ) );
     }
+}
+
+sub delete :Local {
+    my( $self, $c ) = @_;
+    my $id = $c->req->param( 'id' );
+    my $media = $c->user->pffiles->find( $id );
+    unless( $media ) {
+	$self->status_bad_request( $c, $c->loc( "Cannot find that media file: id=[_1]", $id ) );
+    }
+    $media->delete;
+    $self->status_ok( $c, { media => $media } );
 }
 
 sub list :Local {

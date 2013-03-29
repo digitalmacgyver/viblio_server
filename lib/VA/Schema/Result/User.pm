@@ -212,8 +212,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-27 21:01:41
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:pAzPT6chXJ3QsIKYhGtCvA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-29 09:37:52
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:X5bxMHl4VVqN2Y+xvoAbeg
 
 sub TO_JSON {
     my $self = shift;

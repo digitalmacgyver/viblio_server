@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `pffiles` (
     `mimetype` VARCHAR(64) NOT NULL,
     `filename` VARCHAR(64) NOT NULL,
     `url` text,
-    `key` text,
+    `s3key` text,
     `size` int(11) DEFAULT 0,
     `iswritable` int(4) DEFAULT 1,
     `user_id` int(11) NOT NULL DEFAULT '0',
@@ -72,8 +72,12 @@ CREATE TABLE IF NOT EXISTS `pffiles` (
 
 CREATE TABLE IF NOT EXISTS `workorders` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
+    `name` text,
+    `state` varchar(24) NOT NULL DEFAULT 'WO_NEW',
     `uuid` text,
     `user_id` int(11) NOT NULL DEFAULT '0',
+    `submitted` VARCHAR(32) DEFAULT NULL,
+    `completed` VARCHAR(32) DEFAULT NULL,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

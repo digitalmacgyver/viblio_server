@@ -46,7 +46,14 @@ sub upload :Local {
 	    size => $size };
 
 	my $target = $rootdir . "/" . $media->{uuid};
+	if ( $mimetype =~ /^video/ ) {
+	    $target .= ".mp4";
+	}
+
 	$media->{path} = $target;
+
+	my $server_root = $c->path_to();
+	$media->{path} =~ s/^$server_root//g;
 
 	push( @mediafiles, $media );
 
@@ -91,7 +98,7 @@ sub upload :Local {
 	#
 	foreach my $media ( @mediafiles ) {
 	    if ( -f $media->{path} ) {
-		unlink( $media->{path} );
+		unlink( $c->path_to( $media->{path} ) );
 	    }
 	}
 	$c->log->debug( "EXCEPTION: " . $exception );

@@ -2,9 +2,9 @@
   <div class="navbar-inner">
     <a class="brand" href="#">Viblio</a>
     <ul class="nav">
-      <li class="active"><a href="/">Home</a></li>
-      <li><a href="#">Link1</a></li>
-      <li><a href="#">Link2</a></li>
+      <li class="[% studio_active %]"><a href="/">Studio</a></li>
+      <li class="[% create_active %]"><a href="/create">Create</a></li>
+      <li class="[% find_active %]"><a href="/find">Find</a></li>
     </ul>
 
     <span class="pull-right" style="margin-top: 8px;">

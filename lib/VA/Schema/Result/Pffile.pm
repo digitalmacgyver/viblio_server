@@ -77,7 +77,7 @@ __PACKAGE__->table("pffiles");
   data_type: 'text'
   is_nullable: 1
 
-=head2 key
+=head2 s3key
 
   data_type: 'text'
   is_nullable: 1
@@ -114,7 +114,7 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 0, size => 64 },
   "url",
   { data_type => "text", is_nullable => 1 },
-  "key",
+  "s3key",
   { data_type => "text", is_nullable => 1 },
   "size",
   { data_type => "integer", default_value => 0, is_nullable => 1 },
@@ -184,14 +184,21 @@ Composing rels: L</pffile_workorders> -> workorder
 __PACKAGE__->many_to_many("workorders", "pffile_workorders", "workorder");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-27 21:01:41
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:7Zj/0TRJjR+aSATDxk+8pQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-29 12:10:58
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9sJ33LNCH7IURKvTgj3F3A
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
 sub TO_JSON {
     my $self = shift;
     my $hash = $self->{_column_data};
+    if ( $hash->{iswritable} ) {
+	$hash->{isWriteable} = "true";
+    }
+    else {
+	$hash->{isWriteable} = "false";
+    }
+    delete $hash->{iswritable};
     return $hash;
 }
 

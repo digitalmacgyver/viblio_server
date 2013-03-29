@@ -22,7 +22,7 @@ die "Cannot connect to database!"
 
 # Delete them all.  This is a good test of cascading deletes too.
 #
-$schema->resultset( 'User' )->delete_all;
+# $schema->resultset( 'User' )->delete_all;
 
 my @roles = ( 'admin', 'dbadmin', 'instructor' );
 my $roles = {};

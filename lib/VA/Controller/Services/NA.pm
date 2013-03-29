@@ -436,11 +436,35 @@ sub download :Local {
 
     my $type = $mediafile->mimetype;
     my $len  = $mediafile->size;
+    my $size = $len;
+
+    if ( $type eq 'video/quicktime' ) {
+	$type = "video/mp4";
+    }
 
     $c->res->body( "Content-type: $type\015\012\015\012" );
 
-    $c->res->headers->header( 'Content-Type' => $type );
-    $c->res->headers->header( 'Content-Length' => $len );
+    $c->res->content_type( $type );
+    $c->res->content_length( $len );
+    $c->res->header( 'Content-Disposition' => 'filename=' . $mediafile->filename );
+    $c->res->header( 'Accept-Ranges' => 'bytes' );
+
+    # support seeking
+    my $offset = 0;
+    if ( my $range = $c->req->header( 'Range' ) ) {
+        $range =~ m/bytes=(\d+)-/xms;
+        $offset = $1;
+        $c->log->debug( "Got Range request, seeking to $offset" );
+        
+        if ( $offset < $size ) {
+            $c->res->status( 206 );
+            $c->res->header( 'Content-Ranges' => "bytes $offset-$size/$size" );
+        }
+        else {
+            $offset = 0;
+        }
+    }
+
 
     my $f = new FileHandle $mediafile->path;
     unless( $f ) {
@@ -450,12 +474,18 @@ sub download :Local {
 	$c->detach;
     }
 
-    my $blk_size = 1024 * 4;
-    my $data;
-    my $sz = $f->read( $data, $blk_size );
-    while( $sz > 0 ) {
-        $c->res->write( $data );
-        $sz = $f->read( $data, $blk_size );
+    if ( seek $f, $offset, 0 ) {
+	my $blk_size = 1024 * 4;
+	my $data;
+	my $sz = $f->read( $data, $blk_size );
+	while( $sz > 0 ) {
+	    $c->log->debug( "--> sending $sz bytes ..." );
+	    $c->res->write( $data );
+	    $sz = $f->read( $data, $blk_size );
+	}
+    }
+    else {
+	$c->log->debug( "FAILED TO SEEK TO $offset" );
     }
 
     $f->close();

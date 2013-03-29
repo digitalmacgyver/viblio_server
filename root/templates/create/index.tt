@@ -15,14 +15,35 @@ cursor: pointer;
 .media {
 padding-top: 9px;
 padding-left: 12px;
+}
+
+#create {
+    visibility: hidden;
+}
+
+#submit-wo-btn {
+    visibility: hidden;
+}
+
 </style>
 
+<script>
+    var unsaved = false;
+    window.onbeforeunload = confirmExit;
+    function confirmExit() {
+	if ( unsaved ) 
+	  return "You have unsaved changes, are you sure you want to leave this page?";
+	else
+	  return;
+    }
+</script>
 
 <script>
 
+// User is leaving the page.  If there are uploaded files, and the
+// workorder has not yet been submitted, warn the user.
 $(document).ready( function() {
     filepicker.setKey( picker_key );
-    list();
 });
 
 function delete_media( id ) {
@@ -64,6 +85,8 @@ function add_media() {
 	    var num = fpfiles.length;
             for( var i=0; i<fpfiles.length; i++ ) {
                 var url = fpfiles[i].url;
+		// install the wo id
+		fpfiles[i]['workorder_id'] = $("#create").data( "wo" ).id;
                 $.ajax({
                     url: "/services/pf/create",
                     method: "POST",
@@ -74,6 +97,7 @@ function add_media() {
 			    dialogManager.error( json.message );
 			}
 			if ( --num == 0 ) {
+			    $("#submit-wo-btn").css( "visibility", "visible" );
 			    list();
 			}
                     },
@@ -105,8 +129,10 @@ function add_media() {
 // "id" from the server-side database.
 //
 function list() {
+    var wo = $("#create").data( "wo" );
     $.ajax({
-        url: "/services/pf/list",
+        url: "/services/wo/bom",
+	data: { id: wo.id },
         dataType: 'json',
         success: function( json ) {
             if ( json.error ) {
@@ -135,15 +161,89 @@ function list() {
     });
 }
 
+function create_project() {
+    var woname = $("#project-name").val();  // if not assigned, the server will make one up?
+    $.ajax({
+	url: "/services/wo/create",
+	data: { name: woname },
+	dataType: 'json',
+	success: function( json ) {
+	    if ( json.error ) {
+		dialogManager.error( json.message, json.detail );
+	    }
+	    else {
+		// Store the wo record returned for future reference 
+		unsaved = true;
+		$("#create").data( 'wo', json.wo );
+		$("#create h1").html( json.wo.name );
+		$("#create-start").remove(); // don't need that any more!
+		$("#create").css( "visibility", "visible" );
+	    }
+	}
+    });
+}
+
+function submit_wo() {
+    var wo = $("#create").data( "wo" );
+    $.ajax({
+	url: "/services/wo/bom",
+	data: { id: wo.id },
+	dataType: 'json',
+	success: function( json ) {
+	    if ( json.error ) {
+		dialogManager.error( json.message, json.detail );
+	    }
+	    else {
+		dialogManager.confirm( ich.wo_bom( json ),function() {
+		    $.ajax({
+			url: "/services/wo/submit",
+			data: { id: wo.id },
+			dataType: 'json',
+			success: function(json) {
+			    if ( json.error ) {
+				dialogManager.error( json.message, json.detail );
+			    }
+			    else {
+				// redirect back home.
+				unsaved = false;
+				window.location = "/";
+			    }
+			}
+		    });
+		});
+	    }
+	}
+    });
+}
+
 </script>
 
-<h1>Your Media Files</h1>
-<div id="media-list-outter" class="well">
-  <ul id="media-list" class="thumbnails">
-  </ul>
+<div id="create-start" class="row-fluid">
+  <div class="span8 offset2 hero-unit">
+    <h1>Start a New Project!</h1>
+    <p>Create a new project by giving it a name, and then adding media
+      files.  You can include photos, videos and music, be creative!
+    <p/>
+    <input type="text" class="input-xxlarge" id="project-name" name="project-name" placeholder="Project Name" />
+    <p/>
+    <a class="btn btn-primary btn-large" href="javascript: create_project();">
+      Create!
+    </a>
+    </p>
+  </div>
 </div>
-<button class="btn btn-primary" type="button"
-        onclick="add_media();">Add Media Files</button>
+
+<div id="create">
+  <h1>Your Media Files</h1>
+  <div id="media-list-outter" class="well">
+    <ul id="media-list" class="thumbnails">
+    </ul>
+  </div>
+  <button id="add-media-btn" class="btn btn-primary" type="button"
+          onclick="add_media();">Add Media Files</button>
+  <button id="submit-wo-btn" class="btn btn-primary" type="button"
+          onclick="submit_wo();">Submit Project</button>
+</div>
 
 <!-- Pull in filepicker -->
 <script type="text/javascript" src="//api.filepicker.io/v1/filepicker.js"></script>

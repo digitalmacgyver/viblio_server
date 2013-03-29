@@ -55,6 +55,18 @@ __PACKAGE__->table("workorders");
   is_auto_increment: 1
   is_nullable: 0
 
+=head2 name
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 state
+
+  data_type: 'varchar'
+  default_value: 'WO_NEW'
+  is_nullable: 0
+  size: 24
+
 =head2 uuid
 
   data_type: 'text'
@@ -67,11 +79,32 @@ __PACKAGE__->table("workorders");
   is_foreign_key: 1
   is_nullable: 0
 
+=head2 submitted
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 32
+
+=head2 completed
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 32
+
 =cut
 
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
+  "name",
+  { data_type => "text", is_nullable => 1 },
+  "state",
+  {
+    data_type => "varchar",
+    default_value => "WO_NEW",
+    is_nullable => 0,
+    size => 24,
+  },
   "uuid",
   { data_type => "text", is_nullable => 1 },
   "user_id",
@@ -81,6 +114,10 @@ __PACKAGE__->add_columns(
     is_foreign_key => 1,
     is_nullable    => 0,
   },
+  "submitted",
+  { data_type => "varchar", is_nullable => 1, size => 32 },
+  "completed",
+  { data_type => "varchar", is_nullable => 1, size => 32 },
 );
 
 =head1 PRIMARY KEY
@@ -138,8 +175,8 @@ Composing rels: L</pffile_workorders> -> pffile
 __PACKAGE__->many_to_many("pffiles", "pffile_workorders", "pffile");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-27 21:01:41
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ErGqlGyu8bhsnFpeQgV8vA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-29 13:19:35
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xcvWuM92f9WnT3PG6ogaKw
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
@@ -148,6 +185,18 @@ sub TO_JSON {
     my $hash = $self->{_column_data};
     return $hash;
 }
+
+__PACKAGE__->add_columns(
+    'submitted' => {
+       data_type => 'datetime',
+       inflate_datetime => 1,
+       set_on_create => 1,
+    },
+    'completed' => {
+       data_type => 'datetime',
+       inflate_datetime => 1,
+    },
+    );
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;

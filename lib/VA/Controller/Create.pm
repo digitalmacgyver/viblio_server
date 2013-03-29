@@ -1,4 +1,4 @@
-package VA::Controller::Home;
+package VA::Controller::Create;
 use Moose;
 use namespace::autoclean;
 
@@ -8,9 +8,9 @@ sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
     # The default template for this action will be rendered:
-    # templates/home/index.tt
+    # templates/create/index.tt
 
-    $c->stash->{studio_active} = 'active';
+    $c->stash->{create_active} = 'active';
 }
 
 
