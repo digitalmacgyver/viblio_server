@@ -30,6 +30,8 @@ extends 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::UUIDColumns>
 
+=item * L<DBIx::Class::FilterColumn>
+
 =back
 
 =cut
@@ -39,6 +41,7 @@ __PACKAGE__->load_components(
   "TimeStamp",
   "PassphraseColumn",
   "UUIDColumns",
+  "FilterColumn",
 );
 
 =head1 TABLE: C<sessions>
@@ -89,8 +92,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-04 13:26:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:YnHd7K86SRzz2fujE4EiDA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:+X2U6l+BpgCt3r2+jie2/g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -149,7 +149,7 @@ function list() {
                     else
                         $("#media-list").append( ich.media_file_video(json.media[i]) );
                     if ( json.media[i].mimetype.indexOf('image') == 0 )
-			$("#" + json.media[i].id).attr( "src", json.media[i].url + '/convert?w=64&h=64' );
+			$("#" + json.media[i].id).attr( "src", json.media[i].url + '/convert?w=64&h=64&fit=scale' );
                 }
                 // apply the pretty photo plugin
                 $("#media-list a[rel^='prettyPhoto']").prettyPhoto({

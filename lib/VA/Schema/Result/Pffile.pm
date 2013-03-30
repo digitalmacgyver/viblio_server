@@ -30,6 +30,8 @@ extends 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::UUIDColumns>
 
+=item * L<DBIx::Class::FilterColumn>
+
 =back
 
 =cut
@@ -39,6 +41,7 @@ __PACKAGE__->load_components(
   "TimeStamp",
   "PassphraseColumn",
   "UUIDColumns",
+  "FilterColumn",
 );
 
 =head1 TABLE: C<pffiles>
@@ -184,8 +187,8 @@ Composing rels: L</pffile_workorders> -> workorder
 __PACKAGE__->many_to_many("workorders", "pffile_workorders", "workorder");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-29 12:10:58
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9sJ33LNCH7IURKvTgj3F3A
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:XWFkukR0wCvFGD+QtxAWbA
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
@@ -199,8 +202,43 @@ sub TO_JSON {
 	$hash->{isWriteable} = "false";
     }
     delete $hash->{iswritable};
+    # Use the filter column component to get a fully qualified
+    # secure signed S3 url that expires in an hour.
+    $hash->{s3key} = $self->get_filtered_column( 's3key' );
     return $hash;
 }
+
+# This magic creates a secure, signed, timed S3 url for
+# files in this bucket, using the filepicker S3 key field as
+# the bucket key.  Haven't figure out how to move the
+# configuration into the application yaml file where it
+# belongs though.
+#
+# To get this url, you have to call
+#  $c->model( 'DB::Pffile')->find($id)->get_filtered_column( 's3key' );
+# The TOJSON above does this so any services get the full url, good
+# for an hour.
+#
+use Muck::FS::S3::QueryStringAuthGenerator;
+my $key = 'AKIAJHD46VMHB2FBEMMA';
+my $secret = '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';
+my $use_https = 0;
+my $bucket_name = 'viblio.filepicker.io';
+my $endpoint = $bucket_name . ".s3.amazonaws.com";
+my $generator = Muck::FS::S3::QueryStringAuthGenerator->new(
+    $key, $secret, $use_https, $endpoint );
+
+__PACKAGE__->filter_column( 
+    s3key => {
+	filter_from_storage => sub {
+	    my $url = $generator->get( $bucket_name, $_[1] );
+	    # I think amazon must have changed their endpoint architecture
+	    # since the example I used to implement this was written, thus
+	    # this little hack.
+	    $url =~ s/\/$bucket_name\//\//g;
+	    return $url;
+	}
+    });
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;

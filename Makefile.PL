@@ -67,6 +67,7 @@ requires 'DBD::mysql';
 requires 'FCGI::ProcManager';
 requires 'Catalyst::Plugin::Log::Handler';
 requires 'Catalyst::Plugin::Log::Log4perlSimple';
+requires 'Muck::FS::S3::QueryStringAuthGenerator';
 
 test_requires 'Test::More' => '0.88';
 catalyst;

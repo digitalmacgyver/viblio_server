@@ -30,6 +30,8 @@ extends 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::UUIDColumns>
 
+=item * L<DBIx::Class::FilterColumn>
+
 =back
 
 =cut
@@ -39,6 +41,7 @@ __PACKAGE__->load_components(
   "TimeStamp",
   "PassphraseColumn",
   "UUIDColumns",
+  "FilterColumn",
 );
 
 =head1 TABLE: C<roles>
@@ -109,8 +112,8 @@ Composing rels: L</user_roles> -> user
 __PACKAGE__->many_to_many("users", "user_roles", "user");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-29 09:37:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bgefVGwmd+xZDQZp2hgdNA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:VOS0g8SUoVO0OEbwxUOk3w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -30,6 +30,8 @@ extends 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::UUIDColumns>
 
+=item * L<DBIx::Class::FilterColumn>
+
 =back
 
 =cut
@@ -39,6 +41,7 @@ __PACKAGE__->load_components(
   "TimeStamp",
   "PassphraseColumn",
   "UUIDColumns",
+  "FilterColumn",
 );
 
 =head1 TABLE: C<pending_users>
@@ -104,8 +107,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("email");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-04 13:26:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:d4VaDse9+OlK2SATL5jtHw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Cafsa10VylKvUAGnmByUPA
 
 sub TO_JSON {
     my $self = shift;

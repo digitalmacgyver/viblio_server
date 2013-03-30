@@ -30,6 +30,8 @@ extends 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::UUIDColumns>
 
+=item * L<DBIx::Class::FilterColumn>
+
 =back
 
 =cut
@@ -39,6 +41,7 @@ __PACKAGE__->load_components(
   "TimeStamp",
   "PassphraseColumn",
   "UUIDColumns",
+  "FilterColumn",
 );
 
 =head1 TABLE: C<workorders>
@@ -175,8 +178,8 @@ Composing rels: L</pffile_workorders> -> pffile
 __PACKAGE__->many_to_many("pffiles", "pffile_workorders", "pffile");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-29 13:19:35
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xcvWuM92f9WnT3PG6ogaKw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hU7VPcE0psm6h8F4+O1Mjg
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

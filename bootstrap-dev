@@ -14,7 +14,7 @@ sudo apt-get install apache2 \
   libjpeg-dev libpng-dev libgif-dev libt1-dev \
   libfreetype6-dev libtiff-dev \
   libexpat-dev libssl-dev libxml2-dev \
-  gettext
+  gettext libssl-dev libfuse-dev
 
 # This gets you your own perl dist, seprate from the system
 # perl, which you can manage yourself.  Use 'cpanm' to install

@@ -89,7 +89,7 @@
 			quicktime_markup: '<object classid="clsid:02BF25D5-8C17-4B23-BC80-D3488ABDDC6B" codebase="http://www.apple.com/qtactivex/qtplugin.cab" height="{height}" width="{width}"><param name="src" value="{path}"><param name="autoplay" value="{autoplay}"><param name="type" value="video/quicktime"><embed src="{path}" height="{height}" width="{width}" autoplay="{autoplay}" type="video/quicktime" pluginspage="http://www.apple.com/quicktime/download/"></embed></object>',
 			iframe_markup: '<iframe src ="{path}" width="{width}" height="{height}" frameborder="no"></iframe>',
 			inline_markup: '<div class="pp_inline">{content}</div>',
-		        qt_markup: '<video width="{width}" height="{height}" controls><source src="{path}" type="video/mp4"></video>',
+		        qt_markup: '<video width="{width}" height="{height}" controls autoplay><source src="{path}" type="video/mp4"></video>',
 			custom_markup: '',
 			social_tools: '<div class="twitter"><a href="http://twitter.com/share" class="twitter-share-button" data-count="none">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script></div><div class="facebook"><iframe src="//www.facebook.com/plugins/like.php?locale=en_US&href={location_href}&amp;layout=button_count&amp;show_faces=true&amp;width=500&amp;action=like&amp;font&amp;colorscheme=light&amp;height=23" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:500px; height:23px;" allowTransparency="true"></iframe></div>' /* html or false to disable */
 		}, pp_settings);
@@ -234,7 +234,7 @@
 				
 				imgPreloader = "";
 				skipInjection = false;
-				
+
 				// Inject the proper content
 				switch(_getFileType(pp_images[set_position])){
 					case 'image':
@@ -313,10 +313,6 @@
 				case 'qt':
 				    pp_dimensions = _fitToViewport(movie_width,movie_height); // Fit item to viewport
 				    movie_id = pp_images[set_position];
-				    if(movie_id.indexOf('?') > 0)
-					movie_id = movie_id.substr(0,movie_id.indexOf('?')); // Strip anything after the ?
-				    if(movie_id.indexOf('&') > 0)
-					movie_id = movie_id.substr(0,movie_id.indexOf('&')); // Strip anything after the &
 				    toInject = settings.qt_markup.replace(/{width}/g,pp_dimensions['width']).replace(/{height}/g,pp_dimensions['height']).replace(/{wmode}/g,settings.wmode).replace(/{path}/g,movie_id).replace(/{autoplay}/g,settings.autoplay);
 				    break;
 
@@ -666,16 +662,18 @@
 				return 'youtube';
 			}else if (itemSrc.match(/vimeo\.com/i)) {
 				return 'vimeo';
+			}else if(itemSrc.match(/\bqt=true\b/i)){
+				return 'qt';
 			}else if(itemSrc.match(/\b.mov\b/i)){ 
-				return 'quicktime';
+				return 'qt';
+			}else if(itemSrc.match(/\b.mp4\b/i)){ 
+				return 'qt';
 			}else if(itemSrc.match(/\b.swf\b/i)){
 				return 'flash';
 			}else if(itemSrc.match(/\biframe=true\b/i)){
 				return 'iframe';
 			}else if(itemSrc.match(/\bajax=true\b/i)){
 				return 'ajax';
-			}else if(itemSrc.match(/\bqt=true\b/i)){
-				return 'qt';
 			}else if(itemSrc.match(/\bcustom=true\b/i)){
 				return 'custom';
 			}else if(itemSrc.substr(0,1) == '#'){

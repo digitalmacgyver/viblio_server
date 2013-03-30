@@ -12,4 +12,4 @@ sudo apt-get install apache2 \
   libjpeg-dev libpng-dev libgif-dev libt1-dev \
   libfreetype6-dev libtiff-dev \
   libexpat-dev libssl-dev libxml2-dev \
-  gettext libssl-dev
+  gettext libssl-dev libfuse-dev
