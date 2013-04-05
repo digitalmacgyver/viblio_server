@@ -104,6 +104,33 @@ __PACKAGE__->table("pffiles");
   is_foreign_key: 1
   is_nullable: 0
 
+=head2 location
+
+  data_type: 'varchar'
+  default_value: 'fp'
+  is_nullable: 0
+  size: 28
+
+=head2 thumbnail_1
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 thumbnail_2
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 poster_1
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 poster_2
+
+  data_type: 'text'
+  is_nullable: 1
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -130,6 +157,16 @@ __PACKAGE__->add_columns(
     is_foreign_key => 1,
     is_nullable    => 0,
   },
+  "location",
+  { data_type => "varchar", default_value => "fp", is_nullable => 0, size => 28 },
+  "thumbnail_1",
+  { data_type => "text", is_nullable => 1 },
+  "thumbnail_2",
+  { data_type => "text", is_nullable => 1 },
+  "poster_1",
+  { data_type => "text", is_nullable => 1 },
+  "poster_2",
+  { data_type => "text", is_nullable => 1 },
 );
 
 =head1 PRIMARY KEY
@@ -187,8 +224,8 @@ Composing rels: L</pffile_workorders> -> workorder
 __PACKAGE__->many_to_many("workorders", "pffile_workorders", "workorder");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:XWFkukR0wCvFGD+QtxAWbA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-04 21:29:48
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:oufRZxeZfo0lJAHlhq3aNQ
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

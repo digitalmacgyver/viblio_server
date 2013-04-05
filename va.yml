@@ -65,3 +65,6 @@ Plugin::Log::Log4perlSimple:
   screen: 1
 # file: /path
 
+Model::FD:
+  server: http://localhost:3001
+  type: application/json

@@ -28,7 +28,26 @@ sub submit :Local {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
     }
-    $wo->state( 'WO_SUBMITTED' );
+
+    my @media = $wo->pffiles->all;
+    my @media_json = ();
+    foreach my $fpfile ( @media ) {
+	push( @media_json, $fpfile->TO_JSON );
+    }
+
+    # Send the workorder to the queue
+    my $res = $c->model( 'FD' )->post( '/workorder', { wo => $wo->TO_JSON, media => \@media_json } );
+    $c->log->debug( "Workorder sent, response code is " . $res->code );
+    $c->log->debug( "Workorder sent, data is:" );
+    $c->logdump( $res->data );
+
+    if ( $res->code == 200 ) {
+	$wo->state( 'WO_SUBMITTED' );
+    }
+    else {
+	$wo->state( 'WO_SUBMIT_FAILED' );
+    }
+
     $wo->update;
 
     $self->status_ok( $c, { wo => $wo } );

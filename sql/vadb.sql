@@ -67,6 +67,11 @@ CREATE TABLE IF NOT EXISTS `pffiles` (
     `size` int(11) DEFAULT 0,
     `iswritable` int(4) DEFAULT 1,
     `user_id` int(11) NOT NULL DEFAULT '0',
+    `location` varchar(28) not null default 'fp',
+    `thumbnail_1` text,
+    `thumbnail_2` text,
+    `poster_1` text,
+    `poster_2` text,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

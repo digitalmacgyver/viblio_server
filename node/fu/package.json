@@ -1,0 +1,11 @@
+{
+    "name": "fu",
+    "title": "File Uploader",
+    "description": "File Uploader",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+	"awssum-amazon-s3": "1.2.x",
+	"cuid": "1.1.x"
+    }
+}

@@ -14,3 +14,4 @@ Makefile
 cookie-jar.txt
 uploads/
 MANIFEST
+db.alter

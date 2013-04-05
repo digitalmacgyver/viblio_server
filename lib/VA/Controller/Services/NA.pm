@@ -491,6 +491,19 @@ sub download :Local {
     $f->close();
 }
 
+# This is the endpoint used when WO processing is done.
+# It's non-authenticated because its coming from the
+# amazon SNS queuing system.  We should change this.
+# When a workorder is submitted, we should generate
+# some kind of signature handshake that can be checked.
+#
+sub workorder_processed :Local {
+    my( $self, $c ) = @_;
+    my $wodata = $c->{data};
+    $c->logdump( $wodata );
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

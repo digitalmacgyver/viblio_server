@@ -1,3 +1,29 @@
 [% META title = 'Home' %]
+<!--
 [% PROCESS banner.tt %]
 <h1>Find Media</h1>
+-->
+<div id="create-start" class="row-fluid">
+  <div class="span8 offset2 hero-unit">
+    <h1>Video Analytics
+      <small>Advanced video processing for consumers.</small>
+    </h1>
+    <p>Join our news letter to here more about us!</p>
+    <p>
+      <form class="form-horizontal" 
+	    action="/cgi-bin/newsletter.cgi" method="post">
+	<div class="control-group">
+	  <label class="control-label" for="email">Email Address</label>
+	  <div class="controls">
+	    <input type="email" name="email" />
+	  </div>
+	</div>
+	<div class="controls">
+	  <button type="submit" class="btn btn-primary btn-large">
+	    Join!
+	  </button>
+	</div>
+      </form>
+    </p>
+  </div>
+</div>

@@ -1,0 +1,21 @@
+{
+    "memcached": {
+	"localhost:11211": 1
+    },
+    "storage": {
+	"tmpdir": "/tmp",
+	"filedir": "/tmp"
+    },
+    "worker": {
+	"command": "/usr/bin/perl",
+	"args": [
+	    "/opt/viblio/fu/worker.pl",
+	    "will-be-replaced-with-tmpfile"
+	],
+	"options": {
+	    "detached": true,
+	    "stdio": "ignore",
+	    "cwd": "/opt/viblio/fu"
+	}
+    }
+}

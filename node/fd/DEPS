@@ -1,0 +1,4 @@
+perl: JSON, LWP::UserAgent
+
+ffmpegthumbnailer
+imagemagick

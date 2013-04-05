@@ -46,3 +46,7 @@ Plugin::Log::Log4perlSimple:
   log_level: debug
   screen: 0
   file: /tmp/va-staging.log
+
+Model::FD:
+  server: http://localhost:3001
+  type: application/json
