@@ -241,7 +241,11 @@ sub TO_JSON {
     delete $hash->{iswritable};
     # Use the filter column component to get a fully qualified
     # secure signed S3 url that expires in an hour.
-    $hash->{s3key} = $self->get_filtered_column( 's3key' );
+    $hash->{url} = $self->get_filtered_column( 'url' );
+    $hash->{thumbnail_1} = $self->get_filtered_column( 'thumbnail_1' );
+    $hash->{poster_1} = $self->get_filtered_column( 'poster_1' );
+    $hash->{thumbnail_2} = $self->get_filtered_column( 'thumbnail_2' );
+    $hash->{poster_2} = $self->get_filtered_column( 'poster_2' );
     return $hash;
 }
 
@@ -266,12 +270,50 @@ my $generator = Muck::FS::S3::QueryStringAuthGenerator->new(
     $key, $secret, $use_https, $endpoint );
 
 __PACKAGE__->filter_column( 
-    s3key => {
+    url => {
 	filter_from_storage => sub {
+	    my $loc = $_[0]->get_column( 'location' );
+	    return $_[1] if ( $loc ne 's3' );
 	    my $url = $generator->get( $bucket_name, $_[1] );
 	    # I think amazon must have changed their endpoint architecture
 	    # since the example I used to implement this was written, thus
 	    # this little hack.
+	    $url =~ s/\/$bucket_name\//\//g;
+	    return $url;
+	}
+    });
+__PACKAGE__->filter_column( 
+    thumbnail_1 => {
+	filter_from_storage => sub {
+	    return undef unless( $_[1] );
+	    my $url = $generator->get( $bucket_name, $_[1] );
+	    $url =~ s/\/$bucket_name\//\//g;
+	    return $url;
+	}
+    });
+__PACKAGE__->filter_column( 
+    poster_1 => {
+	filter_from_storage => sub {
+	    return undef unless( $_[1] );
+	    my $url = $generator->get( $bucket_name, $_[1] );
+	    $url =~ s/\/$bucket_name\//\//g;
+	    return $url;
+	}
+    });
+__PACKAGE__->filter_column( 
+    thumbnail_2 => {
+	filter_from_storage => sub {
+	    return undef unless( $_[1] );
+	    my $url = $generator->get( $bucket_name, $_[1] );
+	    $url =~ s/\/$bucket_name\//\//g;
+	    return $url;
+	}
+    });
+__PACKAGE__->filter_column( 
+    poster_2 => {
+	filter_from_storage => sub {
+	    return undef unless( $_[1] );
+	    my $url = $generator->get( $bucket_name, $_[1] );
 	    $url =~ s/\/$bucket_name\//\//g;
 	    return $url;
 	}
