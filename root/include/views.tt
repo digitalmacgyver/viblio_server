@@ -4,7 +4,14 @@
 <script id="media_file_video" type="text/html">
   <li id="mid-{{ id }}" class="media">
     <a class="pull-left" href="{{ views.main.url }}" rel="prettyPhoto[pp_gal]">
-      <img width="64" height="64" class="img-polaroid" id="{{ id }}" class="media-object" data-src="" src="/static/images/vid.png" />
+      <img width="64" height="64" class="img-polaroid" id="{{ id }}" class="media-object" data-src="" 
+	   src="{{#views.thumbnail}}
+		  {{views.thumbnail.url}}
+		{{/views.thumbnail}}
+		{{^views.thumbnail}}
+		  /static/images/vid.png
+		{{/views.thumbnail}}
+		  "/>
     </a>
     <div class="media-body">
       <h4 class="media-heading">{{ filename }}</h4>

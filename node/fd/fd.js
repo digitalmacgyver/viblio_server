@@ -2,6 +2,7 @@ var express = require( "express" );
 var fs = require('fs');
 var url = require('url');
 var http = require('http');
+var https = require('https');
 var mkdirp = require('mkdirp');
 var path = require( 'path' );
 
@@ -227,102 +228,114 @@ app.post( '/workorder', function( req, res, next ) {
     // with respect to caller.
     res.end();
 
-    var TOTAL = wo.media.length;
+    // Calculate the total number of files we need to 
+    // download, so we know when we're done.
+    //
+    var TOTAL = 0;
+    for( var i=0; i<wo.media.length; i++ )
+	TOTAL += Object.keys( wo.media[i].views ).length;
 
+    // For each media file ...
     wo.media.forEach( function( fpfile, ii ) {
 
-	wo.media[ii].expected = 0;
-	wo.media[ii].received = 0;
-	wo.media[ii].done = false;
-	wo.media[ii].errored = false;
-	wo.media[ii].aborted = false;
+	// For each view ...
+	var views = Object.keys( fpfile.views );
+	views.forEach( function( view ) {
 
-	var filename = wo.media[ii].uuid + '_' + wo.media[ii].filename;
+	    wo.media[ii].views[view].expected = 0;
+	    wo.media[ii].views[view].received = 0;
+	    wo.media[ii].views[view].done = false;
+	    wo.media[ii].views[view].errored = false;
+	    wo.media[ii].views[view].aborted = false;
+	    
+	    var filename = wo.media[ii].views[view].uuid + '_' + view + '_' + wo.media[ii].views[view].filename;
 
-	// make sure we can store this file somewhere
-	var fullpath = path.join( config.storage.filedir, filename );
-	var dirname  = path.dirname( fullpath );
+	    // make sure we can store this file somewhere
+	    var fullpath = path.join( config.storage.filedir, filename );
+	    var dirname  = path.dirname( fullpath );
+	    
+	    if ( ! fs.existsSync( dirname ) ) {
+		mkdirp.sync( dirname );
+	    }
 
-	if ( ! fs.existsSync( dirname ) ) {
-            mkdirp.sync( dirname );
-	}
+	    // Create a file to stream into
+	    var fp = fs.createWriteStream( fullpath );
 
-	// Create a file to stream into
-	var fp = fs.createWriteStream( fullpath );
+	    wo.media[ii].views[view].localpath = fullpath;
 
-	wo.media[ii].localpath = fullpath;
+	    var getter = http;
+	    if ( url.parse( wo.media[ii].views[view].url ).protocol.indexOf( 'https' ) == 0 )
+		getter = https;
 
-	var rq = http.get(
-            { host: url.parse(wo.media[ii].url).host,
-              port: 80,
-              path: url.parse(wo.media[ii].url).pathname},
-            function( get_response ) {
-		var expected = parseInt( get_response.headers['content-length'] || "-1" );
-		wo.media[ii].expected = expected;
-
-		get_response.on( 'data', function( data ) {
-                    fp.write( data );
-                    wo.media[ii].received += data.length;
+	    var rq = getter.get( wo.media[ii].views[view].url,
+		function( get_response ) {
+		    var expected = parseInt( get_response.headers['content-length'] || "-1" );
+		    wo.media[ii].views[view].expected = expected;
+		    
+		    get_response.on( 'data', function( data ) {
+			fp.write( data );
+			wo.media[ii].views[view].received += data.length;
+		    });
+		    get_response.on( 'end', function() {
+			fp.end();
+			wo.media[ii].views[view].done = true;
+			delete requests[wo.media[ii].views[view].id];
+			if ( --TOTAL == 0 ) {
+			    // Initiate the work.  The work is done by a C program,
+			    // and I am not sure yet exactly how we talk to it.  Might
+			    // be a socket connection, so that me and my C program
+			    // are a linked pair?, and I send the wo through this 
+			    // socket to start work?  The C program would need to fork
+			    // in case I get another download request.
+			    //
+			    // Or I could spawn a child process and pass the wo
+			    // to it through stdin.  If I do this, I may or may
+			    // not want to unsubscribe to new workorder requests,
+			    // although I don't have to unsubscribe, since nodejs will
+			    // keep handling incoming requests ... but I could end up
+			    // spawning a lot of jobs!
+			    //
+			    
+			    // Now, we are going to span a child process.  We'll 
+			    // use the wo uuid to create a temp file to write the
+			    // wo into, and pass that as an argument to the worker
+			    // process.  We'll do our best to divorce ourselves from
+			    // the worker (process wise).
+			    var tmpfile = "/tmp/" + wo.wo.uuid + ".wo";
+			    fs.writeFile( tmpfile, JSON.stringify( wo ), function( err ) {
+				if ( err ) {
+				    // Boy, what now?
+				}
+				else {
+				    config.worker.args[1] = tmpfile;
+				    config.worker.options.env = process.env;
+				    var spawn = require( 'child_process' ).spawn,
+				    worker = spawn( config.worker.command,
+						    config.worker.args,
+						    config.worker.options );
+				    worker.on( 'close', function(code) {
+					// console.log( "Worker done, exitted with code: " + code );
+				    });
+				    // By default, the parent will wait for the detached child to exit. 
+				    // To prevent the parent from waiting for a given child, use the child.unref() 
+				    // method, and the parent's event loop will not include the child in its reference count.
+				    worker.unref();
+				}
+			    });
+			}
+		    });
+		    get_response.on( 'error', function(e) {
+			wo.media[ii].views[view].done = true;
+			wo.media[ii].views[view].errored = true;
+			wo.media[ii].views[view].error = true;
+			wo.media[ii].views[view].message = "Download was errored.";
+			wo.media[ii].views[view].detail = e.message;
+			delete requests[wo.media[ii].views[view].id];
+			fs.unlinkSync( fullpath );
+		    });
 		});
-		get_response.on( 'end', function() {
-                    fp.end();
-                    wo.media[ii].done = true;
-                    delete requests[wo.media[ii].id];
-		    if ( --TOTAL == 0 ) {
-			// Initiate the work.  The work is done by a C program,
-			// and I am not sure yet exactly how we talk to it.  Might
-			// be a socket connection, so that me and my C program
-			// are a linked pair?, and I send the wo through this 
-			// socket to start work?  The C program would need to fork
-			// in case I get another download request.
-			//
-			// Or I could spawn a child process and pass the wo
-			// to it through stdin.  If I do this, I may or may
-			// not want to unsubscribe to new workorder requests,
-			// although I don't have to unsubscribe, since nodejs will
-			// keep handling incoming requests ... but I could end up
-			// spawning a lot of jobs!
-			//
-
-			// Now, we are going to span a child process.  We'll 
-			// use the wo uuid to create a temp file to write the
-			// wo into, and pass that as an argument to the worker
-			// process.  We'll do our best to divorce ourselves from
-			// the worker (process wise).
-			var tmpfile = "/tmp/" + wo.wo.uuid + ".wo";
-			fs.writeFile( tmpfile, JSON.stringify( wo ), function( err ) {
-			    if ( err ) {
-				// Boy, what now?
-			    }
-			    else {
-				config.worker.args[1] = tmpfile;
-				config.worker.options.env = process.env;
-				var spawn = require( 'child_process' ).spawn,
-				worker = spawn( config.worker.command,
-						config.worker.args,
-						config.worker.options );
-				worker.on( 'close', function(code) {
-				    // console.log( "Worker done, exitted with code: " + code );
-				});
-				// By default, the parent will wait for the detached child to exit. 
-				// To prevent the parent from waiting for a given child, use the child.unref() 
-				// method, and the parent's event loop will not include the child in its reference count.
-				worker.unref();
-			    }
-			});
-		    }
-		});
-		get_response.on( 'error', function(e) {
-                    wo.media[ii].done = true;
-                    wo.media[ii].errored = true;
-                    wo.media[ii].error = true;
-                    wo.media[ii].message = "Download was errored.";
-                    wo.media[ii].detail = e.message;
-                    delete requests[wo.media[ii].id];
-                    fs.unlinkSync( fullpath );
-		});
-	    });
-	requests[wo.media[ii].id] = rq;
+	    requests[wo.media[ii].views[view].id] = rq;
+	});
     });
 });
 

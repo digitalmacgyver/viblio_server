@@ -3,7 +3,11 @@ package VA::Controller::Services::NA;
 # These calls are not authenticated.
 
 use Moose;
+use Module::Find;
+usesub VA::MediaFile;
 use namespace::autoclean;
+use DateTime;
+use Try::Tiny;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -499,9 +503,114 @@ sub download :Local {
 #
 sub workorder_processed :Local {
     my( $self, $c ) = @_;
-    my $wodata = $c->{data};
-    $c->logdump( $wodata );
-    $self->status_ok( $c, {} );
+    my $incoming = $c->{data};
+
+    if ( $incoming->{error} ) {
+	$self->workorder_done( $c, $incoming );
+	$self->status_ok( $c, {} );
+    }
+
+    if ( ! $incoming->{wo} ) {
+	$self->workorder_done( $c, {
+	    error => 1,
+	    message => "No 'wo' field found in incoming!" } );
+	$self->status_ok( $c, {} );
+    }
+
+    my $wo = $c->model( 'DB::Workorder' )->find( $incoming->{wo}->{id} );
+    unless( $wo ) {
+	$self->workorder_done( $c, {
+	    error => 1,
+	    message => "Could not find wo id=" .  $incoming->{wo}->{id} } );
+	$self->status_ok( $c, {} );
+    }
+
+    my $user_id = $wo->user_id;
+    my $mediafiles = $wo->mediafiles->search({}, {prefetch => 'views'}); # rs so its searchable
+    my @infiles = @{$incoming->{media}};
+
+    my $exception;
+    try {
+        $c->model( 'DB' )->schema->txn_do( sub {
+
+	    foreach my $infile ( @infiles ) {
+		my $mediafile;
+		if ( ! $infile->{id} ) {
+		    # This is a new media file
+		    $mediafile = $c->model( 'DB::Mediafile' )->create({
+			user_id => $user_id,
+			filename => $infile->{filename} });
+		    $mediafile->add_to_workorders( $wo );
+		}
+		else {
+		    $mediafile = $mediafiles->find( $infile->{id} );
+		}
+
+		foreach my $key ( keys( %{$infile->{views}} ) ) {
+		    my $inview = $infile->{views}->{$key};
+		    my $view = $mediafile->view( $key );
+		    if ( ! $view ) {
+			# This is a new view
+			$mediafile->create_related( 'views', {
+			    location => $inview->{location},
+			    mimetype => $inview->{mimetype},
+			    uri => $inview->{uri},
+			    size => $inview->{size},
+			    type => $key,
+			    filename => $inview->{filename} || $infile->{filename} });
+		    }
+		    else {
+			# existing view
+
+			# Detmine the old storage type and delete it
+			# THIS IS NOT REVERSIBLE!!  NEED TO MOVE OUTSIDE
+			# OF THE EXCEPTION
+			if ( $key eq 'main' ) {
+			    my $location = $view->location;
+			    if ( $location ) {
+				my $klass = $c->config->{mediafile}->{$location};
+				if ( $klass ) {
+				    my $fp = new $klass;
+				    my $res = $fp->delete( $c, $mediafile );
+				}
+			    }
+			}
+
+			$view->location( $inview->{location} );
+			$view->uri( $inview->{uri} );
+			$view->size( $inview->{size} );
+			$view->mimetype( $inview->{mimetype} );
+			$view->update;
+		    }
+		}
+	    }
+
+	    # Update the workorder state
+	    $wo->state( 'WO_COMPLETE' );
+	    $wo->completed( DateTime->now );
+	    $wo->update;
+					   });
+    } catch {
+	$exception = $_;
+    };
+    
+    if ( $exception ) {
+	$self->workorder_done( $c, {
+	    error => 1,
+	    message => 'Failed to process incoming workorder.',
+	    detail => $exception });
+	$self->status_ok( $c, {} );
+    }
+    else {
+	$self->workorder_done( $c, $wo->TO_JSON );
+	$self->status_ok( $c, {} );
+    }
+}
+
+sub workorder_done :Private {
+    my( $self, $c, $wo ) = @_;
+    $c->log->debug( "WORKORDER DONE" );
+    $c->logdump( $wo );
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -22,16 +22,18 @@ sub create {
 	  type => 'main' } );
     return undef unless( $main );
 
-    # Create the thumbnail view
-    my $thumb = $mediafile->create_related( 
-	'views',
-	{ filename => $params->{filename},
-	  mimetype => $params->{mimetype},
-	  uri => $params->{url} . '/convert?w=64&h=64&fit=scale',
-	  size => int($params->{size}),
-	  location => 'fp',
-	  type => 'thumbnail' } );
-    return undef unless( $thumb );
+    if ( $params->{mimetype} =~ /^image/ ) {
+	# Create the thumbnail view
+	my $thumb = $mediafile->create_related( 
+	    'views',
+	    { filename => $params->{filename},
+	      mimetype => $params->{mimetype},
+	      uri => $params->{url} . '/convert?w=64&h=64&fit=scale',
+	      size => int($params->{size}),
+	      location => 'fp',
+	      type => 'thumbnail' } );
+	return undef unless( $thumb );
+    }
 
     return $mediafile;
 }

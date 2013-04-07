@@ -35,6 +35,8 @@ sub submit :Local {
     push( @published, VA::MediaFile->new->publish( $c, $_ ) )
 	foreach( @media );
 
+    $c->logdump( { wo => $wo->TO_JSON, media => \@published } );
+
     # Send the workorder to the queue
     my $res = $c->model( 'FD' )->post( '/workorder', { wo => $wo->TO_JSON, media => \@published } );
     $c->log->debug( "Workorder sent, response code is " . $res->code );

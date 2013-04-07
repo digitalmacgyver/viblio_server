@@ -4,6 +4,7 @@ use strict;
 use JSON;
 use Data::Dumper;
 use FileHandle;
+use File::Basename;
 use LWP::UserAgent;
 use URI;
 use POSIX qw(strftime);
@@ -72,43 +73,69 @@ my @s3files = ();
 my @toremove = ();
 
 foreach my $fpfile ( @media ) {
-    push( @toremove, $fpfile->{localpath} );
-    if ( $fpfile->{done} && 
-	 ! ( $fpfile->{errored} || $fpfile->{aborted} ) ) {
-	# This file should be good
-	if ( -f $fpfile->{localpath} ) {
-	    push( @s3files, $fpfile->{localpath} );
-	    if ( $fpfile->{mimetype} =~ /^image/ ) {
-		# generate an image thumbnail
-		my $fname = $fpfile->{localpath};
-		$fname =~ s/\..+$//g;
-		$fname .= "_thumbnail.png";
-		$fname = thumbnail( $fpfile->{localpath}, "64x64", $fname );
-		if ( $fname ) {
-		    push( @s3files, $fname );
-		    push( @toremove, $fname );
-		    $fpfile->{thumbnail_1} = $fname;  ## WILL BE REPLACED AFTER S3 UPLOAD
-		}
+    if ( $fpfile->{views}->{'main'} ) {
+	my $view = 'main';
+	if ( $fpfile->{views}->{$view}->{done} && 
+	     ! ( $fpfile->{views}->{$view}->{errored} || $fpfile->{views}->{$view}->{aborted} ) ) {
+	    # This file should be good
+	    if ( -f $fpfile->{views}->{$view}->{localpath} ) {
+		push( @s3files, $fpfile->{views}->{$view}->{localpath} );
+		push( @toremove, $fpfile->{views}->{$view}->{localpath} );
 	    }
-	    elsif ( $fpfile->{mimetype} =~ /^video/ ) {
-		# generate a poster and a thumbnail
-		my $fname = $fpfile->{localpath};
-		$fname =~ s/\..+$//g;
-		$fname .= "_poster.png";
-		$fname = poster( $fpfile->{localpath}, "320", $fname );
-		if ( $fname ) {
-		    push( @s3files, $fname );
-		    push( @toremove, $fname );
-		    $fpfile->{poster_1} = $fname;  ## WILL BE REPLACED AFTER S3 UPLOAD
+	}
+    }
 
-		    my $tname = $fname;
-		    $tname =~ s/poster/thumbnail/g;
-		    $tname = thumbnail( $fname, "64x64", $tname );
-		    if ( $tname ) {
-			push( @s3files, $tname );
-			push( @toremove, $tname );
-			$fpfile->{thumbnail_1} = $tname;  ## WILL BE REPLACED AFTER S3 UPLOAD
-		    }
+    if ( $fpfile->{views}->{'thumbnail'} ) {
+	my $view = 'thumbnail';
+	if ( $fpfile->{views}->{$view}->{done} && 
+	     ! ( $fpfile->{views}->{$view}->{errored} || $fpfile->{views}->{$view}->{aborted} ) ) {
+	    # This file should be good
+	    if ( -f $fpfile->{views}->{$view}->{localpath} ) {
+		push( @s3files, $fpfile->{views}->{$view}->{localpath} );
+		push( @toremove, $fpfile->{views}->{$view}->{localpath} );
+	    }
+	}
+    }
+    else {
+	# Create thumbnail, and poster if a video
+	if ( $fpfile->{views}->{'main'}->{mimetype} =~ /^image/ ) {
+	    my $view = 'thumbnail';
+	    $fpfile->{views}->{$view} = {};
+	    my $fname = $fpfile->{views}->{'main'}->{localpath};
+	    $fname =~ s/\..+$//g;
+	    $fname .= "_thumbnail.png";
+	    $fname = thumbnail( $fpfile->{views}->{'main'}->{localpath}, $config->{thumbnail_size} || '64x64', $fname );
+	    if ( $fname ) {
+		push( @s3files, $fname );
+		push( @toremove, $fname );
+		$fpfile->{views}->{$view}->{localpath} = $fname;
+		$fpfile->{views}->{$view}->{filename} = basename( $fname );
+		$fpfile->{views}->{$view}->{mimetype} = 'application/png';
+	    }
+	}
+	elsif ( $fpfile->{views}->{'main'}->{mimetype} =~ /^video/ ) {
+	    my $view = 'poster';
+	    $fpfile->{views}->{$view} = {};
+	    my $fname = $fpfile->{views}->{'main'}->{localpath};
+	    $fname =~ s/\..+$//g;
+	    $fname .= "_poster.png";
+	    $fname = poster( $fpfile->{views}->{'main'}->{localpath}, $config->{poster_width} || '320', $fname );
+	    if ( $fname ) {
+		push( @s3files, $fname );
+		push( @toremove, $fname );
+		$fpfile->{views}->{$view}->{localpath} = $fname;
+		$fpfile->{views}->{$view}->{filename} = basename( $fname );
+		$fpfile->{views}->{$view}->{mimetype} = 'application/png';
+
+		my $tname = $fname;
+		$tname =~ s/poster/thumbnail/g;
+		$tname = thumbnail( $fname, $config->{thumbnail_size} || '64x64', $tname );
+		if ( $tname ) {
+		    push( @s3files, $tname );
+		    push( @toremove, $tname );
+		    $fpfile->{views}->{'thumbnail'}->{localpath} = $tname;
+		    $fpfile->{views}->{'thumbnail'}->{filename} = basename( $tname );
+		    $fpfile->{views}->{'thumbnail'}->{mimetype} = 'application/png';
 		}
 	    }
 	}
@@ -125,6 +152,7 @@ if ( upload_to_s3() == 0 ) {
 foreach my $file ( @toremove ) {
     unlink( $file );
 }
+unlink( $wofile );
 
 exit 0;
 
@@ -215,31 +243,17 @@ sub upload_to_s3 {
 	# find the fpfile
 	my $found = 0;
 	foreach my $fpfile ( @media ) {
-	    if ( $info->{filename} eq $fpfile->{localpath} ) {
-		$found = 1;
-		if ( $info->{error} eq 'true' ) {
-		    $fpfile->{fu_error} = 1;
-		}
-		else {
-		    $fpfile->{s3key} = $info->{s3key};
-		}
-	    }
-	    elsif ( $info->{filename} eq $fpfile->{thumbnail_1} ) {
-		$found = 1;
-		if ( $info->{error} eq 'true' ) {
-		    $fpfile->{fu_error} = 1;
-		}
-		else {
-		    $fpfile->{thumbnail_1} = $info->{s3key};
-		}
-	    }
-	    elsif ( $info->{filename} eq $fpfile->{poster_1} ) {
-		$found = 1;
-		if ( $info->{error} eq 'true' ) {
-		    $fpfile->{fu_error} = 1;
-		}
-		else {
-		    $fpfile->{poster_1} = $info->{s3key};
+	    foreach my $view ( keys %{$fpfile->{views}} ) {
+		if ( $info->{filename} eq $fpfile->{views}->{$view}->{localpath} ) {
+		    $found = 1;
+		    if ( $info->{error} eq 'true' ) {
+			$fpfile->{views}->{$view}->{fu_error} = 1;
+		    }
+		    else {
+			$fpfile->{views}->{$view}->{uri} = $info->{s3key};
+			$fpfile->{views}->{$view}->{location} = 's3';
+			$fpfile->{views}->{$view}->{size} = -s $fpfile->{views}->{$view}->{localpath};
+		    }
 		}
 	    }
 	}
