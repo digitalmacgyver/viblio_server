@@ -24,6 +24,8 @@ extends 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::InflateColumn::DateTime>
 
+=item * L<DBIx::Class::ColumnDefault>
+
 =item * L<DBIx::Class::TimeStamp>
 
 =item * L<DBIx::Class::PassphraseColumn>
@@ -38,6 +40,7 @@ extends 'DBIx::Class::Core';
 
 __PACKAGE__->load_components(
   "InflateColumn::DateTime",
+  "ColumnDefault",
   "TimeStamp",
   "PassphraseColumn",
   "UUIDColumns",
@@ -137,17 +140,17 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 RELATIONS
 
-=head2 pffile_workorders
+=head2 mediafile_workorders
 
 Type: has_many
 
-Related object: L<VA::Schema::Result::PffileWorkorder>
+Related object: L<VA::Schema::Result::MediafileWorkorder>
 
 =cut
 
 __PACKAGE__->has_many(
-  "pffile_workorders",
-  "VA::Schema::Result::PffileWorkorder",
+  "mediafile_workorders",
+  "VA::Schema::Result::MediafileWorkorder",
   { "foreign.workorder_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -167,19 +170,19 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
-=head2 pffiles
+=head2 mediafiles
 
 Type: many_to_many
 
-Composing rels: L</pffile_workorders> -> pffile
+Composing rels: L</mediafile_workorders> -> mediafile
 
 =cut
 
-__PACKAGE__->many_to_many("pffiles", "pffile_workorders", "pffile");
+__PACKAGE__->many_to_many("mediafiles", "mediafile_workorders", "mediafile");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hU7VPcE0psm6h8F4+O1Mjg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-06 12:40:16
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bsy0aT1bh565JlDP1dkVFg
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

@@ -24,6 +24,8 @@ extends 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::InflateColumn::DateTime>
 
+=item * L<DBIx::Class::ColumnDefault>
+
 =item * L<DBIx::Class::TimeStamp>
 
 =item * L<DBIx::Class::PassphraseColumn>
@@ -38,17 +40,18 @@ extends 'DBIx::Class::Core';
 
 __PACKAGE__->load_components(
   "InflateColumn::DateTime",
+  "ColumnDefault",
   "TimeStamp",
   "PassphraseColumn",
   "UUIDColumns",
   "FilterColumn",
 );
 
-=head1 TABLE: C<mediafile>
+=head1 TABLE: C<mediafiles>
 
 =cut
 
-__PACKAGE__->table("mediafile");
+__PACKAGE__->table("mediafiles");
 
 =head1 ACCESSORS
 
@@ -58,27 +61,9 @@ __PACKAGE__->table("mediafile");
   is_auto_increment: 1
   is_nullable: 0
 
-=head2 mimetype
-
-  data_type: 'varchar'
-  is_nullable: 0
-  size: 64
-
 =head2 filename
 
-  data_type: 'varchar'
-  is_nullable: 0
-  size: 64
-
-=head2 path
-
   data_type: 'text'
-  is_nullable: 1
-
-=head2 size
-
-  data_type: 'integer'
-  default_value: 0
   is_nullable: 1
 
 =head2 uuid
@@ -98,14 +83,8 @@ __PACKAGE__->table("mediafile");
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
-  "mimetype",
-  { data_type => "varchar", is_nullable => 0, size => 64 },
   "filename",
-  { data_type => "varchar", is_nullable => 0, size => 64 },
-  "path",
   { data_type => "text", is_nullable => 1 },
-  "size",
-  { data_type => "integer", default_value => 0, is_nullable => 1 },
   "uuid",
   { data_type => "text", is_nullable => 1 },
   "user_id",
@@ -131,6 +110,21 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 RELATIONS
 
+=head2 mediafile_workorders
+
+Type: has_many
+
+Related object: L<VA::Schema::Result::MediafileWorkorder>
+
+=cut
+
+__PACKAGE__->has_many(
+  "mediafile_workorders",
+  "VA::Schema::Result::MediafileWorkorder",
+  { "foreign.mediafile_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 user
 
 Type: belongs_to
@@ -146,9 +140,34 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+=head2 views
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:KAFkSb+lDwB7Qm/qbjcQjA
+Type: has_many
+
+Related object: L<VA::Schema::Result::View>
+
+=cut
+
+__PACKAGE__->has_many(
+  "views",
+  "VA::Schema::Result::View",
+  { "foreign.mediafile_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 workorders
+
+Type: many_to_many
+
+Composing rels: L</mediafile_workorders> -> workorder
+
+=cut
+
+__PACKAGE__->many_to_many("workorders", "mediafile_workorders", "workorder");
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-06 12:40:16
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ggOxgQ5LRVUAwwtCgmpYWw
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
@@ -156,6 +175,20 @@ sub TO_JSON {
     my $self = shift;
     my $hash = $self->{_column_data};
     return $hash;
+}
+
+# Accessor to return the first view of the matching type.
+#
+sub view {
+    my( $self, $type ) = @_;
+    my $views = $self->views;
+    if ( $views ) {
+	my $types = $views->search({type=>$type});
+	if ( $types ) {
+	    return $types->first;
+	}
+    }
+    return undef;
 }
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

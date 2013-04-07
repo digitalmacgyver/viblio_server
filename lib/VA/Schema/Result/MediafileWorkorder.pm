@@ -1,12 +1,12 @@
 use utf8;
-package VA::Schema::Result::UserRole;
+package VA::Schema::Result::MediafileWorkorder;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::Schema::Result::UserRole
+VA::Schema::Result::MediafileWorkorder
 
 =cut
 
@@ -47,22 +47,22 @@ __PACKAGE__->load_components(
   "FilterColumn",
 );
 
-=head1 TABLE: C<user_roles>
+=head1 TABLE: C<mediafile_workorders>
 
 =cut
 
-__PACKAGE__->table("user_roles");
+__PACKAGE__->table("mediafile_workorders");
 
 =head1 ACCESSORS
 
-=head2 user_id
+=head2 mediafile_id
 
   data_type: 'integer'
   default_value: 0
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 role_id
+=head2 workorder_id
 
   data_type: 'integer'
   default_value: 0
@@ -72,14 +72,14 @@ __PACKAGE__->table("user_roles");
 =cut
 
 __PACKAGE__->add_columns(
-  "user_id",
+  "mediafile_id",
   {
     data_type      => "integer",
     default_value  => 0,
     is_foreign_key => 1,
     is_nullable    => 0,
   },
-  "role_id",
+  "workorder_id",
   {
     data_type      => "integer",
     default_value  => 0,
@@ -92,51 +92,51 @@ __PACKAGE__->add_columns(
 
 =over 4
 
-=item * L</user_id>
+=item * L</mediafile_id>
 
-=item * L</role_id>
+=item * L</workorder_id>
 
 =back
 
 =cut
 
-__PACKAGE__->set_primary_key("user_id", "role_id");
+__PACKAGE__->set_primary_key("mediafile_id", "workorder_id");
 
 =head1 RELATIONS
 
-=head2 role
+=head2 mediafile
 
 Type: belongs_to
 
-Related object: L<VA::Schema::Result::Role>
+Related object: L<VA::Schema::Result::Mediafile>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "role",
-  "VA::Schema::Result::Role",
-  { id => "role_id" },
+  "mediafile",
+  "VA::Schema::Result::Mediafile",
+  { id => "mediafile_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
-=head2 user
+=head2 workorder
 
 Type: belongs_to
 
-Related object: L<VA::Schema::Result::User>
+Related object: L<VA::Schema::Result::Workorder>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "user",
-  "VA::Schema::Result::User",
-  { id => "user_id" },
+  "workorder",
+  "VA::Schema::Result::Workorder",
+  { id => "workorder_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-06 12:40:16
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:btK9oIGz4GQhKKZpnv3Jew
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:NYBa9JraodqeaVDcwPYJfQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -46,32 +46,24 @@ CREATE TABLE IF NOT EXISTS `user_roles` (
     KEY `role_id` (`role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `mediafile` (
+CREATE TABLE IF NOT EXISTS `mediafiles` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
-    `mimetype` VARCHAR(64) NOT NULL,
-    `filename` VARCHAR(64) NOT NULL,
-    `path` text,
-    `size` int(11) DEFAULT 0,
+    `filename` text,
     `uuid` text,
     `user_id` int(11) NOT NULL DEFAULT '0',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `pffiles` (
+CREATE TABLE IF NOT EXISTS `views` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `uuid` text,
+    `filename` text,
+    `uri` text,
     `mimetype` VARCHAR(64) NOT NULL,
-    `filename` VARCHAR(64) NOT NULL,
-    `url` text,
-    `s3key` text,
-    `size` int(11) DEFAULT 0,
-    `iswritable` int(4) DEFAULT 1,
-    `user_id` int(11) NOT NULL DEFAULT '0',
-    `location` varchar(28) not null default 'fp',
-    `thumbnail_1` text,
-    `thumbnail_2` text,
-    `poster_1` text,
-    `poster_2` text,
+    `size` int(11) not null default '0',
+    `location` VARCHAR(28) not null default 'fp',
+    `type` VARCHAR(28) NOT NULL DEFAULT 'main',
+    `mediafile_id` int(11) NOT NULL DEFAULT '0',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -86,10 +78,10 @@ CREATE TABLE IF NOT EXISTS `workorders` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `pffile_workorders` (
-    `pffile_id` int(11) NOT NULL DEFAULT '0',
+CREATE TABLE IF NOT EXISTS `mediafile_workorders` (
+    `mediafile_id` int(11) NOT NULL DEFAULT '0',
     `workorder_id` int(11) NOT NULL DEFAULT '0',
-    PRIMARY KEY (`pffile_id`,`workorder_id`),
+    PRIMARY KEY (`mediafile_id`,`workorder_id`),
     KEY `workorder_id` (`workorder_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -109,29 +101,27 @@ ALTER TABLE `user_roles`
    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) 
      ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `pffile_workorders`
-   ADD CONSTRAINT `pffile_workorder_ibfk_2` 
+ALTER TABLE `mediafile_workorders`
+   ADD CONSTRAINT `mediafile_workorder_ibfk_2` 
      FOREIGN KEY (`workorder_id`) REFERENCES `workorders` (`id`) 
      ON DELETE CASCADE ON UPDATE CASCADE,
-   ADD CONSTRAINT `pffile_workorder_ibfk_1` 
-   FOREIGN KEY (`pffile_id`) REFERENCES `pffiles` (`id`) 
+   ADD CONSTRAINT `mediafile_workorder_ibfk_1` 
+   FOREIGN KEY (`mediafile_id`) REFERENCES `mediafiles` (`id`) 
      ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Media
---
-ALTER TABLE `mediafile`
+ALTER TABLE `mediafiles`
    ADD CONSTRAINT `mediafile_ibfk_2` 
-     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) 
-     ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE `pffiles`
-   ADD CONSTRAINT `pffile_ibfk_2` 
      FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) 
      ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `workorders`
    ADD CONSTRAINT `workorder_ibfk_2` 
      FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) 
+     ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `views`
+   ADD CONSTRAINT `view_ibfk_2` 
+     FOREIGN KEY (`mediafile_id`) REFERENCES `mediafiles` (`id`) 
      ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Populate roles

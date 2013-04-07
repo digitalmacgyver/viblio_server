@@ -24,6 +24,8 @@ extends 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::InflateColumn::DateTime>
 
+=item * L<DBIx::Class::ColumnDefault>
+
 =item * L<DBIx::Class::TimeStamp>
 
 =item * L<DBIx::Class::PassphraseColumn>
@@ -38,6 +40,7 @@ extends 'DBIx::Class::Core';
 
 __PACKAGE__->load_components(
   "InflateColumn::DateTime",
+  "ColumnDefault",
   "TimeStamp",
   "PassphraseColumn",
   "UUIDColumns",
@@ -107,8 +110,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("email");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Cafsa10VylKvUAGnmByUPA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-06 12:40:16
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:rdCzUZQTOVg0fFsP2ZTrLg
 
 sub TO_JSON {
     my $self = shift;

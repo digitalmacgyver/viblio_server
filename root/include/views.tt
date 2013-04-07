@@ -3,14 +3,14 @@
 
 <script id="media_file_video" type="text/html">
   <li id="mid-{{ id }}" class="media">
-    <a class="pull-left" href="{{ s3key }}" rel="prettyPhoto[pp_gal]">
+    <a class="pull-left" href="{{ views.main.url }}" rel="prettyPhoto[pp_gal]">
       <img width="64" height="64" class="img-polaroid" id="{{ id }}" class="media-object" data-src="" src="/static/images/vid.png" />
     </a>
     <div class="media-body">
       <h4 class="media-heading">{{ filename }}</h4>
       <p>
-        type: {{ mimetype }}<br />
-        size: {{ size }}
+        type: {{ views.main.mimetype }}<br />
+        size: {{ views.main.size }}
       </p>
     </div>
     <span onclick="delete_media('{{ id }}');" class="delete-media badge badge-important">&times;</span>
@@ -19,14 +19,14 @@
 
 <script id="media_file_audio" type="text/html">
   <li id="mid-{{ id }}" class="media">
-    <a class="pull-left" href="{{ s3key }}?qt=true" rel="prettyPhoto[pp_gal]">
+    <a class="pull-left" href="{{ views.main.url }}?qt=true" rel="prettyPhoto[pp_gal]">
       <img width="64" height="64" class="img-polaroid" id="{{ id }}" class="media-object" data-src="" src="/static/images/mnote.png" />
     </a>
     <div class="media-body">
       <h4 class="media-heading">{{ filename }}</h4>
       <p>
-        type: {{ mimetype }}<br />
-        size: {{ size }}
+        type: {{ views.main.mimetype }}<br />
+        size: {{ views.main.size }}
       </p>
     </div>
     <span onclick="delete_media('{{ id }}');" class="delete-media badge badge-important">&times;</span>
@@ -35,14 +35,14 @@
 
 <script id="media_file_image" type="text/html">
   <li id="mid-{{ id }}" class="media">
-    <a class="pull-left media-file-image" href="{{ s3key }}" rel="prettyPhoto[pp_gal]">
-      <img width="64" height="64" class="img-polaroid" id="{{ id }}" class="media-object" data-src="" src="/static/images/loading-64x64.gif" />
+    <a class="pull-left media-file-image" href="{{ views.main.url }}" rel="prettyPhoto[pp_gal]">
+      <img width="64" height="64" class="img-polaroid" id="{{ id }}" class="media-object" data-src="" src="{{ views.thumbnail.url }}" />
     </a>
     <div class="media-body">
       <h4 class="media-heading">{{ filename }}</h4>
       <p>
-        type: {{ mimetype }}<br />
-        size: {{ size }}
+        type: {{ views.main.mimetype }}<br />
+        size: {{ views.main.size }}
       </p>
     </div>
     <span onclick="delete_media('{{ id }}');" class="delete-media badge badge-important">&times;</span>
@@ -68,7 +68,7 @@
     <tbody>
       {{#media}}
       <tr>
-	<td>{{ filename }}</td><td>{{ mimetype }}</td><td>{{ size }}</td>
+	<td>{{ filename }}</td><td>{{ views.main.mimetype }}</td><td>{{ views.main.size }}</td>
       </tr>
       {{/media}}
     </tbody>

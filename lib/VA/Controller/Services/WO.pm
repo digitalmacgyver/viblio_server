@@ -1,5 +1,6 @@
 package VA::Controller::Services::WO;
 use Moose;
+use VA::MediaFile;
 use namespace::autoclean;
 
 BEGIN { extends 'VA::Controller::Services' }
@@ -29,14 +30,13 @@ sub submit :Local {
 	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
     }
 
-    my @media = $wo->pffiles->all;
-    my @media_json = ();
-    foreach my $fpfile ( @media ) {
-	push( @media_json, $fpfile->TO_JSON );
-    }
+    my @media = $wo->mediafiles->search({},{prefetch=>'views'});
+    my @published = ();
+    push( @published, VA::MediaFile->new->publish( $c, $_ ) )
+	foreach( @media );
 
     # Send the workorder to the queue
-    my $res = $c->model( 'FD' )->post( '/workorder', { wo => $wo->TO_JSON, media => \@media_json } );
+    my $res = $c->model( 'FD' )->post( '/workorder', { wo => $wo->TO_JSON, media => \@published } );
     $c->log->debug( "Workorder sent, response code is " . $res->code );
     $c->log->debug( "Workorder sent, data is:" );
     $c->logdump( $res->data );
@@ -58,7 +58,7 @@ sub bom :Local {
 
     $id = $c->req->param( 'id' ) unless( $id );
     $id = $c->req->param( 'uuid' ) unless( $id );
-    $DB::single = 1;
+
     my $wo = $c->user->workorders->find( $id );
     unless( $wo ) {
 	$wo = $c->user->workorders->find({uuid => $id });
@@ -68,9 +68,11 @@ sub bom :Local {
 	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
     }
 
-    my @media = $wo->pffiles->all;
-
-    $self->status_ok( $c, { wo => $wo, media => \@media } );
+    my @media = $wo->mediafiles->search({},{prefetch=>'views'});
+    my @published = ();
+    push( @published, VA::MediaFile->new->publish( $c, $_ ) )
+	foreach( @media );
+    $self->status_ok( $c, { wo => $wo, media => \@published } );
 }
 
 __PACKAGE__->meta->make_immutable;

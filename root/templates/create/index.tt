@@ -52,7 +52,7 @@ function delete_media( id ) {
 	function() {
 	    // Delete from server, then delete from filepicker
 	    $.ajax({
-		url: "/services/pf/delete",
+		url: "/services/mediafile/delete",
 		data: { id: id },
 		dataType: 'json',
 		success: function( json ) {
@@ -60,15 +60,7 @@ function delete_media( id ) {
 			dialogManager.error( json.message, json.detail );
 		    }
 		    else {
-			filepicker.remove( json.media,
-					   function() {
-					       //success
-					       $("#mid-"+json.media.id).remove();
-					   },
-					   function(err) {
-					       //failure!
-					       dialogManager.error( json2string( err ) );
-					   });
+			$("#mid-"+id).remove();
 		    }
 		}
 	    });
@@ -76,19 +68,28 @@ function delete_media( id ) {
 }
 
 function add_media() {
-    filepicker.pickAndStore ( 
-	{ multiple: true,
-          mimetypes: [ 'image/*', 'video/*', 'audio/*' ]
+    filepicker.pickMultiple ( 
+	{ 
+          extensions: ['3g2','3gp','3gp2','3gpp','3gpp2','aac','ac3',
+	  	       'eac3','ec3','f4a','f4b','f4v','flv','highwinds',
+		       'm4a','m4b','m4r','m4v','mkv','mov','mp3',
+		       'mp4','oga','ogg','ogv','ogx','ts','webm','wma',
+		       'wmv','png','jpg','gif',
+		       '3G2','3GP','3GP2','3GPP','3GPP2','AAC','AC3',
+		       'EAC3','EC3','F4A','F4B','F4V','FLV','HIGHWINDS',
+		       'M4A','M4B','M4R','M4V','MKV','MOV','MP3',
+		       'MP4','OGA','OGG','OGV','OGX','TS','WEBM','WMA',
+		       'WMV','PNG','JPG','GIF']
         },
-        { location: 'S3' },
         function( fpfiles ) {
 	    var num = fpfiles.length;
             for( var i=0; i<fpfiles.length; i++ ) {
                 var url = fpfiles[i].url;
 		// install the wo id
 		fpfiles[i]['workorder_id'] = $("#create").data( "wo" ).id;
+		fpfiles[i]['location'] = 'fp';
                 $.ajax({
-                    url: "/services/pf/create",
+                    url: "/services/mediafile/create",
                     method: "POST",
                     dataType: "json",
                     data: fpfiles[i],
@@ -142,14 +143,12 @@ function list() {
                 $("#media-list").empty();
                 for( var i=0; i<json.media.length; i++ ) {
                     // Use a client-side template to create a media-object
-                    if ( json.media[i].mimetype.indexOf('image') == 0 )
+                    if ( json.media[i].views.main.mimetype.indexOf('image') == 0 )
                         $("#media-list").append( ich.media_file_image(json.media[i]) );
-                    else if ( json.media[i].mimetype.indexOf('audio') == 0 )
+                    else if ( json.media[i].views.main.mimetype.indexOf('audio') == 0 )
                         $("#media-list").append( ich.media_file_audio(json.media[i]) );
                     else
                         $("#media-list").append( ich.media_file_video(json.media[i]) );
-                    if ( json.media[i].mimetype.indexOf('image') == 0 )
-			$("#" + json.media[i].id).attr( "src", json.media[i].url + '/convert?w=64&h=64&fit=scale' );
                 }
                 // apply the pretty photo plugin
                 $("#media-list a[rel^='prettyPhoto']").prettyPhoto({

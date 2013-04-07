@@ -2,6 +2,19 @@ application_name: Viblio!
 
 viblio_return_email_address: noreply@viblio.com
 
+filepicker:
+  key: AUBFLi68nRXe7sDddBPBVz
+
+s3:
+  key: AKIAJHD46VMHB2FBEMMA
+  secret: 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
+  bucket: viblio.filepicker.io
+
+# Map mediafile location to a MediaFile object type
+mediafile:
+  fp: VA::MediaFile::FilePicker
+  s3: VA::MediaFile::S3
+
 roles:
   tester:
     - aqpeeb@gmail.com
@@ -65,6 +78,12 @@ Plugin::Log::Log4perlSimple:
   screen: 1
 # file: /path
 
+# File Downloader REST service
 Model::FD:
   server: http://localhost:3001
+  type: application/json
+
+# Filepicker.io REST
+Model::FP:
+  server: https://www.filepicker.io
   type: application/json

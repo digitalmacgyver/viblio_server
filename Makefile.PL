@@ -69,7 +69,7 @@ requires 'Catalyst::Plugin::Log::Handler';
 requires 'Catalyst::Plugin::Log::Log4perlSimple';
 requires 'Muck::FS::S3::QueryStringAuthGenerator';
 requires 'Catalyst::Model::REST';
-
+requires 'DBIx::Class::ColumnDefault';
 test_requires 'Test::More' => '0.88';
 catalyst;
 

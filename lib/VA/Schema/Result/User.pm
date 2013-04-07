@@ -24,6 +24,8 @@ extends 'DBIx::Class::Core';
 
 =item * L<DBIx::Class::InflateColumn::DateTime>
 
+=item * L<DBIx::Class::ColumnDefault>
+
 =item * L<DBIx::Class::TimeStamp>
 
 =item * L<DBIx::Class::PassphraseColumn>
@@ -38,6 +40,7 @@ extends 'DBIx::Class::Core';
 
 __PACKAGE__->load_components(
   "InflateColumn::DateTime",
+  "ColumnDefault",
   "TimeStamp",
   "PassphraseColumn",
   "UUIDColumns",
@@ -159,21 +162,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 pffiles
-
-Type: has_many
-
-Related object: L<VA::Schema::Result::Pffile>
-
-=cut
-
-__PACKAGE__->has_many(
-  "pffiles",
-  "VA::Schema::Result::Pffile",
-  { "foreign.user_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 user_roles
 
 Type: has_many
@@ -215,8 +203,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-03-30 11:27:09
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FZPGO4HmJhet5fP+Z8bPlw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-06 12:40:16
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bjU/4cJt8u7iVFKfjfOb+Q
 
 sub TO_JSON {
     my $self = shift;
