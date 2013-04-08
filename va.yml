@@ -5,9 +5,12 @@ viblio_return_email_address: noreply@viblio.com
 filepicker:
   key: AUBFLi68nRXe7sDddBPBVz
 
+Model::S3:
+  aws_access_key_id: AKIAJHD46VMHB2FBEMMA
+  aws_secret_access_key: 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
+  retry: 1
+
 s3:
-  key: AKIAJHD46VMHB2FBEMMA
-  secret: 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
   bucket: viblio.filepicker.io
 
 # Map mediafile location to a MediaFile object type

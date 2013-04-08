@@ -44,7 +44,12 @@ sub delete {
     my $path = URI->new( $main->uri )->path;
     my $res = $c->model( 'FP' )->delete( $path, { key => $c->config->{filepicker}->{key} } );
     $c->log->debug( $res->response->as_string );
-    return $mediafile;
+    if ( $res->code != 200 ) {
+	return undef;
+    }
+    else {
+	return $mediafile;
+    }
 }
 
 1;

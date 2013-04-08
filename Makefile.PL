@@ -70,6 +70,9 @@ requires 'Catalyst::Plugin::Log::Log4perlSimple';
 requires 'Muck::FS::S3::QueryStringAuthGenerator';
 requires 'Catalyst::Model::REST';
 requires 'DBIx::Class::ColumnDefault';
+requires 'Catalyst::Model::S3';
+requires 'Net::Amazon::S3::Client';
+
 test_requires 'Test::More' => '0.88';
 catalyst;
 

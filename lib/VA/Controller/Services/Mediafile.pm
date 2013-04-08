@@ -71,6 +71,10 @@ sub delete :Local {
     my $fp = new $klass;
     # Delete from filepicker servers
     my $res = $fp->delete( $c, $mf );
+    unless( $res ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to delete this media file from storage." ) );
+    }
     # Delete from database
     $mf->delete;
     $self->status_ok( $c, {} );
