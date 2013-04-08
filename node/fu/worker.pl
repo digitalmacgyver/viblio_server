@@ -101,40 +101,38 @@ foreach my $fpfile ( @media ) {
 	if ( $fpfile->{views}->{'main'}->{mimetype} =~ /^image/ ) {
 	    my $view = 'thumbnail';
 	    $fpfile->{views}->{$view} = {};
-	    my $fname = $fpfile->{views}->{'main'}->{localpath};
-	    $fname =~ s/\..+$//g;
-	    $fname .= "_thumbnail.png";
+	    my( $fname, $dn, $bn ) = filenames( $fpfile->{views}->{'main'}->{localpath}, $fpfile->{filename}, 'thumbnail', 'png' );
 	    $fname = thumbnail( $fpfile->{views}->{'main'}->{localpath}, $config->{thumbnail_size} || '64x64', $fname );
 	    if ( $fname ) {
 		push( @s3files, $fname );
 		push( @toremove, $fname );
 		$fpfile->{views}->{$view}->{localpath} = $fname;
-		$fpfile->{views}->{$view}->{filename} = basename( $fname );
+		$fpfile->{views}->{$view}->{filename} = $bn;
 		$fpfile->{views}->{$view}->{mimetype} = 'application/png';
 	    }
 	}
 	elsif ( $fpfile->{views}->{'main'}->{mimetype} =~ /^video/ ) {
 	    my $view = 'poster';
 	    $fpfile->{views}->{$view} = {};
-	    my $fname = $fpfile->{views}->{'main'}->{localpath};
-	    $fname =~ s/\..+$//g;
-	    $fname .= "_poster.png";
+	    my( $fname, $dn, $bn ) = filenames( $fpfile->{views}->{'main'}->{localpath}, $fpfile->{filename}, 'poster', 'png' );
 	    $fname = poster( $fpfile->{views}->{'main'}->{localpath}, $config->{poster_width} || '320', $fname );
 	    if ( $fname ) {
 		push( @s3files, $fname );
 		push( @toremove, $fname );
 		$fpfile->{views}->{$view}->{localpath} = $fname;
-		$fpfile->{views}->{$view}->{filename} = basename( $fname );
+		$fpfile->{views}->{$view}->{filename} = $bn;
 		$fpfile->{views}->{$view}->{mimetype} = 'application/png';
 
 		my $tname = $fname;
 		$tname =~ s/poster/thumbnail/g;
+		my $tbn = $bn;
+		$tbn =~ s/poster/thumbnail/g;
 		$tname = thumbnail( $fname, $config->{thumbnail_size} || '64x64', $tname );
 		if ( $tname ) {
 		    push( @s3files, $tname );
 		    push( @toremove, $tname );
 		    $fpfile->{views}->{'thumbnail'}->{localpath} = $tname;
-		    $fpfile->{views}->{'thumbnail'}->{filename} = basename( $tname );
+		    $fpfile->{views}->{'thumbnail'}->{filename} = $tbn;
 		    $fpfile->{views}->{'thumbnail'}->{mimetype} = 'application/png';
 		}
 	    }
@@ -155,6 +153,20 @@ foreach my $file ( @toremove ) {
 unlink( $wofile );
 
 exit 0;
+
+sub filenames {
+    my ($ifile, $sfile, $add, $ext) = @_;
+    my $dirname = dirname( $ifile );
+    my $basename = basename( $ifile );
+
+    $basename =~ s/\..+$//g;
+    $basename .= "_${add}.${ext}";
+
+    $sfile =~ s/\..+$//g;
+    $sfile .= "_${add}.${ext}";
+
+    return( "$dirname/$basename", $dirname, $sfile );
+}
 
 sub send_response {
     my ( $endpoint, $data ) = @_;
