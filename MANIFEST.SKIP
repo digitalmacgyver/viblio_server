@@ -22,3 +22,6 @@
 cookie-jar.txt
 ^t/
 VA-0.01.tar.gz
+
+# Node servers get their own dist
+^node/
