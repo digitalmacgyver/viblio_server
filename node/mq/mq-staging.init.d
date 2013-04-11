@@ -1,6 +1,6 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides: fd
+# Provides: mq
 # Required-Start: $local_fs $network $named
 # Required-Stop: $local_fs $network $named
 # Default-Start: 2 3 4 5
@@ -11,9 +11,9 @@
 
 SERVICE_TYPE=staging
 
-APPNAME=fd
-APPDIR=/deploy/$SERVICE_TYPE/viblio-server/node/fd
-export PORT=3001
+APPNAME=mq
+APPDIR=/deploy/$SERVICE_TYPE/viblio-server/node/mq
+export PORT=3002
 
 VA_CONFIG_LOCAL_SUFFIX=$SERVICE_TYPE
 export VA_CONFIG_LOCAL_SUFFIX
