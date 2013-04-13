@@ -13,6 +13,10 @@ var amazonS3 = require('awssum-amazon-s3');
 var ugen = require( 'cuid' );
 var path = require( 'path' );
 
+// Logging
+var log = require( "winston" );
+log.add( log.transports.File, { filename: '/tmp/fu.log', json: false } );
+
 var s3 = new amazonS3.S3({
     'accessKeyId'     : 'AKIAJHD46VMHB2FBEMMA',
     'secretAccessKey' : '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',
@@ -38,7 +42,15 @@ process.argv.forEach( function( filename, index ) {
 	s3key = ugen() + '_' + path.basename( filename );
     }
 
+    log.info( filename );
+
     fs.stat( filename, function( err, file_info ) {
+
+	if ( err ) {
+	    log.info( filename, "not found" );
+	    return;
+	}
+
 	var bodyStream = fs.createReadStream( filename );
 
 	var options = {
@@ -60,8 +72,14 @@ process.argv.forEach( function( filename, index ) {
 	
 	s3.PutObject(options, function(err, data) {
 	    var error;
-	    if ( err ) error = "true";
-	    else error = "false";
+	    if ( err ) {
+		error = "true";
+		log.info( filename, err );
+	    }
+	    else {
+		error = "false";
+		log.info( filename, "success: " + s3key );
+	    }
 	    console.log(JSON.stringify({
 		filename: filename,
 		s3key: s3key,

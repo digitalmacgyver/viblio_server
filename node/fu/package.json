@@ -6,6 +6,7 @@
     "private": true,
     "dependencies": {
 	"awssum-amazon-s3": "1.2.x",
-	"cuid": "1.1.x"
+	"cuid": "1.1.x",
+	"winston": "0.6.x"
     }
 }
