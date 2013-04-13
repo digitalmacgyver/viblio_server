@@ -17,11 +17,46 @@ padding-top: 9px;
 padding-left: 12px;
 </style>
 
-
 <script>
 
+var mq;
 $(document).ready( function() {
     filepicker.setKey( picker_key );
+
+    // Instanciate the message queue
+    mq = new Faye.Client( "[% c.message_server %]/faye", {
+	timeout: 120 });
+
+    // Get myself so I know my uuid, which I can then use to
+    // subscribe to messages
+    //
+    $.ajax({
+	url: '/services/user/me',
+	dataType: 'json',
+	success: function(json) {
+	    var uuid = json.user.uuid;
+	    mq.subscribe( '/messages/' + uuid, function( msg ) {
+		console.log( 'I have ' + msg.count + ' messages waiting' );
+		// go get them
+		$.ajax({
+		    url: "[% c.message_server %]/dequeue",
+		    data: { uid: uuid },
+		    dataType: 'jsonp',
+		    success: function( data ) {
+			// data.messages is an array of messages.  The
+			// number should match the data.count received
+			// previously.  Each item in the array is an object:
+			// { uid: $uid, message: $message }
+			// where $message is in whatever format the enqueuer
+			// posted (you guys must agree on a message format!)
+			var messages = data.messages;
+			console.log( "=> received " + messages.length + " messages" );
+			console.log( JSON.stringify( messages ) );
+		    }
+		});
+	    });
+	}
+    });
     list();
 });
 

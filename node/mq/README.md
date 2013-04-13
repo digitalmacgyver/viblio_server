@@ -66,10 +66,13 @@ the proper queue; something like:
 When a client calls /dequeue, his messages are removed from the mq queues
 upon delivery.  
 
-IMPORTANT!!
+In-Memory and Persistence
 
-This implementation uses in-process data structures to store messages and
-Faye state.  If this process goes away, so does all of the data, probably 
-not what you want in production.  The file "queue.js" should be changed to
-use a persistent storage mechansim, and Faye should also use persistent
-storage for state.  See http://faye.jcoglan.com/node/engines.html.
+mq.js keeps the message queue and the Faye state information in memory,
+which is fast and dependency free, but if the node server dies, the 
+state dies with it.  mq-redis.js uses the Redis database for persistent
+storage for the message queue and the Faye state, but requires redis to
+be installed and running; "apt-get install redis-server".  mq.json is
+the configuration file with redis connection parameters.  If the redis
+server is running on a different machine, edit /etc/redis/redis.conf and
+change "bind" to the external ip address.

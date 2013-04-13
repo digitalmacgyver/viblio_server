@@ -6,6 +6,10 @@ var https = require('https');
 var mkdirp = require('mkdirp');
 var path = require( 'path' );
 
+// Logging
+var log = require( "winston" );
+log.add( log.transports.File, { filename: '/tmp/fd.log', json: false } );
+
 // Configuration
 var Config = require( "konphyg" )( __dirname );
 var config = Config( "fd" );
@@ -231,6 +235,9 @@ app.post( '/workorder', function( req, res, next ) {
     // Calculate the total number of files we need to 
     // download, so we know when we're done.
     //
+    var UUID = wo.wo.uuid;
+    log.info( UUID + ": Starting..." );
+
     var TOTAL = 0;
     for( var i=0; i<wo.media.length; i++ )
 	TOTAL += Object.keys( wo.media[i].views ).length;
@@ -305,6 +312,7 @@ app.post( '/workorder', function( req, res, next ) {
 			    fs.writeFile( tmpfile, JSON.stringify( wo ), function( err ) {
 				if ( err ) {
 				    // Boy, what now?
+				    log.error( UUID + ": Failed to write out wo data for worker." );
 				}
 				else {
 				    config.worker.args[1] = tmpfile;
@@ -314,7 +322,7 @@ app.post( '/workorder', function( req, res, next ) {
 						    config.worker.args,
 						    config.worker.options );
 				    worker.on( 'close', function(code) {
-					// console.log( "Worker done, exitted with code: " + code );
+					log.info( UUID + ": Worker done, exitted with code: " + code );
 				    });
 				    // By default, the parent will wait for the detached child to exit. 
 				    // To prevent the parent from waiting for a given child, use the child.unref() 
@@ -340,5 +348,5 @@ app.post( '/workorder', function( req, res, next ) {
 });
 
 http.createServer(app).listen(app.get('port'), function(){
-    console.log("File Picker Downloader listening on port " + app.get('port'));
+    log.info("File Picker Downloader listening on port " + app.get('port'));
 });

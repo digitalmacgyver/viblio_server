@@ -3,6 +3,10 @@ var path = require( "path" );
 var http = require( 'http' );
 var faye = require('faye');
 
+// Logging
+var log = require( "winston" );
+log.add( log.transports.File, { filename: '/tmp/mq.log', json: false } );
+
 // in memory queue
 var Queue = require( "./queue" );
 
@@ -42,7 +46,8 @@ app.post( '/enqueue', function( req, res, next ) {
     var uid = req.param( 'uid' );
     var msg = req.body;
 
-    //mQueue.push({ uid: uid, message: msg });
+    log.info( "enqueuing message for " + uid );
+
     mQueue.enqueue( uid, msg, function( err ) {
 	if ( err ) {
 	    return req.json({ error: true, message: err });
@@ -64,6 +69,7 @@ app.post( '/enqueue', function( req, res, next ) {
 // obtain list of messages pending.
 app.get( '/dequeue', function( req, res, next ) {
     var uid = req.param( 'uid' );
+    log.info( "dequeue from " + uid );
     mQueue.messagesFor( uid, function( err, messages ) {
 	if ( err ) {
 	    return req.json({ error: true, message: err });
@@ -79,7 +85,7 @@ bayeux.bind( 'subscribe', function( clientID, channel ) {
     // When a client connects, obtain the uid from the channel name,
     // then notify them of any pending messages.
     var uid = path.basename( channel );
-
+    log.info( "client " + uid + " has subscribed" );
     mQueue.count( uid, function( err, count ) {
 	if ( err ) {
 	    count = 0;
@@ -90,4 +96,4 @@ bayeux.bind( 'subscribe', function( clientID, channel ) {
     });
 });
 
-console.log('Listening on port ' + app.get('port'));
+log.info('Listening on port ' + app.get('port'));

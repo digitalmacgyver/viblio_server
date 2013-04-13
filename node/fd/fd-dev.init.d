@@ -9,7 +9,7 @@
 ### END INIT INFO 
 . /lib/lsb/init-functions
 
-SERVICE_TYPE=staging
+SERVICE_TYPE=dev
 
 APPNAME=fd
 APPDIR=/deploy/$SERVICE_TYPE/viblio-server/node/fd

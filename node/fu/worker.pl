@@ -8,6 +8,7 @@ use File::Basename;
 use LWP::UserAgent;
 use URI;
 use POSIX qw(strftime);
+use XML::Simple;
 
 # Read config
 my $config = do "config.pl";
@@ -66,6 +67,9 @@ if ( $@ ) {
     send_error( "Worker: Could not interpret WO JSON: $@" );
     exit 300;
 }
+
+# To bootstrap Siabal
+logger( wo2xml( $wo ) );
 
 # Work on the media
 my @media = @{$wo->{media}};
@@ -178,6 +182,9 @@ sub send_response {
     if ( $res->code != 200 ) {
 	logger( "send_response: bad code: " . $res->code );
     }
+    else {
+	logger( "sent response to $endpoint" );
+    }
 }
 
 sub thumbnail {
@@ -280,3 +287,35 @@ sub upload_to_s3 {
     return $err;
 }
  
+sub simplify {
+    my $wo = shift;
+    my $r = {};
+
+    $r->{wo}->{name} = $wo->{wo}->{name};
+    $r->{wo}->{uuid} = $wo->{wo}->{uuid};
+
+    $r->{media} = ();
+    foreach my $m ( @{$wo->{media}} ) {
+	my $rm = { filename => $m->{filename},
+		   uuid => $m->{uuid} };
+	foreach my $v ( keys( %{$m->{views}} ) ) {
+	    $rm->{views}->{$v}->{uuid} = $m->{views}->{$v}->{uuid};
+	    $rm->{views}->{$v}->{size} = $m->{views}->{$v}->{size};
+	    $rm->{views}->{$v}->{filename} = $m->{views}->{$v}->{filename};
+	    $rm->{views}->{$v}->{type} = $m->{views}->{$v}->{type};
+	    $rm->{views}->{$v}->{localpath} = $m->{views}->{$v}->{localpath};
+	    $rm->{views}->{$v}->{mimetype} = $m->{views}->{$v}->{mimetype};
+	}
+	push( @{$r->{media}}, $rm );
+    }
+    return $r;
+}
+
+sub wo2xml {
+    my $wo = shift;
+    return XMLout( simplify( $wo ),
+		   AttrIndent => 1,
+		   RootName => 'root',
+		   XMLDecl => 1,
+		   KeyAttr => [] );
+}

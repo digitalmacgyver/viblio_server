@@ -14,6 +14,10 @@
 <!--    <script src="/static/js/filepicker.js"></script> -->
     <script src="/static/prettyphoto/js/jquery.prettyPhoto.dev.js"></script>
     <script src="/static/js/va.js"></script>
+
+    <!-- Get the message queue Faye js -->
+    <script src="[% c.message_server %]/faye.js"></script>
+
   </head>
     
   <body>

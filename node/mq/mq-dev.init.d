@@ -1,6 +1,6 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides: fd
+# Provides: mq
 # Required-Start: $local_fs $network $named
 # Required-Stop: $local_fs $network $named
 # Default-Start: 2 3 4 5
@@ -9,11 +9,11 @@
 ### END INIT INFO 
 . /lib/lsb/init-functions
 
-SERVICE_TYPE=staging
+SERVICE_TYPE=dev
 
-APPNAME=fd
-APPDIR=/deploy/$SERVICE_TYPE/viblio-server/node/fd
-export PORT=3001
+APPNAME=mq
+APPDIR=/deploy/$SERVICE_TYPE/viblio-server/node/mq
+export PORT=3002
 
 VA_CONFIG_LOCAL_SUFFIX=$SERVICE_TYPE
 export VA_CONFIG_LOCAL_SUFFIX
@@ -39,7 +39,6 @@ check_running() {
 }
 
 _start() {
-    rm -f /tmp/worker.log /tmp/fd.log
     start-stop-daemon --start --make-pidfile --pidfile $PIDFILE \
     --chdir $APPDIR \
     ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP --background \

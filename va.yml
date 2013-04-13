@@ -90,3 +90,9 @@ Model::FD:
 Model::FP:
   server: https://www.filepicker.io
   type: application/json
+
+# Message Queue REST service
+Model::MQ:
+  server: http://localhost:3002
+  type: application/json
+

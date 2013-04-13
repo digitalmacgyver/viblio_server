@@ -506,12 +506,12 @@ sub workorder_processed :Local {
     my $incoming = $c->{data};
 
     if ( $incoming->{error} ) {
-	$self->workorder_done( $c, $incoming );
+	$self->workorder_done( $c, undef, $incoming );
 	$self->status_ok( $c, {} );
     }
 
     if ( ! $incoming->{wo} ) {
-	$self->workorder_done( $c, {
+	$self->workorder_done( $c, undef, {
 	    error => 1,
 	    message => "No 'wo' field found in incoming!" } );
 	$self->status_ok( $c, {} );
@@ -519,7 +519,7 @@ sub workorder_processed :Local {
 
     my $wo = $c->model( 'DB::Workorder' )->find( $incoming->{wo}->{id} );
     unless( $wo ) {
-	$self->workorder_done( $c, {
+	$self->workorder_done( $c, undef, {
 	    error => 1,
 	    message => "Could not find wo id=" .  $incoming->{wo}->{id} } );
 	$self->status_ok( $c, {} );
@@ -595,22 +595,36 @@ sub workorder_processed :Local {
     };
     
     if ( $exception ) {
-	$self->workorder_done( $c, {
+	$self->workorder_done( $c, $wo->user->uuid, {
 	    error => 1,
 	    message => 'Failed to process incoming workorder.',
 	    detail => $exception });
 	$self->status_ok( $c, {} );
     }
     else {
-	$self->workorder_done( $c, $wo->TO_JSON );
+	$self->workorder_done( $c, $wo->user->uuid, $wo->TO_JSON );
 	$self->status_ok( $c, {} );
     }
 }
 
 sub workorder_done :Private {
-    my( $self, $c, $wo ) = @_;
+    my( $self, $c, $uuid, $wo ) = @_;
     $c->log->debug( "WORKORDER DONE" );
-    $c->logdump( $wo );
+
+    if ( $uuid ) {
+	# Queue it up in the user message queue, or send a push notification.
+	# We'd like to distinguish between iOS clients and web clients so
+	# we only deliver the message once.  How?
+	my $res = $c->model( 'MQ' )->post( '/enqueue', { uid => $uuid,
+							 wo  => $wo } );
+	if ( $res->code != 200 ) {
+	    $c->log->debug( "Failed to post wo to user message queue!" );
+	}
+    }
+    else {
+	# No one to send it to!
+	$c->log->debug( "WO: TOTAL FAILURE!" );
+    }
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -9,6 +9,7 @@
         "faye": "0.8.x",
 	"redis": "0.8.x",
 	"faye-redis": "0.1.x",
-	"konphyg": "1.2.x"
+	"konphyg": "1.2.x",
+	"winston": "0.6.x"
     }
 }
