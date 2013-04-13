@@ -1,0 +1,8 @@
+{
+    "logfile": "/tmp/fs.log",
+    "body_parser_options": {
+	"keepExtensions": true, 
+	"uploadDir": "/tmp/fs",
+	"limit": "2gb"
+    }
+}
