@@ -16,6 +16,7 @@ var path = require( 'path' );
 // Logging
 var log = require( "winston" );
 log.add( log.transports.File, { filename: '/tmp/fu.log', json: false } );
+log.remove(winston.transports.Console);
 
 var s3 = new amazonS3.S3({
     'accessKeyId'     : 'AKIAJHD46VMHB2FBEMMA',

@@ -6,7 +6,7 @@ use strict;
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 
 # secret has to match that in the nginx conf file (see ./nginx/secure.conf).
-my $secret = 'mysecret';
+my $secret = 'viblio321';
 
 # path is that returned from /upload
 my $path   = $ARGV[0];

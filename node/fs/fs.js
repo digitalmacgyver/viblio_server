@@ -19,7 +19,7 @@ log.add( winston.transports.File,
 var app = express();
 
 app.configure(function() {
-    app.set('port', process.env.PORT || 3000);
+    app.set('port', process.env.PORT || 3003);
     app.use(express.bodyParser( config.body_parser_options ));
     app.use(express.methodOverride());
     app.use(app.router);
