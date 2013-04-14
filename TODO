@@ -1,0 +1,28 @@
+---------------------------------------------------------------------
+The node servers all need 'npm install' to be run on deployment.
+The node servers have init.d scripts thta need to be installed:
+
+  cd /etc/init.d
+  ln -s /deploy/stading/viblio-server/node/fd/fd-stading.init.d ./fd-staging
+  update-rc.d fd-staging defaults
+  (repeat for mq, fs)
+
+---------------------------------------------------------------------
+The fu/worker.pl script has system (/usr/bin/perl) dependencies.  Should
+really have a Makefile.PL for this.
+
+---------------------------------------------------------------------
+node/fs/nginx/src needs to be installed, but install stock nginx first!
+
+sudo apt-get install nginx
+cd nginx/src/
+sh RUN_CONFIGURE.sh
+cd nginx-1.2.6
+sudo cp obj/nginx /usr/sbin/nginx
+cd /etc/nginx/sites-enabled
+sudo rm default
+sudo ln -s /deploy/stading/viblio-server/node/fs/nginx/secure.conf .
+sudo /etc/init.d/nginx restart
+
+---------------------------------------------------------------------
+The /opt/viblio/fu link needs to be created on the server running fd.
