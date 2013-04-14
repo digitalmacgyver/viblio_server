@@ -36,6 +36,13 @@ app.configure('production', function( ){
     app.use(express.errorHandler());
 });
 
+// Enable CORS
+app.all('/*', function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    next();
+});
+
 // The form field must be named 'upload' and can be a multi-file
 // submission; ie. <input type="file" name="upload" multiple="multiple" />
 //

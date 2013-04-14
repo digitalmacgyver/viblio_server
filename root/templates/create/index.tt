@@ -44,6 +44,42 @@ padding-left: 12px;
 // workorder has not yet been submitted, warn the user.
 $(document).ready( function() {
     filepicker.setKey( picker_key );
+
+    $("#localfileformsubmit").on( 'click', function(evt) {
+	evt.preventDefault();
+	$("#lfmessage").hide();
+	$("#localfileprogress").show();
+	var formData = new FormData();
+	var file = document.getElementById('upload').files[0];
+	formData.append('upload', file);
+
+	var xhr = new XMLHttpRequest();
+	xhr.open( 'post', '[% c.storage_server %]/upload', true );
+
+	xhr.upload.onprogress = function(e) {
+	    if (e.lengthComputable) {
+		var percentage = (e.loaded / e.total) * 100;
+		$("#localfileprogress .bar").css( 'width', percentage + '%' );
+	    }
+	};
+
+	xhr.onerror = function(e) {
+	    $("#lfmessage").html( "ERROR" );
+	    $("#lfmessage").show();
+	};
+
+	xhr.onload = function(e) {
+	    if ( this.status == 200 ) {
+		// this.response
+		var res = JSON.parse( this.response );
+		console.log( JSON.stringify( res ) );
+		$("#dialog-localfile").data( 'file', res );
+	    }
+	};
+
+	xhr.send( formData );
+
+    });
 });
 
 function delete_media( id ) {
@@ -121,6 +157,40 @@ function add_media() {
         }
     );
     return;
+}
+
+function add_local() {
+    $("#localfileprogress").hide();
+    $("#lfmessage").hide();
+    dialogManager.custom( '#dialog-localfile', function() {
+	var file = $("#dialog-localfile").data( 'file' );
+	if ( file ) {
+            $.ajax({
+                url: "/services/mediafile/create",
+                method: "POST",
+                dataType: "json",
+                data: {
+		    workorder_id: $("#create").data( "wo" ).id,
+		    location: 'fs',
+		    filename: file.name,
+		    url: file.path,
+		    mimetype: file.mimetype,
+		    size: file.size
+		},
+                success: function( json ) {
+		    if ( json.error ) {
+			dialogManager.error( json.message );
+		    }
+		    $("#submit-wo-btn").css( "visibility", "visible" );
+		    list();
+                },
+                error: function() {
+                    dialogManager.error( "failed to store " + url );
+		    list();
+                }
+            });
+	}
+    });
 }
 
 // Get the list of media files that have been uploaded.  The
@@ -239,9 +309,34 @@ function submit_wo() {
     </ul>
   </div>
   <button id="add-media-btn" class="btn btn-primary" type="button"
-          onclick="add_media();">Add Media Files</button>
+          onclick="add_media();">Add Social Media Files</button>
+  <button id="add-local-btn" class="btn btn-primary" type="button"
+          onclick="add_local();">Add Local Media Files</button>
   <button id="submit-wo-btn" class="btn btn-primary" type="button"
           onclick="submit_wo();">Submit Project</button>
+</div>
+
+<!-- Custom dialog -->
+<div id="dialog-localfile" class="modal hide">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Add Local File</h3>
+  </div>
+  <div class="modal-body">
+    <form class="inline" id="localfileform">
+      <input type="file" name="upload" id="upload" />
+      <button id="localfileformsubmit" type="submit" class="btn">Upload</button>
+    </form>
+  </div>
+  <div id="localfileprogress" class="progress">
+    <div class="bar"></div>
+  </div>
+  <div id="lfmessage" class="alert">
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">OK</button>
+    <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+  </div>
 </div>
 
 <!-- Pull in filepicker -->

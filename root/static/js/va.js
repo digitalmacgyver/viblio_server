@@ -52,6 +52,19 @@ DialogManager.prototype.confirm = function( msg, callback ) {
     $(this._active).modal( 'show' );
 }
 
+DialogManager.prototype.custom = function( el, callback ) {
+    this.hide();
+
+    if ( this._confirm_cb ) {
+	$("#dialog-confirm div button.btn-primary").off( "click", this._confirm_cb );
+    }
+    this._confirm_cb = callback;
+    $(el + " div button.btn-primary").on( "click", this._confirm_cb );
+
+    this._active = el;
+    $(this._active).modal( 'show' );
+}
+
 var dialogManager = new DialogManager();
 
 // Common ajax error hanadler
