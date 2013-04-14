@@ -77,6 +77,48 @@ sub bom :Local {
     $self->status_ok( $c, { wo => $wo, media => \@published } );
 }
 
+# Return list of workorders
+#
+sub list :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ page => undef,
+          rows => 10,
+        ],
+        @_ );
+
+    if ( $args->{page} ) {
+	my $rs = $c->user->workorders
+	    ->search( undef,
+		      { page => $args->{page},
+			rows => $args->{rows} } );
+	my $pager = $rs->pager;
+	my @wos = $rs->all;
+
+	$self->status_ok(
+	    $c,
+	    { workorders => \@wos,
+	      pager => {
+		  total_entries => $pager->total_entries,
+		  entries_per_page => $pager->entries_per_page,
+		  current_page => $pager->current_page,
+		  entries_on_this_page => $pager->entries_on_this_page,
+		  first_page => $pager->first_page,
+		  last_page => $pager->last_page,
+		  first => $pager->first,
+		  'last' => $pager->last,
+		  previous_page => $pager->previous_page,
+		  next_page => $pager->next_page,
+	      }
+	    } );
+    }
+    else {
+	my @wos = $c->user->workorders->all;
+	$self->status_ok( $c, { workorders => \@wos } );
+    }
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

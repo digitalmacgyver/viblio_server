@@ -58,5 +58,17 @@ Model::MQ:
 
 # For web clients, where is the
 # message server?
-mq_server:
-  http://staging.viblio.com:3002
+message_queue:
+  server: http://staging.viblio.com:3002
+
+# Local File Storage REST service
+Model::FS:
+  server: http://staging.viblio.com:5000
+  type: application/json
+
+# For web clients, where is the
+# fs server?
+file_storage:
+  secret: viblio321
+  server: http://staging.viblio.com:5000
+

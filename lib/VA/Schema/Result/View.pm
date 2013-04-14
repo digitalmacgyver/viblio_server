@@ -180,38 +180,8 @@ __PACKAGE__->uuid_columns( 'uuid' );
 sub TO_JSON {
     my $self = shift;
     my $hash = $self->{_column_data};
-    # automatically expand and include the url field
-    $hash->{url} = $self->url;
     return $hash;
 }
 
-# Junk for S3 uri expansion.  Creates a signed, timed URL.
-use Muck::FS::S3::QueryStringAuthGenerator;
-my $aws_key = 'AKIAJHD46VMHB2FBEMMA';
-my $aws_secret = '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';
-my $aws_use_https = 0;
-my $aws_bucket_name = 'viblio.filepicker.io';
-my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
-my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
-    $aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
-
-# Special accessor that creates a url based on the storage location
-# and uri field.
-#
-sub url {
-    my $self = shift;
-    # If there is an update to the column, we'll let the original accessor
-    # deal with it.
-    return $self->uri(@_) if @_;
-    if ( $self->location && $self->location eq 's3' ) {
-	my $url = $aws_generator->get( $aws_bucket_name, $self->uri );
-	$url =~ s/\/$aws_bucket_name\//\//g;
-	return $url;
-    }
-    else {
-	return $self->uri;
-    }
-}
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
 1;

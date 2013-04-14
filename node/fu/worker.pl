@@ -239,6 +239,7 @@ sub upload_to_s3 {
     }
 
     my $cmd = "node fu --no-uuids " . join( ' ', @clean );
+    logger( "invoking: " . $cmd );
     my $f = new FileHandle "$cmd|";
     unless( $f ) {
 	logger( "Failed to invoke file uploader!" );
@@ -247,9 +248,11 @@ sub upload_to_s3 {
     }
     
     my @media = @{$wo->{media}};
+    my $loop_count = 0;
     while( <$f> ) {
 	chomp;
 	logger( "uploaded: $_" );
+	$loop_count += 1;
 	my $info = eval {
 	    from_json( $_ );
 	};
@@ -283,7 +286,13 @@ sub upload_to_s3 {
 	    last;
 	}
     }
+
     close( $f );
+
+    if ( $err == 0 && $loop_count != ($#clean + 1) ) {
+	send_error( "Problems uploading to S3" );
+	$err = 1;
+    }
     return $err;
 }
  

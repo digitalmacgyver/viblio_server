@@ -2,11 +2,10 @@ package VA::MediaFile::S3;
 use Moose;
 use URI;
 use Try::Tiny;
-extends 'VA::MediaFile';
+use Muck::FS::S3::QueryStringAuthGenerator;
 
 sub create {
     my ( $self, $c, $params ) = @_;
-
     return undef;
 }
 
@@ -38,6 +37,22 @@ sub delete {
     }
 
     return $ret;
+}
+
+sub uri2url {
+    my( $self, $c, $view ) = @_;
+
+    my $aws_key = $c->config->{'Model::S3'}->{aws_access_key_id};
+    my $aws_secret = $c->config->{'Model::S3'}->{aws_secret_access_key};
+    my $aws_use_https = $c->config->{aws_use_https} || 0;
+    my $aws_bucket_name = $c->config->{s3}->{bucket};
+    my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
+    my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
+	$aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
+    
+    my $url = $aws_generator->get( $aws_bucket_name, $view->{uri} );
+    $url =~ s/\/$aws_bucket_name\//\//g;
+    return $url;
 }
 
 1;

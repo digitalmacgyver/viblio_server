@@ -3,8 +3,6 @@ package VA::Controller::Services::NA;
 # These calls are not authenticated.
 
 use Moose;
-use Module::Find;
-usesub VA::MediaFile;
 use namespace::autoclean;
 use DateTime;
 use Try::Tiny;
@@ -568,11 +566,8 @@ sub workorder_processed :Local {
 			if ( $key eq 'main' ) {
 			    my $location = $view->location;
 			    if ( $location ) {
-				my $klass = $c->config->{mediafile}->{$location};
-				if ( $klass ) {
-				    my $fp = new $klass;
-				    my $res = $fp->delete( $c, $mediafile );
-				}
+				my $fp = new VA::MediaFile;
+				my $res = $fp->delete( $c, $mediafile );
 			    }
 			}
 

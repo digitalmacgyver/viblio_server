@@ -333,180 +333,28 @@ sub accept_terms :Local {
 
 =head2 /services/user/media
 
-Return a list of media files belonging to the logged in user.  Supports
-optional paging.  With no parameters, returns all media files owned by
-the user.  With paging parameters, returns paged results and a pager.
-
-=head3 Parameters
-
-=over
-
-=item page (optional)
-
-The page number to fetch items from.  The number of items per page
-is specified by the 'rows' parameter.
-
-=item rows (optional, defaults to 10)
-
-Ignored unless 'page' is specified.  Specifies number of items per page.
-This number of items (or less) will be delivered back to the client.
-
-This is another description
-
-=back
-
-=head3 Example Response
-
-Without paging:
-
-  {
-     "media" : [
-        {
-           "filename" : "facebook-connect2.png",
-           "user_id" : "3",
-           "path" : "/home/peebles/viblio-server/uploads/3/2CC7C252-93FC-11E2-83AF-729329C23E77",
-           "id" : "1",
-           "uuid" : "2CC7C252-93FC-11E2-83AF-729329C23E77",
-           "mimetype" : "image/png",
-           "size" : "130119"
-        },
-        {
-           "filename" : "facebook-connect2.png",
-           "user_id" : "3",
-           "path" : "/home/peebles/viblio-server/uploads/3/9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
-           "id" : "2",
-           "uuid" : "9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
-           "mimetype" : "image/png",
-           "size" : "130119"
-        }
-     ]
-  }
-
-With paging:
-
-  {
-     "media" : [
-        {
-           "filename" : "facebook-connect2.png",
-           "user_id" : "3",
-           "path" : "/home/peebles/viblio-server/uploads/3/2CC7C252-93FC-11E2-83AF-729329C23E77",
-           "id" : "1",
-           "uuid" : "2CC7C252-93FC-11E2-83AF-729329C23E77",
-           "mimetype" : "image/png",
-           "size" : "130119"
-        },
-        {
-           "filename" : "facebook-connect2.png",
-           "user_id" : "3",
-           "path" : "/home/peebles/viblio-server/uploads/3/9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
-           "id" : "2",
-           "uuid" : "9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
-           "mimetype" : "image/png",
-           "size" : "130119"
-        }
-     ],
-     "pager" : {
-        "entries_per_page" : "3",
-        "total_entries" : "12",
-        "current_page" : "1",
-        "entries_on_this_page" : 3,
-        "first_page" : 1,
-        "last_page" : 4,
-        "next_page" : 2,
-        "previous_page" : null,
-        "first" : 1,
-        "last" : 3
-     }
-  }
+Return the list of media files belonging to this user.  This call forwards to
+/services/mediafile/list; See the documentation for that call.
 
 =cut
-
 # Return list of media
 #
 sub media :Local {
     my $self = shift; my $c = shift;
-    my $args = $self->parse_args
-      ( $c,
-        [ page => undef,
-          rows => 10,
-        ],
-        @_ );
-
-    if ( $args->{page} ) {
-	my $rs = $c->user->mediafiles
-	    ->search( undef,
-		      { prefetch => 'views',
-			page => $args->{page},
-			rows => $args->{rows} } );
-	my $pager = $rs->pager;
-	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_ ) )
-	    foreach( $rs->all );
-	$self->status_ok(
-	    $c,
-	    { media => \@media,
-	      pager => {
-		  total_entries => $pager->total_entries,
-		  entries_per_page => $pager->entries_per_page,
-		  current_page => $pager->current_page,
-		  entries_on_this_page => $pager->entries_on_this_page,
-		  first_page => $pager->first_page,
-		  last_page => $pager->last_page,
-		  first => $pager->first,
-		  'last' => $pager->last,
-		  previous_page => $pager->previous_page,
-		  next_page => $pager->next_page,
-	      }
-	    } );
-    }
-    else {
-	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_ ) )
-	    foreach( $c->user->mediafiles->all );
-	$self->status_ok( $c, { media => \@media } );
-    }
+    $c->forward( '/services/mediafile/list' );
 }
 
+=head2 /services/user/workorders
+
+Return the list of workorders belonging to the logged in user.  This call forwards to
+/services/wo/list; See the documentation for that call.
+
+=cut
 # Return list of workorders
 #
 sub workorders :Local {
     my $self = shift; my $c = shift;
-    my $args = $self->parse_args
-      ( $c,
-        [ page => undef,
-          rows => 10,
-        ],
-        @_ );
-
-    if ( $args->{page} ) {
-	my $rs = $c->user->workorders
-	    ->search( undef,
-		      { page => $args->{page},
-			rows => $args->{rows} } );
-	my $pager = $rs->pager;
-	my @wos = $rs->all;
-
-	$self->status_ok(
-	    $c,
-	    { workorders => \@wos,
-	      pager => {
-		  total_entries => $pager->total_entries,
-		  entries_per_page => $pager->entries_per_page,
-		  current_page => $pager->current_page,
-		  entries_on_this_page => $pager->entries_on_this_page,
-		  first_page => $pager->first_page,
-		  last_page => $pager->last_page,
-		  first => $pager->first,
-		  'last' => $pager->last,
-		  previous_page => $pager->previous_page,
-		  next_page => $pager->next_page,
-	      }
-	    } );
-    }
-    else {
-	my @wos = $c->user->workorders->all;
-	$self->status_ok( $c, { workorders => \@wos } );
-    }
+    $c->forward( '/services/wo/list' );
 }
 
 __PACKAGE__->meta->make_immutable;

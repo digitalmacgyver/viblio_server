@@ -12,10 +12,12 @@ Model::S3:
 
 s3:
   bucket: viblio.filepicker.io
+  aws_use_https: 0
 
 # Map mediafile location to a MediaFile object type
 mediafile:
   fp: VA::MediaFile::FilePicker
+  fs: VA::MediaFile::FileStorage
   s3: VA::MediaFile::S3
 
 roles:
@@ -96,3 +98,10 @@ Model::MQ:
   server: http://localhost:3002
   type: application/json
 
+# Local File Storage REST service
+Model::FS:
+  server: http://localhost:5000
+  type: application/json
+
+file_storage:
+  secret: viblio321
