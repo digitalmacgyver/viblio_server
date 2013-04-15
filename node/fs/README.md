@@ -1,3 +1,9 @@
+# Dependencies
+
+Imagemagick.  A custom-built nginx (see below).  An upload directory for
+stored files, writable by the server process (see package.json).  A
+thumbnail cache directory (see Thunmbnails below).
+
 # File Store
 
 A JSON/JSONP server for uploading files into a local storage directory.  This
@@ -58,6 +64,13 @@ and for a mulitple file upload:
 
 The dirname for "path" is the value set in the fs.json file for
 **body_parser_options.uploadDir**.
+
+# Thumbnails
+
+You can generate cached thumbnails of uploaded images (only works for
+images) by calling /thumb/$path?dim=WxH, where $path is that which obtained
+by an upload.  The cache directory must exist and be writable: 
+dirname( config.body_parser_options.uploadDir )/.cache
 
 # Deletions
 

@@ -28,7 +28,7 @@ sub create {
 	    'views',
 	    { filename => $params->{filename},
 	      mimetype => $params->{mimetype},
-	      uri => $params->{url},
+	      uri => '/thumb' . $params->{url} . '?dim=64x64',
 	      size => int($params->{size}),
 	      location => 'fs',
 	      type => 'thumbnail' } );
@@ -53,6 +53,9 @@ sub delete {
 
 sub uri2url {
     my( $self, $c, $view ) = @_;
+    if ( $view->{uri} =~ /^\/thumb/ ) {
+	return $c->storage_server . $view->{uri};
+    }
     my $fs_secret = $c->config->{file_storage}->{secret};
     my $expire = time() + (60 * 60);
     my $md5 = md5_base64( $fs_secret . $view->{uri} . $expire );

@@ -5,6 +5,9 @@ var uuid    = require( 'node-uuid' );
 var fs      = require( 'fs' );
 var path    = require( 'path' );
 
+// thumnails
+var qt = require( 'quickthumb' );
+
 // config
 var kphyg = require( "konphyg" )( __dirname );
 var config = kphyg( 'fs' ); // fs.json
@@ -23,7 +26,9 @@ app.configure(function() {
     app.use(express.bodyParser( config.body_parser_options ));
     app.use(express.methodOverride());
     app.use(app.router);
-    app.use(express.static(__dirname +  '/public'));
+    app.use('/thumb', 
+	    qt.static( path.dirname(config.body_parser_options.uploadDir),
+		       { type: 'crop' } ));
 });
 
 app.configure('development', function( ){

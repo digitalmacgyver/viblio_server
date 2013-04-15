@@ -37,6 +37,11 @@ if [ ! -d "/opt/fs" ]; then
    chown $USER:$GROUP /opt/fs
 fi
 
+if [ ! -d "/opt/.cache" ]; then
+   mkdir -p /opt/.cache
+   chown $USER:$GROUP /opt/.cache
+fi
+
 PIDFILE=$PIDDIR/$UNIXNAME${PIDSUFFIX:+"-$PIDSUFFIX"}.pid
 
 check_running() {
@@ -44,7 +49,7 @@ check_running() {
 }
 
 _start() {
-    rm -f /tmp/worker.log /tmp/fd.log
+    rm -f /tmp/fs.log
     start-stop-daemon --start --make-pidfile --pidfile $PIDFILE \
     --chdir $APPDIR \
     ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP --background \
