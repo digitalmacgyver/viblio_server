@@ -11,7 +11,7 @@
 
 SERVICE_TYPE=staging
 
-APPNAME=mq
+APPNAME=mq-redis
 APPDIR=/deploy/$SERVICE_TYPE/viblio-server/node/mq
 export PORT=3002
 
