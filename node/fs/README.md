@@ -2,7 +2,8 @@
 
 Imagemagick.  A custom-built nginx (see below).  An upload directory for
 stored files, writable by the server process (see package.json).  A
-thumbnail cache directory (see Thunmbnails below).
+thumbnail cache directory (see Thunmbnails below).  Also needs 
+ffmpegthumbnailer.
 
 # File Store
 
@@ -71,6 +72,9 @@ You can generate cached thumbnails of uploaded images (only works for
 images) by calling /thumb/$path?dim=WxH, where $path is that which obtained
 by an upload.  The cache directory must exist and be writable: 
 dirname( config.body_parser_options.uploadDir )/.cache
+
+NOW WORKS FOR VIDEO!  /thumb/$path.png?vim=WxH  (add .png after path
+and use 'vim' instead of 'dim').
 
 # Deletions
 

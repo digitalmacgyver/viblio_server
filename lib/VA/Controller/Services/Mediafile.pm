@@ -4,6 +4,102 @@ use namespace::autoclean;
 
 BEGIN { extends 'VA::Controller::Services' }
 
+=head2 Mediafile
+
+An example mediafile looks like:
+
+  {
+    "filename" : "Video Mar 26, 2 59 53 PM.mov",
+    "type" : "original",
+    "user_id" : "1",
+    "id" : "12",
+    "uuid" : "7A5E0BB6-A851-11E2-B9F2-F0608BC6C0B6"
+    "views" : {
+       "thumbnail" : {
+          "location" : "s3",
+          "mediafile_id" : "12",
+          "uuid" : "8612D28E-A851-11E2-9412-F0608BC6C0B6",
+          "size" : "12915",
+          "uri" : "7A61E6B4-A851-11E2-9CEA-F0608BC6C0B6_main_Video Mar 26, 2 59 53 PM_thumbnail.png",
+          "filename" : "Video Mar 26, 2 59 53 PM_thumbnail.png",
+          "url" : "http://viblio.filepicker.io.s3.amazonaws.com:80/7A61E6B4-A851-11E2-9CEA-F0608BC6C0B6_main_Video%20Mar%2026%2C%202%2059%2053%20PM_thumbnail.png?Signature=zhODpgAovbcu2gVUI4hmspz2P2g%3D&Expires=1366313112&AWSAccessKeyId=AKIAJHD46VMHB2FBEMMA",
+          "id" : "35",
+          "type" : "thumbnail",
+          "mimetype" : "application/png"
+       },
+       "poster" : {
+          "location" : "s3",
+          "mediafile_id" : "12",
+          "uuid" : "864C5716-A851-11E2-AADB-F0608BC6C0B6",
+          "size" : "97158",
+          "uri" : "7A61E6B4-A851-11E2-9CEA-F0608BC6C0B6_main_Video Mar 26, 2 59 53 PM_poster.png",
+          "filename" : "Video Mar 26, 2 59 53 PM_poster.png",
+          "url" : "http://viblio.filepicker.io.s3.amazonaws.com:80/7A61E6B4-A851-11E2-9CEA-F0608BC6C0B6_main_Video%20Mar%2026%2C%202%2059%2053%20PM_poster.png?Signature=8wPQjM49kHEtTodERkdJ1aoDVZo%3D&Expires=1366313112&AWSAccessKeyId=AKIAJHD46VMHB2FBEMMA",
+          "id" : "36",
+          "type" : "poster",
+          "mimetype" : "application/png"
+       },
+       "main" : {
+          "location" : "s3",
+          "mediafile_id" : "12",
+          "uuid" : "7A61E6B4-A851-11E2-9CEA-F0608BC6C0B6",
+          "size" : "5742173",
+          "uri" : "7A61E6B4-A851-11E2-9CEA-F0608BC6C0B6_main_Video Mar 26, 2 59 53 PM.mov",
+          "filename" : "Video Mar 26, 2 59 53 PM.mov",
+          "url" : "http://viblio.filepicker.io.s3.amazonaws.com:80/7A61E6B4-A851-11E2-9CEA-F0608BC6C0B6_main_Video%20Mar%2026%2C%202%2059%2053%20PM.mov?Signature=AZZKBuGNzpCphOojFKm%2FieBmN4M%3D&Expires=1366313112&AWSAccessKeyId=AKIAJHD46VMHB2FBEMMA",
+          "id" : "34",
+          "type" : "main",
+          "mimetype" : "video/quicktime"
+       }
+    }
+  }
+
+=head2 /services/mediafile/create
+
+Create a new mediafile.  The actual real file should have been uploaded to some storage location
+already.  
+
+=head3 Parameters
+
+=over
+
+=item filename
+
+A file name for this media file.  Should be a basename, not a path.  
+
+=item mimetype
+
+The mimetype for this media file, something like "video/mp4".
+
+=item size
+
+Size in bytes of this media file.  
+
+=item uri
+
+The "uri" for this media file.  This is not usually a full URL, but rather some sort of
+tag passed back from the permenent storage server that holds the actual file.  Media file
+views have "url" fields that are typically automatically derived from this uri field in
+some way.
+
+=item location
+
+The location where this media file is physically stored.  Currently one of "fp" (filepicker.io),
+"s3" (amazon S3 bucket) or "fs" (viblio local storage).  A client will know what to pass for
+location, as it has already uploaded the physical media file to the storage server before calling
+this endpoint.
+
+=back
+
+=head3 Response
+
+  { "media": $mediafile }
+
+The "url" fields of the media file views will be valid urls, suitable for display in a client 
+media player or image or video tag.
+
+=cut
+
 sub create :Local {
     my( $self, $c, $wid ) = @_;
     $wid = $c->req->param( 'workorder_id' ) unless( $wid );
@@ -35,6 +131,20 @@ sub create :Local {
 
     $self->status_ok( $c, { media => $fp->publish( $c, $mediafile ) } );
 }
+
+=head2 /services/mediafile/delete
+
+Delete a mediafile.  Deletes the file in permenant storage as well.
+
+=head3 Parameters
+
+Mediafile id or uuid
+
+=head3 Response
+
+  {}
+
+=cut
 
 sub delete :Local {
     my( $self, $c, $id ) = @_;
@@ -77,6 +187,11 @@ the user.  With paging parameters, returns paged results and a pager.
 
 =over
 
+=item type (optional)
+
+Specifies the type of media files to return.  If not specified, returns
+all types.
+
 =item page (optional)
 
 The page number to fetch items from.  The number of items per page
@@ -87,60 +202,18 @@ is specified by the 'rows' parameter.
 Ignored unless 'page' is specified.  Specifies number of items per page.
 This number of items (or less) will be delivered back to the client.
 
-This is another description
-
 =back
 
 =head3 Example Response
 
 Without paging:
 
-  {
-     "media" : [
-        {
-           "filename" : "facebook-connect2.png",
-           "user_id" : "3",
-           "path" : "/home/peebles/viblio-server/uploads/3/2CC7C252-93FC-11E2-83AF-729329C23E77",
-           "id" : "1",
-           "uuid" : "2CC7C252-93FC-11E2-83AF-729329C23E77",
-           "mimetype" : "image/png",
-           "size" : "130119"
-        },
-        {
-           "filename" : "facebook-connect2.png",
-           "user_id" : "3",
-           "path" : "/home/peebles/viblio-server/uploads/3/9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
-           "id" : "2",
-           "uuid" : "9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
-           "mimetype" : "image/png",
-           "size" : "130119"
-        }
-     ]
-  }
+  { "media" : [ $list-of-mediafiles ] }
 
 With paging:
 
   {
-     "media" : [
-        {
-           "filename" : "facebook-connect2.png",
-           "user_id" : "3",
-           "path" : "/home/peebles/viblio-server/uploads/3/2CC7C252-93FC-11E2-83AF-729329C23E77",
-           "id" : "1",
-           "uuid" : "2CC7C252-93FC-11E2-83AF-729329C23E77",
-           "mimetype" : "image/png",
-           "size" : "130119"
-        },
-        {
-           "filename" : "facebook-connect2.png",
-           "user_id" : "3",
-           "path" : "/home/peebles/viblio-server/uploads/3/9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
-           "id" : "2",
-           "uuid" : "9E8291F6-93FC-11E2-9E7D-7A9329C23E77",
-           "mimetype" : "image/png",
-           "size" : "130119"
-        }
-     ],
+     "media" : [ [ $list-of-mediafiles ],
      "pager" : {
         "entries_per_page" : "3",
         "total_entries" : "12",
@@ -162,12 +235,18 @@ sub list :Local {
       ( $c,
         [ page => undef,
           rows => 10,
+	  type => undef,
         ],
         @_ );
 
+    my $where = undef;
+    if ( $args->{type} ) {
+	$where = { type => $args->{type} };
+    }
+
     if ( $args->{page} ) {
 	my $rs = $c->user->mediafiles
-	    ->search( undef,
+	    ->search( $where,
 		      { prefetch => 'views',
 			page => $args->{page},
 			rows => $args->{rows} } );
@@ -195,7 +274,7 @@ sub list :Local {
     else {
 	my @media = ();
 	push( @media, VA::MediaFile->new->publish( $c, $_ ) )
-	    foreach( $c->user->mediafiles->all );
+	    foreach( $c->user->mediafiles->search( $where ) );
 	$self->status_ok( $c, { media => \@media } );
     }
 }

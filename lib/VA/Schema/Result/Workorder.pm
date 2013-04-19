@@ -75,8 +75,9 @@ __PACKAGE__->table("workorders");
 
 =head2 uuid
 
-  data_type: 'text'
+  data_type: 'varchar'
   is_nullable: 1
+  size: 40
 
 =head2 user_id
 
@@ -112,7 +113,7 @@ __PACKAGE__->add_columns(
     size => 24,
   },
   "uuid",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "varchar", is_nullable => 1, size => 40 },
   "user_id",
   {
     data_type      => "integer",
@@ -181,8 +182,8 @@ Composing rels: L</mediafile_workorders> -> mediafile
 __PACKAGE__->many_to_many("mediafiles", "mediafile_workorders", "mediafile");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-06 12:40:16
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bsy0aT1bh565JlDP1dkVFg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-18 09:39:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:LpDvY1f6ixvOCTAepP5nAQ
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

@@ -22,13 +22,28 @@ sub create {
 	  type => 'main' } );
     return undef unless( $main );
 
+    my $client = $c->client_type();
+
     if ( $params->{mimetype} =~ /^image/ ) {
 	# Create the thumbnail view
 	my $thumb = $mediafile->create_related( 
 	    'views',
 	    { filename => $params->{filename},
 	      mimetype => $params->{mimetype},
-	      uri => '/thumb' . $params->{url} . '?dim=64x64',
+	      uri => '/thumb' . $params->{url} . '?dim=' . $c->config->{thumbnails}->{$client}->{image},
+	      size => int($params->{size}),
+	      location => 'fs',
+	      type => 'thumbnail' } );
+	return undef unless( $thumb );
+    }
+
+    if ( $params->{mimetype} =~ /^video/ ) {
+	# Create the thumbnail view
+	my $thumb = $mediafile->create_related( 
+	    'views',
+	    { filename => $params->{filename},
+	      mimetype => $params->{mimetype},
+	      uri => '/thumb' . $params->{url} . '.png?vim=' . $c->config->{thumbnails}->{$client}->{image},
 	      size => int($params->{size}),
 	      location => 'fs',
 	      type => 'thumbnail' } );

@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `email` text CHARACTER SET utf8,
     `displayname` text CHARACTER SET utf8,
     `active` VARCHAR(32) DEFAULT NULL,
-    `uuid` text,
+    `uuid` VARCHAR(40) DEFAULT NULL,
     `accepted_terms` VARCHAR(32) DEFAULT NULL,
      PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -49,14 +49,15 @@ CREATE TABLE IF NOT EXISTS `user_roles` (
 CREATE TABLE IF NOT EXISTS `mediafiles` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `filename` text,
-    `uuid` text,
+    `uuid` VARCHAR(40) DEFAULT NULL,
     `user_id` int(11) NOT NULL DEFAULT '0',
+    `type` VARCHAR(40) NOT NULL DEFAULT 'original',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `views` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
-    `uuid` text,
+    `uuid` VARCHAR(40) DEFAULT NULL,
     `filename` text,
     `uri` text,
     `mimetype` VARCHAR(64) NOT NULL,
@@ -71,7 +72,7 @@ CREATE TABLE IF NOT EXISTS `workorders` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `name` text,
     `state` varchar(24) NOT NULL DEFAULT 'WO_NEW',
-    `uuid` text,
+    `uuid` VARCHAR(40) DEFAULT NULL,
     `user_id` int(11) NOT NULL DEFAULT '0',
     `submitted` VARCHAR(32) DEFAULT NULL,
     `completed` VARCHAR(32) DEFAULT NULL,

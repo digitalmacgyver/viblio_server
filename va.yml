@@ -10,6 +10,17 @@ Model::S3:
   aws_secret_access_key: gPKpaSdHdHwgc45DRFEsZkTDpX9Y8UzJNjz0fQlX
   retry: 1
 
+thumbnails:
+  web:
+    image: 128x128
+    video: 128x128
+  mobile_small:
+    image: 64x64
+    video: 64x64
+  mobile_large:
+    image: 128x128
+    video: 128x128
+
 s3:
   bucket: viblio.filepicker.io
   aws_use_https: 0

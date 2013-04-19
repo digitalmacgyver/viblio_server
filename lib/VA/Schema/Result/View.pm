@@ -63,8 +63,9 @@ __PACKAGE__->table("views");
 
 =head2 uuid
 
-  data_type: 'text'
+  data_type: 'varchar'
   is_nullable: 1
+  size: 40
 
 =head2 filename
 
@@ -115,7 +116,7 @@ __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "uuid",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "varchar", is_nullable => 1, size => 40 },
   "filename",
   { data_type => "text", is_nullable => 1 },
   "uri",
@@ -172,8 +173,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-06 16:53:10
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:leVYuOYjz+cHFYLOh1FwdQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-18 09:39:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cfsu3Tz8WSaWwzqUTYbq2g
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

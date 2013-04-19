@@ -99,8 +99,9 @@ __PACKAGE__->table("users");
 
 =head2 uuid
 
-  data_type: 'text'
+  data_type: 'varchar'
   is_nullable: 1
+  size: 40
 
 =head2 accepted_terms
 
@@ -128,7 +129,7 @@ __PACKAGE__->add_columns(
   "active",
   { data_type => "varchar", is_nullable => 1, size => 32 },
   "uuid",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "varchar", is_nullable => 1, size => 40 },
   "accepted_terms",
   { data_type => "varchar", is_nullable => 1, size => 32 },
 );
@@ -203,8 +204,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-06 12:40:16
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bjU/4cJt8u7iVFKfjfOb+Q
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-18 09:39:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:pp/BKv2pY2ALxqcAsRZW4Q
 
 sub TO_JSON {
     my $self = shift;

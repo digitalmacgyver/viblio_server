@@ -6,13 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css" type="text/css" />
-    <link href="/static/prettyphoto/css/prettyPhoto.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,700">
+    <link rel="stylesheet" href="/static/css/va.css" />
 
     <script src="/static/js/jquery-1.9.1.min.js"></script>
-    <script src="/static/js/jquery-migrate-1.1.1.min.js"></script>
+    <script src="/static/js/jquery.effects.core.js"></script>
+    <script src="/static/js/jquery.effects.slide.js"></script>
+
     <script src="/static/bootstrap/js/bootstrap.min.js"></script>
-<!--    <script src="/static/js/filepicker.js"></script> -->
-    <script src="/static/prettyphoto/js/jquery.prettyPhoto.dev.js"></script>
+    <script src="/static/html5lightbox/html5lightbox-source.js"></script>
+
     <script src="/static/js/va.js"></script>
 
     <!-- Get the message queue Faye js -->
@@ -63,6 +66,44 @@
       <div class="modal-footer">
 	<button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">OK</button>
 	<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+      </div>
+    </div>
+
+    <div id="dialog-localfile" class="modal hide">
+      <div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h3>Add Local File</h3>
+      </div>
+      <div class="modal-body">
+	<form class="inline" id="localfileform">
+	  <input type="file" name="upload" id="upload" />
+	  <button id="localfileformsubmit" type="submit" class="btn">Upload</button>
+	</form>
+      </div>
+      <div id="localfileprogress" class="progress">
+	<div class="bar"></div>
+      </div>
+      <div id="lfmessage" class="alert">
+      </div>
+      <div class="modal-footer">
+	<button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">OK</button>
+	<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+      </div>
+    </div>
+
+    <div id="dialog-wo" class="modal hide">
+      <div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h3>Project Complete!</h3>
+      </div>
+      <div class="modal-body">
+	<p><span class="completed-project-title"></span> is complete.  Would you like to watch your 
+	  new video now?</p>
+	<div class="completed-project-tn">
+	</div>
+      </div>
+      <div class="modal-footer">
+	<button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
       </div>
     </div>
 

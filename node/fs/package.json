@@ -10,6 +10,6 @@
 	"winston": "0.6.x",
 	"node-uuid": "1.4.x",
 	"mkdirp": "0.3.x",
-	"quickthumb": "0.0.x"
+	"imagemagick": "0.1.x"
     }
 }

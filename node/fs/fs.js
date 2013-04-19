@@ -6,7 +6,7 @@ var fs      = require( 'fs' );
 var path    = require( 'path' );
 
 // thumnails
-var qt = require( 'quickthumb' );
+var qt = require( './allthumb' );
 
 // config
 var kphyg = require( "konphyg" )( __dirname );
@@ -21,16 +21,6 @@ log.add( winston.transports.File,
 
 var app = express();
 
-app.configure(function() {
-    app.set('port', process.env.PORT || 3003);
-    app.use(express.bodyParser( config.body_parser_options ));
-    app.use(express.methodOverride());
-    app.use(app.router);
-    app.use('/thumb', 
-	    qt.static( path.dirname(config.body_parser_options.uploadDir),
-		       { type: 'crop' } ));
-});
-
 app.configure('development', function( ){
     app.use(express.logger('dev'));
     app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
@@ -41,10 +31,46 @@ app.configure('production', function( ){
     app.use(express.errorHandler());
 });
 
+app.configure(function() {
+    app.set('port', process.env.PORT || 3003);
+    app.use(express.methodOverride());
+    /*
+    app.use( function( req, res, next ) {
+	if (req.method.toUpperCase() === "OPTIONS"){
+            // Echo back the Origin (calling domain) so that the
+            // client is granted access to make subsequent requests
+            // to the API.
+            res.writeHead(
+                "204",
+                "No Content",
+                {
+                    "access-control-allow-origin": '*',
+                    "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "access-control-allow-headers": "content-type, accept",
+                    "access-control-max-age": 10, // Seconds.
+                    "content-length": 0
+                }
+            );
+             // End the response - we're not sending back any content.
+            return( res.end() );
+	}
+	else {
+	    next();
+	}
+    });
+    */
+    app.use(express.bodyParser( config.body_parser_options ));
+    app.use(app.router);
+    app.use('/thumb', 
+	    qt.static( path.dirname(config.body_parser_options.uploadDir),
+		       { type: 'crop' } ));
+});
+
 // Enable CORS
 app.all('/*', function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    res.header("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, OPTIONS" );
     next();
 });
 
@@ -60,6 +86,7 @@ app.all('/*', function(req, res, next) {
 // mobile clients do their own upload progress, or that web apps
 // use html5 xhr progress (see public/js/script.js).
 //
+
 app.post( '/upload', function( req, res, next ) {
     var dir   = config.body_parser_options.uploadDir;
     var file  = req.files.upload;
@@ -74,6 +101,15 @@ app.post( '/upload', function( req, res, next ) {
 
     var ret = new Array();
     for( var i=0; i<files.length; i++ ) {
+	// If the uploaded file is .mov (quicktime) then rename it to .mp4 and change the mime type.
+	// This makes the web app do html5 video instead of quicktime plugin for iPhone video uploads.
+	//
+	if ( files[i].path.match( /\.mov$/ ) ) {
+	    var rnamed = files[i].path.replace( '.mov', '.mp4' );
+	    fs.renameSync( files[i].path, rnamed );
+	    files[i].path = rnamed;
+	    files[i].type = 'video/mp4';
+	}
 	log.info( "upload", files[i].path + ' ' + files[i].size);
 	ret.push( { path: '/' + path.basename( config.body_parser_options.uploadDir ) + '/' + path.basename( files[i].path ),
 		    name: files[i].name,

@@ -335,7 +335,7 @@ sub forgot_password_request :Local {
 	$rec->delete;
     }
     else {
-	$self->status_ok( $c, { email => $args->{email} } );
+	$self->status_ok( $c, { user => $user } );
     }
 }
 

@@ -2,182 +2,48 @@
 [% PROCESS banner.tt %]
 [% PROCESS views.tt %]
 
-<style>
-.media:first-child {
-margin-top: 15px;
-}
-.delete-media {
-position: relative;
-top: -85px;
-left: -12px;
-cursor: pointer;
-}
-.media {
-padding-top: 9px;
-padding-left: 12px;
-</style>
-
+<script src="static/js/media.js"></script>
 <script>
 
-var mq;
 $(document).ready( function() {
-    filepicker.setKey( picker_key );
-
-    // Instanciate the message queue
-    mq = new Faye.Client( "[% c.message_server %]/faye", {
-	timeout: 120 });
-
-    // Get myself so I know my uuid, which I can then use to
-    // subscribe to messages
-    //
-    $.ajax({
-	url: '/services/user/me',
-	dataType: 'json',
-	success: function(json) {
-	    var uuid = json.user.uuid;
-	    mq.subscribe( '/messages/' + uuid, function( msg ) {
-		console.log( 'I have ' + msg.count + ' messages waiting' );
-		// go get them
-		$.ajax({
-		    url: "[% c.message_server %]/dequeue",
-		    data: { uid: uuid },
-		    dataType: 'jsonp',
-		    success: function( data ) {
-			// data.messages is an array of messages.  The
-			// number should match the data.count received
-			// previously.  Each item in the array is an object:
-			// { uid: $uid, message: $message }
-			// where $message is in whatever format the enqueuer
-			// posted (you guys must agree on a message format!)
-			var messages = data.messages;
-			console.log( "=> received " + messages.length + " messages" );
-			console.log( JSON.stringify( messages ) );
-		    }
-		});
-	    });
-	}
+    init_message_queue( "[% c.message_server %]", function( data ) {
+	default_process_mq( data );
+	list();
     });
+    local_file_upload_handler( "[% c.storage_server %]" );
     list();
 });
 
-function delete_media( id ) {
-    dialogManager.confirm(
-	"Delete this media file from your studio?",
-	function() {
-	    // Delete from server, then delete from filepicker
-	    $.ajax({
-		url: "/services/mediafile/delete",
-		data: { id: id },
-		dataType: 'json',
-		success: function( json ) {
-		    if ( json.error ) {
-			dialogManager.error( json.message, json.detail );
-		    }
-		    else {
-			$("#mid-"+id).remove();
-		    }
-		}
-	    });
-	});
-}
-
 function add_media() {
-    filepicker.pickMultiple ( 
-	{ 
-          extensions: ['3g2','3gp','3gp2','3gpp','3gpp2','aac','ac3',
-	  	       'eac3','ec3','f4a','f4b','f4v','flv','highwinds',
-		       'm4a','m4b','m4r','m4v','mkv','mov','mp3',
-		       'mp4','oga','ogg','ogv','ogx','ts','webm','wma',
-		       'wmv','png','jpg','gif',
-		       '3G2','3GP','3GP2','3GPP','3GPP2','AAC','AC3',
-		       'EAC3','EC3','F4A','F4B','F4V','FLV','HIGHWINDS',
-		       'M4A','M4B','M4R','M4V','MKV','MOV','MP3',
-		       'MP4','OGA','OGG','OGV','OGX','TS','WEBM','WMA',
-		       'WMV','PNG','JPG','GIF']
-        },
-        function( fpfiles ) {
-	    var num = fpfiles.length;
-            for( var i=0; i<fpfiles.length; i++ ) {
-                var url = fpfiles[i].url;
-		fpfiles[i]['location'] = 'fp';
-                $.ajax({
-                    url: "/services/mediafile/create",
-                    method: "POST",
-                    dataType: "json",
-                    data: fpfiles[i],
-                    success: function( json ) {
-			if ( json.error ) {
-			    dialogManager.error( json.message );
-			}
-			if ( --num == 0 ) {
-			    list();
-			}
-                    },
-                    error: function() {
-                        dialogManager.error( "failed to store " + url );
-			if ( --num == 0 ) {
-			    list();
-			}
-                    }
-                });
-            }
-        },
-        function( err ) {
-	    if ( err && err.code && err.code == 101 ) {
-		// User closed dialog without picking anything.  No problem.
-	    }
-	    else {
-		dialogManager.error( json2string( err ) );
-	    }
-        }
-    );
-    return;
+    add_filepicker_media( null, function() {
+	list();
+    });
 }
 
-// Get the list of media files that have been uploaded.  The
-// answer looks like:
-// { files: [] }
-// where each item in the array is a FPFile object, along with
-// "id" from the server-side database.
-//
-function list() {
-    $.ajax({
-        url: "/services/user/media",
-        dataType: 'json',
-        success: function( json ) {
-            if ( json.error ) {
-                dialogManager.error( json.message );
-            }
-            else {
-                $("#media-list").empty();
-                for( var i=0; i<json.media.length; i++ ) {
-                    // Use a client-side template to create a media-object
-                    if ( json.media[i].views.main.mimetype.indexOf('image') == 0 )
-                        $("#media-list").append( ich.media_file_image(json.media[i]) );
-                    else if ( json.media[i].views.main.mimetype.indexOf('audio') == 0 )
-                        $("#media-list").append( ich.media_file_audio(json.media[i]) );
-                    else
-                        $("#media-list").append( ich.media_file_video(json.media[i]) );
-                }
-                // apply the pretty photo plugin
-                $("#media-list a[rel^='prettyPhoto']").prettyPhoto({
-		    allow_resize: true,
-		    overlay_gallery: false
-		});
-            }
-        }
+function add_local() {
+    add_local_media( null, function() {
+	list();
     });
+}
+
+function list() {
+    list_media( null, function(){} );
 }
 
 </script>
 
-<h1>Your Media Files</h1>
-<div id="media-list-outter" class="well">
-  <ul id="media-list" class="thumbnails">
-  </ul>
+<div class="clearfix">
+    <h2>Your Media Files</h2>
+    <button class="btn btn-small pull-right"
+            onclick="media_edit();">Edit</button>
 </div>
+
+<div id="media-list" class="well well-large"></div>
+
 <button class="btn btn-primary" type="button"
-        onclick="add_media();">Add Media Files</button>
+        onclick="add_media();">Add Social Media Files</button>
+<button id="add-local-btn" class="btn btn-primary" type="button"
+        onclick="add_local();">Add Local Media Files</button>
 
 <!-- Pull in filepicker -->
 <script type="text/javascript" src="//api.filepicker.io/v1/filepicker.js"></script>

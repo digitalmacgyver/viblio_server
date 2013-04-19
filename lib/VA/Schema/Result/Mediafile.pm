@@ -68,8 +68,9 @@ __PACKAGE__->table("mediafiles");
 
 =head2 uuid
 
-  data_type: 'text'
+  data_type: 'varchar'
   is_nullable: 1
+  size: 40
 
 =head2 user_id
 
@@ -77,6 +78,13 @@ __PACKAGE__->table("mediafiles");
   default_value: 0
   is_foreign_key: 1
   is_nullable: 0
+
+=head2 type
+
+  data_type: 'varchar'
+  default_value: 'original'
+  is_nullable: 0
+  size: 40
 
 =cut
 
@@ -86,13 +94,20 @@ __PACKAGE__->add_columns(
   "filename",
   { data_type => "text", is_nullable => 1 },
   "uuid",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "varchar", is_nullable => 1, size => 40 },
   "user_id",
   {
     data_type      => "integer",
     default_value  => 0,
     is_foreign_key => 1,
     is_nullable    => 0,
+  },
+  "type",
+  {
+    data_type => "varchar",
+    default_value => "original",
+    is_nullable => 0,
+    size => 40,
   },
 );
 
@@ -166,8 +181,8 @@ Composing rels: L</mediafile_workorders> -> workorder
 __PACKAGE__->many_to_many("workorders", "mediafile_workorders", "workorder");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-06 12:40:16
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ggOxgQ5LRVUAwwtCgmpYWw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-18 09:39:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:aaxNKrfmxi1nZ/TnLOvSbQ
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

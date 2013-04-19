@@ -21,13 +21,20 @@ sub create {
 	  type => 'main' } );
     return undef unless( $main );
 
+    my $client = $c->client_type();
+    my $tsize = $c->config->{thumbnails}->{$client}->{image};
+    my ( $w, $h ) = ( 64, 64 );
+    if ( $tsize =~ /(\d+)x(\d+)/ ) {
+	$w = $1; $h = $2;
+    }
+
     if ( $params->{mimetype} =~ /^image/ ) {
 	# Create the thumbnail view
 	my $thumb = $mediafile->create_related( 
 	    'views',
 	    { filename => $params->{filename},
 	      mimetype => $params->{mimetype},
-	      uri => $params->{url} . '/convert?w=64&h=64&fit=scale',
+	      uri => $params->{url} . "/convert?w=${w}&h=${h}&fit=scale",
 	      size => int($params->{size}),
 	      location => 'fp',
 	      type => 'thumbnail' } );

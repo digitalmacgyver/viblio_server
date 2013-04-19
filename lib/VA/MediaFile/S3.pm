@@ -49,7 +49,8 @@ sub uri2url {
     my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
     my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
 	$aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
-    
+    $aws_generator->expires_in( 60 * 60 ); # one hour
+
     my $url = $aws_generator->get( $aws_bucket_name, $view->{uri} );
     $url =~ s/\/$aws_bucket_name\//\//g;
     return $url;

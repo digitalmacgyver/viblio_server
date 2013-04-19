@@ -1,6 +1,33 @@
 <!-- Templates -->
 <script src="/static/js/ICanHaz.min.js"></script>
 
+<script id="media_file" type="text/html">
+  <div id="mid-{{ id }}" class="media-file">
+    <button class="dbtn btn btn-danger btn-mini" onclick="delete_media('{{ id }}');">delete</button>
+    <a data-width="640" data-height="480" href="{{ views.main.url }}" class="thumbnail html5lightbox" title="{{ filename }}">
+      <img class="mplay-icon" src="/static/images/play.png" width="48" height="48" />
+      <img width="128" height="128"
+	   src="{{#views.thumbnail}}
+		  {{views.thumbnail.url}}
+		{{/views.thumbnail}}
+		{{^views.thumbnail}}
+		  /static/images/vid.png
+		{{/views.thumbnail}}
+		  "/>
+    </a>
+  </div>
+</script>
+
+<script id="audio_file" type="text/html">
+  <div id="mid-{{ id }}" class="media-file">
+    <button class="dbtn btn btn-danger btn-mini" onclick="delete_media('{{ id }}');">delete</button>
+    <a href="{{ views.main.url }}" class="thumbnail html5lightbox" title="{{ filename }}">
+      <img class="mplay-icon" src="/static/images/play.png" width="48" height="48" />
+      <img src="/static/images/mnote.png" width="128" height="128" />
+    </a>
+  </div>
+</script>
+
 <script id="media_file_video" type="text/html">
   <li id="mid-{{ id }}" class="media">
     <a class="pull-left" href="{{ views.main.url }}" rel="prettyPhoto[pp_gal]">
