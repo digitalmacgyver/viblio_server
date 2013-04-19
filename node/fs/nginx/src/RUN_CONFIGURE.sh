@@ -2,7 +2,7 @@ tar zxf nginx-1.2.6.tar.gz
 cd nginx-1.2.6
 wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.30.tar.gz
 tar zxf pcre-8.30.tar.gz
-./configure --prefix=/etc/nginx \
+./configure --prefix=/usr \
 	    --with-pcre=`pwd`/pcre-8.30 \
 	    --conf-path=/etc/nginx/nginx.conf \
 	    --error-log-path=/var/log/nginx/error.log \
