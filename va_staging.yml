@@ -47,8 +47,9 @@ Plugin::Log::Log4perlSimple:
   screen: 0
   file: /tmp/va-staging.log
 
+# Worker (eventually on SNS)
 Model::FD:
-  server: http://localhost:3001
+  server: http://10.253.76.141:3001
   type: application/json
 
 # Message Queue REST service
