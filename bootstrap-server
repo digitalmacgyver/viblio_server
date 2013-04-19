@@ -1,15 +1,81 @@
-sudo apt-get install build-essential
-sudo apt-get install apache2 \
-  libapache2-mod-fastcgi \
-  mysql-server \
-  mysql-client \
+sudo apt-get update
+
+# Server, no Catalyst
+sudo apt-get install build-essential \
   git \
   curl \
   ssh \
   libdb-dev \
-  libmysqlclient-dev \
   libreadline-dev \
   libjpeg-dev libpng-dev libgif-dev libt1-dev \
   libfreetype6-dev libtiff-dev \
   libexpat-dev libssl-dev libxml2-dev \
   gettext libssl-dev libfuse-dev
+
+# Catalyst DB support
+sudo apt-get install \
+  mysql-server \
+  mysql-client \
+  libmysqlclient-dev
+
+# nginx
+cd viblio-server/node/fs/nginx/src
+sh RUN_CONFIGURE.sh 
+cd nginx-1.2.6/
+sudo make install
+cd /
+sudo rm -rf /etc/nginx/
+sudo tar zxvf /deploy/staging/viblio-server/node/fs/nginx/src/nginx-system.tar.gz 
+cd /etc/init.d
+sudo update-rc.d nginx defaults
+sudo ./nginx start
+
+# node
+sudo -s
+cd /root
+tar zxvf /deploy/staging/viblio-server/node/node-v0.8.19.tar.gz
+cd node-v0.8.19
+./configure
+make
+make install
+exit
+
+# fu
+cd /deploy/staging/viblio-server/node/fu
+npm install
+sudo apt-get install imagemagick ffmpegthumbnailer
+sudo perl -MCPAN -e install JSON LWP::UserAgent XML::Simple
+
+# fd
+cd /deploy/staging/viblio-server/node/fd
+npm install
+sudo mkdir -p /opt/viblio
+sudo ln -s /deploy/staging/viblio-server/node/fu /opt/viblio/fu
+cd /etc/init.d
+sudo ln -s /deploy/staging/viblio-server/node/fd/fd-staging.init.d ./fd-staging
+sudo update-rc.d fd-staging defaults
+sudo ./fd-staging start
+
+# fs
+cd /deploy/staging/viblio-server/node/fs
+npm install
+sudo apt-get install imagemagick ffmpegthumbnailer
+sudo mkdir /mnt/fs
+sudo chown www-data:www-data /mnt/fs
+sudo ln -s /mnt/fs /opt/fs
+cd /etc/init.d
+sudo ln -s /deploy/staging/viblio-server/node/fs/fs-staging.init.d ./fs-staging
+sudo update-rc.d fs-staging defaults
+sudo ./fs-staging start
+cd /etc/nginx/sites-enabled
+sudo ln -s /deploy/staging/viblio-server/node/fs/nginx/secure.conf .
+sudo /etc/init.d/nginx restart
+
+# mq
+cd /deploy/staging/viblio-server/node/mq
+npm install
+sudo apt-get install redis-server
+cd /etc/init.d
+sudo ln -s /deploy/staging/viblio-server/node/mq/mq-staging.init.d ./mq-staging
+sudo update-rc.d mq-staging defaults
+sudo ./mq-staging start
