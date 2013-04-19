@@ -111,12 +111,11 @@ __PACKAGE__->config(
 	sender => {
 	    mailer => 'SMTP',
 	    mailer_args => {
-		#host=>'smtp.gmail.com',
-		host => 'smtp.1and1.com',
-		#ssl => 1,
-		sasl_username => 'peebles@video-analytics-inc.com',
-		sasl_password => 'toeman0',
-		#port => 465,
+		host=>'smtp.gmail.com',
+		ssl => 1,
+		sasl_username => 'aqpeeb@gmail.com',
+		sasl_password => 'Toeman007',
+		port => 465,
 	    },
 	},
     },

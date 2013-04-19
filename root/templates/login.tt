@@ -58,6 +58,17 @@ form div {
     margin-left: 3px;
 }
 
+#invite, #register {
+    text-align: center;
+}
+
+#backdrop {
+    background-image: url(/static/images/viblio-logo-blue-circle-dim.png);
+    background-repeat: no-repeat;
+    background-position: center;
+    height: 310px;
+}
+
 </style>
 
 <!-- Facebook stuff -->
@@ -124,6 +135,79 @@ form div {
         });
     }
 
+    function register() {
+	var fullname  = $("#fullname").val();
+	var email     = $("#email").val();
+	var password1 = $("#password1").val();
+	var password2 = $("#password2").val();
+	
+	if ( ! email ) {
+	    dialogManager.error( "Your email is required in order to send you an invite code." );
+	    return;
+	}
+	if ( ! ( password1 && password2 ) ) {
+	    dialogManager.error( "You need to establish a password now." );
+	    return;
+	}
+
+	if ( password1 != password2 ) {
+	    dialogManager.error( "Sorry, the two passwords you entered did not match." );
+	    return;
+	}
+	
+	$.ajax({
+	    url: '/services/na/invite_request',
+	    data: { email: email,
+		    password: password1,
+		    username: fullname },
+	    success: function( json ) {
+		if ( json.error ) {
+		    dialogManager.error( json.message );
+		}
+		else {
+		    dialogManager.info( "You have been sent an invitation code to your email address.  Enter that code into the form on the right to join today!" );
+		}
+	    }
+	});
+	     
+    }
+
+    function invite() {
+	var fullname  = $("#ifullname").val();
+	var email     = $("#iemail").val();
+	var password  = $("#ipassword").val();
+	var code      = $("#code").val();
+
+	if ( ! email ) {
+	    dialogManager.error( "Your email is required so we can confirm the invite code." );
+	    return;
+	}
+	if ( ! password ) {
+	    dialogManager.error( "We need that password ..." );
+	    return;
+	}
+	if ( ! code ) {
+	    dialogManager.error( "Please enter the code we sent you in an email." );
+	}
+
+	$.ajax({
+	    url: '/services/na/new_user',
+	    data: { email: email,
+		    password: password,
+		    username: fullname,
+		    code: code },
+	    success: function( json ) {
+		if ( json.error ) {
+		    dialogManager.error( json.message );
+		}
+		else {
+		    window.location = "/home";
+		}
+	    }
+	});
+
+    }
+
 </script>
 
 <!-- END Facebook stuff -->
@@ -161,30 +245,58 @@ form div {
   </div>
 </div>
 
-<div class="row">
-  <div class="span6">
-    <img src="[% c.uri_for('/static/images/viblio-logo-blue-circle.png') %]" />
-  </div>
+<div id="backdrop" class="row">
   <div id="register" class="span6">
     <div id="sub-heading">
       Get started - it's free!
     </div>
     <p>Registration takes less than a minute.</p>
-    <form method="post" action="[% c.uri_for('/register') %]" class="form-inline">
-      <div [% IF missing_name %]class="error"[% END %]>
+    <form class="form-inline">
+      <div>
 	<input type="text" class="input-xlarge" id="fullname" name="fullname" placeholder="Full Name" />
       </div>
-      <div [% IF missing_email %]class="error"[% END %]>
-	<input type="text" class="input-xlarge" id="email" name="email" placeholder="Email" />
+      <div>
+	<input type="email" class="input-xlarge" id="email" name="email" placeholder="Email" />
       </div>
-      <div [% IF missing_password %]class="error"[% END %]>
-	<input type="password" class="input-xlarge" id="password" name="password" placeholder="Password" />
+      <div>
+	<input type="password" class="input-xlarge" id="password1" name="password1" placeholder="Password" />
+      </div>
+      <div>
+	<input type="password" class="input-xlarge" id="password2" name="password2" placeholder="Password Again" />
       </div>
       <div style="margin-bottom: 15px;">&nbsp;</div>
-      <button type="submit" class="btn">
+      <button type="button" class="btn" onclick="register();">
 	Join Now
       </button>
     </form>
   </div>
+
+  <!-- <img src="[% c.uri_for('/static/images/viblio-logo-blue-circle.png') %]" /> -->
+
+  <div id="invite" class="span6">
+    <div id="sub-heading">
+      You're Invited!
+    </div>
+    <p>Enter your invite code below and you're in.</p>
+    <form class="form-inline">
+      <div>
+	<input type="text" class="input-xlarge" id="ifullname" name="ifullname" placeholder="Full Name" />
+      </div>
+      <div>
+	<input type="email" class="input-xlarge" id="iemail" name="iemail" placeholder="Email" />
+      </div>
+      <div>
+	<input type="password" class="input-xlarge" id="ipassword" name="ipassword" placeholder="Password" />
+      </div>
+      <div>
+	<input type="text" class="input-xlarge" id="code" name="code" placeholder="Invite Code" />
+      </div>
+      <div style="margin-bottom: 15px;">&nbsp;</div>
+      <button type="button" class="btn" onclick="invite();">
+	Complete
+      </button>
+    </form>
+  </div>
+
 </div>
 

@@ -207,6 +207,7 @@ sub invite_request :Local {
 
     # Send the invite
     #
+    $c->stash->{no_wrapper} = 1;
     $c->stash->{email} =
     { to       => $args->{email},
       from     => $c->config->{viblio_return_email_address},
@@ -272,7 +273,7 @@ sub new_user :Local {
     my $user = $c->model( 'DB::User' )->create
 	({ email => $pending->email,
 	   password => $pending->password,
-	   username => $pending->username || $username,
+	   displayname => $pending->username || $username,
 	   provider => 'local',
 	 });
 
@@ -318,6 +319,7 @@ sub forgot_password_request :Local {
 	    ( $c, $c->loc( "Failed to create record: [_1]", 'DB::PasswordReset' ) );
     }
     
+    $c->stash->{no_wrapper} = 1;
     $c->stash->{email} =
     { to       => $args->{email},
       from     => $c->config->{viblio_return_email_address},

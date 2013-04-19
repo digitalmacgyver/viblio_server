@@ -1,3 +1,6 @@
+[% IF no_wrapper;
+  content;
+ELSE -%]
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -109,3 +112,4 @@
 
   </body>
 </html>
+[% END %]
