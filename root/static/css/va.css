@@ -1,0 +1,28 @@
+.media-file {
+    width: 128px;
+    height: 128px;
+    float: left;
+    margin-left: 24px;
+    margin-bottom: 24px;
+    position: relative;
+}
+      
+#media-grid, #media-list {
+    height: 300px;
+    overflow-y: scroll;
+}
+
+.mplay-icon {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    z-index: 100;
+}
+
+.dbtn {
+    position: absolute;
+    display: none;
+    z-index: 100;
+    top: 10px;
+    right: 8px;
+}
