@@ -111,10 +111,10 @@ __PACKAGE__->config(
 	sender => {
 	    mailer => 'SMTP',
 	    mailer_args => {
-		host=>'smtp.gmail.com',
+		host=>'email-smtp.us-east-1.amazonaws.com',
 		ssl => 1,
-		sasl_username => 'aqpeeb@gmail.com',
-		sasl_password => 'Toeman007',
+		sasl_username => 'AKIAJLPWQJSOREYBUA6A',
+		sasl_password => 'AvXzxIUt91MTw5wT7xgK9B5rjaBt0MKLKpU0N9GkBmJ/',
 		port => 465,
 	    },
 	},
