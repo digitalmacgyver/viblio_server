@@ -21,20 +21,13 @@ sub create {
 	  type => 'main' } );
     return undef unless( $main );
 
-    my $client = $c->client_type();
-    my $tsize = $c->config->{thumbnails}->{$client}->{image};
-    my ( $w, $h ) = ( 64, 64 );
-    if ( $tsize =~ /(\d+)x(\d+)/ ) {
-	$w = $1; $h = $2;
-    }
-
     if ( $params->{mimetype} =~ /^image/ ) {
 	# Create the thumbnail view
 	my $thumb = $mediafile->create_related( 
 	    'views',
 	    { filename => $params->{filename},
 	      mimetype => $params->{mimetype},
-	      uri => $params->{url} . "/convert?w=${w}&h=${h}&fit=scale",
+	      uri => $params->{url},
 	      size => int($params->{size}),
 	      location => 'fp',
 	      type => 'thumbnail' } );
@@ -60,7 +53,27 @@ sub delete {
 
 sub uri2url {
     my( $self, $c, $view ) = @_;
-    return $view->{uri};
+    unless( $view->{type} eq 'thumbnail' ) {
+	return $view->{uri};
+    }
+
+    my ( $w, $h ) = ( 64, 64 );
+    
+    # request param overrides site config
+    if ( $c->req->param( 'thumbnails' ) ) {
+	if ( $c->req->param( 'thumbnails' ) =~ /(\d+)x(\d+)/ ) {
+	    $w = $1; $h = $2;
+	}
+    }
+    else {
+	my $client = $c->client_type();
+	my $tsize = $c->config->{thumbnails}->{$client}->{image};
+	if ( $tsize =~ /(\d+)x(\d+)/ ) {
+	    $w = $1; $h = $2;
+	}
+    }
+
+    return $view->{uri} . "/convert?w=${w}&h=${h}&fit=scale";
 }
 
 1;

@@ -30,7 +30,7 @@ sub create {
 	    'views',
 	    { filename => $params->{filename},
 	      mimetype => $params->{mimetype},
-	      uri => '/thumb' . $params->{url} . '?dim=' . $c->config->{thumbnails}->{$client}->{image},
+	      uri => '/thumb' . $params->{url},
 	      size => int($params->{size}),
 	      location => 'fs',
 	      type => 'thumbnail' } );
@@ -43,7 +43,7 @@ sub create {
 	    'views',
 	    { filename => $params->{filename},
 	      mimetype => $params->{mimetype},
-	      uri => '/thumb' . $params->{url} . '.png?vim=' . $c->config->{thumbnails}->{$client}->{image},
+	      uri => '/thumb' . $params->{url},
 	      size => int($params->{size}),
 	      location => 'fs',
 	      type => 'thumbnail' } );
@@ -68,6 +68,32 @@ sub delete {
 
 sub uri2url {
     my( $self, $c, $view ) = @_;
+
+    if ( $view->{type} eq 'thumbnail' ) {
+	# Modify the uri to include proper dimensions
+	my $xy = '64x64';
+	if ( $c->req->param( 'thumbnails' ) ) {
+	    $xy = $c->req->param( 'thumbnails' );
+	}
+	else {
+	    my $client = $c->client_type();
+	    if ( $view->{mimetype} =~ /^image/ ) {
+		$xy = $c->config->{thumbnails}->{$client}->{image};
+	    }
+	    elsif ( $view->{mimetype} =~ /^video/ ) {
+		$xy = $c->config->{thumbnails}->{$client}->{video};
+	    }
+	}
+
+	if ( $view->{mimetype} =~ /^image/ ) {
+	    $view->{uri} .= "?dim=$xy";
+	}
+	elsif ( $view->{mimetype} =~ /^video/ ) {
+	    $view->{uri} .= ".png?vim=$xy";
+	}
+	
+    }
+
     if ( $view->{uri} =~ /^\/thumb/ ) {
 	return $c->storage_server . $view->{uri};
     }
