@@ -14,7 +14,10 @@ use XML::Simple;
 my $config = do "config.pl";
 if ( $ENV{'VA_CONFIG_LOCAL_SUFFIX'} &&
      -f "config_" . $ENV{'VA_CONFIG_LOCAL_SUFFIX'} . ".pl" ) {
-    $config = do "config_" . $ENV{'VA_CONFIG_LOCAL_SUFFIX'} . ".pl";
+    $config_env = do "config_" . $ENV{'VA_CONFIG_LOCAL_SUFFIX'} . ".pl";
+    foreach my $key ( keys( %$config ) ) {
+	$config->{$key} = $config_env->{$key};
+    }
 }
 
 my $endpoint = $config->{endpoint};
