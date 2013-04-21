@@ -506,11 +506,15 @@ sub workorder_processed :Local {
     my $incoming = $c->{data};
 
     if ( $incoming->{error} ) {
+	$c->log->error( "The incoming workorder was marked errored" );
+	$c->logdump( $incoming );
+
 	$self->workorder_done( $c, undef, $incoming );
 	$self->status_ok( $c, {} );
     }
 
     if ( ! $incoming->{wo} ) {
+	$c->log->error( "No wo field found in WO" );
 	$self->workorder_done( $c, undef, {
 	    error => 1,
 	    message => "No 'wo' field found in incoming!" } );
@@ -519,6 +523,7 @@ sub workorder_processed :Local {
 
     my $wo = $c->model( 'DB::Workorder' )->find( $incoming->{wo}->{id} );
     unless( $wo ) {
+	$c->log->error( "Could not obtain db record for $incoming->{wo}->{id}" );
 	$self->workorder_done( $c, undef, {
 	    error => 1,
 	    message => "Could not find wo id=" .  $incoming->{wo}->{id} } );
@@ -530,75 +535,78 @@ sub workorder_processed :Local {
     my @infiles = @{$incoming->{media}};
 
     my $exception;
+    my @to_delete = ();
     try {
-        $c->model( 'DB' )->schema->txn_do( sub {
-
-	    foreach my $infile ( @infiles ) {
-		my $mediafile;
-		if ( ! $infile->{id} ) {
-		    # This is a new media file
-		    $mediafile = $c->model( 'DB::Mediafile' )->create({
-			user_id => $user_id,
-			filename => $infile->{filename} });
-		    $mediafile->add_to_workorders( $wo );
-		}
-		else {
-		    $mediafile = $mediafiles->find( $infile->{id} );
-		}
-
-		foreach my $key ( keys( %{$infile->{views}} ) ) {
-		    my $inview = $infile->{views}->{$key};
-		    my $view = $mediafile->view( $key );
-		    if ( ! $view ) {
-			# This is a new view
-			$mediafile->create_related( 'views', {
-			    location => $inview->{location},
-			    mimetype => $inview->{mimetype},
-			    uri => $inview->{uri},
-			    size => $inview->{size},
-			    type => $key,
-			    filename => $inview->{filename} || $infile->{filename} });
+        $c->model( 'DB' )->schema->txn_do( 
+	    sub {
+		foreach my $infile ( @infiles ) {
+		    my $mediafile;
+		    if ( ! $infile->{id} ) {
+			# This is a new media file
+			$mediafile = $c->model( 'DB::Mediafile' )->create({
+			    user_id => $user_id,
+			    filename => $infile->{filename} });
+			$mediafile->add_to_workorders( $wo );
 		    }
 		    else {
-			# existing view
-
-			# Detmine the old storage type and delete it
-			# THIS IS NOT REVERSIBLE!!  NEED TO MOVE OUTSIDE
-			# OF THE EXCEPTION
-			if ( $key eq 'main' ) {
-			    my $location = $view->location;
-			    if ( $location ) {
-				my $fp = new VA::MediaFile;
-				my $res = $fp->delete( $c, $mediafile );
-			    }
-			}
-
-			$view->location( $inview->{location} );
-			$view->uri( $inview->{uri} );
-			$view->size( $inview->{size} );
-			$view->mimetype( $inview->{mimetype} );
-			$view->update;
+			$mediafile = $mediafiles->find( $infile->{id} );
 		    }
-		}
-	    }
+		    
+		    foreach my $key ( keys( %{$infile->{views}} ) ) {
+			my $inview = $infile->{views}->{$key};
+			my $view = $mediafile->view( $key );
+			if ( ! $view ) {
+			    # This is a new view
+			    $mediafile->create_related( 'views', {
+				location => $inview->{location},
+				mimetype => $inview->{mimetype},
+				uri => $inview->{uri},
+				size => $inview->{size},
+				type => $key,
+				filename => $inview->{filename} || $infile->{filename} });
+			}
+			else {
+			    # existing view
 
-	    # Update the workorder state
-	    $wo->state( 'WO_COMPLETE' );
-	    $wo->completed( DateTime->now );
-	    $wo->update;
-					   });
+			    if ( $key eq 'main' ) {
+				my $location = $view->location;
+				if ( $location ) {
+				    push( @to_delete, VA::MediaFile->publish( $c, $mediafile ) );
+				}
+			    }
+
+			    $view->location( $inview->{location} );
+			    $view->uri( $inview->{uri} );
+			    $view->size( $inview->{size} );
+			    $view->mimetype( $inview->{mimetype} );
+			    $view->update;
+			}
+		    }
+
+		    $mediafile->type( $infile->{type} );
+		    $mediafile->update;
+		}
+
+		# Update the workorder state
+		$wo->state( 'WO_COMPLETE' );
+		$wo->completed( DateTime->now );
+		$wo->update;
+	    });
     } catch {
 	$exception = $_;
     };
     
     if ( $exception ) {
+	$c->log->error( "Exception processing incoming wo: $exception" );
 	$self->workorder_done( $c, $wo->user->uuid, {
 	    error => 1,
-	    message => 'Failed to process incoming workorder.',
-	    detail => $exception });
+	    message => 'Failed to process incoming workorder.' });
 	$self->status_ok( $c, {} );
     }
     else {
+	foreach my $mf ( @to_delete ) {
+	    new VA::MediaFile->delete( $c, $mf );
+	}
 	$self->workorder_done( $c, $wo->user->uuid, $wo->TO_JSON );
 	$self->status_ok( $c, {} );
     }
@@ -615,12 +623,14 @@ sub workorder_done :Private {
 	my $res = $c->model( 'MQ' )->post( '/enqueue', { uid => $uuid,
 							 wo  => $wo } );
 	if ( $res->code != 200 ) {
-	    $c->log->debug( "Failed to post wo to user message queue!" );
+	    $c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
+	    $c->logdump( { uid => $uuid,
+			   wo  => $wo } );
 	}
     }
     else {
 	# No one to send it to!
-	$c->log->debug( "WO: TOTAL FAILURE!" );
+	$c->log->error( "WO: TOTAL FAILURE! No one to send the WO to." );
     }
 }
 

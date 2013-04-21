@@ -82,8 +82,14 @@ sub submit :Local {
 
     my @media = $wo->mediafiles->search({},{prefetch=>'views'});
     my @published = ();
-    push( @published, VA::MediaFile->new->publish( $c, $_ ) )
-	foreach( @media );
+    foreach my $mf ( @media ) {
+	my $pf = VA::MediaFile->new->publish( $c, $mf );
+	if ( $pf->{views}->{thumbnail} ) {
+	    # don't send thumbnail views, worker will create its own
+	    delete $pf->{views}->{thumbnail};
+	}
+	push( @published, $pf );
+    }
 
     # Send the workorder to the queue
     my $res = $c->model( 'FD' )->post( '/workorder', { wo => $wo->TO_JSON, media => \@published } );
