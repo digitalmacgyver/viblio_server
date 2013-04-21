@@ -3,43 +3,53 @@ use Moose;
 use Module::Find;
 usesub VA::MediaFile;
 
-# Different types of media file sources will
-# likely override this function; see MediaFile::FilePicker
-# for an example.
+# This is a proxy class, not a super class.  The methods
+# called here will proxy to the class indicated by the
+# location of the media file.
+
+# create() will delegate to a location-based class that
+# creates and returns a real DB::Mediafile object.
 #
 sub create {
     my ( $self, $c, $params ) = @_;
 
     my $location = $params->{location};
     unless( $location ) {
-        $self->status_bad_request(
-            $c, $c->loc( "Cannot determine location of this media file" ));
+	$self->error( $c, "Cannot determine location of this media file" );
+	return undef;
     }
     my $klass = $c->config->{mediafile}->{$location};
     unless( $klass ) {
-        $self->status_bad_request(
-            $c, $c->loc( "Cannot determine type of this media file" ));
+	$self->error( $c, "Cannot determine type of this media file" );
+	return undef;
     }
     my $fp = new $klass;
     my $mediafile = $fp->create( $c, $c->req->params );
     return $mediafile;
 }
 
-# Media sources will override this, if they need
-# to do something extra-ordinary to remove the 
-# media.
+# Delete can take either a DB::Mediafile or a published mediafile (JSON)
+# and delegates to a location-based class to delete any persistent storage
+# related to the mediafile views.  It does not delete the passed in
+# $mediafile object.
 #
 sub delete {
     my( $self, $c, $mediafile ) = @_;
-    my $location = $mediafile->view( 'main' )->location;
+    my $location;
+    if ( ref $mediafile eq 'HASH' ) {
+	$location = $mediafile->{views}->{main}->{location};
+    }
+    else {
+	$location = $mediafile->view( 'main' )->location;
+    }
     unless( $location ) {
-        $self->status_bad_request(
-            $c, $c->loc( "Cannot determine location of this media file" ));
+	$self->error( $c, "Cannot determine location of this media file" );
+	return undef;
     }
     my $klass = $c->config->{mediafile}->{$location};
     unless( $klass ) {
-        $self->status_bad_request(
-            $c, $c->loc( "Cannot determine type of this media file" ));
+	$self->error( $c, "Cannot determine type of this media file" );
+	return undef;
     }
     my $fp = new $klass;
     return $fp->delete( $c, $mediafile );
@@ -70,6 +80,18 @@ sub publish {
 	    $fp->uri2url( $c, $mf_json->{'views'}->{$view->type} );
     }
     return $mf_json;
+}
+
+# Log or return error messages
+sub error {
+    my( $self, $c, $msg ) = @_;
+    if ( $msg ) {
+	$self->{emsg} = $msg;
+	$c->log->error( "VA::MediaFile ERROR: $msg" );
+    }
+    else {
+	return $self->{emsg};
+    }
 }
 
 1;

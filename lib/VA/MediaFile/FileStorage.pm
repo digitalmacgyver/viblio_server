@@ -55,10 +55,16 @@ sub create {
 
 sub delete {
     my( $self, $c, $mediafile ) = @_;
-    my $main = $mediafile->view( 'main' );
-    my $res = $c->model( 'FS' )->get( '/delete', { path => $main->uri } );
-    $c->log->debug( $res->response->as_string );
+    my $uri;
+    if ( ref $mediafile eq 'HASH' ) {
+	$uri = $mediafile->{views}->{main}->{uri};
+    }
+    else {
+	$uri = $mediafile->view( 'main' )->uri;
+    }
+    my $res = $c->model( 'FS' )->get( '/delete', { path => $uri } );
     if ( $res->code != 200 ) {
+	$c->log->error( "Delete FileStorage file: response status is: " . $res->response->as_string );
 	return undef;
     }
     else {

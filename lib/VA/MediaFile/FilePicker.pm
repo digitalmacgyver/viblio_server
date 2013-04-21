@@ -39,11 +39,17 @@ sub create {
 
 sub delete {
     my( $self, $c, $mediafile ) = @_;
-    my $main = $mediafile->view( 'main' );
-    my $path = URI->new( $main->uri )->path;
+    my $uri;
+    if ( ref $mediafile eq 'HASH' ) {
+	$uri = $mediafile->{views}->{main}->{uri};
+    }
+    else {
+	$uri = $mediafile->view( 'main' )->uri;
+    }
+    my $path = URI->new( $uri )->path;
     my $res = $c->model( 'FP' )->delete( $path, { key => $c->config->{filepicker}->{key} } );
-    $c->log->debug( $res->response->as_string );
     if ( $res->code != 200 ) {
+	$c->log->error( "Delete Filepicker.IO file: response status is: " . $res->response->as_string );
 	return undef;
     }
     else {
