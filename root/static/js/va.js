@@ -190,6 +190,12 @@ function local_file_upload_handler( server ) {
 //
 function default_process_mq( data ) {
     var m = data.messages[0];
+
+    if ( m.wo.error ) {
+	dialogManager.error( "We are sorry, but your project encountered errors during processing." );
+	return;
+    }
+
     // get the highlight reel
     $.ajax({
 	url: '/services/wo/highlight',
