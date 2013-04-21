@@ -14,8 +14,8 @@ use XML::Simple;
 my $config = do "config.pl";
 if ( $ENV{'VA_CONFIG_LOCAL_SUFFIX'} &&
      -f "config_" . $ENV{'VA_CONFIG_LOCAL_SUFFIX'} . ".pl" ) {
-    $config_env = do "config_" . $ENV{'VA_CONFIG_LOCAL_SUFFIX'} . ".pl";
-    foreach my $key ( keys( %$config ) ) {
+    my $config_env = do "config_" . $ENV{'VA_CONFIG_LOCAL_SUFFIX'} . ".pl";
+    foreach my $key ( keys( %$config_env ) ) {
 	$config->{$key} = $config_env->{$key};
     }
 }
@@ -81,71 +81,66 @@ my @toremove = ();
 
 foreach my $fpfile ( @media ) {
     if ( $fpfile->{views}->{'main'} ) {
-	my $view = 'main';
-	if ( $fpfile->{views}->{$view}->{done} && 
-	     ! ( $fpfile->{views}->{$view}->{errored} || $fpfile->{views}->{$view}->{aborted} ) ) {
+	my $view = $fpfile->{views}->{'main'};
+	my $uuid = $fpfile->{uuid};
+	if ( $view->{done} && ! ( $view->{errored} || $view->{aborted} ) ) {
 	    # This file should be good
-	    if ( -f $fpfile->{views}->{$view}->{localpath} ) {
-		push( @s3files, $fpfile->{views}->{$view}->{localpath} );
-		push( @toremove, $fpfile->{views}->{$view}->{localpath} );
-	    }
-	}
-    }
+	    if ( -f $view->{localpath} ) {
+		push( @s3files, $uuid . '^' . $view->{localpath} );
+		push( @toremove, $view->{localpath} );
 
-    if ( $fpfile->{views}->{'thumbnail'} ) {
-	my $view = 'thumbnail';
-	if ( $fpfile->{views}->{$view}->{done} && 
-	     ! ( $fpfile->{views}->{$view}->{errored} || $fpfile->{views}->{$view}->{aborted} ) ) {
-	    # This file should be good
-	    if ( -f $fpfile->{views}->{$view}->{localpath} ) {
-		push( @s3files, $fpfile->{views}->{$view}->{localpath} );
-		push( @toremove, $fpfile->{views}->{$view}->{localpath} );
-	    }
-	}
-    }
-    else {
-	# Create thumbnail, and poster if a video
-	if ( $fpfile->{views}->{'main'}->{mimetype} =~ /^image/ ) {
-	    my $view = 'thumbnail';
-	    $fpfile->{views}->{$view} = {};
-	    my( $fname, $dn, $bn ) = filenames( $fpfile->{views}->{'main'}->{localpath}, $fpfile->{filename}, 'thumbnail', 'png' );
-	    $fname = thumbnail( $fpfile->{views}->{'main'}->{localpath}, $config->{thumbnail_size} || '64x64', $fname );
-	    if ( $fname ) {
-		push( @s3files, $fname );
-		push( @toremove, $fname );
-		$fpfile->{views}->{$view}->{localpath} = $fname;
-		$fpfile->{views}->{$view}->{filename} = $bn;
-		$fpfile->{views}->{$view}->{mimetype} = 'application/png';
-	    }
-	}
-	elsif ( $fpfile->{views}->{'main'}->{mimetype} =~ /^video/ ) {
-	    my $view = 'poster';
-	    $fpfile->{views}->{$view} = {};
-	    my( $fname, $dn, $bn ) = filenames( $fpfile->{views}->{'main'}->{localpath}, $fpfile->{filename}, 'poster', 'png' );
-	    $fname = poster( $fpfile->{views}->{'main'}->{localpath}, $config->{poster_width} || '320', $fname );
-	    if ( $fname ) {
-		push( @s3files, $fname );
-		push( @toremove, $fname );
-		$fpfile->{views}->{$view}->{localpath} = $fname;
-		$fpfile->{views}->{$view}->{filename} = $bn;
-		$fpfile->{views}->{$view}->{mimetype} = 'application/png';
+		$view->{uri} = $uuid . '/' . basename( $view->{localpath} );
+		$view->{location} = 's3';
 
-		my $tname = $fname;
-		$tname =~ s/poster/thumbnail/g;
-		my $tbn = $bn;
-		$tbn =~ s/poster/thumbnail/g;
-		$tname = thumbnail( $fname, $config->{thumbnail_size} || '64x64', $tname );
-		if ( $tname ) {
-		    push( @s3files, $tname );
-		    push( @toremove, $tname );
-		    $fpfile->{views}->{'thumbnail'}->{localpath} = $tname;
-		    $fpfile->{views}->{'thumbnail'}->{filename} = $tbn;
-		    $fpfile->{views}->{'thumbnail'}->{mimetype} = 'application/png';
+		# If this is a video, create a poster view and a thumbnail view.  I currently
+		# support only one poster size, but multiple thumbnail sizes.  So we create a poster
+		# from the video, then we create multiple thumbnails from that poster.
+
+		# The poster and thumbnail filenames and s3 keys are derived from information
+		# from the main view.
+		
+		my $infile = $view->{localpath};
+		my( $in_bn, $in_dn, $in_ext ) = fileparse( $infile, qr/\.[^.]*/ );
+		if ( $view->{mimetype} =~ /^video/ ) {
+		    my $s3key = "${in_bn}_poster.png";
+		    my $ofile = "${in_dn}${s3key}";
+		    $ofile = poster( $infile, $config->{poster_width} || '320', $ofile );
+		    if ( $ofile ) {
+			push( @s3files, $uuid . '^' . $ofile );
+			push( @toremove, $ofile );
+			$fpfile->{views}->{poster}->{localpath} = $ofile;
+			$fpfile->{views}->{poster}->{filename} = $fpfile->{views}->{main}->{filename};
+			$fpfile->{views}->{poster}->{mimetype} = 'image/png';
+			$fpfile->{views}->{poster}->{uri} = "$uuid/$s3key";
+			$fpfile->{views}->{poster}->{location} = 's3';
+			$fpfile->{views}->{poster}->{size} = -s $ofile;
+		    }
+		    $infile = $ofile;  # input to thumbnails for video is poster
+		}
+		
+		if ( $view->{mimetype} =~ /^image/ || $view->{mimetype} =~ /^video/ ) {
+		    my $s3key = "${in_bn}_thumbnail";
+		    my $ofile = "${in_dn}${s3key}";
+		    $fpfile->{views}->{thumbnail}->{localpath} = $ofile;
+		    $fpfile->{views}->{thumbnail}->{filename} = $fpfile->{views}->{main}->{filename};
+		    $fpfile->{views}->{thumbnail}->{mimetype} = 'image/png';
+		    $fpfile->{views}->{thumbnail}->{uri} = "$uuid/$s3key";
+		    $fpfile->{views}->{thumbnail}->{location} = 's3';
+		    foreach my $size ( @{$config->{thumbnail_sizes}} ) {
+			my $tout = $ofile . "_" . $size . ".png";
+			$tout = thumbnail( $infile, $size, $tout );
+			if ( $tout ) {
+			    push( @s3files, $uuid . '^' . $tout );
+			    push( @toremove, $tout );
+			    $fpfile->{views}->{thumbnail}->{size} = -s $tout;
+			}
+		    }
 		}
 	    }
 	}
     }
 }
+
 
 # Upload to S3
 if ( upload_to_s3() == 0 ) {
@@ -155,25 +150,11 @@ if ( upload_to_s3() == 0 ) {
 
 # delete temporary files
 foreach my $file ( @toremove ) {
-    unlink( $file );
+    # unlink( $file );
 }
 unlink( $wofile );
 
 exit 0;
-
-sub filenames {
-    my ($ifile, $sfile, $add, $ext) = @_;
-    my $dirname = dirname( $ifile );
-    my $basename = basename( $ifile );
-
-    $basename =~ s/\..+$//g;
-    $basename .= "_${add}.${ext}";
-
-    $sfile =~ s/\..+$//g;
-    $sfile .= "_${add}.${ext}";
-
-    return( "$dirname/$basename", $dirname, $sfile );
-}
 
 sub send_response {
     my ( $endpoint, $data ) = @_;
@@ -262,29 +243,6 @@ sub upload_to_s3 {
 	if ( $@ ) {
 	    logger( "Failed to interpret FU input: $@" );
 	    send_error( "Worker: Could not interpret FU JSON: $@" );
-	    $err = 1;
-	    last;
-	}
-	# find the fpfile
-	my $found = 0;
-	foreach my $fpfile ( @media ) {
-	    foreach my $view ( keys %{$fpfile->{views}} ) {
-		if ( $info->{filename} eq $fpfile->{views}->{$view}->{localpath} ) {
-		    $found = 1;
-		    if ( $info->{error} eq 'true' ) {
-			$fpfile->{views}->{$view}->{fu_error} = 1;
-		    }
-		    else {
-			$fpfile->{views}->{$view}->{uri} = $info->{s3key};
-			$fpfile->{views}->{$view}->{location} = 's3';
-			$fpfile->{views}->{$view}->{size} = -s $fpfile->{views}->{$view}->{localpath};
-		    }
-		}
-	    }
-	}
-	if ( ! $found ) {
-	    logger( "Cannot find $info->{filename} in wo" );
-	    send_error( "Problems uploading to S3" );
 	    $err = 1;
 	    last;
 	}

@@ -32,15 +32,19 @@ if ( process.argv[args_startat] == '--no-uuids' ) {
     args_startat += 1;
 }
 
-process.argv.forEach( function( filename, index ) {
+process.argv.forEach( function( filespec, index ) {
     if ( index < args_startat ) return;  // args start at 2
+
+    var ii = filespec.split( "^" );
+    var spath = ii[0];
+    var filename = ii[1];
 
     var s3key;
     if ( no_uuids ) {
-	s3key = path.basename( filename );
+	s3key = spath + '/' + path.basename( filename );
     }
     else {
-	s3key = ugen() + '_' + path.basename( filename );
+	s3key = spath + '/' + ugen() + '_' + path.basename( filename );
     }
 
     log.info( filename );
