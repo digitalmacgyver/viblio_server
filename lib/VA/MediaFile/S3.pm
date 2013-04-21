@@ -15,32 +15,61 @@ sub delete {
 
     my $bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );
     unless( $bucket ) {
-	$c->log->debug( "Cannot get s3 bucket: " . 
+	$c->log->error( "Cannot get s3 bucket: " . 
 			$c->config->{s3}->{bucket} );
 	return undef;
     }
 
+    # All of the assets related to this media file are located in
+    # s3 under the mediafile's uuid/  so this single delete should
+    # blow it all away.
+    #
     my $ret = $mediafile;
-    foreach my $view ( $mediafile->views ) {
-	my $s3file = $bucket->object( key => $view->uri );
-	unless( $s3file ) {
-	    $c->log->debug( "Cannot get s3 object for " . $view->uri );
-	    $ret = undef;
-	    next;
+    my $uuid = ( $mediafile->{uuid} ? $mediafile->{uuid} : $mediafile->uuid );
+
+    try {
+	my $stream = $bucket->list({ prefix => $uuid . '/' });
+	unless( $stream ) {
+	    $c->log->debug( "Cannot create a bucket stream for " . $uuid . '/' );
+	    return undef;
 	}
-	try {
-	    $s3file->delete;
-	} catch {
-	    $c->log->debug( "Caught exception for " . $view->uri . ": $_" );
-	    $ret = undef;
-	};
-    }
+	until( $stream->is_done ) {
+	    foreach my $s3file ( $stream->items ) {
+		$c->log->debug( "Deleting S3 file: " . $s3file->key );
+		$s3file->delete;
+	    }
+	}
+    } catch {
+	$c->log->error( "Trying to delete S3 object: Caught exception for " . $uuid . ": $_" );
+	$ret = undef;
+    };
 
     return $ret;
 }
 
 sub uri2url {
     my( $self, $c, $view ) = @_;
+
+    my $s3key = $view->{uri};
+
+    if ( $view->{type} eq 'thumbnail' ) {
+        # Modify the uri to include proper dimensions
+        my $xy = '64x64';
+        if ( $c->req->param( 'thumbnails' ) ) {
+            $xy = $c->req->param( 'thumbnails' );
+        }
+        else {
+            my $client = $c->client_type();
+            if ( $view->{mimetype} =~ /^image/ ) {
+                $xy = $c->config->{thumbnails}->{$client}->{image};
+            }
+            elsif ( $view->{mimetype} =~ /^video/ ) {
+                $xy = $c->config->{thumbnails}->{$client}->{video};
+            }
+        }
+
+	$s3key .= '_' . $xy . '.png';
+    }
 
     my $aws_key = $c->config->{'Model::S3'}->{aws_access_key_id};
     my $aws_secret = $c->config->{'Model::S3'}->{aws_secret_access_key};
@@ -51,7 +80,7 @@ sub uri2url {
 	$aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
     $aws_generator->expires_in( 60 * 60 ); # one hour
 
-    my $url = $aws_generator->get( $aws_bucket_name, $view->{uri} );
+    my $url = $aws_generator->get( $aws_bucket_name, $s3key );
     $url =~ s/\/$aws_bucket_name\//\//g;
     return $url;
 }
