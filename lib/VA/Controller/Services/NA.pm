@@ -9,6 +9,12 @@ use Try::Tiny;
 
 BEGIN { extends 'VA::Controller::Services' }
 
+=head1 /services/na
+
+All services under this path are non-authenticated.  
+
+=cut
+
 # Random invitation code
 #
 sub invite_code :Private {
@@ -20,6 +26,29 @@ sub invite_code :Private {
     }
     return $code;
 }
+
+=head2 /services/na/authenticate
+
+The main authentication endpoint.  Parameters are email, password and realm.  The
+realm parameter selects the type of authentictor to use; currently 'facebook' or
+'db' (for local database).  Other realms may be added in the future.
+
+=head3 Response
+
+If successful, the response will be
+
+  { "user" : $user }
+
+If unsuccessful, the response will be a JSON struct that looks something like:
+
+  {
+   "error" : 1,
+   "message" : "Authentication Failure",
+   "detail" : "No session or session expired.",
+   "code" : 401
+  }
+
+=cut
 
 sub authenticate :Local {
     my ( $self, $c ) = @_;
@@ -44,7 +73,6 @@ sub authenticate :Local {
     }
 
     if ( $c->authenticate( $creds, $realm ) ) {
-	$c->logdump( { user => $c->user->obj->TO_JSON } );
 	$self->status_ok( $c, { user => $c->user->obj } );
 	return;
     } else {
@@ -54,6 +82,16 @@ sub authenticate :Local {
     }
 }
 
+=head2 /services/na/logout
+
+Log out of the current session.  
+
+=head3 Response
+
+ {}
+
+=cut
+
 sub logout :Local {
     my( $self, $c ) = @_;
     $c->logout();
@@ -61,10 +99,29 @@ sub logout :Local {
 	( $c, {} );
 }
 
-# Return information on installed languages, the default
-# language guessed from the browser, and the user's current
-# language.
-#
+=head2 /services/na/i18n
+
+Obtain information about the current localization environment; the user's current
+language and the languages available.
+
+=head3 Response
+
+An example response:
+
+  {
+   "guessed_locale" : "en",
+   "current_language" : [
+      "en"
+   ],
+   "user_session_language" : null,
+   "installed_languages" : {
+      "en" : "English",
+      "sv" : "Swedish"
+   }
+  }
+
+=cut
+
 sub i18n :Local {
     my( $self, $c ) = @_;
 
@@ -98,9 +155,46 @@ sub device_type : Private {
     return undef;
 }
 
-# Return what we know about the connecting device.  Can pass
-# in a user-agent, or it defaults to the user-agent header.
-#
+=head2 /services/na/device_info
+
+Return what we know about the connecting device.  Can pass in a user-agent, or it defaults 
+to the user-agent header.
+
+=head3 Response
+
+Example response (depends on user-agent):
+
+  {
+   "gecko_version" : null,
+   "is_pspgameos" : null,
+   "public_version" : 4,
+   "engine_version" : null,
+   "public_major" : "4",
+   "mobile" : 1,
+   "browser_string" : "Safari",
+   "device_name" : "Android",
+   "device_type" : "android",
+   "is_windows" : null,
+   "engine_string" : "KHTML",
+   "robot" : null,
+   "country" : "US",
+   "language" : "EN",
+   "user_agent" : "Mozilla/5.0 (Linux; U; Android 3.1; en-us; GT-P7310 Build/HMJ37) AppleWebKit/534.13 (KHTML, like Gecko) Version/4.0 XXX/534.13",
+   "engine_major" : null,
+   "os_string" : "Linux",
+   "device" : "android",
+   "is_mac" : null,
+   "public_minor" : ".0",
+   "engine_minor" : null,
+   "is_os2" : null,
+   "is_ps3gameos" : null,
+   "is_vms" : null,
+   "is_unix" : 1,
+   "is_dotnet" : null
+  }
+
+=cut
+
 sub device_info :Local {
     my( $self, $c ) = @_;
     my $d = $c->req->browser;
@@ -141,8 +235,32 @@ sub device_info :Local {
 	  } );
 }
 
-# New user registration.  
-#
+=head2 /services/na/invite_request
+
+This is the first step in the process of adding a new user to the local database.  This
+is a request to join.  The input parameters are email, password and username.  The username
+parameter is optional, and defaults to a system-generated default.  It is mapped to
+'displayname' in the user record.
+
+If the email is valid and the password non-null, a random code is generated and an email
+sent to the email address given with the code.  A PendingUser record is created in the
+database to hold the email, password and code information.
+
+The user is not logged in.  They must receive the code and enter it back into the
+system with the matching email and password using the /services/na/new_user endpoint
+to gain access to the system.
+
+=head3 Response
+
+A successful response will be
+
+  { "username": $username }
+
+which will be the username passed in, or the system-generated one if a username
+was not supplied.
+
+=cut
+
 sub invite_request :Local {
     my $self = shift;
     my $c    = shift;
@@ -229,6 +347,24 @@ sub invite_request :Local {
     }
 }
 
+=head2 /services/na/new_user
+
+This is the companion endpoint to /services/na/invite_request.  Once the user
+obtains a random invite code, this endpoint is called with email and password
+used in invite_request, along with the code obtained from the email.  A username
+parameter may also be passed, and if present, overrides the previous username
+value in the PendingUser record.
+
+If the email, password and code parameters match a PendingUser record, that
+record becomes the basis for a User record and the user is logged into the system.
+The caller may redirect into the application.
+
+=head3 Response
+
+  { "user": $user }
+
+=cut
+
 sub new_user :Local {
     my $self = shift;
     my $c    = shift;
@@ -289,6 +425,17 @@ sub new_user :Local {
     }
 }
 
+=head2 /services/na/forgot_password_request
+
+If the user forgets their password, this endpoint can be called with a 'email'
+parameter.  An email is sent to the email address given with a code.
+
+=head3 Response
+
+  { "user" : $user }
+
+=cut
+
 sub forgot_password_request :Local {
     my $self = shift;
     my $c    = shift;
@@ -340,6 +487,17 @@ sub forgot_password_request :Local {
 	$self->status_ok( $c, { user => $user } );
     }
 }
+
+=head2 /services/na/new_password
+
+Once the forgetting user receives a code in email, they can pass email, the new password and the
+code to this endpoint.  If everything matches, the password will be changed and the user will be logged in.
+
+=head3 Response
+
+  { "user" : $user }
+
+=cut
 
 sub new_password :Local {
     my $self = shift;
@@ -398,109 +556,24 @@ sub new_password :Local {
     }
 }
 
-# For the test app, which cannot handle cookies for authenticated downloads, provile
-# a hook here that can do unauthenticated downloads.
-#
-sub download :Local {
-    my( $self, $c, $uid, $id ) = @_;
-    $uid = $c->req->param( 'uid' ) unless( $uid );
-    $id  = $c->req->param( 'id' ) unless( $id );
-    $id  = $c->req->param( 'uuid' ) unless( $id );
+=head2 /services/na/workorder_processed
 
-    unless( $uid && $id ) {
-	my $err = $c->loc( "Missing input params: need userid and media id" );
-	$c->res->status( 404 );
-	$c->res->body( "404 Not Found\n\n$err" );
-	$c->detach;
-    }
+When a workorder is complete, this is the endpoint that should be called.  It is
+meant to be called from the Amazon SNS bus.  This call should be protected
+by some sort of key exchange method, or something.
 
-    my $user = $c->model( 'DB::User' )->find($uid);
-    unless( $user ) {
-	my $err = $c->loc( "Cannot find user for uid [_1]", $uid );
-	$c->res->status( 404 );
-	$c->res->body( "404 Not Found\n\n$err" );
-	$c->detach;
-    }
+This is meant to be called as a POST with a workorder structure as JSON in the
+request body.
 
-    my $mediafile = $user->mediafiles->find({ id => $id });
-    # try uuid if not found
-    unless( $mediafile ) {
-	$mediafile = $user->mediafiles->find({ uuid => $id });
-    }
+This routine attempts to reconcile the incoming workorder changes with the
+original, creating new media files and modifying existing media files as
+indicated in the incoming workorder.
 
-    # Not found should return a real html-based 404
-    #
-    if ( ! $mediafile ||
-	 ! -f $mediafile->path ) {
-	my $err = $c->loc( "No media file found at id/uuid [_1]", $id );
-	$c->res->status( 404 );
-	$c->res->body( "404 Not Found\n\n$err" );
-	$c->detach;
-    }
+When it is done, it will call workorder_done() to send async notification to
+the user that originally sent the workorder to be processed.
 
-    my $type = $mediafile->mimetype;
-    my $len  = $mediafile->size;
-    my $size = $len;
+=cut
 
-    if ( $type eq 'video/quicktime' ) {
-	$type = "video/mp4";
-    }
-
-    $c->res->body( "Content-type: $type\015\012\015\012" );
-
-    $c->res->content_type( $type );
-    $c->res->content_length( $len );
-    $c->res->header( 'Content-Disposition' => 'filename=' . $mediafile->filename );
-    $c->res->header( 'Accept-Ranges' => 'bytes' );
-
-    # support seeking
-    my $offset = 0;
-    if ( my $range = $c->req->header( 'Range' ) ) {
-        $range =~ m/bytes=(\d+)-/xms;
-        $offset = $1;
-        $c->log->debug( "Got Range request, seeking to $offset" );
-        
-        if ( $offset < $size ) {
-            $c->res->status( 206 );
-            $c->res->header( 'Content-Ranges' => "bytes $offset-$size/$size" );
-        }
-        else {
-            $offset = 0;
-        }
-    }
-
-
-    my $f = new FileHandle $mediafile->path;
-    unless( $f ) {
-	my $err = $c->loc( "No media file found at id/uuid [_1]", $id );
-	$c->res->status( 404 );
-	$c->res->body( "404 Not Found\n\n$err" );
-	$c->detach;
-    }
-
-    if ( seek $f, $offset, 0 ) {
-	my $blk_size = 1024 * 4;
-	my $data;
-	my $sz = $f->read( $data, $blk_size );
-	while( $sz > 0 ) {
-	    $c->log->debug( "--> sending $sz bytes ..." );
-	    $c->res->write( $data );
-	    $sz = $f->read( $data, $blk_size );
-	}
-    }
-    else {
-	$c->log->debug( "FAILED TO SEEK TO $offset" );
-    }
-
-    $f->close();
-}
-
-# This is the endpoint used when WO processing is done.
-# It's non-authenticated because its coming from the
-# amazon SNS queuing system.  We should change this.
-# When a workorder is submitted, we should generate
-# some kind of signature handshake that can be checked.
-#
 sub workorder_processed :Local {
     my( $self, $c ) = @_;
     my $incoming = $c->{data};

@@ -4,7 +4,12 @@ use namespace::autoclean;
 
 BEGIN { extends 'VA::Controller::Services' }
 
-=head2 Mediafile
+=head1 Mediafile
+
+Documentation for the mediafile structure is large enough to be
+contained in another document.
+
+=head2 Example Mediafile
 
 An example mediafile looks like:
 
