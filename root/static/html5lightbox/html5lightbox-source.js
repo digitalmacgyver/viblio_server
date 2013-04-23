@@ -182,7 +182,7 @@ function loadHtml5LightBox(jsFolder) {
                         
                         // run time                     
                         
-                        // Array(type, href, title, group, width, height)
+                        // Array(type, href, title, group, width, height, mimetype, poster)
                         options.elemArray = [];                                 
                         options.curElem = -1;                                   
                                 
@@ -209,7 +209,8 @@ function loadHtml5LightBox(jsFolder) {
                         options.isIPad = (navigator.userAgent.match(/iPad/i) != null);
                         options.isIPhone = ((navigator.userAgent.match(/iPod/i) != null) || (navigator.userAgent.match(/iPhone/i) != null));
                         options.isMobile = (options.isAndroid || options.isIPad || options.isIPhone);
-                        //options.isMobile = true;
+		        // (qp) force mobile and damn the consequences!
+                        options.isMobile = true;
                         options.resizeTimeout = -1;
                         
                         var inst = this;
@@ -239,7 +240,7 @@ function loadHtml5LightBox(jsFolder) {
                                         if (fileType < 0)
                                                 return;
                                                                                 
-                                        options.elemArray.push(new Array(fileType, $this.attr('href'), $this.attr('title'), $this.data('group'), $this.data('width'), $this.data('height')));
+                                    options.elemArray.push(new Array(fileType, $this.attr('href'), $this.attr('title'), $this.data('group'), $this.data('width'), $this.data('height'), $this.data('mimetype'), $this.data('poster')));
                                 });
                                 
                                 
@@ -610,6 +611,8 @@ function loadHtml5LightBox(jsFolder) {
                         {
                                 var dataW = (options.elemArray[options.curElem][4]) ? options.elemArray[options.curElem][4] : 480;
                                 var dataH = (options.elemArray[options.curElem][5]) ? options.elemArray[options.curElem][5] : 270;
+			    var mimetype = (options.elemArray[options.curElem][6]) ? options.elemArray[options.curElem][6] : 'video/mp4';
+			    var poster = options.elemArray[options.curElem][7];
                                 var sizeObj = calcElemSize({w: dataW, h: dataH});
                                 dataW = sizeObj.w;
                                 dataH = sizeObj.h;
@@ -630,10 +633,11 @@ function loadHtml5LightBox(jsFolder) {
                                                                 isHTML5 = true;
                                                 }
                                         }
-                                    console.log( 'isHTMl5 is ' + isHTML5 );
+
                                         if (isHTML5)
                                         {
-                                                embedHTML5Video($("#html5lightbox-video"), dataW, dataH, options.elemArray[options.curElem][1], options.autoplay);
+                                            embedHTML5Video($("#html5lightbox-video"), dataW, dataH, options.elemArray[options.curElem][1], options.autoplay, mimetype, poster);
+					    $(".fplayer").flowplayer();
                                         }
                                         else
                                         {
@@ -933,26 +937,15 @@ function loadHtml5LightBox(jsFolder) {
                         /**
                          * Embed video with HTML5 video tag
                          */
-                        function embedHTML5Video($container, w, h, src, autoplay)
+                    function embedHTML5Video($container, w, h, src, autoplay, mimetype, poster)
                         {
-                                if ( src.match( /\.mov$/ ) )
-				    $container.html("<div style='position:absolute;display:block;width:" + w + "px;height:" + h + "px;'>" +
-						    "<video width=" + w + " height=" + h + ((autoplay) ? " autoplay" : "") + 
-						    " controls='controls'>" +
-						    "<source src='" + src + "' type='video/mp4'>" +
-						    "</video></div>");
-				else
-                                    $container.html("<div style='position:absolute;display:block;width:" + w + "px;height:" + h + "px;'><video width=" + w + " height=" + h + ((autoplay) ? " autoplay" : "") + " controls='controls' src='" + src + "'></div>");
-                                
-                                if (options.isAndroid)
-                                {
-                                        var $play = $("<div style='position:absolute;display:block;cursor:pointer;width:" + w + "px;height:" + h + "px;background:url(\"" + options.skinfolder + "playvideo_64.png\") no-repeat center center;'></div>").appendTo($container);;
-                                        
-                                        $play.unbind('click').click(function(){
-                                                
-                                                $("video", $(this).parent())[0].play();
-                                        });
-                                }
+			    //$container.html("<div class='fplayer' style='position:absolute;display:block;width:" + w + "px;height:" + h + "px;'>" +
+			    //		    "<video><source type='" + mimetype + "' src='" + src + "' /></video></div>");
+			    var P = '';
+			    if ( poster )
+				P = 'poster="' + poster + '"';
+			    $container.html("<div class='fplayer' style='position:absolute;display:block;width:" + w + "px;height:" + h + "px;'>" +
+					    "<video " + P + "><source type='" + mimetype + "' src='" + src + "' /></video></div>");
                         }
                           
                         /**

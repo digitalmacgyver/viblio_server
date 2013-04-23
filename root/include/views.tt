@@ -4,7 +4,14 @@
 <script id="media_file" type="text/html">
   <div id="mid-{{ id }}" class="media-file">
     <button class="dbtn btn btn-danger btn-mini" onclick="delete_media('{{ id }}');">delete</button>
-    <a data-width="640" data-height="480" href="{{ views.main.url }}" class="thumbnail html5lightbox" title="{{ filename }}">
+    <a data-width="640" data-height="480" href="{{ views.main.url }}" 
+       class="thumbnail html5lightbox" 
+       title="{{ filename }}" 
+       data-mimetype="{{ views.main.mimetype }}"
+       {{#views.poster}}
+         data-poster="{{ views.poster.url }}"
+       {{/views.poster}}
+       >
       <img class="mplay-icon" src="/static/images/play.png" width="48" height="48" />
       <img width="128" height="128"
 	   src="{{#views.thumbnail}}
@@ -26,61 +33,6 @@
       <img src="/static/images/mnote.png" width="128" height="128" />
     </a>
   </div>
-</script>
-
-<script id="media_file_video" type="text/html">
-  <li id="mid-{{ id }}" class="media">
-    <a class="pull-left" href="{{ views.main.url }}" rel="prettyPhoto[pp_gal]">
-      <img width="64" height="64" class="img-polaroid" id="{{ id }}" class="media-object" data-src="" 
-	   src="{{#views.thumbnail}}
-		  {{views.thumbnail.url}}
-		{{/views.thumbnail}}
-		{{^views.thumbnail}}
-		  /static/images/vid.png
-		{{/views.thumbnail}}
-		  "/>
-    </a>
-    <div class="media-body">
-      <h4 class="media-heading">{{ filename }}</h4>
-      <p>
-        type: {{ views.main.mimetype }}<br />
-        size: {{ views.main.size }}
-      </p>
-    </div>
-    <span onclick="delete_media('{{ id }}');" class="delete-media badge badge-important">&times;</span>
-  </li>
-</script>
-
-<script id="media_file_audio" type="text/html">
-  <li id="mid-{{ id }}" class="media">
-    <a class="pull-left" href="{{ views.main.url }}?qt=true" rel="prettyPhoto[pp_gal]">
-      <img width="64" height="64" class="img-polaroid" id="{{ id }}" class="media-object" data-src="" src="/static/images/mnote.png" />
-    </a>
-    <div class="media-body">
-      <h4 class="media-heading">{{ filename }}</h4>
-      <p>
-        type: {{ views.main.mimetype }}<br />
-        size: {{ views.main.size }}
-      </p>
-    </div>
-    <span onclick="delete_media('{{ id }}');" class="delete-media badge badge-important">&times;</span>
-  </li>
-</script>
-
-<script id="media_file_image" type="text/html">
-  <li id="mid-{{ id }}" class="media">
-    <a class="pull-left media-file-image" href="{{ views.main.url }}" rel="prettyPhoto[pp_gal]">
-      <img width="64" height="64" class="img-polaroid" id="{{ id }}" class="media-object" data-src="" src="{{ views.thumbnail.url }}" />
-    </a>
-    <div class="media-body">
-      <h4 class="media-heading">{{ filename }}</h4>
-      <p>
-        type: {{ views.main.mimetype }}<br />
-        size: {{ views.main.size }}
-      </p>
-    </div>
-    <span onclick="delete_media('{{ id }}');" class="delete-media badge badge-important">&times;</span>
-  </li>
 </script>
 
 <script id="wo_bom" type="text/html">
