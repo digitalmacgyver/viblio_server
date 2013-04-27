@@ -10,6 +10,10 @@ Model::S3:
   aws_secret_access_key: gPKpaSdHdHwgc45DRFEsZkTDpX9Y8UzJNjz0fQlX
   retry: 1
 
+s3:
+  bucket: viblio.filepicker.io
+  aws_use_https: 0
+
 thumbnails:
   web:
     image: 128x128
@@ -20,10 +24,6 @@ thumbnails:
   mobile_large:
     image: 128x128
     video: 128x128
-
-s3:
-  bucket: viblio.filepicker.io
-  aws_use_https: 0
 
 # Map mediafile location to a MediaFile object type
 mediafile:
@@ -68,15 +68,6 @@ authentication:
         user_model: DB::User
       auto_create_user: 1
 
-# Where uploads go before controller sees them
-#
-uploadtmp: /tmp
-
-# Where media files are stored.  This is the root,
-# under the root files are stored under userid/mediaid.
-#
-mediapath: uploads
-
 Model::DB:
   schema_class: VA::Schema
   connect_info:
@@ -114,5 +105,10 @@ Model::FS:
   server: http://localhost:5000
   type: application/json
 
+# This secret is used by the nginx in front of the 'fs'
+# server to provide secure streaming of stored media files.
+# It is also used to protect the api for 'fs' uploads, and the
+# api for workorder submission and completion.
+#
 file_storage:
   secret: viblio321

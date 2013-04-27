@@ -396,6 +396,29 @@ sub workorders :Local {
     $c->forward( '/services/wo/list' );
 }
 
+=head2 /services/user/auth_token
+
+Obtain a token that can be used to access the public apis on the file
+server and message queue services.  The services may accept the token
+in different ways.  This endpoint generates a token based on the logged
+in user's uuid and a secret password that is known by viblio servers.
+When the token and the user's uuid are passed to a secured api, a new
+token can be generated with the uuid and shared secret, then compared
+with the tramsmitted token.
+
+=head3 Response
+
+  { "uuid": $uuid, "token": $token }
+
+=cut
+
+sub auth_token :Local {
+    my( $self, $c ) = @_;
+    my $uuid = $c->user->obj->uuid;
+    my $token = $self->secure_token( $c, $uuid );
+    $self->status_ok( $c, { uuid => $uuid, token => $token } );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

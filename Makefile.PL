@@ -72,6 +72,7 @@ requires 'Catalyst::Model::REST';
 requires 'DBIx::Class::ColumnDefault';
 requires 'Catalyst::Model::S3';
 requires 'Net::Amazon::S3::Client';
+requires 'Digest::HMAC_MD5';
 
 test_requires 'Test::More' => '0.88';
 catalyst;
