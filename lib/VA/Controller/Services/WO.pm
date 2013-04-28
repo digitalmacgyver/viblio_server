@@ -91,8 +91,14 @@ sub submit :Local {
 	push( @published, $pf );
     }
 
+    # Add the viblio site security token.  This will be checked
+    # on an incoming completed workorder to make sure it originated
+    # here, by a valid user.
+    my $woJSON = $wo->TO_JSON;
+    $woJSON->{'site-token'} = $c->secure_token( $wo->user->uuid );
+
     # Send the workorder to the queue
-    my $res = $c->model( 'FD' )->post( '/workorder', { wo => $wo->TO_JSON, media => \@published } );
+    my $res = $c->model( 'FD' )->post( '/workorder', { wo => $woJSON, media => \@published } );
     $c->log->debug( "Workorder sent, response code is " . $res->code );
     $c->log->debug( "Workorder sent, data is:" );
     $c->logdump( $res->data );

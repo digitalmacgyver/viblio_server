@@ -559,8 +559,7 @@ sub new_password :Local {
 =head2 /services/na/workorder_processed
 
 When a workorder is complete, this is the endpoint that should be called.  It is
-meant to be called from the Amazon SNS bus.  This call should be protected
-by some sort of key exchange method, or something.
+meant to be called from the Amazon SNS bus.  
 
 This is meant to be called as a POST with a workorder structure as JSON in the
 request body.
@@ -600,6 +599,23 @@ sub workorder_processed :Local {
 	$self->workorder_done( $c, undef, {
 	    error => 1,
 	    message => "Could not find wo id=" .  $incoming->{wo}->{id} } );
+	$self->status_ok( $c, {} );
+    }
+
+    # Check the security token
+    if ( ! $incoming->{wo}->{'site-token'} ) {
+	$c->log->error( "Incoming wo is missing the site-token field." );
+	$self->workorder_done( $c, $wo->user->uuid, {
+	    error => 1,
+	    message => "Missing authentication handshake parameters." } );
+	$self->status_ok( $c, {} );
+    }
+
+    if ( $c->secure_token( $wo->user->uuid ) ne $incoming->{wo}->{'site-token'} ) {
+	$c->log->error( "Incoming wo authentication failure." );
+	$self->workorder_done( $c, $wo->user->uuid, {
+	    error => 1,
+	    message => "Authentication failure." } );
 	$self->status_ok( $c, {} );
     }
 

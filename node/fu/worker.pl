@@ -263,6 +263,7 @@ sub simplify {
 
     $r->{wo}->{name} = $wo->{wo}->{name};
     $r->{wo}->{uuid} = $wo->{wo}->{uuid};
+    $r->{wo}->{'site-token'} = $wo->{wo}->{'site-token'};
 
     $r->{media} = ();
     foreach my $m ( @{$wo->{media}} ) {
