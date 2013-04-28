@@ -10,6 +10,7 @@ use Scalar::Util        ();
 use Catalyst::Exception ();
 
 use Data::Dumper;
+use Digest::HMAC_MD5 qw(hmac_md5 hmac_md5_hex);
 
 # Use Data::Dumper to print an object into the
 # debug log.
@@ -63,6 +64,16 @@ sub client_type {
     return 'mobile-large' if ( $d->ipad );
     return 'web';
 }
+
+# Generate a secure token to protect public apis
+#
+sub secure_token {
+    my( $c, $data ) = @_;
+    return hmac_md5_hex( $data,
+			 $c->config->{file_storage}->{secret} );
+}
+
+
 
 1;
 

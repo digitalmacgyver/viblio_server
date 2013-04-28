@@ -5,7 +5,6 @@ use JSON::XS ();
 use Email::AddressParser;
 use Email::Address;
 use Net::Nslookup;
-use Digest::HMAC_MD5 qw(hmac_md5 hmac_md5_hex);
 
 # My own 'REST' controller.  Catalyst::Controller::REST was just too restrictive
 # on the inputs and input methods.  I want my user's to be able to use get, put 
@@ -309,14 +308,6 @@ sub endpoints :Local {
     }
 
     $self->status_ok( $c, { endpoints => \@methods } );
-}
-
-# Generate a secure token to protect public apis
-#
-sub secure_token :Private {
-    my( $self, $c, $data ) = @_;
-    return hmac_md5_hex( $data,
-			 $c->config->{file_storage}->{secret} );
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -415,7 +415,7 @@ with the tramsmitted token.
 sub auth_token :Local {
     my( $self, $c ) = @_;
     my $uuid = $c->user->obj->uuid;
-    my $token = $self->secure_token( $c, $uuid );
+    my $token = $c->secure_token( $uuid );
     $self->status_ok( $c, { uuid => $uuid, token => $token } );
 }
 
