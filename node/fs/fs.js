@@ -4,6 +4,7 @@ var mkdirp  = require( 'mkdirp' );
 var uuid    = require( 'node-uuid' );
 var fs      = require( 'fs' );
 var path    = require( 'path' );
+var crypto  = require( 'crypto' );
 
 // thumnails
 var qt = require( './allthumb' );
@@ -18,6 +19,8 @@ var log = require( "winston" );
 log.add( winston.transports.File, 
 	 { filename: config.logfile, 
 	   json: false } );
+
+var site_secret = config.site_secret;
 
 var app = express();
 
@@ -34,44 +37,46 @@ app.configure('production', function( ){
 app.configure(function() {
     app.set('port', process.env.PORT || 3003);
     app.use(express.methodOverride());
-    /*
-    app.use( function( req, res, next ) {
-	if (req.method.toUpperCase() === "OPTIONS"){
-            // Echo back the Origin (calling domain) so that the
-            // client is granted access to make subsequent requests
-            // to the API.
-            res.writeHead(
-                "204",
-                "No Content",
-                {
-                    "access-control-allow-origin": '*',
-                    "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
-                    "access-control-allow-headers": "content-type, accept",
-                    "access-control-max-age": 10, // Seconds.
-                    "content-length": 0
-                }
-            );
-             // End the response - we're not sending back any content.
-            return( res.end() );
-	}
-	else {
-	    next();
-	}
-    });
-    */
     app.use(express.bodyParser( config.body_parser_options ));
+
+    // Support cross-domain access from web clients using CORS
+    app.use( function( req, res, next ) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header('Access-Control-Allow-Headers', 
+		   req.headers['access-control-request-headers']);
+        if ( req.method == 'OPTIONS' ) {
+            res.status(204);
+            return res.end();
+        }
+        else {
+            next();
+        }
+    });
+
+    // Secret token authentication
+    app.use( function( req, res, next ) {
+        var token = req.header( 'x-site-token' ) || req.param( 'site-token' );
+        var uid   = req.header( 'x-site-uid' )   || req.param( 'site-uid' );
+        if ( ! token || ! uid ) {
+            log.error( "Missing auth headers" );
+            res.status(401);
+            res.end();
+        }
+        else if ( crypto.createHmac('md5', site_secret).update( uid ).digest('hex') != token ) {
+            var md5 = crypto.createHmac('md5', site_secret).update( uid ).digest('hex');
+            log.error( "Authentication token mismatch." );
+            res.status(401);
+            res.end();
+        }
+        else {
+            next();
+        }
+    });
+
     app.use(app.router);
     app.use('/thumb', 
 	    qt.static( path.dirname(config.body_parser_options.uploadDir),
 		       { type: 'crop' } ));
-});
-
-// Enable CORS
-app.all('/*', function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.header("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, OPTIONS" );
-    next();
 });
 
 // The form field must be named 'upload' and can be a multi-file

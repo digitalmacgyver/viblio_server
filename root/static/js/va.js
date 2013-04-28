@@ -1,6 +1,12 @@
 // filepicker.io key
 var picker_key = "AUBFLi68nRXe7sDddBPBVz";
 
+// holds the viblio auth tokens
+var site_auth = {
+    uid:   null,
+    token: null
+};
+
 // utiltiy
 function json2string( json ) {
     return JSON.stringify( json );
@@ -151,6 +157,8 @@ function local_file_upload_handler( server ) {
         var formData = new FormData();
         var file = document.getElementById('upload').files[0];
         formData.append('upload', file);
+	formData.append('site-uid', site_auth.uid );
+	formData.append('site-token', site_auth.token );
 
         var xhr = new XMLHttpRequest();
         xhr.open( 'post', server + '/upload', true );
@@ -216,5 +224,16 @@ function default_process_mq( data ) {
 
 $(document).ready( function() {
     filepicker.setKey( picker_key );
+    // Get the site auth tokens
+    $.ajax({
+	url: '/services/user/auth_token',
+	dataType: 'json',
+	success: function( json ) {
+	    if ( ! json.error ) {
+		site_auth.uid = json.uuid;
+		site_auth.token = json.token;
+	    }
+	}
+    });
 });
 

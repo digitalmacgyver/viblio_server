@@ -62,7 +62,7 @@ sub delete {
     else {
 	$uri = $mediafile->view( 'main' )->uri;
     }
-    my $res = $c->model( 'FS' )->get( '/delete', { path => $uri } );
+    my $res = $c->model( 'FS' )->get_secure( $c, '/delete', { path => $uri } );
     if ( $res->code != 200 ) {
 	$c->log->error( "Delete FileStorage file: response status is: " . $res->response->as_string );
 	return undef;
@@ -76,6 +76,9 @@ sub uri2url {
     my( $self, $c, $view ) = @_;
 
     if ( $view->{type} eq 'thumbnail' ) {
+	my $uid = $c->user->obj->uuid;
+	my $token = $c->secure_token( $uid );
+    
 	# Modify the uri to include proper dimensions
 	my $xy = '64x64';
 	if ( $c->req->param( 'thumbnails' ) ) {
@@ -92,10 +95,10 @@ sub uri2url {
 	}
 
 	if ( $view->{mimetype} =~ /^image/ ) {
-	    $view->{uri} .= "?dim=$xy";
+	    $view->{uri} .= "?dim=$xy&site-uid=$uid&site-token=$token";
 	}
 	elsif ( $view->{mimetype} =~ /^video/ ) {
-	    $view->{uri} .= ".png?vim=$xy";
+	    $view->{uri} .= ".png?vim=$xy&site-uid=$uid&site-token=$token";
 	}
 	
     }
