@@ -12,7 +12,7 @@ use base 'Catalyst::Model::REST';
 sub get_secure {
     my ( $self, $c, $path, $params ) = @_;
     $params = {} unless( $params );
-    $params->{'site-uid'} = $c->user->obj->uuid;
+    $params->{'site-uid'} = $c->user->uuid;
     $params->{'site-token'} = $c->secure_token( $params->{'site-uid'} );
     my $res = $self->get( $path, $params );
     return $res;

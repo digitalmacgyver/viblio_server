@@ -76,7 +76,7 @@ sub uri2url {
     my( $self, $c, $view ) = @_;
 
     if ( $view->{type} eq 'thumbnail' ) {
-	my $uid = $c->user->obj->uuid;
+	my $uid = $c->user->uuid;
 	my $token = $c->secure_token( $uid );
     
 	# Modify the uri to include proper dimensions

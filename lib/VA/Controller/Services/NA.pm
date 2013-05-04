@@ -602,6 +602,11 @@ sub workorder_processed :Local {
 	$self->status_ok( $c, {} );
     }
 
+    # The user is the user associated with the workorder.  Downstream
+    # methods expect a $c->user, but this is not an authenticated
+    # endpoint!  So ...
+    $c->user( $wo->user );
+
     # Check the security token
     if ( ! $incoming->{wo}->{'site-token'} ) {
 	$c->log->error( "Incoming wo is missing the site-token field." );
