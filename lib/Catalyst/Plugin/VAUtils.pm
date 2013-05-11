@@ -58,10 +58,10 @@ sub client_type {
     # should be one of 'web', 'mobile_small', 'mobile_large'
     # This code is derived from /services/NA/device_info
     my $d = $c->req->browser;
-    return 'mobile-small' if ( $d->android );
-    return 'mobile-small' if ( $d->ipod );
-    return 'mobile-small' if ( $d->iphone );
-    return 'mobile-large' if ( $d->ipad );
+    return 'mobile_small' if ( $d->android );
+    return 'mobile_small' if ( $d->ipod );
+    return 'mobile_small' if ( $d->iphone );
+    return 'mobile_large' if ( $d->ipad );
     return 'web';
 }
 
