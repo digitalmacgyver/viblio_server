@@ -86,9 +86,35 @@ foreach my $fpfile ( @media ) {
 	if ( $view->{done} && ! ( $view->{errored} || $view->{aborted} ) ) {
 	    # This file should be good
 	    if ( -f $view->{localpath} ) {
-		push( @s3files, $uuid . '^' . $view->{localpath} );
+		my $infile = $view->{localpath};
+		my( $in_bn, $in_dn, $in_ext ) = fileparse( $infile, qr/\.[^.]*/ );
+
 		push( @toremove, $view->{localpath} );
 
+		# If its a video and its not already video/mp4, then transcode
+		# it into mp4 and replace the original.
+		if ( $view->{mimetype} ne 'video/mp4' ) {
+		    my $newfile = "${in_dn}${in_bn}.mp4";
+		    my $res = xcode( $infile, $newfile );
+		    if ( $res eq $newfile ) {
+			# Successful
+			logger( "successful transcode!" );
+			$infile = $newfile;
+			( $in_bn, $in_dn, $in_ext ) = fileparse( $infile, qr/\.[^.]*/ );
+			my( $fn_bn, $fn_dn, $fn_ext ) = fileparse( $view->{filename}, qr/\.[^.]*/ );
+			$view->{localpath} = $infile;
+			$view->{filename} = "${fn_bn}.mp4";
+			$fpfile->{filename} = "${fn_bn}.mp4";
+			$view->{mimetype} = 'video/mp4';
+			$view->{size} = -s $infile;
+			push( @toremove, $view->{localpath} );
+		    }
+		}
+		else {
+		    # Its already mp4, but we still need to fix the metadata position
+		    fix_video( $infile );
+		}
+		push( @s3files, $uuid . '^' . $view->{localpath} );
 		$view->{uri} = $uuid . '/' . basename( $view->{localpath} );
 		$view->{location} = 's3';
 
@@ -99,8 +125,6 @@ foreach my $fpfile ( @media ) {
 		# The poster and thumbnail filenames and s3 keys are derived from information
 		# from the main view.
 		
-		my $infile = $view->{localpath};
-		my( $in_bn, $in_dn, $in_ext ) = fileparse( $infile, qr/\.[^.]*/ );
 		if ( $view->{mimetype} =~ /^video/ ) {
 		    my $s3key = "${in_bn}_poster.png";
 		    my $ofile = "${in_dn}${s3key}";
@@ -204,6 +228,40 @@ sub poster {
     }
     else {
 	return undef;
+    }
+}
+
+# Use python-based qtfaststart ( https://github.com/danielgtaylor/qtfaststart )
+# to move the metadata in quicktime, mp4 and m4v files to the
+# start of the video to make streaming better.
+#
+sub fix_video {
+    my ( $infile, $mimetype ) = @_;
+
+    if ( $mimetype eq 'video/quicktime' ||
+	 $mimetype eq 'video/mp4' ||
+	 $mimetype eq 'video/x-m4v' ) {
+	if ( -x "/usr/local/bin/qtfaststart" ) {
+	    logger( "qtfaststarting $infile ..." );
+	    my $cmd = "/usr/local/bin/qtfaststart $infile";
+	    system( "$cmd 2>&1 >/dev/null" );
+	}
+    }
+}
+
+# Transcode a video into .mp4
+#
+sub xcode {
+    my( $infile, $outfile ) = @_;
+    logger( "transcoding $infile to $outfile ..." );
+    my $cmd = "ffmpeg -v 0 -y -i $infile $outfile";
+    if ( system( "$cmd </dev/null 2>&1 >/dev/null" ) ) {
+	logger( "Failed to transcode $infile to $outfile" );
+	return $infile;
+    }
+    else {
+	fix_video( $outfile, 'video/mp4' );
+	return $outfile
     }
 }
 

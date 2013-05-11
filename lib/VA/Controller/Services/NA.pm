@@ -673,10 +673,12 @@ sub workorder_processed :Local {
 			    $view->uri( $inview->{uri} );
 			    $view->size( $inview->{size} );
 			    $view->mimetype( $inview->{mimetype} );
+			    $view->filename( $inview->{filename} || $infile->{filename} );
 			    $view->update;
 			}
 		    }
 
+		    $mediafile->filename( $infile->{filename} );
 		    $mediafile->type( $infile->{type} );
 		    $mediafile->update;
 		}
