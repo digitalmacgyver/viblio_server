@@ -30,3 +30,5 @@ VA-0.01.tar.gz
 ^node/fs/node_modules
 ^node/fs/nginx/src/nginx-1.2.6/
 
+^ffmpeg/
+
