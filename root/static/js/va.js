@@ -153,6 +153,7 @@ function local_file_upload_handler( server ) {
     var handler = function(evt) {
         evt.preventDefault();
         $("#lfmessage").hide();
+        $("#localfileprogress .bar").css( 'width', '1%' );
         $("#localfileprogress").show();
         var formData = new FormData();
         var file = document.getElementById('upload').files[0];
@@ -196,7 +197,7 @@ function local_file_upload_handler( server ) {
 // The default handler for an arriving message.  Assumes this is
 // an arriving workorder.
 //
-function default_process_mq( data ) {
+function default_process_mq( data, play ) {
     var m = data.messages[0];
 
     if ( m.wo.error ) {
@@ -213,7 +214,14 @@ function default_process_mq( data ) {
 	    var view = json.media;
 	    $("#dialog-wo .completed-project-title").html( m.wo.name );
 	    $("#dialog-wo .completed-project-tn").empty().append( ich.media_file( view ) );
-	    $("#dialog-wo .completed-project-tn .html5lightbox").html5lightbox();
+
+	    if ( play ) 
+		$("#dialog-wo .completed-project-tn .html5lightbox").click( function() {
+		    play( json.media );
+		});
+	    else
+		$("#dialog-wo .completed-project-tn .html5lightbox .mplay-icon").remove();
+
 	    $("#dialog-wo .completed-project-tn a").on( 'click', function() {
 		dialogManager.hide();
 	    });
@@ -222,8 +230,57 @@ function default_process_mq( data ) {
     });
 }
 
+// Apply and start a flowplayer
+function startVideoPlayer( el, media ) {
+    var video = document.createElement("video"),
+    idevice = /ip(hone|ad|od)/i.test(navigator.userAgent),
+    noflash = flashembed.getVersion()[0] === 0,
+    simulate = !idevice && noflash &&
+	!!(video.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"').replace(/no/, ''));
+
+    $(el).flowplayer( "/static/flowplayer/flowplayer-3.2.16.swf", {
+	clip: {
+	    url: 'mp4:amazons3/viblio.filepicker.io/' + media.views.main.uri,
+	    ipadUrl: encodeURIComponent(media.views.main.url),
+	    // URL for sharing on FB, etc.
+	    pageUrl: 'http://viblio.com/what/about/secure/s3/urls',
+	    scaling: 'fit',
+	    provider: 'rtmp'
+	},
+	plugins: {
+	    rtmp: {
+		url: '/static/flowplayer/flowplayer.rtmp-3.2.12.swf',
+		netConnectionUrl: 'rtmp://ec2-54-214-160-185.us-west-2.compute.amazonaws.com/vods3'
+	    },
+	    viral: {
+		url: '/static/flowplayer/flowplayer.viralvideos-3.2.13.swf',
+		share: { 
+		    description: 'Video highlight by Viblio',
+		    facebook: true,
+		    twitter: true,
+		    myspace: false,
+		    livespaces: true,
+		    digg: false,
+		    orkut: false,
+		    stumbleupon: false,
+		    bebo: false
+		},
+		embed: false,
+		email: false
+	    }
+	},
+	canvas: {
+	    backgroundColor:'#254558',
+	    backgroundGradient: [0.1, 0]
+	}
+    }).flowplayer().ipad({simulateiDevice: simulate});
+}
+
+var filepicker;
 $(document).ready( function() {
-    filepicker.setKey( picker_key );
+    if ( filepicker )
+	filepicker.setKey( picker_key );
+
     // Get the site auth tokens
     $.ajax({
 	url: '/services/user/auth_token',

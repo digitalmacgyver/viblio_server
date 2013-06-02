@@ -253,6 +253,7 @@ sub list :Local {
 	my $rs = $c->user->mediafiles
 	    ->search( $where,
 		      { prefetch => 'views',
+			order_by => { -desc => 'id' },
 			page => $args->{page},
 			rows => $args->{rows} } );
 	my $pager = $rs->pager;
@@ -279,7 +280,7 @@ sub list :Local {
     else {
 	my @media = ();
 	push( @media, VA::MediaFile->new->publish( $c, $_ ) )
-	    foreach( $c->user->mediafiles->search( $where ) );
+	    foreach( $c->user->mediafiles->search( $where, {order_by => { -desc => 'id' }} ) );
 	$self->status_ok( $c, { media => \@media } );
     }
 }

@@ -56,7 +56,7 @@ function add_local() {
 // "id" from the server-side database.
 //
 function list() {
-    list_media( $("#create").data( "wo" ).id, function(){} );
+    list_media( $("#create").data( "wo" ).id, null, function(){} );
 }
 
 function create_project() {

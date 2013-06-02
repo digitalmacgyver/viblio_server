@@ -26,3 +26,33 @@
     top: 10px;
     right: 8px;
 }
+
+ul.carousel {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+    width: 42em;
+    height: 24em;
+}
+ul.carousel li {
+    height: 20em;
+    width: 30em;
+    background-color: #ccc;
+    text-align: center;
+    cursor: pointer;
+}
+ul.carousel li.roundabout-in-focus {
+    cursor: default;
+}
+ul.carousel li span {
+    display: block;
+}
+ul.carousel li span img {
+    width: 100%;
+    height: 100%;
+}
+
+#video-player {
+    padding: 10px;
+    background-color: #fff;
+}

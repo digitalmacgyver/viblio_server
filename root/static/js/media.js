@@ -123,13 +123,15 @@ function add_local_media( wid, callback ) {
     });
 }
 
-function list_media( wid, callback ) {
+function list_media( wid, play, callback ) {
     var url = '/services/user/media';
     var data = {};
+    var from = 's3';
 
     if ( wid ) {
 	url = '/services/wo/bom';
 	data = { id: wid };
+	from = 'anywhere';
     }
 
     $.ajax({
@@ -143,16 +145,27 @@ function list_media( wid, callback ) {
             else {
                 $("#media-list").empty();
                 for( var i=0; i<json.media.length; i++ ) {
-                    // Use a client-side template to create a media-object
-		    if ( json.media[i].views.main.mimetype.indexOf('audio') == 0 )
-                        $("#media-list").append( ich.media_file_audio(json.media[i]) );
-                    else
-                        $("#media-list").append( ich.media_file(json.media[i]) );
+		    if ( from == 'anywhere' || json.media[i].views.main.location == from ) {
+			// Use a client-side template to create a media-object
+			if ( json.media[i].views.main.mimetype.indexOf('audio') == 0 ) {
+                            $("#media-list").append( ich.media_file_audio(json.media[i]) );
+			}
+			else {
+                            $("#media-list").append( ich.media_file(json.media[i]) );
+			    if ( play ) {
+				$("#media-list #mid-"+json.media[i].id).find( 'a' ).data( 'media', json.media[i] ).click( function() {
+				    var media = $(this).data( 'media' );
+				    play( media );
+				});
+			    }
+			    else {
+				$("#media-list #mid-"+json.media[i].id).find( '.mplay-icon' ).remove();
+			    }
+			}
+		    }
                 }
 		// apply the clear so the grid wraps the content
 		$( '<br style="clear: left;" />' ).appendTo( '#media-list' );
-		// apply the lightbox player
-		$("#media-list .html5lightbox").html5lightbox();
 		callback();
             }
         }

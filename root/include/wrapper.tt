@@ -10,8 +10,6 @@ ELSE -%]
 
     <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css" type="text/css" />
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,700">
-    <link rel="stylesheet" type="text/css"
-          href="http://releases.flowplayer.org/5.4.0/skin/minimalist.css" />
 
     <link rel="stylesheet" href="/static/css/va.css" />
 
@@ -20,9 +18,21 @@ ELSE -%]
     <script src="/static/js/jquery.effects.slide.js"></script>
 
     <script src="/static/bootstrap/js/bootstrap.min.js"></script>
-    <script src="/static/html5lightbox/html5lightbox-source.js"></script>
-    <script src="http://releases.flowplayer.org/5.4.0/flowplayer.min.js"></script>
 
+    <!-- Flowplayer and plugins -->
+    <script src="/static/flowplayer/flowplayer-3.2.12.min.js"></script>
+    <script src="/static/js/flowplayer.ipad-3.2.12.min.js"></script>
+
+    <!-- Carousel -->
+    <script src="/static/js/jquery.roundabout.min.js"></script>
+    <script src="/static/js/jquery.event.drag-2.2.js"></script>
+    <script src="/static/js/jquery.event.drop-2.2.js"></script>
+    <script src="/static/js/jquery.easing.1.3.js"></script>
+
+    <!-- Modified Lightbox Model Popup, works with not just images -->
+    <script src="/static/js/bootstrap-lightbox.js"></script>
+
+    <!-- Common application code -->
     <script src="/static/js/va.js"></script>
 
     <!-- Get the message queue Faye js -->
@@ -104,8 +114,7 @@ ELSE -%]
 	<h3>Project Complete!</h3>
       </div>
       <div class="modal-body">
-	<p><span class="completed-project-title"></span> is complete.  Would you like to watch your 
-	  new video now?</p>
+	<p><span class="completed-project-title"></span> is complete.</p>
 	<div class="completed-project-tn">
 	</div>
       </div>

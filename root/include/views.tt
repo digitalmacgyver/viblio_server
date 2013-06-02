@@ -4,7 +4,7 @@
 <script id="media_file" type="text/html">
   <div id="mid-{{ id }}" class="media-file">
     <button class="dbtn btn btn-danger btn-mini" onclick="delete_media('{{ id }}');">delete</button>
-    <a data-width="640" data-height="480" href="{{ views.main.url }}" 
+    <a data-width="640" data-height="480" href="#" 
        class="thumbnail html5lightbox" 
        title="{{ filename }}" 
        data-mimetype="{{ views.main.mimetype }}"

@@ -2,48 +2,159 @@
 [% PROCESS banner.tt %]
 [% PROCESS views.tt %]
 
-<script src="static/js/media.js"></script>
 <script>
+    function add_media_to_carousel( data ) {
+	// data contains a messages array.  Each item in the array is
+	// a completed workorder.  For each of these, we need to obtain
+	// the media files from that workorder and add them to the
+	// carousel.  Then we'll rotate the carousel to the first of
+	// the new media files.
+	for( var i=0; i<data.messages.length; i++ ) {
+	    var woid = data.messages[i].wo.id;
+	    $.getJSON( 'services/wo/bom', { id: woid }, function( json ) {
+		add_media_files( json.media );
+	    });
+	}
+    }
 
-$(document).ready( function() {
-    init_message_queue( "[% c.message_server %]", function( data ) {
-	default_process_mq( data );
-	list();
+    function add_media_files( media ) {
+	var count = media.length;
+
+	var total = 0;
+	var ctotal = $("#video-carousel").data( 'total' ) + 0;
+
+	for( var i=0; i<count; i++ ) {
+	    if ( media[i].views.poster ) {
+		total = total + 1;
+	    }
+	}
+
+	console.log( 'ctotal is ' + ctotal + ' total is ' + total + ' count is ' + count );
+
+	if ( total != 0 && ctotal == 0 ) {
+	    // Delete any promotional material we might have had
+	    $("#video-carousel li").remove();
+	}
+	total = 0;
+
+	for( var i=0; i<count; i++ ) {
+	    if ( media[i].views.poster ) {
+		total = total + 1;
+		$("#video-carousel").append(
+		    $("<li></li>",{ idx: i}).data('media', media[i]).append( 
+			$( '<span></span>' ).append(
+			    $("<img/>", {
+				src: media[i].views.poster.url
+			    }))));
+	    }
+	}
+
+	// The second video is hidden behind the first if there are only
+	// two videos, so this is a special case,
+	if ( ctotal + total == 2 ) {
+	    $("#video-carousel").append('<li><span class="promo"><b>Upload more videos please!</b></span></li>' );
+	}
+
+	if ( total > 0 ) {
+	    if ( ctotal == 0 ) {
+		$("#video-carousel").roundabout( "relayoutChildren" );
+		$("#video-carousel").data( 'total', total );
+		$("#play-btn").click( function() {
+		    var i = $("#video-carousel").roundabout("getChildInFocus");
+		    var media = $("#video-carousel li:nth-child("+(i+1)+")").data('media');
+		    play( media );
+		});
+	    }
+	    else {
+		// it exists, update it
+		$("#video-carousel").data( 'total', ( ctotal + total ) );
+		// ctotal should be the index of the first new child added
+		$("#video-carousel").roundabout( "relayoutChildren" );
+		$("#video-carousel").roundabout( "animateToChild", ctotal );
+	    }
+	    $("#play-btn").css( 'visibility', 'visible' );
+	}
+
+	if ( $("#video-carousel").data( 'total' ) == 0 ) {
+	    $("#play-btn").css( 'visibility', 'hidden' );
+	}
+    }
+
+    function play( media ) {
+	startVideoPlayer( "#player", media );
+	$("#video-player").lightbox("show");
+    }
+
+    $(document).ready( function() {
+	init_message_queue( "[% c.message_server %]", function( data ) {
+	    default_process_mq( data, play );
+	    add_media_to_carousel( data );
+	});
+
+	$("#video-player").lightbox({
+	    show: false
+	}).on( 'hidden', function() {
+	    $("#player").empty();
+	});
+	
+	$("#video-carousel").roundabout({
+	    minScale: 0.2,
+	    duration: 400,
+	    easing: 'easeOutQuad',
+	    enableDrag: true,
+	    dropEasing: 'easeOutBounce',
+	    responsive: true
+	});
+
+	$.getJSON( '/services/user/media', function( json ) {
+	    add_media_files( json.media );
+	});
+
     });
-    local_file_upload_handler( "[% c.storage_server %]" );
-    list();
-});
-
-function add_media() {
-    add_filepicker_media( null, function() {
-	list();
-    });
-}
-
-function add_local() {
-    add_local_media( null, function() {
-	list();
-    });
-}
-
-function list() {
-    list_media( null, function(){} );
-}
 
 </script>
 
-<div class="clearfix">
-    <h2>Your Media Files</h2>
-    <button class="btn btn-small pull-right"
-            onclick="media_edit();">Edit</button>
+<style>
+  #play-btn {
+      margin: auto;
+      text-align: center;
+      position: relative;
+      z-index: 1000;
+      top: -50px;
+      visibility: hidden;
+  }
+  #add-btn {
+      margin: auto;
+      text-align: center;
+  }
+
+  #video-carousel li span.promo { padding-top: 6em; }
+
+</style>
+
+<!-- Video Carousel Placeholder -->
+<ul id="video-carousel" class="carousel" data-total="0">
+  <li><span class="promo"><b>You have no videos yet.</b><br/>Maybe some ...</span></li>
+  <li><span class="promo">training or ...</span></li>
+  <li><span class="promo">demo videos or ...</span></li>
+  <li><span class="promo">other promotional kinds of ...</span></li>
+  <li><span class="promo">images and/or videos.</span></li>
+</ul>
+
+<!-- Play Button -->
+<div id="play-btn">
+    <img src="/static/images/play_large.png" />
 </div>
 
-<div id="media-list" class="well well-large"></div>
+<div id="add-btn">
+  <a id="add-local-btn" class="btn btn-primary" type="button"
+     href="/create">Upload Video Files</a>
+</div>
 
-<button class="btn btn-primary" type="button"
-        onclick="add_media();">Add Social Media Files</button>
-<button id="add-local-btn" class="btn btn-primary" type="button"
-        onclick="add_local();">Add Local Media Files</button>
-
-<!-- Pull in filepicker -->
-<script type="text/javascript" src="//api.filepicker.io/v1/filepicker.js"></script>
+<!-- The Video Player -->
+<div id="video-player" class="lightbox hide fade"  tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="lightbox-content">
+       <div id="player" class="lightbox-container" style="width:800px;height:450px;margin:0 auto;text-align:center">
+       </div>
+    </div>
+</div>

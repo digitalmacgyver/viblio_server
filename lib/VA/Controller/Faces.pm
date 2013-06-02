@@ -1,4 +1,4 @@
-package VA::Controller::Find;
+package VA::Controller::Faces;
 use Moose;
 use namespace::autoclean;
 
@@ -8,9 +8,9 @@ sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
     # The default template for this action will be rendered:
-    # templates/find/index.tt
+    # templates/faces/index.tt
 
-    $c->stash->{find_active} = 'active';
+    $c->stash->{faces_active} = 'active';
 }
 
 

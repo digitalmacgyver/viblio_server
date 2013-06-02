@@ -1,0 +1,81 @@
+[% META title = 'Home' %]
+[% PROCESS banner.tt %]
+[% PROCESS views.tt %]
+
+<script src="static/js/media.js"></script>
+<script>
+
+function resize_well() {
+    $("#media-list").height( $(window).height() - $("#media-list").offset().top - 80 );
+}
+
+$(document).ready( function() {
+    init_message_queue( "[% c.message_server %]", function( data ) {
+	default_process_mq( data, play );
+	list();
+    });
+
+    $("#video-player").lightbox({
+        show: false
+    }).on( 'hidden', function() {
+        $("#player").empty();
+    });
+
+    resize_well();
+    $(window).resize( function() {
+	resize_well();
+    });
+
+    // local_file_upload_handler( "[% c.storage_server %]" );
+    list();
+});
+
+function add_media() {
+    add_filepicker_media( null, function() {
+	list();
+    });
+}
+
+function add_local() {
+    add_local_media( null, function() {
+	list();
+    });
+}
+
+function list() {
+    list_media( null, play, function(){} );
+}
+
+function play( media ) {
+    startVideoPlayer( "#player", media );
+    $("#video-player").lightbox("show");
+}
+
+</script>
+
+<div class="clearfix">
+    <h2>Manage Your Media Files</h2>
+    <button class="btn btn-small pull-right"
+            onclick="media_edit();">Edit</button>
+</div>
+
+<div id="media-list" class="well well-large"></div>
+
+<!--
+<button class="btn btn-primary" type="button"
+        onclick="add_media();">Add Social Media Files</button>
+<button id="add-local-btn" class="btn btn-primary" type="button"
+        onclick="add_local();">Add Local Media Files</button>
+-->
+
+<!-- Pull in filepicker
+<script type="text/javascript" src="//api.filepicker.io/v1/filepicker.js"></script>
+-->
+
+<!-- The Video Player -->
+<div id="video-player" class="lightbox hide fade"  tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="lightbox-content">
+       <div id="player" class="lightbox-container" style="width:800px;height:450px;margin:0 auto;text-align:center">
+       </div>
+    </div>
+</div>

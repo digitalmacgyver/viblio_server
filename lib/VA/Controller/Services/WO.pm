@@ -146,7 +146,7 @@ sub bom :Local {
 	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
     }
 
-    my @media = $wo->mediafiles->search({},{prefetch=>'views'});
+    my @media = $wo->mediafiles->search({},{prefetch=>'views', order_by => { -desc => 'mediafile.id' }});
     my @published = ();
     push( @published, VA::MediaFile->new->publish( $c, $_ ) )
 	foreach( @media );
