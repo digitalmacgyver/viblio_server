@@ -128,67 +128,71 @@
 
 	Lightbox.prototype.preloadSize = function(callback)
 	{
-		var callbacks = $.Callbacks();
-		if(callback) callbacks.add( callback );
-		var that = this;
+	    var callbacks = $.Callbacks();
+	    if(callback) callbacks.add( callback );
+	    var that = this;
 
-		var windowHeight,
-			windowWidth,
-			padTop,
-			padBottom,
-			padLeft,
-			padRight,
-			$image,
-			preloader,
-			originalWidth,
-			originalHeight;
-		// Get the window width and height.
-		windowHeight = $(window).height();
-		windowWidth  = $(window).width();
+	    var windowHeight,
+	    windowWidth,
+	    padTop,
+	    padBottom,
+	    padLeft,
+	    padRight,
+	    $image,
+	    preloader,
+	    originalWidth,
+	    originalHeight;
+	    // Get the window width and height.
+	    windowHeight = $(window).height();
+	    windowWidth  = $(window).width();
 
-		// Get the top, bottom, right, and left padding
-		padTop    = parseInt( that.$element.find('.lightbox-content').css('padding-top')    , 10);
-		padBottom = parseInt( that.$element.find('.lightbox-content').css('padding-bottom') , 10);
-		padLeft   = parseInt( that.$element.find('.lightbox-content').css('padding-left')   , 10);
-		padRight  = parseInt( that.$element.find('.lightbox-content').css('padding-right')  , 10);
-
+	    // Get the top, bottom, right, and left padding
+	    padTop    = parseInt( that.$element.find('.lightbox-content').css('padding-top')    , 10);
+	    padBottom = parseInt( that.$element.find('.lightbox-content').css('padding-bottom') , 10);
+	    padLeft   = parseInt( that.$element.find('.lightbox-content').css('padding-left')   , 10);
+	    padRight  = parseInt( that.$element.find('.lightbox-content').css('padding-right')  , 10);
+	    
 	    var preloader = {
 		width: that.$element.find('.lightbox-container').width(),
 		height: that.$element.find('.lightbox-container').height()
 	    };
-			if( (preloader.width + padLeft + padRight) >= windowWidth)
-			{
-				originalWidth = preloader.width;
-				originalHeight = preloader.height;
-				preloader.width = windowWidth - padLeft - padRight;
-				preloader.height = originalHeight / originalWidth * preloader.width;
-			}
 
-			if( (preloader.height + padTop + padBottom) >= windowHeight)
-			{
-				originalWidth = preloader.width;
-				originalHeight = preloader.height;
-				preloader.height = windowHeight - padTop - padBottom;
-				preloader.width = originalWidth / originalHeight * preloader.height;
-			}
+	    if( (preloader.width + padLeft + padRight) >= windowWidth)
+	    {
+		originalWidth = preloader.width;
+		originalHeight = preloader.height;
+		preloader.width = windowWidth - padLeft - padRight;
+		preloader.height = (originalHeight / originalWidth) * preloader.width;
+	    }
 
+	    if( (preloader.height + padTop + padBottom) >= windowHeight)
+	    {
+		originalWidth = preloader.width;
+		originalHeight = preloader.height;
+		preloader.height = windowHeight - padTop - padBottom;
+		preloader.width = (originalWidth / originalHeight) * preloader.height;
+	    }
 
-			that.$element.css({
-				'position': 'fixed', 
-				'width': preloader.width + padLeft + padRight,
-				'height': preloader.height + padTop + padBottom,
-				'top' : (windowHeight / 2) - ( (preloader.height + padTop + padBottom) / 2),
-				'left' : '50%',
-			    'margin-left' : -1 * (preloader.width + padLeft + padRight) / 2,
-			    'z-index': 3000
-			});
-			that.$element.find('.lightbox-content').css({
-				'width': preloader.width,
-				'height': preloader.height
-			});
+	    var neww = preloader.width + padLeft + padRight;
+	    var newh = preloader.height + padTop + padBottom;
 
-			// We have everything sized!
-			callbacks.fire();
+	    that.$element.css({
+		'position': 'fixed', 
+		'width': neww,
+		'height': newh,
+		'top' : (windowHeight / 2) - ( (preloader.height + padTop + padBottom) / 2),
+		'left' : '50%',
+		'margin-left' : -1 * (preloader.width + padLeft + padRight) / 2,
+		'z-index': 3000
+	    });
+
+	    that.$element.find('.lightbox-container').css({
+		'width': preloader.width,
+		'height': preloader.height
+	    });
+
+	    // We have everything sized!
+	    callbacks.fire();
 	};
 
 /* LIGHTBOX PLUGIN DEFINITION

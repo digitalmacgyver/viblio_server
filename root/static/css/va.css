@@ -52,7 +52,7 @@ ul.carousel li span img {
     height: 100%;
 }
 
-#video-player {
+.lightbox-content {
     padding: 10px;
     background-color: #fff;
 }

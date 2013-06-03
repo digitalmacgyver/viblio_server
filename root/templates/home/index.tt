@@ -29,8 +29,6 @@
 	    }
 	}
 
-	console.log( 'ctotal is ' + ctotal + ' total is ' + total + ' count is ' + count );
-
 	if ( total != 0 && ctotal == 0 ) {
 	    // Delete any promotional material we might have had
 	    $("#video-carousel li").remove();
