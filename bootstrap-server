@@ -62,8 +62,8 @@ sudo ./fd-staging start
 cd /deploy/staging/viblio-server/node/fs
 npm install
 sudo apt-get install imagemagick ffmpegthumbnailer
-sudo mkdir /mnt/fs
-sudo chown www-data:www-data /mnt/fs
+sudo mkdir -p /mnt/fs/tmp
+sudo -R chown www-data:www-data /mnt/fs
 sudo ln -s /mnt/fs /opt/fs
 cd /etc/init.d
 sudo ln -s /deploy/staging/viblio-server/node/fs/fs-staging.init.d ./fs-staging

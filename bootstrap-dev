@@ -59,4 +59,6 @@ PERL_MM_USE_DEFAULT=1 make installdeps_notest
 sh sql/FROM-SCRATCH 
 
 # 2.  Populate with random data
-sh script/populate-all.sh 
+./script/test-populate.pl vadb
+./script/test-populate.pl vadb_staging
+
