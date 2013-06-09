@@ -30,6 +30,7 @@ mediafile:
   fp: VA::MediaFile::FilePicker
   fs: VA::MediaFile::FileStorage
   s3: VA::MediaFile::S3
+  jfs: VA::MediaFile::JFS
 
 roles:
   tester:
@@ -104,6 +105,13 @@ Model::MQ:
 Model::FS:
   server: http://localhost:5000
   type: application/json
+
+# Local File Storage (jQuery File Upload ) REST service
+Model::JFS:
+  server: http://localhost:5000
+  type: application/json
+  secret: viblio321
+  expires: 86400
 
 # This secret is used by the nginx in front of the 'fs'
 # server to provide secure streaming of stored media files.

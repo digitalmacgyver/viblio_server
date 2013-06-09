@@ -50,9 +50,9 @@ sub delete {
 sub uri2url {
     my( $self, $c, $view ) = @_;
 
-    my $s3key = $view->{uri};
+    my $s3key = ( ref $view eq 'HASH' ? $view->{uri} : $view );
 
-    if ( $view->{type} eq 'thumbnail' ) {
+    if ( ref $view eq 'HASH' && $view->{type} eq 'thumbnail' ) {
         # Modify the uri to include proper dimensions
         my $xy = '64x64';
         if ( $c->req->param( 'thumbnails' ) ) {

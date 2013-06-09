@@ -137,6 +137,37 @@ sub create :Local {
     $self->status_ok( $c, { media => $fp->publish( $c, $mediafile ) } );
 }
 
+=head2 /services/mediafile/url_for
+
+Get a full base url to the server used to store media files at the
+passed in location.  This is needed for servers that are protected
+with server-side generated credencials.  
+
+=head3 Parameters
+
+Requires a 'location', something like "s3" or "fs".  Takes an
+optional 'path' which defaults to "/".  
+
+=head3 Response
+
+  { "url": url }
+
+=cut
+
+sub url_for :Local {
+    my( $self, $c, $location, $path ) = @_;
+    $location = $c->req->param( 'location' ) unless( $location );
+    $path = $c->req->param( 'path' ) unless( $path );
+    $path = '/' unless( $path );
+    my $klass = $c->config->{mediafile}->{$location};
+    unless( $klass ) {
+	$self->status_bad_request( 
+	    $c, $c->loc( "Cannot determine type of this media file" ));
+    }
+    my $fp = new $klass;
+    $self->status_ok( $c, { url => $c->localhost( $fp->uri2url( $c, $path ) ) } );
+}
+
 =head2 /services/mediafile/delete
 
 Delete a mediafile.  Deletes the file in permenant storage as well.

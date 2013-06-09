@@ -50,6 +50,36 @@ sub create :Local {
     $self->status_ok( $c, { wo => $wo } );
 }
 
+=head2 /services/wo/find_or_create
+
+Return an existing, or create a new workorder.  Returns the
+workorder and the bom:
+
+  { wo: $workorder, media => [ media_files ] }
+
+=head3 Parameters
+
+A workorder "name" is optional, and if not specified, the workorder name is defaulted
+to "New Project".  A desired "state" is optional, and defaults to "WO_PENDING".  
+
+=cut
+
+sub find_or_create :Local {
+    my( $self, $c ) = @_;
+    my $name = $c->req->param( 'name' ) || 'New Project';
+    my $state = $c->req->param( 'state' ) || 'WO_PENDING';
+    my $wo = $c->model( 'DB::Workorder' )->find_or_create({user_id => $c->user->obj->id, state => $state});
+    unless( $wo ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to find/create new work order" ) );
+    }
+    my @media = $wo->mediafiles->search({},{prefetch=>'views', order_by => { -desc => 'mediafile.id' }});
+    my @published = ();
+    push( @published, VA::MediaFile->new->publish( $c, $_ ) )
+	foreach( @media );
+    $self->status_ok( $c, { wo => $wo, media => \@published } );
+}
+
 =head2 /services/wo/submit
 
 Submit a workorder for processing.

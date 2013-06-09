@@ -67,6 +67,12 @@ Model::FS:
   server: http://staging.viblio.com:5000
   type: application/json
 
+# Local File Storage (jQuery File Upload ) REST service
+Model::JFS:
+  server: http://staging.viblio.com:5000
+  type: application/json
+  secret: viblio321
+
 # For web clients, where is the
 # fs server?
 file_storage:

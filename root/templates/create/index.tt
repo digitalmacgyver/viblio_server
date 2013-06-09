@@ -1,152 +1,179 @@
-[% META title = 'Home' %]
+[% META title = 'Media File Upload' %]
 [% PROCESS banner.tt %]
 [% PROCESS views.tt %]
 
-<script src="static/js/media.js"></script>
+<link rel="stylesheet" href="/static/jfu/css/style.css">
+<link rel="stylesheet" href="/static/jfu/css/jquery.fileupload-ui.css">
 
 <style>
-  #create {
-    visibility: hidden;
-  }
-
-  #submit-wo-btn {
-    visibility: hidden;
+  .process-available {
+      display: none;
   }
 </style>
-
-<script>
-    var unsaved = false;
-    window.onbeforeunload = confirmExit;
-    function confirmExit() {
-	if ( unsaved ) 
-	  return "You have unsaved changes, are you sure you want to leave this page?";
-	else
-	  return;
-    }
-</script>
 
 <script>
 
 $(document).ready( function() {
     init_message_queue( "[% c.message_server %]", function( data ) {
-	default_process_mq( data );
-	list();
+        default_process_mq( data );
     });
-    local_file_upload_handler( "[% c.storage_server %]" );
 });
-
-function add_media() {
-    add_filepicker_media( $("#create").data( "wo" ).id, function() {
-	$("#submit-wo-btn").css( "visibility", "visible" );
-	list();
-    });
-}
-
-function add_local() {
-    add_local_media( $("#create").data( "wo" ).id, function() {
-	$("#submit-wo-btn").css( "visibility", "visible" );
-	list();
-    });
-}
-
-// Get the list of media files that have been uploaded.  The
-// answer looks like:
-// { files: [] }
-// where each item in the array is a FPFile object, along with
-// "id" from the server-side database.
-//
-function list() {
-    list_media( $("#create").data( "wo" ).id, null, function(){} );
-}
-
-function create_project() {
-    var woname = $("#project-name").val();  // if not assigned, the server will make one up?
-    $.ajax({
-	url: "/services/wo/create",
-	data: { name: woname },
-	dataType: 'json',
-	success: function( json ) {
-	    if ( json.error ) {
-		dialogManager.error( json.message, json.detail );
-	    }
-	    else {
-		// Store the wo record returned for future reference 
-		unsaved = true;
-		$("#create").data( 'wo', json.wo );
-		$("#create h1").html( json.wo.name );
-		$("#create-start").remove(); // don't need that any more!
-		$("#create").css( "visibility", "visible" );
-	    }
-	}
-    });
-}
-
-function submit_wo() {
-    var wo = $("#create").data( "wo" );
-    $.ajax({
-	url: "/services/wo/bom",
-	data: { id: wo.id },
-	dataType: 'json',
-	success: function( json ) {
-	    if ( json.error ) {
-		dialogManager.error( json.message, json.detail );
-	    }
-	    else {
-		dialogManager.confirm( ich.wo_bom( json ),function() {
-		    $.ajax({
-			url: "/services/wo/submit",
-			data: { id: wo.id },
-			dataType: 'json',
-			success: function(json) {
-			    if ( json.error ) {
-				dialogManager.error( json.message, json.detail );
-			    }
-			    else {
-				// redirect back home.
-				unsaved = false;
-				window.location = "/";
-			    }
-			}
-		    });
-		});
-	    }
-	}
-    });
-}
 
 </script>
 
-<div id="create-start" class="row-fluid">
-  <div class="span8 offset2 hero-unit">
-    <h1>Start a New Project!</h1>
-    <p>Create a new project by giving it a name, and then adding media
-      files.  You can include photos, videos and music, be creative!
-    <p/>
-    <input type="text" class="input-xxlarge" id="project-name" name="project-name" placeholder="Project Name" />
-    <p/>
-    <a class="btn btn-primary btn-large" href="javascript: create_project();">
-      Create!
-    </a>
+<div class="page-header">
+  <h2>Media File Upload</h2>
+  <p>Upload media files for processing.  You may add one or more media files by clicking on the
+    <b>Add files...</b> button, or in some browsers, you may drag files from your desktop onto 
+    this page.  When you have added all the files you want to upload, you may start the upload.
+    When you have uploaded all of your files, then click on <b>Submit for processing...</b> to
+    start media file processing.
+  </p>
+</div>
+<!-- The file upload form used as target for the file upload widget -->
+<form id="fileupload" action="//jquery-file-upload.appspot.com/" method="POST" enctype="multipart/form-data">
+  <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
+  <!--
+      <div class="process-available row fileupload-buttonbar">
+	<div class="span12">
+	  <button type="button" class="btn btn-primary process">
+	    <i class="icon-film icon-white"></i>
+	    <span>Submit for processing...</span>
+	  </button>
+	</div>
+      </div>
+      -->
+  <div class="row fileupload-buttonbar">
+    <div class="span7">
+      <!-- The fileinput-button span is used to style the file input field as button -->
+      <span class="btn btn-success fileinput-button">
+        <i class="icon-plus icon-white"></i>
+        <span>Add files...</span>
+        <input type="file" name="files[]" multiple>
+      </span>
+      <button type="submit" class="btn btn-primary start">
+        <i class="icon-upload icon-white"></i>
+        <span>Start upload</span>
+      </button>
+      <button type="reset" class="btn btn-warning cancel">
+        <i class="icon-ban-circle icon-white"></i>
+        <span>Cancel upload</span>
+      </button>
+      <button type="button" class="btn btn-danger delete">
+        <i class="icon-trash icon-white"></i>
+        <span>Delete</span>
+      </button>
+      <input type="checkbox" class="toggle">
+      <!-- The loading indicator is shown during file processing -->
+      <span class="fileupload-loading"></span>
+    </div>
+    <!-- The global progress information -->
+    <div class="span5 fileupload-progress fade">
+      <!-- The global progress bar -->
+      <div class="progress progress-success progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <div class="bar" style="width:0%;"></div>
+      </div>
+      <!-- The extended global progress information -->
+      <div class="progress-extended">&nbsp;</div>
+    </div>
+  </div>
+  <!-- The table listing the files available for upload/download -->
+  <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
+  <div class="process-available row fileupload-buttonbar">
+    <div class="span12">
+      <button type="button" class="btn btn-primary process">
+	<i class="icon-film icon-white"></i>
+	<span>Submit for processing...</span>
+      </button>
+    </div>
+  </div>
+</form>
+</div>
+<!-- The template to display files available for upload -->
+<script id="template-upload" type="text/x-tmpl">
+{% for (var i=0, file; file=o.files[i]; i++) { %}
+<tr class="template-upload fade">
+  <td>
+    <span class="preview"></span>
+  </td>
+  <td>
+    <p class="name">{%=file.name%}</p>
+    {% if (file.error) { %}
+    <div><span class="label label-important">Error</span> {%=file.error%}</div>
+    {% } %}
+  </td>
+  <td>
+    <p class="size">{%=o.formatFileSize(file.size)%}</p>
+    {% if (!o.files.error) { %}
+    <div class="progress progress-success progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar" style="width:0%;"></div></div>
+    {% } %}
+  </td>
+  <td>
+    {% if (!o.files.error && !i && !o.options.autoUpload) { %}
+    <button class="btn btn-primary start">
+      <i class="icon-upload icon-white"></i>
+      <span>Start</span>
+    </button>
+    {% } %}
+    {% if (!i) { %}
+    <button class="btn btn-warning cancel">
+      <i class="icon-ban-circle icon-white"></i>
+      <span>Cancel</span>
+    </button>
+    {% } %}
+  </td>
+</tr>
+{% } %}
+</script>
+<!-- The template to display files available for download -->
+<script id="template-download" type="text/x-tmpl">
+{% for (var i=0, file; file=o.files[i]; i++) { %}
+<tr class="template-download fade">
+  <td>
+    <span class="preview">
+      {% if (file.thumbnail_url) { %}
+      <a href="{%=file.url%}" title="{%=file.name%}" data-gallery="gallery" download="{%=file.name%}"><img src="{%=file.thumbnail_url%}"></a>
+      {% } %}
+    </span>
+  </td>
+  <td>
+    <p class="name">
+      <span>{%=file.name%}</span>
     </p>
-  </div>
-</div>
-
-<div id="create">
-  <div class="clearfix">
-    <h2>Your Media Files</h2>
-    <button class="btn btn-small pull-right"
-            onclick="media_edit();">Edit</button>
-  </div>
-
-  <div id="media-list" class="well well-large"></div>
-
-  <button id="add-media-btn" class="btn btn-primary" type="button"
-          onclick="add_media();">Add Social Media Files</button>
-  <button id="add-local-btn" class="btn btn-primary" type="button"
-          onclick="add_local();">Add Local Media Files</button>
-  <button id="submit-wo-btn" class="btn btn-primary" type="button"
-          onclick="submit_wo();">Submit Project</button>
-</div>
-
-<!-- Pull in filepicker -->
-<script type="text/javascript" src="//api.filepicker.io/v1/filepicker.js"></script>
+    {% if (file.error) { %}
+    <div><span class="label label-important">Error</span> {%=file.error%}</div>
+    {% } %}
+  </td>
+  <td>
+    <span class="size">{%=o.formatFileSize(file.size)%}</span>
+  </td>
+  <td>
+    <button class="btn btn-danger delete" data-type="{%=file.delete_type%}" data-url="{%=file.delete_url%}"{% if (file.delete_with_credentials) { %} data-xhr-fields='{"withCredentials":true}'{% } %}>
+      <i class="icon-trash icon-white"></i>
+      <span>Delete</span>
+    </button>
+    <input type="checkbox" name="delete" value="1" class="toggle">
+  </td>
+</tr>
+{% } %}
+</script>
+<!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
+<script src="/static/jfu/js/vendor/jquery.ui.widget.js"></script>
+<!-- The Templates plugin is included to render the upload/download listings -->
+<script src="/static/jfu/js/tmpl.min.js"></script>
+<!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
+<script src="/static/jfu/js/jquery.iframe-transport.js"></script>
+<!-- The basic File Upload plugin -->
+<script src="/static/jfu/js/jquery.fileupload.js"></script>
+<!-- The File Upload processing plugin -->
+<script src="/static/jfu/js/jquery.fileupload-process.js"></script>
+<!-- The File Upload validation plugin -->
+<script src="/static/jfu/js/jquery.fileupload-validate.js"></script>
+<!-- The File Upload user interface plugin -->
+<script src="/static/jfu/js/jquery.fileupload-ui.js"></script>
+<!-- The main application script -->
+<script src="/static/jfu/js/main.js"></script>
+<!-- The XDomainRequest Transport is included for cross-domain file deletion for IE8+ -->
+<!--[if gte IE 8]><script src="/static/jfu/js/cors/jquery.xdr-transport.js"></script><![endif]-->
+</body> 
+</html>

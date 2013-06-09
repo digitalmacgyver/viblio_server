@@ -75,6 +75,9 @@ sub publish {
 	# Generate the URL from the URI
 	my $location = $mf_json->{'views'}->{$view->type}->{location};
 	my $klass = $c->config->{mediafile}->{$location};
+	if ( ! $klass ) {
+	    $DB::single = 1;
+	}
 	my $fp = new $klass;
 	$mf_json->{'views'}->{$view->type}->{url} = 
 	    $fp->uri2url( $c, $mf_json->{'views'}->{$view->type} );

@@ -50,7 +50,7 @@
 	// The second video is hidden behind the first if there are only
 	// two videos, so this is a special case,
 	if ( ctotal + total == 2 ) {
-	    $("#video-carousel").append('<li><span class="promo"><b>Upload more videos please!</b></span></li>' );
+	    $("#video-carousel").append('<li class="promo"><span class="promo"><b>Upload more videos please!</b></span></li>' );
 	}
 
 	if ( total > 0 ) {
@@ -118,7 +118,7 @@
       text-align: center;
       position: relative;
       z-index: 1000;
-      top: -50px;
+      top: -350px;
       visibility: hidden;
   }
   #add-btn {
@@ -127,16 +127,16 @@
   }
 
   #video-carousel li span.promo { padding-top: 6em; }
-
+  #video-carousel li.promo { background: #ccc; }
 </style>
 
 <!-- Video Carousel Placeholder -->
 <ul id="video-carousel" class="carousel" data-total="0">
-  <li><span class="promo"><b>You have no videos yet.</b><br/>Maybe some ...</span></li>
-  <li><span class="promo">training or ...</span></li>
-  <li><span class="promo">demo videos or ...</span></li>
-  <li><span class="promo">other promotional kinds of ...</span></li>
-  <li><span class="promo">images and/or videos.</span></li>
+  <li class="promo"><span class="promo"><b>You have no videos yet.</b><br/>Maybe some ...</span></li>
+  <li class="promo"><span class="promo">training or ...</span></li>
+  <li class="promo"><span class="promo">demo videos or ...</span></li>
+  <li class="promo"><span class="promo">other promotional kinds of ...</span></li>
+  <li class="promo"><span class="promo">images and/or videos.</span></li>
 </ul>
 
 <!-- Play Button -->

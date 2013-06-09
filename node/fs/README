@@ -1,2 +1,42 @@
-See public/js/script.js for the client-side form submission and 
-client side progress handling via html5
+This file upload server is intended to be run behind a nginx server.  The
+nginx server is used to protect use of the upload server though the use
+of nginx's "secure link" module.  The main application server knows a 
+secret string, as does the nginx server.  When urls associated with the
+file upload server are delivered by the main server, they are encoded by
+running a MD5 across ( $secret, $uri, $expire ), where $expire is a number
+of seconds that this url will be good for.  Then the url is modified to
+include '?st=$hash&e=$expire' and delivered.  When this url hits the
+nginx server, the hash is computed by nginx and compared against st, and
+the expire is also checked.  If it checks, the url is passed to the file
+upload server.
+
+This file upload server performs the following operations:
+
+POST /
+
+The POST operation to '/' is used to upload a file.  The client must
+obtain the secure version of this url by calling the main server first:
+
+  $.getJSON( '/services/mediafile/url_for',
+  	     { location: 'jfs', path: '/' },
+	     function( result ) {
+	       var secure_url = result.url;
+	       // save for file uploads ...
+	     } );
+
+The file upload POSTs also require the user's uuid as a form variable.  This
+is to uniqify the files stored on the local file system.  One way to obtain
+this from the main server is:
+
+  $.getJSON( '/services/user/me',
+  	     function( result ) {
+	       var uuid = result.user.uuid;
+	     } );
+
+The form POST would then look like this (in html):
+
+  <form action="$secure_url" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="uid" value="$uuid" />
+    <input type="file" name="files[]" multiple>
+  </form>
+

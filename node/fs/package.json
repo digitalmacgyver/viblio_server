@@ -1,16 +1,14 @@
 {
-    "name": "myapp",
-    "title": "MyApp",
-    "description": "A generic web application",
-    "version": "0.0.1",
-    "private": true,
-    "dependencies": {
-        "express": "3.1.0",
-        "konphyg": "1.2.x",
-	"winston": "0.6.x",
-	"node-uuid": "1.4.x",
-	"mkdirp": "0.3.x",
-	"imagemagick": "0.1.x",
-        "crypto": "0.0.x"
-    }
+  "name": "blueimp-file-upload-node",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "formidable": ">=1.0.11",
+    "node-static": ">=0.6.5",
+    "mkdirp": ">=0.3.x",
+    "imagemagick": ">=0.1.3"
+  }
 }

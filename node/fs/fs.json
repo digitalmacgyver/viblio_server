@@ -1,9 +1,0 @@
-{
-    "site_secret": "viblio321",
-    "logfile": "/tmp/fs.log",
-    "body_parser_options": {
-	"keepExtensions": true, 
-	"uploadDir": "/opt/fs",
-	"limit": "2gb"
-    }
-}

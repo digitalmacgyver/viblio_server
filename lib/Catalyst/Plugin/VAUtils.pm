@@ -11,6 +11,7 @@ use Catalyst::Exception ();
 
 use Data::Dumper;
 use Digest::HMAC_MD5 qw(hmac_md5 hmac_md5_hex);
+use URI;
 
 # Use Data::Dumper to print an object into the
 # debug log.
@@ -50,6 +51,17 @@ sub storage_server {
 	$host .= ":5000";
 	return $c->req->uri->scheme . '://' . $host;
     }
+}
+
+# If the passed in host is 'http://localhost[:port]' then
+# replace 'localhost' with this server's host.
+#
+sub localhost {
+    my( $c, $host ) = @_;
+    return $host unless( $host =~ /^http[s]?:\/\/localhost/ );
+    my $localhost = URI->new( $c->req->uri )->host;
+    $host =~ s/localhost/$localhost/g;
+    return $host;
 }
 
 # Return the type of connected client

@@ -37,7 +37,6 @@ ul.carousel {
 ul.carousel li {
     height: 20em;
     width: 30em;
-    background-color: #ccc;
     text-align: center;
     cursor: pointer;
 }
