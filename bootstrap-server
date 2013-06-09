@@ -19,13 +19,13 @@ sudo apt-get install \
   libmysqlclient-dev
 
 # nginx
-cd viblio-server/node/fs/nginx/src
+cd viblio-server/nginx-src
 sh RUN_CONFIGURE.sh 
 cd nginx-1.2.6/
 sudo make install
 cd /
 sudo rm -rf /etc/nginx/
-sudo tar zxvf /deploy/staging/viblio-server/node/fs/nginx/src/nginx-system.tar.gz 
+sudo tar zxvf /deploy/staging/viblio-server/nginx-src/nginx-system.tar.gz 
 cd /etc/init.d
 sudo update-rc.d nginx defaults
 sudo ./nginx start
