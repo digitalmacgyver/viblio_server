@@ -222,9 +222,18 @@ sub poster {
     $ifile =~ s/ /\\ /g;
     $ofile =~ s/ /\\ /g;
 
-    my $cmd = "/usr/bin/ffmpegthumbnailer -i $ifile -o $ofile -s $size -f";
+    my $cmd = "/usr/bin/ffmpegthumbnailer -i $ifile -o $ofile -s $size";
     if ( ! system( "$cmd 2>&1 >/dev/null" ) ) {
-	return $original;
+	# Now fit this image into a 4:3 box, assuming $size is a width
+	my $w = $size;
+	my $h = int( ($w/4)*3 );
+	$cmd = "/usr/bin/convert $ofile -resize ${w}x${h}\\\> -size ${w}x${h} xc:black  +swap -gravity center -composite $ofile";
+	if ( ! system( "$cmd 2>&1 >/dev/null" ) ) {
+	    return $original;
+	}
+	else {
+	    return undef;
+	}
     }
     else {
 	return undef;
