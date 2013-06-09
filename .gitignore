@@ -16,5 +16,5 @@ uploads/
 MANIFEST
 db.alter
 node_modules
-node/fs/nginx/src/nginx-1.2.6/
 /ffmpeg
+/nginx-src/nginx-1.2.6/
