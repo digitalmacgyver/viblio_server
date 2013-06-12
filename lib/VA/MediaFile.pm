@@ -66,7 +66,7 @@ sub delete {
 # This also transforms URIs to URLs in a view 
 # location -specific way
 sub publish {
-    my( $self, $c, $mediafile ) = @_;
+    my( $self, $c, $mediafile, $params ) = @_;
     my $mf_json = $mediafile->TO_JSON;
     $mf_json->{'views'} = {};
     my @views = $mediafile->views;
@@ -75,12 +75,9 @@ sub publish {
 	# Generate the URL from the URI
 	my $location = $mf_json->{'views'}->{$view->type}->{location};
 	my $klass = $c->config->{mediafile}->{$location};
-	if ( ! $klass ) {
-	    $DB::single = 1;
-	}
 	my $fp = new $klass;
 	$mf_json->{'views'}->{$view->type}->{url} = 
-	    $fp->uri2url( $c, $mf_json->{'views'}->{$view->type} );
+	    $fp->uri2url( $c, $mf_json->{'views'}->{$view->type}, $params );
     }
     return $mf_json;
 }

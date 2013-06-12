@@ -60,7 +60,7 @@ sub delete {
 }
 
 sub uri2url {
-    my( $self, $c, $view ) = @_;
+    my( $self, $c, $view, $params ) = @_;
 
     return $c->localhost( $c->model( 'JFS' )->protected_url( ( ref $view eq 'HASH' ? $view->{uri} : $view ) ) );
 }

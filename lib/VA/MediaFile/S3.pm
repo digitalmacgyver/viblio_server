@@ -48,7 +48,7 @@ sub delete {
 }
 
 sub uri2url {
-    my( $self, $c, $view ) = @_;
+    my( $self, $c, $view, $params ) = @_;
 
     my $s3key = ( ref $view eq 'HASH' ? $view->{uri} : $view );
 
@@ -73,12 +73,18 @@ sub uri2url {
 
     my $aws_key = $c->config->{'Model::S3'}->{aws_access_key_id};
     my $aws_secret = $c->config->{'Model::S3'}->{aws_secret_access_key};
-    my $aws_use_https = $c->config->{aws_use_https} || 0;
+    my $aws_use_https = 0;
+    if ( $params && defined($params->{aws_use_https}) ) {
+	$aws_use_https = $params->{aws_use_https};
+    }
+    elsif ( $c->config->{s3}->{aws_use_https} == 1 ) {
+	$aws_use_https = 1;
+    }
     my $aws_bucket_name = $c->config->{s3}->{bucket};
     my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
     my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
 	$aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
-    $aws_generator->expires_in( 60 * 60 ); # one hour
+    $aws_generator->expires_in( ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ) );
 
     my $url = $aws_generator->get( $aws_bucket_name, $s3key );
     $url =~ s/\/$aws_bucket_name\//\//g;
@@ -90,7 +96,7 @@ sub uri2urlWOW {
     my( $self, $c, $view ) = @_;
 
     if ( $view->{type} eq 'main' ) {
-	my $url = "http://ec2-54-214-160-185.us-west-2.compute.amazonaws.com:1935/vods3/_definst_/mp4:amazons3/viblio.filepicker.io/" .
+	my $url = "http://ec2-54-214-160-185.us-west-2.compute.amazonaws.com:1935/vods3/_definst_/mp4:amazons3/viblio-mediafiles/" .
 	    $view->{uri} . "/playlist.m3u8";
 	return $url;
     }
