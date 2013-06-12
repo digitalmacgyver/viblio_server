@@ -264,7 +264,7 @@ use Muck::FS::S3::QueryStringAuthGenerator;
 my $key = 'AKIAJHD46VMHB2FBEMMA';
 my $secret = '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';
 my $use_https = 0;
-my $bucket_name = 'viblio.filepicker.io';
+my $bucket_name = 'viblio-mediafiles';
 my $endpoint = $bucket_name . ".s3.amazonaws.com";
 my $generator = Muck::FS::S3::QueryStringAuthGenerator->new(
     $key, $secret, $use_https, $endpoint );

@@ -12,6 +12,7 @@ var fs = require('fs');
 var amazonS3 = require('awssum-amazon-s3');
 var ugen = require( 'cuid' );
 var path = require( 'path' );
+var mime = require( 'mime' );
 
 // Logging
 var log = require( "winston" );
@@ -21,7 +22,7 @@ log.remove(log.transports.Console);
 var s3 = new amazonS3.S3({
     'accessKeyId'     : 'AKIAJHD46VMHB2FBEMMA',
     'secretAccessKey' : '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',
-    'region'          : amazonS3.US_EAST_1
+    'region'          : amazonS3.US_WEST_1
 });
 
 var args_startat = 2;
@@ -59,9 +60,10 @@ process.argv.forEach( function( filespec, index ) {
 	var bodyStream = fs.createReadStream( filename );
 
 	var options = {
-            BucketName    : 'viblio.filepicker.io',
+            BucketName    : 'viblio-mediafiles',
             ObjectName    : s3key,
             ContentLength : file_info.size,
+	    ContentType   : mime.lookup( filename ),
             Body          : bodyStream
 	};
 

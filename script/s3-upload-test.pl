@@ -22,7 +22,7 @@ die "Cannot create s3" unless( $s3 );
 my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
 die "Cannot create client" unless( $client );
 
-my $bucket = $client->bucket( name => 'viblio.filepicker.io' );
+my $bucket = $client->bucket( name => 'viblio-mediafiles' );
 die "Cannot find bucket" unless( $bucket );
 
 my $object = $bucket->object(

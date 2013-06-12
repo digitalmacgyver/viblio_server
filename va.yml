@@ -11,8 +11,9 @@ Model::S3:
   retry: 1
 
 s3:
-  bucket: viblio.filepicker.io
-  aws_use_https: 0
+  bucket: viblio-mediafiles
+  aws_use_https: 1
+  expires:  86400
 
 thumbnails:
   web:
