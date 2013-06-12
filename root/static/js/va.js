@@ -230,6 +230,12 @@ function default_process_mq( data, play ) {
     });
 }
 
+// Get the base server url
+function document_server() {
+    var a = $(location).attr( 'href' ).split( '/' );
+    return a[0].replace( /:$/, '') + '://' + a[2];
+}
+
 // Apply and start a flowplayer
 function startVideoPlayer( el, media ) {
     var video = document.createElement("video"),
@@ -240,10 +246,10 @@ function startVideoPlayer( el, media ) {
 
     $(el).flowplayer( "/static/flowplayer/flowplayer-3.2.16.swf", {
 	clip: {
-	    url: 'mp4:amazons3/viblio.filepicker.io/' + media.views.main.uri,
+	    url: 'mp4:amazons3/viblio-mediafiles/' + media.views.main.uri,
 	    ipadUrl: encodeURIComponent(media.views.main.url),
 	    // URL for sharing on FB, etc.
-	    pageUrl: 'http://viblio.com/what/about/secure/s3/urls',
+	    pageUrl: site_server + '/shared/flowplayer/' + media.uuid,
 	    scaling: 'fit',
 	    provider: 'rtmp'
 	},
@@ -277,9 +283,14 @@ function startVideoPlayer( el, media ) {
 }
 
 var filepicker;
+var site_server;
+
 $(document).ready( function() {
     if ( filepicker )
 	filepicker.setKey( picker_key );
+
+    // Remember our site's main server
+    site_server = document_server();
 
     // Get the site auth tokens
     $.ajax({

@@ -1,0 +1,13 @@
+{
+    'clip': {
+	'url': 'mp4:amazons3/viblio-mediafiles/[% mediafile.views.main.uri %]',
+	'scaling': 'fit',
+	'provider': 'rtmp'
+    },
+    'plugins': {
+	'rtmp': {
+	    'url': 'http://releases.flowplayer.org/swf/flowplayer.rtmp-3.2.12.swf',
+	    'netConnectionUrl': 'rtmp://ec2-54-214-160-185.us-west-2.compute.amazonaws.com/vods3'
+	}
+    }
+}

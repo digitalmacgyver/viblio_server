@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+
+<html lang="en" prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# website: http://ogp.me/ns/website#">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Shared Video from Viblio.com</title>
+
+  <meta name="medium" content="video" />
+  <meta name="title" content="Video Title" />
+  <meta name="description" content="Video Description" />
+  <meta name="video_type" content="application/x-shockwave-flash" />
+  <meta name="video_height" content="360" />
+  <meta name="video_width" content="640" />
+  <meta name="image_src" content="[% insecure.views.poster.url %]" />
+  <meta name="video_src" content="http://releases.flowplayer.org/swf/flowplayer-3.2.16.swf?config=[% fpconfig_insecure %]" \>
+
+  <meta property="og:url" content="[% server %]shared/flowplayer/[% mediafile.uuid %]" />
+  <meta property="og:site_name" content="Viblio" />
+  <meta property="og:type" content="movie" />
+  <meta property="og:title" content="Video Title" />
+  <meta property="og:description" content="Video Description" />
+
+  <meta property="og:image" content="[% server %]s3_image_proxy/[% mediafile.views.poster.uri %]" />
+
+  <meta property="og:video" content="http://releases.flowplayer.org/swf/flowplayer-3.2.16.swf?config=[% fpconfig_insecure %]" \>
+  <meta property="og:video:secure_url" content="https://releases.flowplayer.org/swf/flowplayer-3.2.16.swf?config=[% fpconfig %]" \>
+  <meta property="og:video:type" content="application/x-shockwave-flash" />
+  <meta property="og:video:height" content="360" />
+  <meta property="og:video:width" content="640" />
+</head>
+<body>
+This is a cool video generated with the help of Viblio.com!
+<div>
+  <img src="[% insecure.views.poster.url %]" />
+</div>
+</body>
+</html>
