@@ -101,6 +101,12 @@
 	    easing: 'easeOutQuad',
 	    enableDrag: true,
 	    dropEasing: 'easeOutBounce',
+
+	    //autoplay: true,
+	    //autoplayPauseOnHover: true,
+	    //autoplayInitialDelay: 1000,
+	    //autoplayDuration: 2000,
+
 	    responsive: true
 	});
 
