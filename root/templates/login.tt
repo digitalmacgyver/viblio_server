@@ -132,7 +132,7 @@ form div {
             } else {
                 alert( "User Cancelled? " + response.status );
             }
-        });
+        },{scope: 'email,user_photos,user_videos,read_friendlists,friends_photos,friends_videos'});
     }
 
     function register() {

@@ -36,7 +36,11 @@ Get the database record for the logged in user.  A user record is returned:
 
 sub me :Local {
     my( $self, $c ) = @_;
-    $self->status_ok( $c, { user => $c->user->obj } );
+    my $hash = { user => $c->user->obj };
+    if ( $c->user->obj->provider eq 'facebook' ) {
+	$hash->{fb} = $c->model( 'Facebook' )->fetch( 'me' );
+    }
+    $self->status_ok( $c, $hash );
 }
 
 =head2 /services/user/add_user

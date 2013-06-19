@@ -55,6 +55,7 @@ $VAR1 = {
           'locale' => 'en_US',
           'username' => 'andrew.peebles.9843',
           'last_name' => 'Peebles',
+          'email' => 'aqpeeb@gmail.com', ## IF 'email' LISTED IN SCOPE
           'updated_time' => '2013-03-18T23:21:54+0000',
           'verified' => bless( do{\(my $o = 1)}, 'JSON::XS::Boolean' ),
           'id' => '100005451434129',
@@ -86,14 +87,20 @@ sub authenticate {
 	}
         # die 'Error validating verification code' unless $fb_user;
 	$ctx->log->debug( Dumper $fb_user );
-        my $user = $realm->find_user(
-	    {
-		provider => 'facebook',
-		provider_id => $fb_user->{id},
-		username => $fb_user->{username},
-		displayname => $fb_user->{name},
-	    }, $ctx);
+	my $attributes = {
+	    provider => 'facebook',
+	    provider_id => $fb_user->{id},
+	    username => $fb_user->{username},
+	    displayname => $fb_user->{name},
+	};
+	if ( $fb_user->{email} ) {
+	    $attributes->{email} = $fb_user->{email};
+	}
+        my $user = $realm->find_user($attributes, $ctx);
 	if ( $user ) { 
+	    # Remember the access token, so that other parts of the
+	    # server may make Facebook API calls.
+	    $ctx->session->{fb_token} = $code;
 	    return $user;
 	}
 	else {
