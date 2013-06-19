@@ -174,7 +174,7 @@ if ( upload_to_s3() == 0 ) {
 
 # delete temporary files
 foreach my $file ( @toremove ) {
-    # unlink( $file );
+    unlink( $file );
 }
 unlink( $wofile );
 
