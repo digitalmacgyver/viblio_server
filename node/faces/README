@@ -1,0 +1,62 @@
+This is the very beginnings of a "faces" server.  Currently it includes only a "fbsync" endpoint
+that is starting to show how we can obtain information from facebook for a logged in viblio user.
+
+You can test this server by:
+
+  npm install (once, to get the node dependencies)
+  node faces.js
+
+Then in another window:
+
+  curl -v http://localhost:3033/fbsync?token=$facebook_token&fbid=$facebook_id&uuid=$catalyst_user_uuid
+
+The $facebook_token and $facebook_id can be obtained with facebook.com developer tools, or by
+running the Catalyst server and logging into viblio via facebook, and looking for the information
+in the Catalyst debug output.  The $catalyst_user_uuid is not yet really needed, but if you need it
+you can get it from the local mysql database.
+
+The idea is that the Catalyst server will call this server's /fbsync endpoint upon a successful
+facebook user authentication event.  The Cat server will pass the facebook auth token, facebook
+user id and viblio user uuid.  
+
+The /fbsync endpoint then gets the user's profile photo, and then every photo on facebook where
+this user is tagged.  Then it does the same for the user's friends (for each friend, get the
+profile photo and all photos where this friend is tagged).  There is code in this server for
+downloading these photos from facebook to the local file system.  The idea is then to pass
+these photos to a faces recognizer/trainer, and to store this information in a local database
+somehow.  The database code is not yet in this server.
+
+I think the local database will look something like this:
+
+  user:
+    fullname:  'Andrew Peebles',
+    firstname: 'Andrew',
+    uuid:      * viblio-uuid-or-generated-uuid
+    id:        * facebook uid 
+
+  rendition:
+    id:        * belongs to user:id
+    data:      * the image data as a blob, or a url to s3?
+
+The idea is that there are many "renditions" of the user's photo in the database.  One
+rendition is the user's profile photo.  Other renditions are the thumbnails of the user
+in photos that were tagged.  Every rendition has been passed through the faces trainer.
+
+I am thinking of using only first names in the web gui, just like iPhoto does in Faces,
+which is why I am capturing this info from facebook and storing it.
+
+ISSUES:
+
+1.  Profile photos are not nessesarily "head shots".  Look at Mona's for example, and mine.
+Profile photos can even contain other people in them.  There is no metadata (unlike with
+tagged photos) to hint at where the user might be.  
+
+2.  Tagged photos do have metadata hints; xcoord (a percentage of the pic width from
+the left) and ycoord (percentage from the top) of the centerpoint of the tag bounding
+box.  But not width or height.  The face recognizer/trainer may need to take this
+"hint" and find the bounding box on its own.
+
+From both profile photos and tagged photos, what we want to retain in the database
+is a uniformily cropped and scaled headshot of the user (just like in iPhoto).  I
+am not sure how this will be accomplished.
+
