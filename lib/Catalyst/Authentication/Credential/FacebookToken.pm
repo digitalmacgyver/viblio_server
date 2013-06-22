@@ -78,7 +78,7 @@ sub authenticate {
         return undef;
     }
     else {
-	$ctx->log->debug( "Have code, trying access ..." );
+	$ctx->log->debug( "FB Token: " . $code );
         # my $token = $oauth->request_access_token($code)->token;
 	$oauth->access_token( $code );
 	my $fb_user = $oauth->fetch( 'me' );
