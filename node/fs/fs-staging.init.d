@@ -32,9 +32,14 @@ else
     PIDDIR=/tmp
 fi
 
-if [ ! -d "/opt/fs" ]; then
-   mkdir -p /opt/fs
-   chown $USER:$GROUP /opt/fs
+fstarget=/opt/fs
+if [ -L "$fstarget" ]; then
+    fstarget=`readlink -f $fstarget`
+fi
+
+if [ ! -d "$fstarget" ]; then
+   mkdir -p $fstarget
+   chown $USER:$GROUP $fstarget
 fi
 
 if [ ! -d "/opt/.cache" ]; then
