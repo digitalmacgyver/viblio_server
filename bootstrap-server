@@ -79,5 +79,5 @@ npm install
 sudo apt-get install redis-server
 cd /etc/init.d
 sudo ln -s /deploy/staging/viblio-server/node/mq/mq-staging.init.d ./mq-staging
-sudo update-rc.d mq-staging defaults
+sudo update-rc.d mq-staging defaults 30
 sudo ./mq-staging start
