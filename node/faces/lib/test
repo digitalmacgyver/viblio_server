@@ -1,0 +1,6 @@
+i = require('./lib/intellivision'); 
+c = i.createClient(); 
+util = require( 'util' ); 
+cb = function(data) { console.log( util.inspect( data, false, 10, true ) ); }
+c.analyzeMedia( "http://www.facebook.com/l.php?u=http%3A%2F%2Fprofile.ak.fbcdn.net%2Fhprofile-ak-prn1%2F623746_100005451434129_1622046863_q.jpg&h=AAQFgTqdm", cb )
+c.retriveFaces(3,cb)
