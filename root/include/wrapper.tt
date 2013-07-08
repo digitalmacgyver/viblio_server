@@ -14,7 +14,14 @@ ELSE -%]
 
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,700">
 
+    <link rel="stylesheet" href="/static/font-awesome/css/font-awesome.min.css">
+    <!--[if IE 7]>
+    <link rel="stylesheet" href="/static/font-awesome/css/font-awesome-ie7.min.css">
+    <![endif]-->
+
     <link rel="stylesheet" href="/static/css/va.css" />
+
+    [% template.extra_page_header_css %]
 
     <script src="/static/js/jquery-1.9.1.min.js"></script>
     <script src="/static/js/jquery.effects.core.js"></script>
@@ -25,6 +32,8 @@ ELSE -%]
     <!-- Flowplayer and plugins -->
     <script src="/static/flowplayer/flowplayer-3.2.12.min.js"></script>
     <script src="/static/js/flowplayer.ipad-3.2.12.min.js"></script>
+
+    [% template.extra_page_header_js %]
 
     <!-- Carousel -->
     <script src="/static/js/jquery.roundabout.min.js"></script>
@@ -125,6 +134,8 @@ ELSE -%]
 	<button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
       </div>
     </div>
+
+  [% template.extra_page_bottom %]
 
   </body>
 </html>
