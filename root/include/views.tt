@@ -60,3 +60,33 @@
     </tbody>
   </table>
 </script>
+
+<script id="scrollable" type="text/html">
+  <div class="media-search-result well">
+    <div class="media-search-title">
+      <div class="media-search-buttons pull-right">
+	<div class="btn-group">
+	  <button class="btn btn-small media-remove-btn">Remove</button>
+	  <button class="btn btn-small media-watch-btn">Watch Later</button>
+	  <button class="btn btn-small media-comment-btn">Add Comment</button>
+	</div>
+	<button class="btn btn-small media-edit-btn" onclick="media_edit(event)">Edit</button>
+      </div>
+      <span>{{ title }}</span>
+    </div>
+    <div class="media-search-area">
+      {{#media}}
+      <div id="mid-{{ id }}" class="media-file">
+	<a class="fancybox mplay-icon" href="#" data-uri="{{views.main.uri}}" data-url="{{views.main.url}}" data-uuid="{{uuid}}">
+	  <!-- <img src="/static/images/play.png" width="48" height="48" /> -->
+	  <i class="icon-play-circle"></i> 
+	</a>
+	<i class="icon-ok-sign"></i> 
+	<div href="#">
+	  <img width="128" height="128" src="{{views.thumbnail.url}}" />
+	</div>
+      </div>
+      {{/media}}
+    </div>
+  </div>
+</script>

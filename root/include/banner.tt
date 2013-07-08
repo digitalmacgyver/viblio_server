@@ -7,6 +7,7 @@
       <li class="[% places_active %]"><a href="/places">Places</a></li>
       <li class="[% manage_active %]"><a href="/manage">Manage</a></li>
       <li class="[% create_active %]"><a href="/create">Create</a></li>
+      <li class="[% channel_active %]"><a href="/channel">Channel</a></li>
     </ul>
 
     <span class="pull-right" style="margin-top: 8px;">
