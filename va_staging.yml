@@ -49,7 +49,7 @@ Plugin::Log::Log4perlSimple:
 
 # Worker (eventually on SNS)
 Model::FD:
-  server: http://10.253.76.141:3001
+  server: http://localhost:3001
   type: application/json
 
 # Message Queue REST service
