@@ -44,8 +44,8 @@ exit
 cd /deploy/staging/viblio-server/node/fu
 npm install
 sudo apt-get install imagemagick ffmpegthumbnailer
-sudo perl -MCPAN -e install JSON LWP::UserAgent XML::Simple
-sudo apt-get python-setuptools
+sudo -H /usr/bin/cpan JSON LWP::UserAgent XML::Simple
+sudo apt-get install python-setuptools
 sudo easy_install qtfaststart
 
 # fd
