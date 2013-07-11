@@ -274,6 +274,9 @@
                 }
             };
         form.uploadDir = options.tmpDir;
+	if ( ! _existsSync( form.uploadDir ) ) {
+	    mkdirp.sync( form.uploadDir );
+	}
         form.on('fileBegin', function (name, file) {
             tmpFiles.push(file.path);
             var fileInfo = new FileInfo(file, handler.req, true);
