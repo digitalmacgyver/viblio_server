@@ -32,6 +32,7 @@ mediafile:
   fs: VA::MediaFile::FileStorage
   s3: VA::MediaFile::S3
   jfs: VA::MediaFile::JFS
+  us: VA::MediaFile::US
 
 roles:
   tester:

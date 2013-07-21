@@ -7,6 +7,8 @@ use namespace::autoclean;
 use DateTime;
 use Try::Tiny;
 
+use VA::MediaFile;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 =head1 /services/na
@@ -728,6 +730,43 @@ sub workorder_done :Private {
 	# No one to send it to!
 	$c->log->error( "WO: TOTAL FAILURE! No one to send the WO to." );
     }
+}
+
+# THIS IS A TEMPORARY ENDPOINT, needed only for initial integration of
+# a new uploader services.  IT SHOULD BE REMOVED as soon as the authentication
+# details are worked out.
+#
+sub mediafile_create :Local {
+    my( $self, $c, $uuid ) = @_;
+    $uuid = $c->req->param( 'uid' ) unless( $uuid );
+
+    my $user = $c->model( 'DB::User' )->find({uuid=>$uuid});
+    if ( ! $user ) {
+	$self->status_bad_request( $c, 'Cannot find user for $uuid' );
+    }
+    my $mimetype    = $c->req->param( 'mimetype' );
+    my $uri         = $c->req->param( 'uri' );
+    my $filename    = $c->req->param( 'filename' );
+    my $bucket_name = $c->req->param( 'bucket_name' );
+    my $location    = $c->req->param( 'location' );
+    my $size        = $c->req->param( 'size' );
+
+    if ( ! ( $mimetype && $uri && $filename && $location && $size ) ) {
+	$self->status_bad_request( $c, 'Missing required parameters' );
+    }
+
+    $bucket_name = $bucket_name || 'viblio-uploaded-files';
+
+    my $factory = new VA::MediaFile;
+    
+    $c->req->params->{user_id} = $user->id;
+    my $mediafile = $factory->create( $c, $c->req->params );
+
+    unless( $mediafile ) {
+	$self->status_bad_request( $c, 'Cannot create media file!' );
+    }
+
+    $self->status_ok( $c, { media => $factory->publish( $c, $mediafile ) } );
 }
 
 __PACKAGE__->meta->make_immutable;
