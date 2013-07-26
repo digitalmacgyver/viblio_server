@@ -1,3 +1,3 @@
 {
-    endpoint => "http://localhost:3000/services/na/workorder_processed",
+    endpoint => "http://localhost:2222/services/na/workorder_processed",
 }

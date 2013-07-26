@@ -23,6 +23,22 @@ function media_edit(event) {
     }
 }
 
+function show_metadata(event) {
+    var $this = $(event.target);
+    var container = $this.parents( 'div[class^="media-search-result"]' );
+    $("#metadata").empty();
+    container.find( ".selected" ).each( function() {
+	var mid = $(this).attr( 'id' ).replace( 'mid-','' );
+	$.getJSON( '/services/mediafile/get_metadata',
+		   { mid: mid },
+		   function( json ) {
+		       var el = $(ich.md({uuid: mid}));
+		       $("#metadata").append( el );
+		       el.find( '.metadata-data' ).jsonEditor( json );
+		   });
+    });
+}
+
 function media_selected() {
     $(this).toggleClass( 'selected' );
 }

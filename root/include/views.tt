@@ -69,6 +69,7 @@
 	  <button class="btn btn-small media-remove-btn">Remove</button>
 	  <button class="btn btn-small media-watch-btn">Watch Later</button>
 	  <button class="btn btn-small media-comment-btn">Add Comment</button>
+	  <button class="btn btn-primary btn-small media-metadata-btn" onclick="show_metadata(event)">Metadata</button>
 	</div>
 	<button class="btn btn-small media-edit-btn" onclick="media_edit(event)">Edit</button>
       </div>
@@ -88,5 +89,12 @@
       </div>
       {{/media}}
     </div>
+  </div>
+</script>
+
+<script id="md" type="text/html">
+  <div class="metadata-container well">
+    <div class="metadata-title">{{uuid}}</div>
+    <div class="metadata-data json-editor"></div>
   </div>
 </script>

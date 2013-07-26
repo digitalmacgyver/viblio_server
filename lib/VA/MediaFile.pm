@@ -55,6 +55,33 @@ sub delete {
     return $fp->delete( $c, $mediafile );
 }
 
+sub metadata {
+    my( $self, $c, $mediafile ) = @_;
+    my $location;
+    if ( ref $mediafile eq 'HASH' ) {
+	$location = $mediafile->{views}->{main}->{location};
+    }
+    else {
+	$location = $mediafile->view( 'main' )->location;
+    }
+    unless( $location ) {
+	$self->error( $c, "Cannot determine location of this media file" );
+	return undef;
+    }
+    my $klass = $c->config->{mediafile}->{$location};
+    unless( $klass ) {
+	$self->error( $c, "Cannot determine type of this media file" );
+	return undef;
+    }
+    my $fp = new $klass;
+    if ( $fp->can( 'metadata' ) ) {
+	return $fp->metadata( $c, $mediafile );
+    }
+    else {
+	return {};
+    }
+}
+
 # Standard way to "publish" a media file to
 # a client in JSON.  Convert the array of
 # views into a hash who's keys are the view

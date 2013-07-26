@@ -4,6 +4,7 @@ use URI;
 use Try::Tiny;
 use Muck::FS::S3::QueryStringAuthGenerator;
 use File::Basename;
+use JSON;
 
 sub create {
     my ( $self, $c, $params ) = @_;
@@ -29,6 +30,7 @@ sub create {
     my( $basename, $path, $suffix ) = fileparse( $params->{uri}, qr/\.[^.]*/ );
     my $thumbnail_uri = "${path}${basename}_thumbnail.jpg";
     my $poster_uri = "${path}${basename}_poster.jpg";
+    my $metadata_uri = "${path}${basename}_metadata.json";
 
     # Create the thumbnail view
     my $thumb = $mediafile->create_related( 
@@ -52,6 +54,17 @@ sub create {
 	  type => 'poster' } );
     return undef unless( $poster );
 
+    # Metadata
+    my $metadata = $mediafile->create_related( 
+	'views',
+	{ filename => $params->{filename},
+	  mimetype => 'application/json',
+	  uri => $metadata_uri,
+	  size => int($params->{size}),
+	  location => 'us',
+	  type => 'metadata' } );
+    return undef unless( $metadata );
+
     return $mediafile;
 }
 
@@ -59,7 +72,7 @@ sub create {
 sub delete {
     my( $self, $c, $mediafile ) = @_;
 
-    my $bucket = $c->model( 'S3' )->bucket( name => 'viblio-uploaded-files' );
+    my $bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );
     unless( $bucket ) {
         $c->log->error( "Cannot get s3 bucket: " . 
                         $c->config->{s3}->{bucket} );
@@ -101,6 +114,57 @@ sub delete {
     return $ret;
 }
 
+sub metadata {
+    my( $self, $c, $mediafile ) = @_;
+    my $uri;
+
+    if ( ref $mediafile eq 'HASH' ) {
+	if ( $mediafile->{views}->{metadata} ) {
+	    $uri = $mediafile->{views}->{metadata}->{uri};
+	}
+	else {
+	    # does not have a metadata view
+	    return({});
+	}
+    }
+
+    unless( $uri ) {
+	my $view = $mediafile->view( 'metadata' );
+	if ( $view ) {
+	    $uri = $view->uri;
+	}
+	else {
+	    # does not have metadata
+	    return({});
+	}
+    }
+
+    my $bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );
+    unless( $bucket ) {
+	$c->log->error( 'Failed to get S3 bucket: ' . $c->config->{s3}->{bucket} );
+	return undef;
+    }
+    my $s3 = $bucket->object( key => $uri );
+    unless( $s3 ) {
+	$c->log->error( 'Failed to obtain metadata' );
+	return undef;
+    }
+
+    my $obj;
+    try {
+	my $md = $s3->get;
+	if ( ! defined( $md ) || $md eq '' ) {
+	    $md = "{}";
+	}
+	$obj = decode_json( $md );
+    } catch {
+	$c->log->debug( $_ );
+	$c->log->error( 'Failed to parse metadata as a JSON string! ' . $_ );
+	$obj = undef;
+    };
+    return( $obj );
+}
+
 sub uri2url {
     my( $self, $c, $view, $params ) = @_;
 
@@ -115,7 +179,7 @@ sub uri2url {
     elsif ( $c->config->{s3}->{aws_use_https} == 1 ) {
         $aws_use_https = 1;
     }
-    my $aws_bucket_name = 'viblio-uploaded-files';
+    my $aws_bucket_name = $c->config->{s3}->{bucket};
     my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
     my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
         $aws_key, $aws_secret, $aws_use_https, $aws_endpoint );

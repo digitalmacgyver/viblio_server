@@ -3,6 +3,7 @@ use Moose;
 use URI;
 use Try::Tiny;
 use Muck::FS::S3::QueryStringAuthGenerator;
+use JSON;
 
 sub create {
     my ( $self, $c, $params ) = @_;
@@ -45,6 +46,57 @@ sub delete {
     };
 
     return $ret;
+}
+
+sub metadata {
+    my( $self, $c, $mediafile ) = @_;
+    my $uri;
+
+    if ( ref $mediafile eq 'HASH' ) {
+	if ( $mediafile->{views}->{metadata} ) {
+	    $uri = $mediafile->{views}->{metadata}->{uri};
+	}
+	else {
+	    # does not have a metadata view
+	    return({});
+	}
+    }
+
+    unless( $uri ) {
+	my $view = $mediafile->view( 'metadata' );
+	if ( $view ) {
+	    $uri = $view->uri;
+	}
+	else {
+	    # does not have metadata
+	    return({});
+	}
+    }
+
+    my $bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );
+    unless( $bucket ) {
+	$c->log->error( 'Failed to get S3 bucket: ' . $c->config->{s3}->{bucket} );
+	return undef;
+    }
+    my $s3 = $bucket->object( key => $uri );
+    unless( $s3 ) {
+	$c->log->error( 'Failed to obtain metadata' );
+	return undef;
+    }
+
+    my $obj;
+    try {
+	my $md = $s3->get;
+	if ( ! defined( $md ) || $md eq '' ) {
+	    $md = "{}";
+	}
+	$obj = decode_json( $s3->get );
+    } catch {
+	$c->log->debug( $_ );
+	$c->log->error( 'Failed to parse metadata as a JSON string! ' . $_ );
+	$obj = undef;
+    };
+    return( $obj );
 }
 
 sub uri2url {

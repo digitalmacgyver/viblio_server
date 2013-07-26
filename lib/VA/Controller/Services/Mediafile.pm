@@ -2,6 +2,8 @@ package VA::Controller::Services::Mediafile;
 use Moose;
 use namespace::autoclean;
 
+use JSON;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 =head1 Mediafile
@@ -284,7 +286,7 @@ sub list :Local {
 	my $rs = $c->user->mediafiles
 	    ->search( $where,
 		      { prefetch => 'views',
-			order_by => { -desc => 'id' },
+			order_by => { -desc => 'me.id' },
 			page => $args->{page},
 			rows => $args->{rows} } );
 	my $pager = $rs->pager;
@@ -313,6 +315,47 @@ sub list :Local {
 	push( @media, VA::MediaFile->new->publish( $c, $_ ) )
 	    foreach( $c->user->mediafiles->search( $where, {order_by => { -desc => 'id' }} ) );
 	$self->status_ok( $c, { media => \@media } );
+    }
+}
+
+sub get :Local {
+    my( $self, $c, $mid ) = @_;
+    $mid = $c->req->param( 'mid' ) unless( $mid );
+
+    my $mf = $c->user->mediafiles->find($mid);
+    unless( $mf ) {
+	$mf = $c->user->mediafiles->find({uuid=>$mid});
+    }
+
+    unless( $mf ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+    }
+
+    my $view = VA::MediaFile->new->publish( $c, $mf );
+    $self->status_ok( $c, { media => $view } );
+}
+
+sub get_metadata :Local {
+    my( $self, $c, $mid ) = @_;
+    $mid = $c->req->param( 'mid' ) unless( $mid );
+
+    my $mf = $c->user->mediafiles->find($mid);
+    unless( $mf ) {
+	$mf = $c->user->mediafiles->find({uuid=>$mid});
+    }
+
+    unless( $mf ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+    }
+
+    my $hash = VA::MediaFile->new->metadata( $c, $mf );
+    if ( $hash ) {
+	$self->status_ok( $c, $hash );
+    }
+    else {
+	$self->status_bad_request( $c, $c->loc( 'Failed to obtain metadata' ) );
     }
 }
 

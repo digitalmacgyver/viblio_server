@@ -145,7 +145,9 @@ function list_media( wid, play, callback ) {
             else {
                 $("#media-list").empty();
                 for( var i=0; i<json.media.length; i++ ) {
-		    if ( from == 'anywhere' || json.media[i].views.main.location == from ) {
+		    if ( from == 'anywhere' || 
+			 json.media[i].views.main.location == 's3' || 
+			 json.media[i].views.main.location == 'us' ) {
 			// Use a client-side template to create a media-object
 			if ( json.media[i].views.main.mimetype.indexOf('audio') == 0 ) {
                             $("#media-list").append( ich.media_file_audio(json.media[i]) );

@@ -139,6 +139,22 @@ foreach my $fpfile ( @media ) {
 			$fpfile->{views}->{poster}->{location} = 's3';
 			$fpfile->{views}->{poster}->{size} = -s $ofile;
 		    }
+
+		    # Create a metadata view
+		    $s3key = "${in_bn}_metadata.json";
+		    my $mfile = "${in_dn}${s3key}";
+		    $mfile = metadata( $infile, $mfile );
+		    if ( $mfile ) {
+			push( @s3files, $uuid . '^' . $mfile );
+			push( @toremove, $mfile );
+			$fpfile->{views}->{metadata}->{localpath} = $mfile;
+			$fpfile->{views}->{metadata}->{filename} = $fpfile->{views}->{main}->{filename};
+			$fpfile->{views}->{metadata}->{mimetype} = 'application/json';
+			$fpfile->{views}->{metadata}->{uri} = "$uuid/$s3key";
+			$fpfile->{views}->{metadata}->{location} = 's3';
+			$fpfile->{views}->{metadata}->{size} = -s $mfile;
+		    }
+
 		    $infile = $ofile;  # input to thumbnails for video is poster
 		}
 		
@@ -189,6 +205,7 @@ sub send_response {
 			 Content => to_json( $data ) );
     if ( $res->code != 200 ) {
 	logger( "send_response: bad code: " . $res->code );
+	logger( "endpoint was: " . $endpoint );
     }
     else {
 	logger( "sent response to $endpoint" );
@@ -203,6 +220,12 @@ sub thumbnail {
 
     $ifile =~ s/ /\\ /g;
     $ofile =~ s/ /\\ /g;
+
+    $ifile =~ s/\(/\\(/g;
+    $ifile =~ s/\)/\\)/g;
+
+    $ofile =~ s/\(/\\(/g;
+    $ofile =~ s/\)/\\)/g;
 
     my $cmd = "/usr/bin/convert $ifile -resize $size\\\> -size $size xc:white +swap -gravity center -composite $ofile";
     if ( ! system( "$cmd 2>&1 >/dev/null" ) ) {
@@ -222,6 +245,12 @@ sub poster {
     $ifile =~ s/ /\\ /g;
     $ofile =~ s/ /\\ /g;
 
+    $ifile =~ s/\(/\\(/g;
+    $ifile =~ s/\)/\\)/g;
+
+    $ofile =~ s/\(/\\(/g;
+    $ofile =~ s/\)/\\)/g;
+
     my $cmd = "/usr/bin/ffmpegthumbnailer -i $ifile -o $ofile -s $size";
     if ( ! system( "$cmd 2>&1 >/dev/null" ) ) {
 	# Now fit this image into a 4:3 box, assuming $size is a width
@@ -236,6 +265,31 @@ sub poster {
 	}
     }
     else {
+	return undef;
+    }
+}
+
+sub metadata {
+    my $ifile = shift;
+    my $ofile = shift;
+    my $original = $ofile;
+
+    $ifile =~ s/ /\\ /g;
+    $ofile =~ s/ /\\ /g;
+
+    $ifile =~ s/\(/\\(/g;
+    $ifile =~ s/\)/\\)/g;
+
+    $ofile =~ s/\(/\\(/g;
+    $ofile =~ s/\)/\\)/g;
+
+    logger( 'Obtaining metadata ...' );
+    my $cmd = "/usr/local/bin/ffprobe -v quiet -print_format json=c=1 -show_format -show_streams $ifile > $ofile";
+    if ( ! system( "$cmd" ) ) {
+	return $original;
+    }
+    else {
+	logger( "Command failed: " . $cmd . ": " . $? );
 	return undef;
     }
 }
@@ -286,6 +340,8 @@ sub upload_to_s3 {
     my @clean = ();
     foreach my $file ( @s3files ) {
 	$file =~ s/ /\\ /g;
+	$file =~ s/\(/\\(/g;
+	$file =~ s/\)/\\)/g;
 	push( @clean, $file );
     }
 
