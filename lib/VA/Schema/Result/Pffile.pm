@@ -256,7 +256,7 @@ sub TO_JSON {
 # belongs though.
 #
 # To get this url, you have to call
-#  $c->model( 'DB::Pffile')->find($id)->get_filtered_column( 's3key' );
+#  $c->model( 'RDS::Pffile')->find($id)->get_filtered_column( 's3key' );
 # The TOJSON above does this so any services get the full url, good
 # for an hour.
 #

@@ -6,7 +6,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 sub create {
     my ( $self, $c, $params ) = @_;
 
-    my $mediafile = $c->model( 'DB::Mediafile' )->create({
+    my $mediafile = $c->model( 'RDS::Mediafile' )->create({
 	filename => $params->{filename},
 	user_id  => $params->{user_id} });
     return undef unless( $mediafile );

@@ -49,7 +49,7 @@ authentication:
         password_type: self_check
       store:
         class: DBIx::Class
-        user_model: DB::User
+        user_model: RDS::User
         role_relation: roles
         role_field: role
     facebook:
@@ -59,7 +59,7 @@ authentication:
         application_secret: 7c48152f970b953f6a7c835b2f92bdcd
       store:
         class: DBIx::Class
-        user_model: DB::User
+        user_model: RDS::User
       auto_create_user: 1
     facebook_web:
       credential:
@@ -68,7 +68,7 @@ authentication:
         application_secret: f22db0e8b2b38194d7ede5ce2d2df9e5
       store:
         class: DBIx::Class
-        user_model: DB::User
+        user_model: RDS::User
       auto_create_user: 1
 
 Model::DB:
@@ -77,6 +77,15 @@ Model::DB:
     dsn: dbi:mysql:vadb
     user: vaadmin
     password: viblio
+    mysql_enable_utf8: 1
+    AutoCommit: 1
+
+Model::RDS:
+  schema_class: VA::RDSSchema
+  connect_info:
+    dsn: dbi:mysql:database=video_dev_1;host=testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com
+    user: video_dev_1
+    password: video_dev_1
     mysql_enable_utf8: 1
     AutoCommit: 1
 

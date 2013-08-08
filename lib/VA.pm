@@ -121,7 +121,7 @@ __PACKAGE__->config(
     },
 
     'Plugin::Session' => {
-	dbic_class => 'DB::Session',
+	dbic_class => 'RDS::Session',
 	expires    => 3600,
     },
 

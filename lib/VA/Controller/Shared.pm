@@ -19,7 +19,7 @@ to share a video.
 sub flowplayer :Local {
     my( $self, $c, $uuid ) = @_;
     $uuid = $c->req->param( 'uuid' ) unless( $uuid );
-    my $mediafile = $c->model( 'DB::Mediafile' )->find( { uuid => $uuid },
+    my $mediafile = $c->model( 'RDS::Mediafile' )->find( { uuid => $uuid },
 						    { prefetch => 'views' } );
     unless( $mediafile ) {
 	$c->log->error( 'Cannot find media file' );
@@ -31,7 +31,7 @@ sub flowplayer :Local {
     my $mhash = VA::MediaFile->new->publish( $c, $mediafile, { expires => (60*60*24*365), aws_use_https => 1 } );
 
     undef $mediafile;
-    $mediafile = $c->model( 'DB::Mediafile' )->find( { uuid => $uuid },
+    $mediafile = $c->model( 'RDS::Mediafile' )->find( { uuid => $uuid },
 						     { prefetch => 'views' } );
 
     my $shash = VA::MediaFile->new->publish( $c, $mediafile, { expires => (60*60*24*365), aws_use_https => 0 } );

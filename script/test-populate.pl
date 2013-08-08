@@ -6,16 +6,38 @@
 #
 use strict;
 use lib "lib";
-use VA::Schema;
+use VA::RDSSchema;
 use FileHandle;
 use Email::Address;
+use JSON::XS ();
 
-my $db = $ARGV[0];
-unless( $db ) {
-    die "Usage: $0 <db> where db is vadb or vadb_staging";
+my $encoder = JSON::XS
+    ->new
+    ->utf8
+    ->pretty(1)
+    ->indent(1)
+    ->allow_blessed(1)
+    ->convert_blessed(1);
+
+my $conn = {
+    test => {
+	dsn => 'dbi:mysql:database=video_dev_1;host=testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com',
+	user => 'video_dev_1',
+	pass => 'video_dev_1',
+    },
+    staging => {
+	dsn => '',
+	user => 'video_dev_1',
+	pass => 'video_dev_1',
+    },
+};
+
+unless( defined( $ARGV[0] ) ) {
+    die "Must specify 'test' or 'staging' for the database you are populating.";
 }
 
-my $schema = VA::Schema->connect( "dbi:mysql:$db", 'vaadmin', 'viblio' );
+my $schema = VA::RDSSchema->connect
+    ( $conn->{$db}->{dsn}, $conn->{$db}->{user}, $conn->{$db}->{pass} ); 
 
 die "Cannot connect to database!"
     unless( $schema );
@@ -40,11 +62,16 @@ $user = $schema->resultset( 'User' )
 		       email => 'aqpeeb@gmail.com',
 		       provider => 'local',
 		       displayname => 'Andrew Peebles',
-		       password => 'password' });
+		     });
 die "Could not create admin user: $!"
     unless( $user );
 
-$user->add_to_roles( $roles->{admin} );
+$user->password( 'password' );
+$user->find_or_create_related
+    ( 'user_roles', 
+      { user_id => $user->id, 
+	role_id => $roles->{admin}->id});
+print $encoder->encode( $user );
 $user->update;
 
 # vaadmin
@@ -54,10 +81,15 @@ $user = $schema->resultset( 'User' )
 		       email => 'vaadmin@viblio.com',
 		       provider => 'local',
 		       displayname => 'Viblio Admin',
-		       password => 'password' });
+		     });
 die "Could not create admin user: $!"
     unless( $user );
 
-$user->add_to_roles( $roles->{admin} );
+$user->password( 'password' );
+$user->find_or_create_related
+    ( 'user_roles', 
+      { user_id => $user->id, 
+	role_id => $roles->{admin}->id});
+print $encoder->encode( $user );
 $user->update;
 

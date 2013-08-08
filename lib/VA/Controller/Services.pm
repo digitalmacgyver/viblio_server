@@ -53,7 +53,7 @@ sub auto_username :Private {
     my $username = $uname;
     my $post = 123;
     do {
-	$exists = $c->model( 'DB::User' )->find({ username => $username });
+	$exists = $c->model( 'RDS::User' )->find({ username => $username });
 	if ( $exists ) {
 	    $username = $uname . $post;
 	    $post += 1;
@@ -61,7 +61,7 @@ sub auto_username :Private {
     } while ( $exists );
 
     do {
-	$exists = $c->model( 'DB::PendingUser' )->find({ username => $username });
+	$exists = $c->model( 'RDS::PendingUser' )->find({ username => $username });
 	if ( $exists ) {
 	    $username = $uname . $post;
 	    $post += 1;

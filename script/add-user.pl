@@ -3,18 +3,30 @@ use strict;
 use lib "lib";
 
 my $Usage = <<_EOM;
-Usage: $0 -u <username> -f <fullname> [-e <email>] [-p <password] [-r <list of roles>]
+Usage: $0 -db <test|staging> -u <username> -f <fullname> [-e <email>] [-p <password] [-r <list of roles>]
 email defaults to username (in which case, username should be email!)
 if no -p, will be prompted
 if -r, comma delim list of roles to add
 _EOM
 
-use VA::Schema;
+use VA::RDSSchema;
 use Term::ReadKey;
 
-my $schema = VA::Schema->connect( 'dbi:mysql:vadb', 'vaadmin', 'viblio' );
+my $conn = {
+    test => {
+	dsn => 'dbi:mysql:database=video_dev_1;host=testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com',
+	user => 'video_dev_1',
+	pass => 'video_dev_1',
+    },
+    staging => {
+	dsn => '',
+	user => 'video_dev_1',
+	pass => 'video_dev_1',
+    },
+};
 
-my( $username,
+my( $db,
+    $username,
     $password,
     $email,
     $fullname );
@@ -23,6 +35,10 @@ my( $pw1, $pw2 );
 my @roles = ();
 
 while((my $arg = shift @ARGV)) {
+    if ( $arg eq '-db' ) {
+	$db = shift @ARGV;
+	next;
+    }
     if ( $arg eq '-u' ) {
 	$username = shift @ARGV;
 	next;
@@ -47,6 +63,7 @@ while((my $arg = shift @ARGV)) {
     exit 0;
 }
 
+die $Usage unless( $db );
 die $Usage unless( $username );
 die $Usage unless( $fullname );
 
@@ -72,6 +89,9 @@ unless( $password ) {
     $password = $pw1;
 }
 
+my $schema = VA::RDSSchema->connect
+    ( $conn->{$db}->{dsn}, $conn->{$db}->{user}, $conn->{$db}->{pass} ); 
+
 my $user = $schema->resultset( 'User' )->find({ username => $username });
 if ( $user ) {
     die "User \"$username\" already exists! User not created!\n";
@@ -79,7 +99,7 @@ if ( $user ) {
 
 $user = $schema->resultset( 'User' )->create
     ({ username => $username,
-       fullname => $fullname,
+       displayname => $fullname,
        email => $email,
        password => $password });
 unless( $user ) {

@@ -42,7 +42,7 @@ to "New Project".
 sub create :Local {
     my( $self, $c ) = @_;
     my $name = $c->req->param( 'name' ) || 'New Project';
-    my $wo = $c->model( 'DB::Workorder' )->create({name => $name, user_id => $c->user->obj->id});
+    my $wo = $c->model( 'RDS::Workorder' )->create({name => $name, user_id => $c->user->obj->id});
     unless( $wo ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to create new work order" ) );
@@ -68,12 +68,12 @@ sub find_or_create :Local {
     my( $self, $c ) = @_;
     my $name = $c->req->param( 'name' ) || 'New Project';
     my $state = $c->req->param( 'state' ) || 'WO_PENDING';
-    my $wo = $c->model( 'DB::Workorder' )->find_or_create({user_id => $c->user->obj->id, state => $state});
+    my $wo = $c->model( 'RDS::Workorder' )->find_or_create({user_id => $c->user->obj->id, state => $state});
     unless( $wo ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to find/create new work order" ) );
     }
-    my @media = $wo->mediafiles->search({},{prefetch=>'views', order_by => { -desc => 'mediafile.id' }});
+    my @media = $wo->media->search({},{prefetch=>'assets', order_by => { -desc => 'medias.id' }});
     my @published = ();
     push( @published, VA::MediaFile->new->publish( $c, $_ ) )
 	foreach( @media );
@@ -101,16 +101,14 @@ sub submit :Local {
     $id = $c->req->param( 'id' ) unless( $id );
     $id = $c->req->param( 'uuid' ) unless( $id );
     
-    my $wo = $c->user->workorders->find( $id );
-    unless( $wo ) {
-	$wo = $c->user->workorders->find({uuid => $id });
-    }
+    my $wo = $c->user->workorders->find({uuid => $id });
+
     unless( $wo ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
     }
 
-    my @media = $wo->mediafiles->search({},{prefetch=>'views'});
+    my @media = $wo->media->search({},{prefetch=>'assets'});
     my @published = ();
     foreach my $mf ( @media ) {
 	my $pf = VA::MediaFile->new->publish( $c, $mf );
@@ -167,16 +165,14 @@ sub bom :Local {
     $id = $c->req->param( 'id' ) unless( $id );
     $id = $c->req->param( 'uuid' ) unless( $id );
 
-    my $wo = $c->user->workorders->find( $id );
-    unless( $wo ) {
-	$wo = $c->user->workorders->find({uuid => $id });
-    }
+    my $wo = $c->user->workorders->find({uuid => $id });
+
     unless( $wo ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
     }
 
-    my @media = $wo->mediafiles->search({},{prefetch=>'views', order_by => { -desc => 'mediafile.id' }});
+    my @media = $wo->media->search({},{prefetch=>'assets', order_by => { -desc => 'medias.id' }});
     my @published = ();
     push( @published, VA::MediaFile->new->publish( $c, $_ ) )
 	foreach( @media );
@@ -290,16 +286,14 @@ sub highlight :Local {
     $id = $c->req->param( 'id' ) unless( $id );
     $id = $c->req->param( 'uuid' ) unless( $id );
     
-    my $wo = $c->user->workorders->find( $id );
-    unless( $wo ) {
-	$wo = $c->user->workorders->find({uuid => $id });
-    }
+    my $wo = $c->user->workorders->find({uuid => $id });
+
     unless( $wo ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
     }
 
-    my $mf = $wo->mediafiles->find({ type => 'highlight' });
+    my $mf = $wo->media->find({ media_type => 'highlight' });
 
     # If there isnt a highlight reel, then return the first media file
     if ( ! $mf ) {

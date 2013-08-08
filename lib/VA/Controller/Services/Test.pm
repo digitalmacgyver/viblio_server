@@ -8,7 +8,7 @@ BEGIN { extends 'VA::Controller::Services' }
 #
 sub me :Local {
     my( $self, $c ) = @_;
-    $DB::single = 1;
+
     if ( $c->{data} ) {
 	$c->logdump( $c->{data} );
     }
@@ -37,6 +37,8 @@ sub email_me :Local {
 	subject => 'test',
 	template => 'test-email.tt',
     };
+
+    $c->stash->{no_wrapper} = 1;
 
     $c->stash->{email} = $email;
     $c->forward( $c->view('Email::Template') );

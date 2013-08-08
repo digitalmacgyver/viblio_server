@@ -292,14 +292,14 @@ sub invite_request :Local {
 	    ( $c, $c->loc( "Email address \'[_1]\' appears to be invalid.", $args->{email} ) );
     }
 
-    my $existing = $c->model( 'DB::User' )->find
+    my $existing = $c->model( 'RDS::User' )->find
 	({ email => $args->{email} });
     if ( $existing ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "A user with email=\'[_1]\' already exists.", $args->{email} ) );
     }
 
-    $existing = $c->model( 'DB::PendingUser' )->find
+    $existing = $c->model( 'RDS::PendingUser' )->find
 	({ email => $args->{email} });
     if ( $existing ) {
 	# Allow someone to re-invite
@@ -311,10 +311,10 @@ sub invite_request :Local {
     my $code;
     do {
 	$code = $self->invite_code;
-	$existing = $c->model( 'DB::PendingUser' )->find({ code => $code });
+	$existing = $c->model( 'RDS::PendingUser' )->find({ code => $code });
     } while( $existing );
 
-    my $user = $c->model( 'DB::PendingUser' )->create
+    my $user = $c->model( 'RDS::PendingUser' )->create
 	({ email => $args->{email},
 	   password => $args->{password},
 	   username => $username,
@@ -327,6 +327,8 @@ sub invite_request :Local {
 
     # Send the invite
     #
+    $c->log->debug( 'Sending email to ' . $args->{email} );
+
     $c->stash->{no_wrapper} = 1;
     $c->stash->{email} =
     { to       => $args->{email},
@@ -397,7 +399,7 @@ sub new_user :Local {
     my $username = $self->auto_username
 	( $c, $args->{email}, $args->{username} );
 
-    my $pending = $c->model( 'DB::PendingUser' )
+    my $pending = $c->model( 'RDS::PendingUser' )
 	->find({ code => $args->{code} });
     unless( $pending ) {
 	$self->status_bad_request
@@ -408,7 +410,7 @@ sub new_user :Local {
 	    ( $c, $c->loc( "Email does not match for given code." ) );
     }
 
-    my $user = $c->model( 'DB::User' )->create
+    my $user = $c->model( 'RDS::User' )->create
 	({ email => $pending->email,
 	   password => $pending->password,
 	   displayname => $pending->username || $username,
@@ -452,7 +454,7 @@ sub forgot_password_request :Local {
 	    ( $c, $c->loc( "Missing required field: [_1]", "email" ) );
     }
 
-    my $user = $c->model( 'DB::User' )->find({ email => $args->{email} });
+    my $user = $c->model( 'RDS::User' )->find({ email => $args->{email} });
     unless( $user ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Cannot find user for [_1]", $args->{email} ) );
@@ -460,12 +462,12 @@ sub forgot_password_request :Local {
 
     my $code = $self->invite_code;
 
-    my $rec = $c->model( 'DB::PasswordReset' )
+    my $rec = $c->model( 'RDS::PasswordReset' )
 	->find_or_create({ email => $args->{email},
 			   code  => $code });
     unless( $rec ) {
 	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to create record: [_1]", 'DB::PasswordReset' ) );
+	    ( $c, $c->loc( "Failed to create record: [_1]", 'RDS::PasswordReset' ) );
     }
     
     $c->stash->{no_wrapper} = 1;
@@ -527,13 +529,13 @@ sub new_password :Local {
 	    ( $c, $c->loc( "Missing required field: [_1]", "code" ) );
     }
 
-    my $user = $c->model( 'DB::User' )->find({ email => $args->{email} });
+    my $user = $c->model( 'RDS::User' )->find({ email => $args->{email} });
     unless( $user ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Cannot find user for [_1]", $args->{email} ) );
     }
 
-    my $rec = $c->model( 'DB::PasswordReset' )->find({ email => $args->{email} });
+    my $rec = $c->model( 'RDS::PasswordReset' )->find({ email => $args->{email} });
     unless( $rec ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Cannot find password reset record for [_1]", $args->{email} ) );
@@ -595,12 +597,12 @@ sub workorder_processed :Local {
 	$self->status_ok( $c, {} );
     }
 
-    my $wo = $c->model( 'DB::Workorder' )->find( $incoming->{wo}->{id} );
+    my $wo = $c->model( 'RDS::Workorder' )->find({ uuid => $incoming->{wo}->{uuid} });
     unless( $wo ) {
-	$c->log->error( "Could not obtain db record for $incoming->{wo}->{id}" );
+	$c->log->error( "Could not obtain db record for $incoming->{wo}->{uuid}" );
 	$self->workorder_done( $c, undef, {
 	    error => 1,
-	    message => "Could not find wo id=" .  $incoming->{wo}->{id} } );
+	    message => "Could not find wo id=" .  $incoming->{wo}->{uuid} } );
 	$self->status_ok( $c, {} );
     }
 
@@ -627,7 +629,7 @@ sub workorder_processed :Local {
     }
 
     my $user_id = $wo->user_id;
-    my $mediafiles = $wo->mediafiles->search({}, {prefetch => 'views'}); # rs so its searchable
+    my $mediafiles = $wo->media->search({}, {prefetch => 'assets'}); # rs so its searchable
     my @infiles = @{$incoming->{media}};
 
     my $exception;
@@ -637,28 +639,28 @@ sub workorder_processed :Local {
 	    sub {
 		foreach my $infile ( @infiles ) {
 		    my $mediafile;
-		    if ( ! $infile->{id} ) {
+		    if ( ! $infile->{uuid} ) {
 			# This is a new media file
-			$mediafile = $c->model( 'DB::Mediafile' )->create({
+			$mediafile = $c->model( 'RDS::Media' )->create({
 			    user_id => $user_id,
 			    filename => $infile->{filename} });
 			$mediafile->add_to_workorders( $wo );
 		    }
 		    else {
-			$mediafile = $mediafiles->find( $infile->{id} );
+			$mediafile = $mediafiles->find({ uuid => $infile->{id} });
 		    }
 		    
 		    foreach my $key ( keys( %{$infile->{views}} ) ) {
 			my $inview = $infile->{views}->{$key};
-			my $view = $mediafile->view( $key );
+			my $view = $mediafile->asset( $key );
 			if ( ! $view ) {
 			    # This is a new view
-			    $mediafile->create_related( 'views', {
+			    $mediafile->create_related( 'assets', {
 				location => $inview->{location},
 				mimetype => $inview->{mimetype},
 				uri => $inview->{uri},
 				size => $inview->{size},
-				type => $key,
+				asset_type => $key,
 				filename => $inview->{filename} || $infile->{filename} });
 			}
 			else {
@@ -681,7 +683,7 @@ sub workorder_processed :Local {
 		    }
 
 		    $mediafile->filename( $infile->{filename} );
-		    $mediafile->type( $infile->{type} );
+		    $mediafile->media_type( $infile->{type} );
 		    $mediafile->update;
 		}
 
@@ -732,41 +734,82 @@ sub workorder_done :Private {
     }
 }
 
-# THIS IS A TEMPORARY ENDPOINT, needed only for initial integration of
-# a new uploader services.  IT SHOULD BE REMOVED as soon as the authentication
-# details are worked out.
+# This is the endpoint called by the video processor when a new
+# video has been uploaded and processed.  We need to notify the 
+# web gui and the tray app that this event has occured.  
+#
+# This is a protected endpoint.
 #
 sub mediafile_create :Local {
-    my( $self, $c, $uuid ) = @_;
-    $uuid = $c->req->param( 'uid' ) unless( $uuid );
+    my( $self, $c, $uid, $mid, $site_token ) = @_;
+    $uid = $c->req->param( 'uid' ) unless( $uid );
+    $mid = $c->req->param( 'mid' ) unless( $mid );
+    $site_token = $c->req->param( 'site-token' ) unless( $site_token );
 
-    my $user = $c->model( 'DB::User' )->find({uuid=>$uuid});
+    unless( $uid && $mid && $site_token ) {
+	$self->status_bad_request( $c, 'Missing one or more of uid, mid, site-token params' );
+    }
+
+    if ( $c->secure_token( $uid ) ne $site_token ) {
+	$c->log->error( "mediafile_create() authentication failure: calculated(" . $c->secure_token( $uid ) . ") does not match $site_token" );
+	$self->status_bad_request( $c, 'mediafile_create() authentication failure.' );
+    }
+
+    my $user = $c->model( 'RDS::User' )->find({uuid=>$uid});
     if ( ! $user ) {
-	$self->status_bad_request( $c, 'Cannot find user for $uuid' );
-    }
-    my $mimetype    = $c->req->param( 'mimetype' );
-    my $uri         = $c->req->param( 'uri' );
-    my $filename    = $c->req->param( 'filename' );
-    my $bucket_name = $c->req->param( 'bucket_name' );
-    my $location    = $c->req->param( 'location' );
-    my $size        = $c->req->param( 'size' );
-
-    if ( ! ( $mimetype && $uri && $filename && $location && $size ) ) {
-	$self->status_bad_request( $c, 'Missing required parameters' );
+	$self->status_bad_request( $c, 'Cannot find user for $uid' );
     }
 
-    $bucket_name = $bucket_name || 'viblio-uploaded-files';
-
-    my $factory = new VA::MediaFile;
-    
-    $c->req->params->{user_id} = $user->id;
-    my $mediafile = $factory->create( $c, $c->req->params );
-
+    my $mediafile = $user->media->find({ uuid => $mid });
     unless( $mediafile ) {
-	$self->status_bad_request( $c, 'Cannot create media file!' );
+	$self->status_bad_request( $c, 'Cannot find media for $mid' );
     }
 
-    $self->status_ok( $c, { media => $factory->publish( $c, $mediafile ) } );
+    my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+
+    # Send email notification
+    #
+    $c->log->debug( 'Sending email to ' . $user->email );
+
+    $c->stash->{no_wrapper} = 1;
+    $c->stash->{email} =
+    { to       => $user->email,
+      from     => $c->config->{viblio_return_email_address},
+      subject  => $c->loc( "Your Viblio Video is Ready" ),
+      template => 'email/ready.tt'
+    };
+    $c->stash->{user} = $user;
+    $c->stash->{media} = $mf;
+
+    my $server = $c->req->base;
+    if ( $c->req->header( 'port' ) ) {
+	my $port = $c->req->header( 'port' );
+	$server =~ s/\/$/:$port\//g;
+    }
+
+    $c->stash->{server} = $server;
+
+    $c->forward( $c->view('Email::Template') );
+
+    if ( scalar( @{ $c->error } ) ) {
+	# Sending email failed!  
+	# The error will get properly communicated in the end() method,
+	# so we just need to clean up.
+	$c->log->debug( "SENDMAIL PROBLEM:" . $c->error );
+    }
+
+    # Send message queue notification
+    #
+    my $res = $c->model( 'MQ' )->post( '/enqueue', { uid => $uid,
+						     media  => $mf } );
+    if ( $res->code != 200 ) {
+	$c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
+    }
+
+    $c->logdump( { uid => $uid,
+		   media => $mf } );
+
+    $self->status_ok( $c, { media => $mf } );
 }
 
 __PACKAGE__->meta->make_immutable;

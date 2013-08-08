@@ -8,64 +8,7 @@ use JSON;
 
 sub create {
     my ( $self, $c, $params ) = @_;
-
-    my $mediafile = $c->model( 'DB::Mediafile' )->create({
-        filename => $params->{filename},
-        user_id  => $params->{user_id} });
-    return undef unless( $mediafile );
-
-    # Create the main view
-    my $main = $mediafile->create_related( 
-        'views',
-        { filename => $params->{filename},
-          mimetype => $params->{mimetype},
-          uri => $params->{uri},
-          size => int($params->{size}),
-          location => 'us',
-          type => 'main' } );
-    return undef unless( $main );
-
-    # The thumbnail and poster views follow a naming convension:
-    #
-    my( $basename, $path, $suffix ) = fileparse( $params->{uri}, qr/\.[^.]*/ );
-    my $thumbnail_uri = "${path}${basename}_thumbnail.jpg";
-    my $poster_uri = "${path}${basename}_poster.jpg";
-    my $metadata_uri = "${path}${basename}_metadata.json";
-
-    # Create the thumbnail view
-    my $thumb = $mediafile->create_related( 
-	'views',
-	{ filename => $params->{filename},
-	  mimetype => 'image/jpg',
-	  uri => $thumbnail_uri,
-	  size => int($params->{size}),
-	  location => 'us',
-	  type => 'thumbnail' } );
-    return undef unless( $thumb );
-
-    # Create the poster
-    my $poster = $mediafile->create_related( 
-	'views',
-	{ filename => $params->{filename},
-	  mimetype => 'image/jpg',
-	  uri => $poster_uri,
-	  size => int($params->{size}),
-	  location => 'us',
-	  type => 'poster' } );
-    return undef unless( $poster );
-
-    # Metadata
-    my $metadata = $mediafile->create_related( 
-	'views',
-	{ filename => $params->{filename},
-	  mimetype => 'application/json',
-	  uri => $metadata_uri,
-	  size => int($params->{size}),
-	  location => 'us',
-	  type => 'metadata' } );
-    return undef unless( $metadata );
-
-    return $mediafile;
+    return undef;
 }
 
 # Delete all views stored on S3 for this mediafile
@@ -85,7 +28,7 @@ sub delete {
         $uri = $mediafile->{views}->{main}->{uri};
     }
     else {
-        $uri = $mediafile->view( 'main' )->uri;
+        $uri = $mediafile->asset( 'main' )->uri;
     }
     unless( $uri ) {
         $self->error( $c, "Cannot determine uri of this media file" );
@@ -119,24 +62,16 @@ sub metadata {
     my $uri;
 
     if ( ref $mediafile eq 'HASH' ) {
-	if ( $mediafile->{views}->{metadata} ) {
-	    $uri = $mediafile->{views}->{metadata}->{uri};
+	if ( $mediafile->{views}->{main}->{metadata_uri} ) {
+	    $uri = $mediafile->{views}->{main}->{metadata_uri};
 	}
 	else {
-	    # does not have a metadata view
-	    return({});
+	    $uri = $mediafile->asset( 'main' )->metadata_uri;
 	}
     }
 
     unless( $uri ) {
-	my $view = $mediafile->view( 'metadata' );
-	if ( $view ) {
-	    $uri = $view->uri;
-	}
-	else {
-	    # does not have metadata
-	    return({});
-	}
+	return({});
     }
 
     my $bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );

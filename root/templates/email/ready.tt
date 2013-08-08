@@ -1,0 +1,36 @@
+<link href="http://staging.viblio.com/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<style type="text/css">
+  .thumbnail img {
+  width: 128px;
+  height: 128px;
+  }
+  body {
+  color: #333;
+  font-family: Calibri, Times;
+  }
+</style>
+
+<h3>[% c.user.displayname %],</h3>
+Your video has been successfully uploaded and viblio-ized!
+<div class="poster">
+  <a href="[% server %]#/player?mid=[% media.uuid %]">
+    <img class="img-polaroid" src="[% media.views.poster.url %]" />
+  </a>
+</div>
+
+<p>We've detected these people present in your video:</p>
+<ul class="thumbnails">
+  <li class="face">
+    <div class="thumbnail">
+      <img src="[% media.views.thumbnail.url %]" alt="">
+      <div class="name">Andrew</div>
+    </div>
+  </li>
+  <li class="face">
+    <div class="thumbnail">
+      <img src="[% media.views.thumbnail.url %]" alt="">
+      <div class="name">James</div>
+    </div>
+  </li>
+</ul>
+

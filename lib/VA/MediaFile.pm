@@ -8,7 +8,7 @@ usesub VA::MediaFile;
 # location of the media file.
 
 # create() will delegate to a location-based class that
-# creates and returns a real DB::Mediafile object.
+# creates and returns a real RDS::Mediafile object.
 #
 sub create {
     my ( $self, $c, $params ) = @_;
@@ -28,7 +28,7 @@ sub create {
     return $mediafile;
 }
 
-# Delete can take either a DB::Mediafile or a published mediafile (JSON)
+# Delete can take either a RDS::Mediafile or a published mediafile (JSON)
 # and delegates to a location-based class to delete any persistent storage
 # related to the mediafile views.  It does not delete the passed in
 # $mediafile object.
@@ -40,7 +40,7 @@ sub delete {
 	$location = $mediafile->{views}->{main}->{location};
     }
     else {
-	$location = $mediafile->view( 'main' )->location;
+	$location = $mediafile->asset( 'main' )->location;
     }
     unless( $location ) {
 	$self->error( $c, "Cannot determine location of this media file" );
@@ -62,7 +62,7 @@ sub metadata {
 	$location = $mediafile->{views}->{main}->{location};
     }
     else {
-	$location = $mediafile->view( 'main' )->location;
+	$location = $mediafile->asset( 'main' )->location;
     }
     unless( $location ) {
 	$self->error( $c, "Cannot determine location of this media file" );
@@ -96,15 +96,15 @@ sub publish {
     my( $self, $c, $mediafile, $params ) = @_;
     my $mf_json = $mediafile->TO_JSON;
     $mf_json->{'views'} = {};
-    my @views = $mediafile->views;
+    my @views = $mediafile->assets;
     foreach my $view ( @views ) {
-	$mf_json->{'views'}->{$view->type} = $view->TO_JSON;
+	$mf_json->{'views'}->{$view->asset_type->type} = $view->TO_JSON;
 	# Generate the URL from the URI
-	my $location = $mf_json->{'views'}->{$view->type}->{location};
+	my $location = $mf_json->{'views'}->{$view->asset_type->type}->{location};
 	my $klass = $c->config->{mediafile}->{$location};
 	my $fp = new $klass;
-	$mf_json->{'views'}->{$view->type}->{url} = 
-	    $fp->uri2url( $c, $mf_json->{'views'}->{$view->type}, $params );
+	$mf_json->{'views'}->{$view->asset_type->type}->{url} = 
+	    $fp->uri2url( $c, $mf_json->{'views'}->{$view->asset_type->type}, $params );
     }
     return $mf_json;
 }

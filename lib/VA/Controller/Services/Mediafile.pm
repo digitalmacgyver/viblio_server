@@ -128,7 +128,7 @@ sub create :Local {
     }
 
     if ( $wid ) {
-	my $wo = $c->model( 'DB::Workorder' )->find( $wid );
+	my $wo = $c->model( 'RDS::Workorder' )->find( $wid );
 	unless( $wo ) {
 	    $self->status_bad_request(
 		$c, $c->loc( "Cannot find workorder to attach media file." ));
@@ -189,17 +189,15 @@ sub delete :Local {
     $id = $c->req->param( 'id' ) unless( $id );
     $id = $c->req->param( 'uuid' ) unless( $id );
 
-    my $mf = $c->user->mediafiles->find( $id, { prefetch => 'views' } );
-    unless( $mf ) {
-	$mf = $c->user->mediafiles->find( { uuid => $id }, 
-					  { prefetch => 'views' } );
-    }
+    my $mf = $c->user->media->find( { uuid => $id }, 
+				    { prefetch => 'assets' } );
+
     unless( $mf ) {
 	$self->status_bad_request(
 	    $c, $c->loc( "Cannot find media file to delete." ) );
     }
 
-    my $location = $mf->view( 'main' )->location;
+    my $location = $mf->asset( 'main' )->location;
     unless( $location ) {
 	$self->status_bad_request(
 	    $c, $c->loc( "Cannot determine location of this media file" ));
@@ -283,9 +281,9 @@ sub list :Local {
     }
 
     if ( $args->{page} ) {
-	my $rs = $c->user->mediafiles
+	my $rs = $c->user->media
 	    ->search( $where,
-		      { prefetch => 'views',
+		      { prefetch => 'assets',
 			order_by => { -desc => 'me.id' },
 			page => $args->{page},
 			rows => $args->{rows} } );
@@ -313,7 +311,7 @@ sub list :Local {
     else {
 	my @media = ();
 	push( @media, VA::MediaFile->new->publish( $c, $_ ) )
-	    foreach( $c->user->mediafiles->search( $where, {order_by => { -desc => 'id' }} ) );
+	    foreach( $c->user->media->search( $where, {order_by => { -desc => 'id' }} ) );
 	$self->status_ok( $c, { media => \@media } );
     }
 }
@@ -322,10 +320,7 @@ sub get :Local {
     my( $self, $c, $mid ) = @_;
     $mid = $c->req->param( 'mid' ) unless( $mid );
 
-    my $mf = $c->user->mediafiles->find($mid);
-    unless( $mf ) {
-	$mf = $c->user->mediafiles->find({uuid=>$mid});
-    }
+    my $mf = $c->user->media->find({uuid=>$mid});
 
     unless( $mf ) {
 	$self->status_bad_request
@@ -340,10 +335,7 @@ sub get_metadata :Local {
     my( $self, $c, $mid ) = @_;
     $mid = $c->req->param( 'mid' ) unless( $mid );
 
-    my $mf = $c->user->mediafiles->find($mid);
-    unless( $mf ) {
-	$mf = $c->user->mediafiles->find({uuid=>$mid});
-    }
+    my $mf = $c->user->media->find({uuid=>$mid});
 
     unless( $mf ) {
 	$self->status_bad_request

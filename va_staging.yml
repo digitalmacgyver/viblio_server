@@ -1,3 +1,12 @@
+Model::RDS:
+  schema_class: VA::RDSSchema
+  connect_info:
+    dsn: dbi:mysql:database=video_dev_1;host=videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com;port=3306
+    user: video_dev
+    password: video_dev
+    mysql_enable_utf8: 1
+    AutoCommit: 1
+
 authentication:
   default_realm: facebook
   realms:
@@ -8,7 +17,7 @@ authentication:
         password_type: self_check
       store:
         class: DBIx::Class
-        user_model: DB::User
+        user_model: RDS::User
         role_relation: roles
         role_field: role
     facebook:
@@ -18,7 +27,7 @@ authentication:
         application_secret: 47fb1a100ba250556017efb299d866c1
       store:
         class: DBIx::Class
-        user_model: DB::User
+        user_model: RDS::User
       auto_create_user: 1
     facebook_web:
       credential:
@@ -27,7 +36,7 @@ authentication:
         application_secret: 47fb1a100ba250556017efb299d866c1
       store:
         class: DBIx::Class
-        user_model: DB::User
+        user_model: RDS::User
       auto_create_user: 1
 
 Model::DB:

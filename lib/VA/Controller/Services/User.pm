@@ -88,7 +88,7 @@ sub add_user :Local {
 	$params->{provider} = 'local';
     }
 
-    my $user = $c->model( 'DB::User' )->find({username=>$params->{username}});
+    my $user = $c->model( 'RDS::User' )->find({username=>$params->{username}});
     if ( $user ) {
 	$self->status_bad_request
 	    ( $c, 
@@ -106,7 +106,7 @@ sub add_user :Local {
 	delete $params->{role};  # so we can use $params to create the user
     }
 
-    $user = $c->model( 'DB::User' )->new( $params );
+    $user = $c->model( 'RDS::User' )->new( $params );
     unless( $user ) {
 	$self->status_bad_request
 	    ( $c,
@@ -116,7 +116,7 @@ sub add_user :Local {
     my @problems = ();
     if ( $roles ) {
 	foreach my $role ( @$roles ) {
-	    my $r = $c->model( 'DB::Role' )->find({role=>$role});
+	    my $r = $c->model( 'RDS::Role' )->find({role=>$role});
 	    if ( $r ) {
 		$user->add_to_roles( $r );
 	    }
@@ -162,7 +162,7 @@ sub add_or_replace_profile_photo :Local {
 	$user = $c->user->obj;
     }
     else {
-	my $rs = $c->model( 'DB::User' )
+	my $rs = $c->model( 'RDS::User' )
 	    ->search({id => $uid}, {username=>$uid});
 	$user = $rs->first if ( $rs );
     }
@@ -190,7 +190,7 @@ sub add_or_replace_profile_photo :Local {
 	    $photo->update;
 	}
 	else {
-	    $photo = $c->model( 'DB::Photo' )->create
+	    $photo = $c->model( 'RDS::Photo' )->create
 		({ id => $profile->id,
 		   mimetype => $upload->type,
 		   filename => $upload->basename,
@@ -214,7 +214,7 @@ sub add_or_replace_profile_photo :Local {
 	    $photo->update;
 	}
 	else {
-	    $photo = $c->model( 'DB::Photo' )->create
+	    $photo = $c->model( 'RDS::Photo' )->create
 		({ id => $profile->id,
 		   mimetype => $mimetype,
 		   filename => $filename,
@@ -278,7 +278,7 @@ sub avatar :Local {
 	$user = $c->user->obj;
     }
     elsif ( $uid ) {
-	$user = $c->model( 'DB::User' )->find( $uid );
+	$user = $c->model( 'RDS::User' )->find({ uuid => $uid });
     }
 
     my $photo;

@@ -5,7 +5,7 @@ use URI;
 sub create {
     my ( $self, $c, $params ) = @_;
 
-    my $mediafile = $c->model( 'DB::Mediafile' )->create({
+    my $mediafile = $c->model( 'RDS::Mediafile' )->create({
 	filename => $params->{filename},
 	user_id  => $params->{user_id} });
     return undef unless( $mediafile );
