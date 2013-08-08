@@ -1,12 +1,3 @@
-Model::RDS:
-  schema_class: VA::RDSSchema
-  connect_info:
-    dsn: dbi:mysql:database=video_dev_1;host=videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com;port=3306
-    user: video_dev
-    password: video_dev
-    mysql_enable_utf8: 1
-    AutoCommit: 1
-
 authentication:
   default_realm: facebook
   realms:
