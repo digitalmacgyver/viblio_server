@@ -782,10 +782,19 @@ sub mediafile_create :Local {
     $c->stash->{media} = $mf;
 
     my $server = $c->req->base;
+    my $uri = URI->new( $c->req->uri );
+    my $path = $uri->path;
+
+    $server =~ s/$path//g;
+    $server =~ s/\/$//g;
+
     if ( $c->req->header( 'port' ) ) {
-	my $port = $c->req->header( 'port' );
-	$server =~ s/\/$/:$port\//g;
+	$server .= ':' . $c->req->header( 'port' );
     }
+    elsif ( $uri->port ) {
+	$server .= ':' . $uri->port;
+    }
+    $server .= '/';
 
     $c->stash->{server} = $server;
 
