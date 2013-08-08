@@ -1,0 +1,90 @@
+Model::RDS:
+  schema_class: VA::RDSSchema
+  connect_info:
+    dsn: dbi:mysql:database=video_dev_1;host=videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com;port=3306
+    user: video_dev
+    password: video_dev
+    mysql_enable_utf8: 1
+    AutoCommit: 1
+
+authentication:
+  default_realm: facebook
+  realms:
+    db:
+      credential:
+        class: Password
+        password_field: password
+        password_type: self_check
+      store:
+        class: DBIx::Class
+        user_model: RDS::User
+        role_relation: roles
+        role_field: role
+    facebook:
+      credential:
+        class: FacebookToken
+        application_id: 538791729508064
+        application_secret: b530afb799e4dfe6eef1f082888ef5ea
+      store:
+        class: DBIx::Class
+        user_model: RDS::User
+      auto_create_user: 1
+    facebook_web:
+      credential:
+        class: Facebook::OAuth2
+        application_id: 538791729508064
+        application_secret: b530afb799e4dfe6eef1f082888ef5ea
+      store:
+        class: DBIx::Class
+        user_model: RDS::User
+      auto_create_user: 1
+
+Model::DB:
+  schema_class: VA::Schema
+  connect_info:
+    dsn: dbi:mysql:vadb_prod
+    user: vaadmin
+    password: viblio
+    mysql_enable_utf8: 1
+    AutoCommit: 1
+
+Plugin::Log::Log4perlSimple:
+  catalyst_debug: 1
+  catalyst_stats: 0
+# (trace, debug, info, warn)
+  log_level: debug
+  screen: 0
+  file: /tmp/va-prod.log
+
+# Worker (eventually on SNS)
+Model::FD:
+  server: http://localhost:3001
+  type: application/json
+
+# Message Queue REST service
+Model::MQ:
+  server: http://localhost:3002
+  type: application/json
+
+# For web clients, where is the
+# message server?
+message_queue:
+  server: http://prod.viblio.com:3002
+
+# Local File Storage REST service
+Model::FS:
+  server: http://prod.viblio.com:5000
+  type: application/json
+
+# Local File Storage (jQuery File Upload ) REST service
+Model::JFS:
+  server: http://prod.viblio.com:5000
+  type: application/json
+  secret: viblio321
+
+# For web clients, where is the
+# fs server?
+file_storage:
+  secret: viblio321
+  server: http://prod.viblio.com:5000
+
