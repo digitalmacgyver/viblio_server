@@ -1,36 +1,56 @@
-<link href="http://staging.viblio.com/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-<style type="text/css">
-  .thumbnail img {
-  width: 128px;
-  height: 128px;
-  }
-  body {
-  color: #333;
-  font-family: Calibri, Times;
-  }
-</style>
+<!DOCTYPE html>
+<html><header>
 
-<h3>[% c.user.displayname %],</h3>
-Your video has been successfully uploaded and viblio-ized!
-<div class="poster">
-  <a href="[% server %]#/player?mid=[% media.uuid %]">
-    <img class="img-polaroid" src="[% media.views.poster.url %]" />
-  </a>
+</header>
+<body style="margin: 0;padding: 0;">
+<div id="wrapper" style="width: 530px;padding: 30px;background-color: #373b49;margin-right: auto;margin-left: auto;">
+<div id="w2" style="background-color: white;color: #71707d;"> 
+<div id="top" style="margin: 30px;">
+  <h2 style="text-align: center;margin-right: auto;margin-left: auto;">Your First Viblio Video</h2>
+  <p style="text-align: center;margin-right: auto;margin-left: auto;">It's the beginning of a wonderful relationship!  Your first
+  video is now up on your personal
+  <a href="[% server %]#/home/" style="color: #f57f75;text-decoration: none;">Viblio Channel</a>
+  </p>
+</div>
+<hr>
+<div id="middle" style="margin: 30px;">
+  <h2 style="text-align: center;margin-right: auto;margin-left: auto;color: #f57f75;text-decoration: none;">[% user.email %]</h2>
+  <div class="poster" style="width: 100%;margin-right: auto;margin-left: auto;">
+    <a href="[% server %]#/player?mid=[% media.uuid %]" style="color: #f57f75;text-decoration: none;text-align: center;margin: 60px;">
+      <img class="img-polaroid" src="[% media.views.poster.url %]">
+    </a>
+  </div>
+</div>
+<hr>
+<div id="bottom" style="margin: 30px;">
+  <p style="text-align: center;margin-right: auto;margin-left: auto;">Viblio discovers faces of your friends and loved ones and
+  makes sharing (and privacy!) easy.</p>
+[% IF media.views.face %]
+  <h3 style="text-align: center;margin-right: auto;margin-left: auto;">We found these new faces in your video:</h3>
+
+  <ul class="thumbnails" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
+    <li class="face" style="display: inline;list-style-type: none;padding-right: 20px;">
+      <div class="thumbnail">
+	<img src="[% media.views.face.url %]" alt="" style="width: 64px;height: 64px;">
+        <div class="name">Stranger</div>
+      </div>
+    </li>
+  </ul>
+
+  <div id="name-btn">
+    <a href="[% server %]#/player?mid=[% media.uuid %]" style="color: white;text-decoration: none;margin-right: auto;margin-left: auto;background-color: #f57f75;padding: 10px;">
+      Name these faces &gt;&gt;
+    </a>
+  </div>
+
+[% ELSE %]
+  <h3 style="text-align: center;margin-right: auto;margin-left: auto;">We did not detect any faces in this video.:</h3>
+
+[% END %]
+
 </div>
 
-<p>We've detected these people present in your video:</p>
-<ul class="thumbnails">
-  <li class="face">
-    <div class="thumbnail">
-      <img src="[% media.views.thumbnail.url %]" alt="">
-      <div class="name">Andrew</div>
-    </div>
-  </li>
-  <li class="face">
-    <div class="thumbnail">
-      <img src="[% media.views.thumbnail.url %]" alt="">
-      <div class="name">James</div>
-    </div>
-  </li>
-</ul>
-
+</div>
+</div>
+</body>
+</html>
