@@ -64,6 +64,28 @@ sub localhost {
     return $host;
 }
 
+# Return this server's base url
+#
+sub server {
+    my( $c ) = @_;
+
+    my $server = $c->req->base;
+    my $uri = URI->new( $c->req->uri );
+    my $path = $uri->path;
+
+    $server =~ s/$path//g;
+    $server =~ s/\/$//g;
+
+    if ( $c->req->header( 'port' ) ) {
+	$server .= ':' . $c->req->header( 'port' );
+    }
+    elsif ( $uri->port ) {
+	$server .= ':' . $uri->port;
+    }
+    $server .= '/';
+    return $server;
+}
+
 # Return the type of connected client
 sub client_type {
     my( $c ) = @_;

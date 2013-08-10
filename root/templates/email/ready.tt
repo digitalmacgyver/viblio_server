@@ -29,12 +29,14 @@
   <h3 style="text-align: center;margin-right: auto;margin-left: auto;">We found these new faces in your video:</h3>
 
   <ul class="thumbnails" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
+    [% FOREACH face = media.views.face %]
     <li class="face" style="display: inline;list-style-type: none;padding-right: 20px;">
       <div class="thumbnail">
-	<img src="[% media.views.face.url %]" alt="" style="width: 64px;height: 64px;">
+	<img src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
         <div class="name">Stranger</div>
       </div>
     </li>
+    [% END %]
   </ul>
 
   <div id="name-btn">

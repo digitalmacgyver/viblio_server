@@ -98,13 +98,36 @@ sub publish {
     $mf_json->{'views'} = {};
     my @views = $mediafile->assets;
     foreach my $view ( @views ) {
-	$mf_json->{'views'}->{$view->asset_type->type} = $view->TO_JSON;
+	my $type = $view->asset_type->type;
+	my $view_json = $view->TO_JSON;
+
 	# Generate the URL from the URI
-	my $location = $mf_json->{'views'}->{$view->asset_type->type}->{location};
+	my $location = $view_json->{location};
 	my $klass = $c->config->{mediafile}->{$location};
 	my $fp = new $klass;
-	$mf_json->{'views'}->{$view->asset_type->type}->{url} = 
-	    $fp->uri2url( $c, $mf_json->{'views'}->{$view->asset_type->type}, $params );
+	$view_json->{url} = 
+	    $fp->uri2url( $c, $view_json, $params );
+
+	if ( defined( $mf_json->{'views'}->{$type} ) ) {
+	    if ( ref $mf_json->{'views'}->{$type} eq 'ARRAY' ) {
+		push( @{$mf_json->{'views'}->{$type}}, $view_json );
+	    }
+	    else {
+		my $tmp = $mf_json->{'views'}->{$type};
+		$mf_json->{'views'}->{$type} = [];
+		push( @{$mf_json->{'views'}->{$type}}, $tmp );
+		push( @{$mf_json->{'views'}->{$type}}, $view_json );
+	    }
+	}
+	else {
+	    if ( $type eq 'face' ) {
+		$mf_json->{'views'}->{$type} = [];
+		push( @{$mf_json->{'views'}->{$type}}, $view_json );
+	    }
+	    else {
+		$mf_json->{'views'}->{$type} = $view_json;
+	    }
+	}
     }
     return $mf_json;
 }
