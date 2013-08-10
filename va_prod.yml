@@ -1,3 +1,8 @@
+s3:
+  bucket: viblio-mediafiles
+  aws_use_https: 1
+  expires:  86400
+
 Model::RDS:
   schema_class: VA::RDSSchema
   connect_info:
