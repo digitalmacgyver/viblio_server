@@ -801,7 +801,7 @@ sub mediafile_create :Local {
 	$c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
     }
 
-    $self->status_ok( $c, { media => $mf } );
+    $self->status_ok( $c, {} );
 }
 
 __PACKAGE__->meta->make_immutable;
