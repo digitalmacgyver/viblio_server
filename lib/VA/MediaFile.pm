@@ -98,7 +98,8 @@ sub publish {
     $mf_json->{'views'} = {};
     my @views = $mediafile->assets;
     foreach my $view ( @views ) {
-	my $type = $view->asset_type->type;
+	$DB::single = 1;
+	my $type = $view->{_column_data}->{asset_type};
 	my $view_json = $view->TO_JSON;
 
 	# Generate the URL from the URI
