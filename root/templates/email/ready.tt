@@ -15,9 +15,9 @@
 <hr>
 <div id="middle" style="margin: 30px;">
   <h2 style="text-align: center;margin-right: auto;margin-left: auto;color: #f57f75;text-decoration: none;">[% user.email %]</h2>
-  <div class="poster" style="width: 100%;margin-right: auto;margin-left: auto;">
-    <a href="[% server %]#/player?mid=[% media.uuid %]" style="color: #f57f75;text-decoration: none;text-align: center;margin: 60px;">
-      <img class="img-polaroid" src="[% media.views.poster.url %]">
+  <div class="poster" style="position: relative;">
+    <a href="[% server %]#/player?mid=[% media.uuid %]" style="color: #f57f75;text-decoration: none;">
+      <img style="display: block;margin-right: auto;margin-left: auto;" class="img-polaroid" src="[% media.views.poster.url %]">
     </a>
   </div>
 </div>
@@ -30,17 +30,18 @@
 
   <ul class="thumbnails" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
     [% FOREACH face = media.views.face %]
-    <li class="face" style="display: inline;list-style-type: none;padding-right: 20px;">
-      <div class="thumbnail">
-	<img src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
+    <li class="face" style="display: inline;list-style-type: none;padding-right: 20px;float:left;">
+      <div class="thumbnail" style="width: 64px;height: 64px;">
+	<img width="64" height="64" src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
         <div class="name">Stranger</div>
       </div>
     </li>
     [% END %]
   </ul>
+  <div style="clear: both;">&nbsp;</div>
 
   <div id="name-btn">
-    <a href="[% server %]#/player?mid=[% media.uuid %]" style="color: white;text-decoration: none;margin-right: auto;margin-left: auto;background-color: #f57f75;padding: 10px;">
+    <a href="[% server %]#/player?mid=[% media.uuid %]" style="width:200px;color: white;text-decoration: none;display:block;margin-right: auto;margin-left: auto;background-color: #f57f75;padding: 10px;">
       Name these faces &gt;&gt;
     </a>
   </div>
