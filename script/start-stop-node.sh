@@ -6,7 +6,7 @@
 #
 # If no server arg, then do them all
 #
-servers='fd fs mq'
+servers='mq'
 if [ "$1" -a "$2" ]; then
     cmd="./node/$1/$1-dev.init.d $2"
     echo $cmd
