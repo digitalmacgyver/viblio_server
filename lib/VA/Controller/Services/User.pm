@@ -105,7 +105,7 @@ sub unlink_facebook_account :Local {
 
     # Call popeye, let him know the facebook link is terminated
 
-    $self->status_ok( $c, { user => $fb_user } );
+    $self->status_ok( $c, {} );
 }
 
 =head2 /services/user/add_user
