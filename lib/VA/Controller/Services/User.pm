@@ -20,10 +20,8 @@ Get the database record for the logged in user.  A user record is returned:
 
   {
      "user": {
-        "provider" => "facebook",
         "active" => "2013-03-23 23:38:13",
         "accepted_terms" => undef,
-        "provider_id" => "100005451434129",
         "uuid" => "BADCB4A6-9412-11E2-ADDF-209629C23E77",
         "username" => "andrew.peebles.9843",
         "email" => undef,
@@ -127,11 +125,6 @@ sub add_user :Local {
 		( $c,
 		  $c->loc("Missing required \'[_1]\' parameter.", $arg ) );
 	}
-    }
-
-    # Default provider to local
-    if ( ! $params->{provider} ) {
-	$params->{provider} = 'local';
     }
 
     my $user = $c->model( 'RDS::User' )->find({username=>$params->{username}});

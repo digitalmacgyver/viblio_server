@@ -17,7 +17,6 @@ sub index :Path :Args(0) {
     my $creds = {};
     if ( $realm eq 'db' ) {
 	$creds = {
-	    provider => 'local',
 	    email => $username,
 	    password => $password,
 	};

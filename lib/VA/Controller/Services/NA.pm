@@ -413,7 +413,6 @@ sub new_user :Local {
 	({ email => $pending->email,
 	   password => $pending->password,
 	   displayname => $pending->username || $username,
-	   provider => 'local',
 	 });
 
     if ($c->authenticate({ email    => $user->email,
