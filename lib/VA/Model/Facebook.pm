@@ -9,7 +9,23 @@ sub ACCEPT_CONTEXT {
     my $c = shift;
     my @args = @_;
 
-    my $token = $c->session->{fb_token};
+    # my $token = $c->session->{fb_token};
+
+    my $token;
+    if ( $#args == 0 ) {
+	$token = $args[0];
+    }
+    unless( $token ) {
+	my $link = $c->user->links->find({provider=>'facebook'});
+	if ( $link ) {
+	    my $data = $link->data;
+	    $token = $data->{access_token};
+	}
+    }
+    unless( $token ) {
+	$token = $c->session->{fb_token};
+    }
+
     unless( $token ) {
 	$c->log->error( "Facebook token missing from session!" );
 	return undef;

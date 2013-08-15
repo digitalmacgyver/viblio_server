@@ -1,12 +1,12 @@
 use utf8;
-package VA::RDSSchema::Result::MediaComment;
+package VA::RDSSchema::Result::Profile;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::RDSSchema::Result::MediaComment
+VA::RDSSchema::Result::Profile
 
 =cut
 
@@ -47,11 +47,11 @@ __PACKAGE__->load_components(
   "FilterColumn",
 );
 
-=head1 TABLE: C<media_comments>
+=head1 TABLE: C<profiles>
 
 =cut
 
-__PACKAGE__->table("media_comments");
+__PACKAGE__->table("profiles");
 
 =head1 ACCESSORS
 
@@ -61,25 +61,24 @@ __PACKAGE__->table("media_comments");
   is_auto_increment: 1
   is_nullable: 0
 
-=head2 media_id
-
-  data_type: 'integer'
-  is_foreign_key: 1
-  is_nullable: 0
-
 =head2 user_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 comment
+=head2 image
+
+  data_type: 'mediumblob'
+  is_nullable: 1
+
+=head2 image_mimetype
 
   data_type: 'varchar'
   is_nullable: 1
-  size: 2048
+  size: 40
 
-=head2 comment_number
+=head2 image_size
 
   data_type: 'integer'
   is_nullable: 1
@@ -101,13 +100,13 @@ __PACKAGE__->table("media_comments");
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
-  "media_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "comment",
-  { data_type => "varchar", is_nullable => 1, size => 2048 },
-  "comment_number",
+  "image",
+  { data_type => "mediumblob", is_nullable => 1 },
+  "image_mimetype",
+  { data_type => "varchar", is_nullable => 1, size => 40 },
+  "image_size",
   { data_type => "integer", is_nullable => 1 },
   "created_date",
   {
@@ -137,19 +136,19 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 RELATIONS
 
-=head2 media
+=head2 profile_fields
 
-Type: belongs_to
+Type: has_many
 
-Related object: L<VA::RDSSchema::Result::Media>
+Related object: L<VA::RDSSchema::Result::ProfileField>
 
 =cut
 
-__PACKAGE__->belongs_to(
-  "media",
-  "VA::RDSSchema::Result::Media",
-  { id => "media_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+__PACKAGE__->has_many(
+  "profile_fields",
+  "VA::RDSSchema::Result::ProfileField",
+  { "foreign.profiles_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
 );
 
 =head2 user
@@ -168,8 +167,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:32
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:l3yuFfX26tdk3MHs6920MQ
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:33
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:QTeRdlRygiXjGqwVtLJPqA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

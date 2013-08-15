@@ -43,6 +43,49 @@ sub me :Local {
     $self->status_ok( $c, $hash );
 }
 
+sub link_facebook_account :Local {
+    my( $self, $c, $token ) = @_;
+    $token = $c->req->param( 'access_token' ) unless( $token );
+    unless( $token ) {
+	$c->log->error( "Missing token param for link_facebook_account()" );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    my $fb = $c->model( 'Facebook', $token );
+    unless( $fb ) {
+	$c->log->error( "Failed to link FB account: token was: " + $token );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    my $fb_user = $fb->fetch( 'me' );
+    unless( $fb_user ) {
+	$c->log->error( "Facebook fetch(me) failed during FB link" );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    unless( $fb_user->{id} ) {
+	$c->log->error( "Facebook user id missing during link" );
+	$c->logdump( $fb_user );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    $c->user->update_or_create_related
+	( 'links', {
+	    provider => 'facebook',
+	  });
+    my $link = $c->user->links->find({provider => 'facebook'});
+    $link->data({
+	access_token => $token,
+	id => $fb_user->{id} });
+    $link->update; 
+    $c->session->{fb_token} = $token;
+    $self->status_ok( $c, { user => $fb_user } );
+}
+
 =head2 /services/user/add_user
 
 Add a new local user.  Only dbadmins can do this.

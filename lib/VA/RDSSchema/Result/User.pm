@@ -222,6 +222,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 links
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::Link>
+
+=cut
+
+__PACKAGE__->has_many(
+  "links",
+  "VA::RDSSchema::Result::Link",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 media_comments
 
 Type: has_many
@@ -263,6 +278,21 @@ Related object: L<VA::RDSSchema::Result::Media>
 __PACKAGE__->has_many(
   "medias",
   "VA::RDSSchema::Result::Media",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 profiles
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::Profile>
+
+=cut
+
+__PACKAGE__->has_many(
+  "profiles",
+  "VA::RDSSchema::Result::Profile",
   { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -328,8 +358,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-06 00:50:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:AzPW7fZKM0aJIxb25iBPrA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:34
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Cba6kKVCavTNhXcqGUTpaA
 
 # I like this relationship name better
 #
