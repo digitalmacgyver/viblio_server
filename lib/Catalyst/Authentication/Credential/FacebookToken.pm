@@ -12,7 +12,7 @@ use MooseX::Types::Moose qw(ArrayRef);
 use MooseX::Types::Common::String qw(NonEmptySimpleStr);
 use aliased 'Facebook::Graph', 'FB';
 use namespace::autoclean;
-
+use JSON::XS;
 use Data::Dumper;
 
 has [qw(application_id application_secret)] => (
@@ -87,6 +87,7 @@ sub authenticate {
 	}
         # die 'Error validating verification code' unless $fb_user;
 	$ctx->log->debug( Dumper $fb_user );
+=perl
 	my $attributes = {
 	    provider => 'facebook',
 	    provider_id => $fb_user->{id},
@@ -96,11 +97,40 @@ sub authenticate {
 	if ( $fb_user->{email} ) {
 	    $attributes->{email} = $fb_user->{email};
 	}
+=cut
+	my $attributes = {
+	    email => $fb_user->{email},
+	};
         my $user = $realm->find_user($attributes, $ctx);
 	if ( $user ) { 
 	    # Remember the access token, so that other parts of the
 	    # server may make Facebook API calls.
 	    $ctx->session->{fb_token} = $code;
+
+	    # Add the link record
+	    #
+	    $user->get_object->update_or_create_related
+		( 'links', {
+		    provider => 'facebook',
+		  });
+	    my $link = $user->get_object->links->find({provider => 'facebook'});
+	    $link->data({
+		access_token => $code,
+		id => $fb_user->{id} });
+	    $link->update; 
+	    
+	    # Also set some user fields directly from FB data:
+	    my $needs_update = 0;
+	    unless( $user->get_object->username ) {
+		$user->get_object->username( $fb_user->{username} );
+		$needs_update = 1;
+	    }
+	    unless( $user->get_object->displayname ) {
+		$user->get_object->displayname( $fb_user->{name} );
+		$needs_update = 1;
+	    }
+	    $user->get_object->update if ( $needs_update );
+
 	    return $user;
 	}
 	else {

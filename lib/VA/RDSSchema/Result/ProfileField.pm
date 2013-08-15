@@ -1,12 +1,12 @@
 use utf8;
-package VA::RDSSchema::Result::MediaComment;
+package VA::RDSSchema::Result::ProfileField;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::RDSSchema::Result::MediaComment
+VA::RDSSchema::Result::ProfileField
 
 =cut
 
@@ -47,11 +47,11 @@ __PACKAGE__->load_components(
   "FilterColumn",
 );
 
-=head1 TABLE: C<media_comments>
+=head1 TABLE: C<profile_fields>
 
 =cut
 
-__PACKAGE__->table("media_comments");
+__PACKAGE__->table("profile_fields");
 
 =head1 ACCESSORS
 
@@ -61,27 +61,28 @@ __PACKAGE__->table("media_comments");
   is_auto_increment: 1
   is_nullable: 0
 
-=head2 media_id
+=head2 profiles_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 user_id
-
-  data_type: 'integer'
-  is_foreign_key: 1
-  is_nullable: 0
-
-=head2 comment
+=head2 name
 
   data_type: 'varchar'
   is_nullable: 1
-  size: 2048
+  size: 1024
 
-=head2 comment_number
+=head2 value
 
-  data_type: 'integer'
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 1024
+
+=head2 public
+
+  data_type: 'tinyint'
+  default_value: 0
   is_nullable: 1
 
 =head2 created_date
@@ -92,23 +93,23 @@ __PACKAGE__->table("media_comments");
 
 =head2 updated_date
 
-  data_type: 'datetime'
-  datetime_undef_if_invalid: 1
+  data_type: 'varchar'
   is_nullable: 1
+  size: 45
 
 =cut
 
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
-  "media_id",
+  "profiles_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "user_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "comment",
-  { data_type => "varchar", is_nullable => 1, size => 2048 },
-  "comment_number",
-  { data_type => "integer", is_nullable => 1 },
+  "name",
+  { data_type => "varchar", is_nullable => 1, size => 1024 },
+  "value",
+  { data_type => "varchar", is_nullable => 1, size => 1024 },
+  "public",
+  { data_type => "tinyint", default_value => 0, is_nullable => 1 },
   "created_date",
   {
     data_type => "datetime",
@@ -116,11 +117,7 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
   },
   "updated_date",
-  {
-    data_type => "datetime",
-    datetime_undef_if_invalid => 1,
-    is_nullable => 1,
-  },
+  { data_type => "varchar", is_nullable => 1, size => 45 },
 );
 
 =head1 PRIMARY KEY
@@ -137,39 +134,24 @@ __PACKAGE__->set_primary_key("id");
 
 =head1 RELATIONS
 
-=head2 media
+=head2 profile
 
 Type: belongs_to
 
-Related object: L<VA::RDSSchema::Result::Media>
+Related object: L<VA::RDSSchema::Result::Profile>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "media",
-  "VA::RDSSchema::Result::Media",
-  { id => "media_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
-);
-
-=head2 user
-
-Type: belongs_to
-
-Related object: L<VA::RDSSchema::Result::User>
-
-=cut
-
-__PACKAGE__->belongs_to(
-  "user",
-  "VA::RDSSchema::Result::User",
-  { id => "user_id" },
+  "profile",
+  "VA::RDSSchema::Result::Profile",
+  { id => "profiles_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:32
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:l3yuFfX26tdk3MHs6920MQ
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:33
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:u73FKsADgpY7EGTbk8sOJw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

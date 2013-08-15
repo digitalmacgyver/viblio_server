@@ -1,12 +1,12 @@
 use utf8;
-package VA::RDSSchema::Result::MediaComment;
+package VA::RDSSchema::Result::Link;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::RDSSchema::Result::MediaComment
+VA::RDSSchema::Result::Link
 
 =cut
 
@@ -47,11 +47,11 @@ __PACKAGE__->load_components(
   "FilterColumn",
 );
 
-=head1 TABLE: C<media_comments>
+=head1 TABLE: C<links>
 
 =cut
 
-__PACKAGE__->table("media_comments");
+__PACKAGE__->table("links");
 
 =head1 ACCESSORS
 
@@ -61,66 +61,34 @@ __PACKAGE__->table("media_comments");
   is_auto_increment: 1
   is_nullable: 0
 
-=head2 media_id
-
-  data_type: 'integer'
-  is_foreign_key: 1
-  is_nullable: 0
-
 =head2 user_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 comment
+=head2 provider
 
   data_type: 'varchar'
-  is_nullable: 1
-  size: 2048
+  is_nullable: 0
+  size: 40
 
-=head2 comment_number
+=head2 data
 
-  data_type: 'integer'
-  is_nullable: 1
-
-=head2 created_date
-
-  data_type: 'datetime'
-  datetime_undef_if_invalid: 1
-  is_nullable: 1
-
-=head2 updated_date
-
-  data_type: 'datetime'
-  datetime_undef_if_invalid: 1
-  is_nullable: 1
+  data_type: 'text'
+  is_nullable: 0
 
 =cut
 
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
-  "media_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "comment",
-  { data_type => "varchar", is_nullable => 1, size => 2048 },
-  "comment_number",
-  { data_type => "integer", is_nullable => 1 },
-  "created_date",
-  {
-    data_type => "datetime",
-    datetime_undef_if_invalid => 1,
-    is_nullable => 1,
-  },
-  "updated_date",
-  {
-    data_type => "datetime",
-    datetime_undef_if_invalid => 1,
-    is_nullable => 1,
-  },
+  "provider",
+  { data_type => "varchar", is_nullable => 0, size => 40 },
+  "data",
+  { data_type => "text", is_nullable => 0 },
 );
 
 =head1 PRIMARY KEY
@@ -136,21 +104,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("id");
 
 =head1 RELATIONS
-
-=head2 media
-
-Type: belongs_to
-
-Related object: L<VA::RDSSchema::Result::Media>
-
-=cut
-
-__PACKAGE__->belongs_to(
-  "media",
-  "VA::RDSSchema::Result::Media",
-  { id => "media_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
-);
 
 =head2 user
 
@@ -168,9 +121,19 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:32
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:l3yuFfX26tdk3MHs6920MQ
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:31
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FEVY3j/Xu50oyX5VQeqodg
+use JSON::XS;
 
+__PACKAGE__->filter_column(
+    "data" => {
+	filter_to_storage => sub {
+	    return encode_json( $_[1] );
+	},
+	filter_from_storage => sub {
+	    return decode_json( $_[1] );
+	}
+    });
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
