@@ -84,6 +84,27 @@ sub link_facebook_account :Local {
 	id => $fb_user->{id} });
     $link->update; 
     $c->session->{fb_token} = $token;
+    
+    # Call popeye with access_token, so popeye can fetch facebook data
+
+    $self->status_ok( $c, { user => $fb_user } );
+}
+
+sub unlink_facebook_account :Local {
+    my( $self, $c ) = @_;
+    my $link = $c->user->links->find({provider => 'facebook'});
+    if ( $link ) {
+	if ( $c->session->{fb_token} ) {
+	    delete $c->session->{fb_token};
+	}
+	$c->user->delete_related
+	    ( 'links', {
+		provider => 'facebook',
+	      });
+    }
+
+    # Call popeye, let him know the facebook link is terminated
+
     $self->status_ok( $c, { user => $fb_user } );
 }
 

@@ -20,15 +20,10 @@ authentication:
         class: DBIx::Class
         user_model: RDS::User
       auto_create_user: 1
-    facebook_web:
-      credential:
-        class: Facebook::OAuth2
-        application_id: 153462094815829
-        application_secret: 47fb1a100ba250556017efb299d866c1
-      store:
-        class: DBIx::Class
-        user_model: RDS::User
-      auto_create_user: 1
+
+Model::Popeye:
+  server: http://localhost:2222
+  type: application/json
 
 Model::DB:
   schema_class: VA::Schema

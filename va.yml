@@ -97,6 +97,10 @@ Plugin::Log::Log4perlSimple:
   screen: 1
 # file: /path
 
+Model::Popeye:
+  server: http://localhost:2222
+  type: application/json
+
 # File Downloader REST service
 Model::FD:
   server: http://localhost:3001

@@ -12,6 +12,10 @@ Model::RDS:
     mysql_enable_utf8: 1
     AutoCommit: 1
 
+Model::Popeye:
+  server: http://upload.viblio.com:2222
+  type: application/json
+
 authentication:
   default_realm: facebook
   realms:
@@ -28,15 +32,6 @@ authentication:
     facebook:
       credential:
         class: FacebookToken
-        application_id: 538791729508064
-        application_secret: b530afb799e4dfe6eef1f082888ef5ea
-      store:
-        class: DBIx::Class
-        user_model: RDS::User
-      auto_create_user: 1
-    facebook_web:
-      credential:
-        class: Facebook::OAuth2
         application_id: 538791729508064
         application_secret: b530afb799e4dfe6eef1f082888ef5ea
       store:
