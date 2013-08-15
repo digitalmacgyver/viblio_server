@@ -229,6 +229,13 @@ __PACKAGE__->belongs_to(
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-06 00:50:14
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9vD1kS3UsHEgfQ2bYALGeg
 
+sub TO_JSON {
+    my $self = shift;
+    my $hash = { %{$self->{_column_data}} };
+    delete $hash->{id};
+    delete $hash->{user_id};
+    return $hash;
+}
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;

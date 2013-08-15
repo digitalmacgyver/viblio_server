@@ -341,6 +341,26 @@ sub asset {
     return undef;
 }
 
+# Return all of the assets representing faces
+#
+sub faces {
+    my( $self ) = @_;
+    my @faces = ();
+    foreach( $self->assets ) {
+	push( @faces, $_ ) if ( $_->{_column_data}->{asset_type} eq 'face' ); 
+    }
+    return @faces;
+}
+
+# Given a face asset, return the contact info if any
+#
+sub face_data {
+    my( $self, $face ) = @_;
+    my $feat = $face->features->first({ feature_type => 'face' });
+    return undef unless( $feat );
+    return undef unless( $feat->contact_id );
+    return $feat->contact;
+}
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;

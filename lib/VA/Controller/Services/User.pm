@@ -37,10 +37,13 @@ Get the database record for the logged in user.  A user record is returned:
 sub me :Local {
     my( $self, $c ) = @_;
     my $hash = { user => $c->user->obj };
-    if ( $c->user->obj->provider eq 'facebook' ) {
-	$hash->{fb} = $c->model( 'Facebook' )->fetch( 'me' );
-    }
     $self->status_ok( $c, $hash );
+}
+
+sub profile :Local {
+    my( $self, $c ) = @_;
+    my @fields = $c->user->profile->fields;
+    $self->status_ok( $c, { profile => \@fields } );
 }
 
 sub link_facebook_account :Local {

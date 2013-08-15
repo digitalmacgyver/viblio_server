@@ -331,6 +331,14 @@ __PACKAGE__->belongs_to(
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
+# I like this relation name better ...
+__PACKAGE__->has_many(
+  "features",
+  "VA::RDSSchema::Result::MediaAssetFeature",
+  { "foreign.media_asset_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 sub TO_JSON {
     my $self = shift;
     my $hash = { %{$self->{_column_data}} };

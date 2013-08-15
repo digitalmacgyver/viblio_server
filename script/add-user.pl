@@ -19,9 +19,14 @@ my $conn = {
 	pass => 'video_dev_1',
     },
     staging => {
-	dsn => '',
+	dsn => 'dbi:mysql:database=video_dev_1;host=testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com',
 	user => 'video_dev_1',
 	pass => 'video_dev_1',
+    },
+    prod => {
+	dsn => 'dbi:mysql:database=video_dev;host=videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com;port=3306',
+	user => 'video_dev',
+	pass => 'video_dev',
     },
 };
 
@@ -105,6 +110,7 @@ $user = $schema->resultset( 'User' )->create
 unless( $user ) {
     die "Problems creating user!\n";
 }
+$user->create_profile();
 
 foreach my $role ( @roles ) {
     my $r = $schema->resultset( 'Role' )->find({ role => $role });

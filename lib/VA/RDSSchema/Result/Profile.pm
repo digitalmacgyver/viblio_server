@@ -61,12 +61,6 @@ __PACKAGE__->table("profiles");
   is_auto_increment: 1
   is_nullable: 0
 
-=head2 user_id
-
-  data_type: 'integer'
-  is_foreign_key: 1
-  is_nullable: 0
-
 =head2 image
 
   data_type: 'mediumblob'
@@ -95,13 +89,17 @@ __PACKAGE__->table("profiles");
   datetime_undef_if_invalid: 1
   is_nullable: 1
 
+=head2 user_id
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 1
+
 =cut
 
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
-  "user_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "image",
   { data_type => "mediumblob", is_nullable => 1 },
   "image_mimetype",
@@ -120,6 +118,8 @@ __PACKAGE__->add_columns(
     datetime_undef_if_invalid => 1,
     is_nullable => 1,
   },
+  "user_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
 );
 
 =head1 PRIMARY KEY
@@ -163,12 +163,25 @@ __PACKAGE__->belongs_to(
   "user",
   "VA::RDSSchema::Result::User",
   { id => "user_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+  },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:33
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:QTeRdlRygiXjGqwVtLJPqA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-15 08:17:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:qolM+UdNX6JPWm8i64BU9w
+
+# I like this relation name better
+__PACKAGE__->has_many(
+  "fields",
+  "VA::RDSSchema::Result::ProfileField",
+  { "foreign.profiles_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -26,15 +26,21 @@ my $conn = {
 	pass => 'video_dev_1',
     },
     staging => {
-	dsn => '',
+	dsn => 'dbi:mysql:database=video_dev_1;host=testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com',
 	user => 'video_dev_1',
 	pass => 'video_dev_1',
+    },
+    prod => {
+	dsn => 'dbi:mysql:database=video_dev;host=videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com;port=3306',
+	user => 'video_dev',
+	pass => 'video_dev',
     },
 };
 
 unless( defined( $ARGV[0] ) ) {
     die "Must specify 'test' or 'staging' for the database you are populating.";
 }
+my $db = $ARGV[0];
 
 my $schema = VA::RDSSchema->connect
     ( $conn->{$db}->{dsn}, $conn->{$db}->{user}, $conn->{$db}->{pass} ); 
@@ -73,6 +79,7 @@ $user->find_or_create_related
 	role_id => $roles->{admin}->id});
 print $encoder->encode( $user );
 $user->update;
+$user->create_profile();
 
 # vaadmin
 #
@@ -92,4 +99,5 @@ $user->find_or_create_related
 	role_id => $roles->{admin}->id});
 print $encoder->encode( $user );
 $user->update;
+$user->create_profile();
 

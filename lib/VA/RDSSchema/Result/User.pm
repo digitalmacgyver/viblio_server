@@ -358,8 +358,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:34
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Cba6kKVCavTNhXcqGUTpaA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-15 08:17:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:KhJaYM/Wfk5J4IAeR4CwxQ
 
 # I like this relationship name better
 #
@@ -369,6 +369,15 @@ __PACKAGE__->has_many(
   { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
+
+# A user really only has one profile
+__PACKAGE__->has_one(
+  "profile",
+  "VA::RDSSchema::Result::Profile",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 
 sub TO_JSON {
     my $self = shift;
@@ -400,6 +409,37 @@ __PACKAGE__->add_columns(
     },
     );
 
+sub create_profile {
+    my( $self ) = @_;
+    
+    $self->create_related( 'profile', {} );
+    
+    # Add some fields
+    $self->profile->create_related( 'profile_fields',
+                                    { name => 'email_notifications',
+                                      value => 'True',
+                                      public => 1 } );
+
+    $self->profile->create_related( 'profile_fields',
+                                    { name => 'email_comment',
+                                      value => 'True',
+                                      public => 1 } );
+
+    $self->profile->create_related( 'profile_fields',
+                                    { name => 'email_upload',
+                                      value => 'True',
+                                      public => 1 } );
+
+    $self->profile->create_related( 'profile_fields',
+                                    { name => 'email_face',
+                                      value => 'True',
+                                      public => 1 } );
+
+    $self->profile->create_related( 'profile_fields',
+                                    { name => 'email_viblio',
+                                      value => 'True',
+                                      public => 1 } );
+}
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;

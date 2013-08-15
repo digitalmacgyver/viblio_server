@@ -419,6 +419,10 @@ sub new_user :Local {
     if ($c->authenticate({ email    => $user->email,
 			   password => $args->{password}  }, 'db' )) {
 	$pending->delete;
+
+	# Create a profile
+	$user->create_profile();
+
 	$self->status_ok( $c, { user => $c->user->obj } );
     }
     else {
