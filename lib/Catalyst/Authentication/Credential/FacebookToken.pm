@@ -131,6 +131,18 @@ sub authenticate {
 	    }
 	    $user->get_object->update if ( $needs_update );
 
+	    # Call popeye with access_token, so popeye can fetch facebook data
+	    my $res = $ctx->model( 'Popeye' )->get( '/processor/facebook',
+						  { uid => $user->get_object->uuid,
+						    id => $fb_user->{id},
+						    access_token => $code } );
+	    if ( $res->code != 200 ) {
+		$ctx->log->error( "Popeye post returned error code: " . $res->code );
+	    }
+	    if ( $res->data->{error} ) {
+		$ctx->log->error( "Popeye post returned error: " . $res->data->message );
+	    }
+
 	    return $user;
 	}
 	else {

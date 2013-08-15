@@ -86,6 +86,16 @@ sub link_facebook_account :Local {
     $c->session->{fb_token} = $token;
     
     # Call popeye with access_token, so popeye can fetch facebook data
+    my $res = $c->model( 'Popeye' )->get( '/processor/facebook',
+					  { uid => $c->user->uuid,
+					    id => $fb_user->{id},
+					    access_token => $token } );
+    if ( $res->code != 200 ) {
+	$c->log->error( "Popeye post returned error code: " . $res->code );
+    }
+    if ( $res->data->{error} ) {
+	$c->log->error( "Popeye post returned error: " . $res->data->message );
+    }
 
     $self->status_ok( $c, { user => $fb_user } );
 }
@@ -97,6 +107,19 @@ sub unlink_facebook_account :Local {
 	if ( $c->session->{fb_token} ) {
 	    delete $c->session->{fb_token};
 	}
+
+	# Call popeye with access_token, so popeye can fetch facebook data
+	my $res = $c->model( 'Popeye' )->get( '/processor/unfacebook',
+					      { uid => $c->user->uuid,
+						id => $link->data->{id},
+						access_token => $link->data->{access_token} } );
+	if ( $res->code != 200 ) {
+	    $c->log->error( "Popeye post returned error code: " . $res->code );
+	}
+	if ( $res->data->{error} ) {
+	    $c->log->error( "Popeye post returned error: " . $res->data->message );
+	}
+
 	$c->user->delete_related
 	    ( 'links', {
 		provider => 'facebook',
