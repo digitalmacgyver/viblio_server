@@ -315,7 +315,7 @@ sub add_or_replace_profile_photo :Local {
     # Have to be an admin to change someone else's photo
     #
     unless( $c->check_user_roles( 'admin' ) ) {
-	unless( $c->user->obj->uuid == $uid ) {
+	unless( $c->user->obj->uuid eq $uid ) {
 	    $self->status_forbidden
 		( $c,
 		  $c->loc("Only users with 'admin' role can change someone else's photo." ) );
@@ -325,7 +325,7 @@ sub add_or_replace_profile_photo :Local {
     # uid might be an id or a username
     #
     my $user;
-    if ( $c->user->obj->uuid == $uid ) {
+    if ( $c->user->obj->uuid eq $uid ) {
 	$user = $c->user->obj;
     }
     else {
@@ -424,7 +424,7 @@ sub avatar :Local {
     }
 
     if ( $photo ) {
-	$c->stash->{image} = $photo->image;
+	$c->stash->{image} = $photo;
 	$c->stash->{zoom} = $zoom if ( $zoom );
     }
     else {
