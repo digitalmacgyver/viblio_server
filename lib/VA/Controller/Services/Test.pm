@@ -76,6 +76,28 @@ sub role_test :Local {
     $self->status_ok( $c, {} );
 }
 
+sub new_video_test :Local {
+    my( $self, $c ) = @_;
+    my @media = $c->user->media->search({},{prefetch=>'assets'});
+    my $uuid;
+    foreach my $media ( @media ) {
+	if ( my $a = $media->assets->first({asset_type => 'face' }) ) {
+	    $uuid = $media->uuid;
+	    last;
+	}
+    }
+    if ( $uuid ) {
+	$c->req->params({ uid => $c->user->uuid,
+			  mid => $uuid,
+			  'site-token' => 'maryhadalittlelamb' });
+	$c->forward( '/services/na/mediafile_create' );
+    }
+    else {
+	$self->status_bad_request( $c, 'Could not find a media file with faces' );
+    }
+}
+
+
 __PACKAGE__->meta->make_immutable;
 
 1;
