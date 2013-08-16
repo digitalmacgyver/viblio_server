@@ -107,18 +107,6 @@ sub authenticate {
 	    # server may make Facebook API calls.
 	    $ctx->session->{fb_token} = $code;
 
-	    # Add the link record
-	    #
-	    $user->get_object->update_or_create_related
-		( 'links', {
-		    provider => 'facebook',
-		  });
-	    my $link = $user->get_object->links->find({provider => 'facebook'});
-	    $link->data({
-		access_token => $code,
-		id => $fb_user->{id} });
-	    $link->update; 
-	    
 	    # Also set some user fields directly from FB data:
 	    my $needs_update = 0;
 	    unless( $user->get_object->username ) {
@@ -131,16 +119,28 @@ sub authenticate {
 	    }
 	    $user->get_object->update if ( $needs_update );
 
-	    # Call popeye with access_token, so popeye can fetch facebook data
-	    my $res = $ctx->model( 'Popeye' )->get( '/processor/facebook',
-						  { uid => $user->get_object->uuid,
-						    id => $fb_user->{id},
-						    access_token => $code } );
-	    if ( $res->code != 200 ) {
-		$ctx->log->error( "Popeye post returned error code: " . $res->code );
-	    }
-	    if ( $res->data->{error} ) {
-		$ctx->log->error( "Popeye post returned error: " . $res->data->message );
+	    # If the user has already linked their account to
+	    # facebook, then update the access_token and call popeye.
+	    #
+	    my $link = $user->get_object->links->find({provider => 'facebook'});
+	    if ( $link ) {
+		$link->data({
+		    link => $fb_user->{link},
+		    access_token => $code,
+		    id => $fb_user->{id} });
+		$link->update; 
+	    
+		# Call popeye with access_token, so popeye can fetch facebook data
+		my $res = $ctx->model( 'Popeye' )->get( '/processor/facebook',
+							{ uid => $user->get_object->uuid,
+							  id => $fb_user->{id},
+							  access_token => $code } );
+		if ( $res->code != 200 ) {
+		    $ctx->log->error( "Popeye post returned error code: " . $res->code );
+		}
+		if ( $res->data->{error} ) {
+		    $ctx->log->error( "Popeye post returned error: " . $res->data->message );
+		}
 	    }
 
 	    return $user;

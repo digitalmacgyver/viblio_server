@@ -38,10 +38,93 @@ sub me :Local {
     $self->status_ok( $c, $hash );
 }
 
+=head2 /services/user/profile
+
+Retrieve logged in user profile.  Returns profile fields
+and account link information.
+
+=head3 Example Response
+
+{
+   "profile" : {
+      "uuid" : "BADCB4A6-9412-11E2-ADDF-209629C23E77",
+      "email" : "aqpeeb@gmail.com",
+      "fields" : [
+         {
+            "value" : "True",
+            "name" : "email_notifications",
+            "public" : "1"
+         },
+         {
+            "value" : "True",
+            "name" : "email_comment",
+            "public" : "1"
+         },
+         {
+            "value" : "True",
+            "name" : "email_upload",
+            "public" : "1"
+         },
+         {
+            "value" : "True",
+            "name" : "email_face",
+            "public" : "1"
+         },
+         {
+            "value" : "True",
+            "name" : "email_viblio",
+            "public" : "1"
+         }
+      ],
+      "links" : [
+         {
+            "link" : "https://www.facebook.com/andrew.peebles.9843",
+            "provider" : "facebook"
+         }
+      ]
+   }
+}
+
+=cut
+
 sub profile :Local {
     my( $self, $c ) = @_;
     my @fields = $c->user->profile->fields;
-    $self->status_ok( $c, { profile => \@fields } );
+    my @links = $c->user->links;
+    my @link_data = ();
+    foreach my $link ( @links ) {
+	push( @link_data, { provider => $link->provider,
+			    link => $link->data->{link} } );
+    }
+    my $data = {
+	uid => $c->user->uuid,
+	email => $c->user->email,
+	fields => \@fields,
+	links => \@link_data,
+    };
+    $self->status_ok( $c, { profile => $data } );
+}
+
+sub change_profile :Local {
+    my( $self, $c ) = @_;
+    my $profile = $c->user->profile;
+    unless( $profile ) {
+	$c->log->error( "change_profile(): Unable to obtain a profile for user: " . $c->user->uuid );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc( "Unable to obtain your profile!" ) );
+    }
+    foreach my $name ( keys( $c->req->params ) ) {
+	my $field = $profile->fields->find({ name => $name });
+	if ( $field ) {
+	    $field->value( $c->req->param( $name ) );
+	    $field->update;
+	}
+	else {
+	    $c->log->error( "change_profile(): unable to find field named " . $name );
+	}
+    }
+    $c->forward( '/services/user/profile' );
 }
 
 sub link_facebook_account :Local {
@@ -80,6 +163,7 @@ sub link_facebook_account :Local {
 	  });
     my $link = $c->user->links->find({provider => 'facebook'});
     $link->data({
+	link => $fb_user->{link},
 	access_token => $token,
 	id => $fb_user->{id} });
     $link->update; 
@@ -226,12 +310,12 @@ sub add_user :Local {
 sub add_or_replace_profile_photo :Local {
     my( $self, $c, $uid ) = @_;
     $uid = $c->req->param( 'uid' ) unless( $uid );
-    $uid = $c->user->obj->id unless( $uid );
+    $uid = $c->user->obj->uuid unless( $uid );
 
     # Have to be an admin to change someone else's photo
     #
     unless( $c->check_user_roles( 'admin' ) ) {
-	unless( $c->user->obj->id == $uid || $c->user->obj->username eq $uid ) {
+	unless( $c->user->obj->uuid == $uid ) {
 	    $self->status_forbidden
 		( $c,
 		  $c->loc("Only users with 'admin' role can change someone else's photo." ) );
@@ -241,18 +325,16 @@ sub add_or_replace_profile_photo :Local {
     # uid might be an id or a username
     #
     my $user;
-    if ( $c->user->obj->id == $uid || $c->user->obj->username eq $uid ) {
+    if ( $c->user->obj->uuid == $uid ) {
 	$user = $c->user->obj;
     }
     else {
-	my $rs = $c->model( 'RDS::User' )
-	    ->search({id => $uid}, {username=>$uid});
-	$user = $rs->first if ( $rs );
+	$user = $c->model( 'RDS::User' )->find({ uuid => $uid });
     }
 
     unless( $user ) {
 	$self->status_bad_request
-	    ( $c, $c->loc("User for uid=[_1] not found!", $uid ) );
+	    ( $c, $c->loc("User for uuid=[_1] not found!", $uid ) );
     }
 
     my $profile = $user->profile;
@@ -264,53 +346,25 @@ sub add_or_replace_profile_photo :Local {
     my $upload = $c->req->upload( 'upload' );
     my $photo;
     if ( $upload ) {
-	$photo = $profile->photo;
-	if ( $photo ) {
-	    $photo->mimetype( $upload->type );
-	    $photo->filename( $upload->basename );
-	    $photo->image( $upload->slurp );
-	    $photo->size( $upload->size );
-	    $photo->update;
-	}
-	else {
-	    $photo = $c->model( 'RDS::Photo' )->create
-		({ id => $profile->id,
-		   mimetype => $upload->type,
-		   filename => $upload->basename,
-		   size => $upload->size,
-		   image => $upload->slurp });
-	    $profile->photo( $photo );
-	    $profile->update;
-	}
+	$profile->image_mimetype( $upload->type );
+	$profile->image_size( $upload->size );
+	$profile->image( $upload->slurp );
+	$profile->update;
     }
     elsif ( $c->req->param( 'upload' ) ) {
 	my $mimetype = $c->req->param( 'mimetype' ) || 'image/jpeg';
-	my $filename = $c->req->param( 'filename' ) || 'uploaded';
 	my $data = decode_base64( $c->req->param( 'upload' ) );
 	my $sz = length( $data );
-	$photo = $profile->photo;
-	if ( $photo ) {
-	    $photo->mimetype( $mimetype );
-	    $photo->filename( $filename );
-	    $photo->image( $data );
-	    $photo->size( $sz );
-	    $photo->update;
-	}
-	else {
-	    $photo = $c->model( 'RDS::Photo' )->create
-		({ id => $profile->id,
-		   mimetype => $mimetype,
-		   filename => $filename,
-		   size => $sz,
-		   image => $data });
-	    $profile->photo( $photo );
-	    $profile->update;
-	}
+
+	$profile->mimetype( $mimetype );
+	$profile->image( $data );
+	$profile->size( $sz );
+	$profile->update;
     }
     else {
 	$self->status_bad_request( $c, $c->loc("Missing upload field") );
     }
-    $self->status_ok( $c, { id => $photo->id } );
+    $self->status_ok( $c, {} );
 }
 
 # Leaving this in just for code example, if I need to do this
@@ -318,21 +372,21 @@ sub add_or_replace_profile_photo :Local {
 #
 sub original :Local {
     my( $self, $c ) = @_;
-    my $photo = $c->user->profile->photo;
+    my $photo = $c->user->profile->image;
 
     unless( $photo ) {
 	$self->status_bad_request( $c, $c->loc("no photo available") );
     }
 
-    my $type = $photo->mimetype;
-    my $len  = $photo->size;
+    my $type = $c->user->profile->image_mimetype;
+    my $len  = $c->user->profile->image_size;
 
     $c->res->body( "Content-type: $type\015\012\015\012" );
 
     $c->response->headers->header( 'Content-Type' => $type );
     $c->response->headers->header( 'Content-Length' => $len );
 
-    $c->response->write( $photo->image );
+    $c->response->write( $photo );
 }
 
 # Uses View::Thumbnail to return profile photos.
@@ -366,7 +420,7 @@ sub avatar :Local {
 
     my $photo;
     if ( $user ) {
-	$photo = $user->profile->photo;
+	$photo = $user->profile->image;
     }
 
     if ( $photo ) {
