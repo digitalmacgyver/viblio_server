@@ -183,6 +183,15 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+sub setting {
+    my( $self, $name ) = @_;
+    my $field = $self->find_related( 'fields', { name => $name } );
+    return undef unless( $field );
+    my $value = $field->value;
+    return 1 if ( $value && ( $value eq 'true' || $value eq 'True' || $value eq '1' ) );
+    return 0 if ( $value && ( $value eq 'false' || $value eq 'False' || $value eq '0' ) );
+    return $value;
+}
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
