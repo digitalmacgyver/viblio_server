@@ -771,28 +771,32 @@ sub mediafile_create :Local {
 
     my $mf = VA::MediaFile->new->publish( $c, $mediafile );
 
-    # Send email notification
-    #
-    $c->log->debug( 'Sending email to ' . $user->email );
+    if ( $user->profile->setting( 'email_notifications' ) &&
+	 $user->profile->setting( 'email_upload' ) ) {
 
-    $c->stash->{no_wrapper} = 1;
-    $c->stash->{email} =
-    { to       => $user->email,
-      from     => $c->config->{viblio_return_email_address},
-      subject  => $c->loc( "Your Viblio Video is Ready" ),
-      template => 'email/ready.tt'
-    };
-    $c->stash->{user} = $user;
-    $c->stash->{media} = $mf;
-    $c->stash->{server} = $c->server;
+	# Send email notification
+	#
+	$c->log->debug( 'Sending email to ' . $user->email );
 
-    $c->forward( $c->view('Email::Template') );
+	$c->stash->{no_wrapper} = 1;
+	$c->stash->{email} =
+	{ to       => $user->email,
+	  from     => $c->config->{viblio_return_email_address},
+	  subject  => $c->loc( "Your Viblio Video is Ready" ),
+	  template => 'email/ready.tt'
+	};
+	$c->stash->{user} = $user;
+	$c->stash->{media} = $mf;
+	$c->stash->{server} = $c->server;
 
-    if ( scalar( @{ $c->error } ) ) {
-	# Sending email failed!  
-	# The error will get properly communicated in the end() method,
-	# so we just need to clean up.
-	$c->log->debug( "SENDMAIL PROBLEM:" . $c->error );
+	$c->forward( $c->view('Email::Template') );
+	
+	if ( scalar( @{ $c->error } ) ) {
+	    # Sending email failed!  
+	    # The error will get properly communicated in the end() method,
+	    # so we just need to clean up.
+	    $c->log->debug( "SENDMAIL PROBLEM:" . $c->error );
+	}
     }
 
     # Send message queue notification
