@@ -3,6 +3,7 @@ use Moose;
 use VA::MediaFile;
 use namespace::autoclean;
 use MIME::Base64;
+use Imager;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -346,9 +347,32 @@ sub add_or_replace_profile_photo :Local {
     my $upload = $c->req->upload( 'upload' );
     my $photo;
     if ( $upload ) {
+
+	# The incoming image is very likely too big to store, since
+	# we will never display it bigger that 128x128, so we'll process it
+	# here on upload.
+	my $image = Imager->new();
+	$image->read( data => $upload->slurp ) or
+	    $c->log->error( "Failed to create Imager object: " . $image->errstr );
+	if ( $image->getheight > 128 ) {
+	    $c->log->debug( "The profile image height is greater that 128, so scale." );
+	    my $source_aspect = $image->getwidth / $image->getheight;
+	    my $y = 128;
+	    my $x = $y * $source_aspect;
+	    
+	    $image = $image->scale(
+		xpixels => $x,
+		ypixels => $y,
+		type => 'min',
+		qtype => 'mixing' );
+	}
+
 	$profile->image_mimetype( $upload->type );
-	$profile->image_size( $upload->size );
-	$profile->image( $upload->slurp );
+	my $data;
+	(my $file_type = $upload->type) =~ s!^image/!!;
+	$image->write( data => \$data, type => $file_type );
+	$profile->image( $data );
+	$profile->image_size( length( $data ) );
 	$profile->update;
     }
     elsif ( $c->req->param( 'upload' ) ) {
@@ -558,6 +582,23 @@ sub auth_token :Local {
     my $uuid = $c->user->obj->uuid;
     my $token = $c->secure_token( $uuid );
     $self->status_ok( $c, { uuid => $uuid, token => $token } );
+}
+
+sub change_password :Local {
+    my( $self, $c, $password ) = @_;
+    $password = $c->req->param( 'password' ) unless( $password );
+       
+    $c->user->obj->password( $password ); 
+    $c->user->obj->update;
+
+    if ($c->authenticate({ email    => $c->user->email,
+			   password => $password }, 'db' )) {
+	$self->status_ok( $c, { user => $c->user->obj } );
+    }
+    else {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Unable to authenticate user with new password." ) );
+    }
 }
 
 __PACKAGE__->meta->make_immutable;
