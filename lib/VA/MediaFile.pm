@@ -102,6 +102,13 @@ sub publish {
 	my $type = $view->{_column_data}->{asset_type};
 	my $view_json = $view->TO_JSON;
 
+	if ( $type eq 'face' ) {
+	    my $contact = $view->face_data;
+	    if ( $contact ) {
+		$view_json->{contact} = $contact->TO_JSON;
+	    }
+	}
+
 	# Generate the URL from the URI
 	my $location = $view_json->{location};
 	my $klass = $c->config->{mediafile}->{$location};

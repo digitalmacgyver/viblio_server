@@ -33,7 +33,11 @@
     <li class="face" style="display: inline;list-style-type: none;padding-right: 20px;float:left;">
       <div class="thumbnail" style="width: 64px;height: 64px;">
 	<img width="64" height="64" src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
-        <div class="name">Stranger</div>
+	[% IF face.contact %]
+        <div class="name" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;">[% face.contact.contact_name %]</div>
+	[% ELSE %]
+        <div class="name" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;">Stranger</div>
+	[% END %]
       </div>
     </li>
     [% END %]

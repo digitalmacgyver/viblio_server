@@ -347,6 +347,15 @@ sub TO_JSON {
     return $hash;
 }
 
+# Given a face asset, return the contact info if any
+#
+sub face_data {
+    my( $self ) = @_;
+    my $feat = $self->features->first({ feature_type => 'face' });
+    return undef unless( $feat );
+    return undef unless( $feat->contact_id );
+    return $feat->contact;
+}
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
