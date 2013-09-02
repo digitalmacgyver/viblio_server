@@ -232,7 +232,7 @@ __PACKAGE__->belongs_to(
 sub TO_JSON {
     my $self = shift;
     my $hash = { %{$self->{_column_data}} };
-    delete $hash->{id};
+    # delete $hash->{id}; NEED THIS UNLESS OR UNTIL WE HAVE A UUID
     delete $hash->{user_id};
     return $hash;
 }
