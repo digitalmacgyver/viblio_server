@@ -95,10 +95,9 @@ sub metadata {
 sub publish {
     my( $self, $c, $mediafile, $params ) = @_;
     my $mf_json = $mediafile->TO_JSON;
-    $mf_json->{'views'} = {};
-    my @views = $mediafile->assets;
+    $mf_json->{'views'} = {}; 
+    my @views = $mediafile->assets; #->search({},{prefetch=>'media_asset_features'}); (SEEMS WORSE)
     foreach my $view ( @views ) {
-	$DB::single = 1;
 	my $type = $view->{_column_data}->{asset_type};
 	my $view_json = $view->TO_JSON;
 
