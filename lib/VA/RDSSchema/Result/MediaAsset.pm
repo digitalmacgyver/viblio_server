@@ -351,7 +351,7 @@ sub TO_JSON {
 #
 sub face_data {
     my( $self ) = @_;
-    my $feat = $self->features->first({ feature_type => 'face' });
+    my $feat = $self->features->first({ feature_type => 'face' },{prefetch => 'contact'});
     return undef unless( $feat );
     return undef unless( $feat->contact_id );
     return $feat->contact;
