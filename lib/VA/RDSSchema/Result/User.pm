@@ -370,6 +370,13 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+__PACKAGE__->has_many(
+  "contacts",
+  "VA::RDSSchema::Result::Contact",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 # A user really only has one profile
 __PACKAGE__->has_one(
   "profile",

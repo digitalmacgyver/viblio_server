@@ -101,7 +101,7 @@ sub publish {
 	my $type = $view->{_column_data}->{asset_type};
 	my $view_json = $view->TO_JSON;
 
-	if ( $type eq 'face' ) {
+	if ( $params && $params->{include_contact_info} &&  $type eq 'face' ) {
 	    my $contact = $view->face_data;
 	    if ( $contact ) {
 		$view_json->{contact} = $contact->TO_JSON;

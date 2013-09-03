@@ -168,5 +168,64 @@ sub media_face_appears_in :Local {
     }
 }
 
+sub contacts :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ page => undef,
+          rows => 10,
+        ],
+        @_ );
+
+    my $user = $c->user->obj;
+
+    my @contacts = ();
+    my $pager;
+    if ( $args->{page} ) {
+	my $rs = $user->contacts->search({},{page => $args->{page},rows => $args->{rows}});
+	$pager = $rs->pager;
+	@contacts = $rs->all;
+    }
+    else {
+	@contacts = $user->contacts;
+    }
+
+    my @data = ();
+    foreach my $contact ( @contacts ) {
+	my @feat = $c->model( 'RDS::MediaAssetFeature' )
+	    ->search({ contact_id => $contact->id }, { prefetch => 'media_asset' });
+	next unless( $#feat >= 0 );
+	my $feat = $feat[0];
+	my $asset = $feat->media_asset;
+	my $klass = $c->config->{mediafile}->{$asset->location};
+	my $fp = new $klass;
+	my $url = $fp->uri2url( $c, $asset->uri );
+	my $hash = $contact->TO_JSON;
+	$hash->{url} = $url;
+	$hash->{assert_id} = $asset->uuid;
+	$hash->{appears_in} = ( $#feat + 1 );
+	push( @data, $hash );
+    }
+
+    if ( $pager ) {
+	$self->status_ok( $c, { faces => \@data, 
+				pager => {
+				    total_entries => $pager->total_entries,
+				    entries_per_page => $pager->entries_per_page,
+				    current_page => $pager->current_page,
+				    entries_on_this_page => $pager->entries_on_this_page,
+				    first_page => $pager->first_page,
+				    last_page => $pager->last_page,
+				    first => $pager->first,
+				    'last' => $pager->last,
+				    previous_page => $pager->previous_page,
+				    next_page => $pager->next_page,
+				} } );
+    }
+    else {
+	$self->status_ok( $c, { faces => \@data } );
+    }
+}    
+
 __PACKAGE__->meta->make_immutable;
 1;

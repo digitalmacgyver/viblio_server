@@ -769,7 +769,7 @@ sub mediafile_create :Local {
 	$self->status_bad_request( $c, 'Cannot find media for $mid' );
     }
 
-    my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+    my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_contact_info => 1 } );
 
     if ( $user->profile->setting( 'email_notifications' ) &&
 	 $user->profile->setting( 'email_upload' ) ) {
