@@ -24,7 +24,7 @@ sub invite_code :Private {
     $len = 8 unless( $len );
     my $code = '';
     for( my $i=0; $i<$len; $i++ ) {
-	$code .= substr("ABCDEFGHJKMNPQRSTVWXYZ23456789",int(1+rand()*30),1);
+	$code .= substr("abcdefghjkmnpqrstvwxyz23456789",int(1+rand()*30),1);
     }
     return $code;
 }
@@ -514,6 +514,10 @@ sub forgot_password_request :Local {
 
     my $code = $self->invite_code;
 
+=perl    
+    Doing a simplified version of this now, by sending out a new password
+    and resetting right here.
+
     my $rec = $c->model( 'RDS::PasswordReset' )
 	->find_or_create({ email => $args->{email},
 			   code  => $code });
@@ -521,7 +525,10 @@ sub forgot_password_request :Local {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to create record: [_1]", 'RDS::PasswordReset' ) );
     }
+=cut
+    $c->stash->{new_password} = $code;
     
+
     $c->stash->{no_wrapper} = 1;
     $c->stash->{email} =
     { to       => $args->{email},
@@ -530,16 +537,22 @@ sub forgot_password_request :Local {
       template => 'email/reset-password.tt'
     };
     $c->stash->{user} = $user;
-    $c->stash->{rec}  = $rec;
+    # $c->stash->{rec}  = $rec;
     $c->forward( $c->view('Email::Template') );
 
     if ( scalar( @{ $c->error } ) ) {
 	# Sending email failed!  
 	# The error will get properly communicated in the end() method,
 	# so we just need to clean up.
-	$rec->delete;
+	# $rec->delete;
+	$c->log->error( "forgot_password_request(), failed to send email to " . $args->{email} . ", password not reset!" );
+	$c->log->error( $c->error );
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to reset your password!" ) );
     }
     else {
+	$user->password( $code );
+	$user->update;
 	$self->status_ok( $c, { user => $user } );
     }
 }
