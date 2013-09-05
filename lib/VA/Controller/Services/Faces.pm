@@ -128,11 +128,20 @@ Return the list of published media files belonging to the logged in user that th
 =cut
 
 sub media_face_appears_in :Local {
-    my( $self, $c ) = @_;
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ page => undef,
+          rows => 10,
+	  asset_id => undef,
+	  contact_id => undef
+        ],
+        @_ );
+
     my $user = $c->user->obj;
 
-    my $asset_id = $c->req->param( 'asset_id' );
-    my $contact_id = $c->req->param( 'contact_id' );
+    my $asset_id = $args->{asset_id};
+    my $contact_id = $args->{contact_id};
 
     # If this is an unidentified face, then only asset_id will be
     # defined.  If it is an identifed face, then contact_id will be defined as well.
@@ -156,15 +165,44 @@ sub media_face_appears_in :Local {
     }
     else {
 	# This is an identified face and may appear in multiple media files.
-	my @features = $c->model( 'RDS::MediaAssetFeature' )
-	    ->search(
-	    { contact_id => $contact_id },
-	    { prefetch => 'media_asset' } );
+	my @features = ();
+	my $pager;
+	if ( $args->{page} ) {
+	    my $rs = $c->model( 'RDS::MediaAssetFeature' )
+		->search(
+		{ contact_id => $contact_id },
+		{ prefetch => 'media_asset', page => $args->{page}, rows => $args->{rows} } );
+	    $pager = $rs->pager;
+	    @features = $rs->all;
+	}
+	else {
+	    @features = $c->model( 'RDS::MediaAssetFeature' )
+		->search(
+		{ contact_id => $contact_id },
+		{ prefetch => 'media_asset' } );
+	}
 	my @media = ();
 	foreach my $feature ( @features ) {
 	    push( @media, VA::MediaFile->new->publish( $c, $feature->media_asset->media ) );
 	}
-	$self->status_ok( $c, { media => \@media } );
+	if ( $pager ) {
+	    $self->status_ok( $c, { media => \@media,
+				    pager => {
+				    total_entries => $pager->total_entries,
+				    entries_per_page => $pager->entries_per_page,
+				    current_page => $pager->current_page,
+				    entries_on_this_page => $pager->entries_on_this_page,
+				    first_page => $pager->first_page,
+				    last_page => $pager->last_page,
+				    first => $pager->first,
+				    'last' => $pager->last,
+				    previous_page => $pager->previous_page,
+				    next_page => $pager->next_page,
+				    } } );
+	}
+	else {
+	    $self->status_ok( $c, { media => \@media } );
+	}
     }
 }
 
