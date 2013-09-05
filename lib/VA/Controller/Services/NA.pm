@@ -368,7 +368,7 @@ The caller may redirect into the application.
 
 =cut
 
-sub new_user :Local {
+sub old_new_user :Local {
     my $self = shift;
     my $c    = shift;
     my $args = $self->parse_args
@@ -419,6 +419,56 @@ sub new_user :Local {
 			   password => $args->{password}  }, 'db' )) {
 	$pending->delete;
 
+	# Create a profile
+	$user->create_profile();
+
+	$self->status_ok( $c, { user => $c->user->obj } );
+    }
+    else {
+	$user->delete;
+	$self->status_bad_request
+	    ( $c, $c->loc( "Unable to create new user." ) );
+    }
+}
+
+sub new_user :Local {
+    my $self = shift;
+    my $c    = shift;
+    my $args = $self->parse_args
+	( $c,
+	  [ email    => undef,
+	    password => undef,
+	    username => undef
+	  ],
+	  @_ );
+
+    unless( $args->{email} ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Missing required field: [_1]", 'email' ) );
+    }
+
+    unless( $args->{password} ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Missing required field: [_1]", 'password' ) );
+    }
+
+    my $username = $self->auto_username
+	( $c, $args->{email}, $args->{username} );
+
+    my $user = $c->model( 'RDS::User' )->create
+	({ email => $args->{email},
+	   password => $args->{password},
+	   displayname => $args->{username} || $username,
+	 });
+
+    unless( $user ) {
+	$c->log->error( "new_user: Failed to create new user for $args->{email}" );
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to create user for: [_1]", $args->{email} ) );
+    }
+
+    if ($c->authenticate({ email    => $user->email,
+			   password => $args->{password}  }, 'db' )) {
 	# Create a profile
 	$user->create_profile();
 
