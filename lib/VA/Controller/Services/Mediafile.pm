@@ -272,6 +272,7 @@ sub list :Local {
         [ page => undef,
           rows => 10,
 	  type => undef,
+	  include_contact_info => 0,
         ],
         @_ );
 
@@ -289,7 +290,7 @@ sub list :Local {
 			rows => $args->{rows} } );
 	my $pager = $rs->pager;
 	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_ ) )
+	push( @media, VA::MediaFile->new->publish( $c, $_, { include_contact_info => $args->{include_contact_info} } ) )
 	    foreach( $rs->all );
 	$self->status_ok(
 	    $c,
@@ -310,15 +311,17 @@ sub list :Local {
     }
     else {
 	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_ ) )
+	push( @media, VA::MediaFile->new->publish( $c, $_, { include_contact_info => $args->{include_contact_info} } ) )
 	    foreach( $c->user->media->search( $where, {order_by => { -desc => 'id' }} ) );
 	$self->status_ok( $c, { media => \@media } );
     }
 }
 
 sub get :Local {
-    my( $self, $c, $mid ) = @_;
+    my( $self, $c, $mid, $include_contact_info ) = @_;
     $mid = $c->req->param( 'mid' ) unless( $mid );
+    $include_contact_info = $c->req->param( 'include_contact_info' ) unless( $include_contact_info );
+    $include_contact_info = 0 unless( $include_contact_info );
 
     my $mf = $c->user->media->find({uuid=>$mid});
 
@@ -327,7 +330,7 @@ sub get :Local {
 	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
     }
 
-    my $view = VA::MediaFile->new->publish( $c, $mf );
+    my $view = VA::MediaFile->new->publish( $c, $mf, { include_contact_info => $include_contact_info } );
     $self->status_ok( $c, { media => $view } );
 }
 
