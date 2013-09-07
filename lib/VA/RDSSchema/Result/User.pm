@@ -192,6 +192,21 @@ __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
 
+=head2 contacts
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::Contact>
+
+=cut
+
+__PACKAGE__->has_many(
+  "contacts",
+  "VA::RDSSchema::Result::Contact",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 contacts_contact_viblios
 
 Type: has_many
@@ -204,21 +219,6 @@ __PACKAGE__->has_many(
   "contacts_contact_viblios",
   "VA::RDSSchema::Result::Contact",
   { "foreign.contact_viblio_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 contacts_users
-
-Type: has_many
-
-Related object: L<VA::RDSSchema::Result::Contact>
-
-=cut
-
-__PACKAGE__->has_many(
-  "contacts_users",
-  "VA::RDSSchema::Result::Contact",
-  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -358,8 +358,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-15 08:17:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:KhJaYM/Wfk5J4IAeR4CwxQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:57:04
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:5wvpA7vpojEMiLXE7ppeUg
 
 # I like this relationship name better
 #

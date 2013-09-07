@@ -160,6 +160,11 @@ __PACKAGE__->table("media_assets");
   data_type: 'integer'
   is_nullable: 1
 
+=head2 intellivision_file_id
+
+  data_type: 'integer'
+  is_nullable: 1
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -210,6 +215,8 @@ __PACKAGE__->add_columns(
   "provider_id",
   { data_type => "varchar", is_nullable => 1, size => 45 },
   "view_count",
+  { data_type => "integer", is_nullable => 1 },
+  "intellivision_file_id",
   { data_type => "integer", is_nullable => 1 },
   "created_date",
   {
@@ -326,8 +333,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-06 00:50:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:t2vTtF86f8IctCP0Ng673w
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:57:00
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:PQNNW3rQRjRZ+T5UvM0cFw
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

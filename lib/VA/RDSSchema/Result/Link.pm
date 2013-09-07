@@ -78,6 +78,18 @@ __PACKAGE__->table("links");
   data_type: 'text'
   is_nullable: 0
 
+=head2 created_date
+
+  data_type: 'datetime'
+  datetime_undef_if_invalid: 1
+  is_nullable: 1
+
+=head2 updated_date
+
+  data_type: 'datetime'
+  datetime_undef_if_invalid: 1
+  is_nullable: 1
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -89,6 +101,18 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 0, size => 40 },
   "data",
   { data_type => "text", is_nullable => 0 },
+  "created_date",
+  {
+    data_type => "datetime",
+    datetime_undef_if_invalid => 1,
+    is_nullable => 1,
+  },
+  "updated_date",
+  {
+    data_type => "datetime",
+    datetime_undef_if_invalid => 1,
+    is_nullable => 1,
+  },
 );
 
 =head1 PRIMARY KEY
@@ -121,8 +145,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:31
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FEVY3j/Xu50oyX5VQeqodg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:56:59
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FFplvxzIIuuidKy7lGmcHw
 use JSON::XS;
 
 __PACKAGE__->filter_column(

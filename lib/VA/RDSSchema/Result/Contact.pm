@@ -61,6 +61,12 @@ __PACKAGE__->table("contacts");
   is_auto_increment: 1
   is_nullable: 0
 
+=head2 uuid
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 36
+
 =head2 user_id
 
   data_type: 'integer'
@@ -98,6 +104,11 @@ __PACKAGE__->table("contacts");
   is_nullable: 1
   size: 45
 
+=head2 intellivision_id
+
+  data_type: 'integer'
+  is_nullable: 1
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -115,6 +126,8 @@ __PACKAGE__->table("contacts");
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
+  "uuid",
+  { data_type => "varchar", is_nullable => 1, size => 36 },
   "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "contact_name",
@@ -127,6 +140,8 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 16 },
   "provider_id",
   { data_type => "varchar", is_nullable => 1, size => 45 },
+  "intellivision_id",
+  { data_type => "integer", is_nullable => 1 },
   "created_date",
   {
     data_type => "datetime",
@@ -152,6 +167,20 @@ __PACKAGE__->add_columns(
 =cut
 
 __PACKAGE__->set_primary_key("id");
+
+=head1 UNIQUE CONSTRAINTS
+
+=head2 C<uuid_UNIQUE>
+
+=over 4
+
+=item * L</uuid>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
 
@@ -226,8 +255,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-06 00:50:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9vD1kS3UsHEgfQ2bYALGeg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:56:59
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nZF+AAFqowGsqk0fQaSLfg
 
 sub TO_JSON {
     my $self = shift;

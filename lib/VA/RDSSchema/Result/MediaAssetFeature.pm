@@ -85,6 +85,18 @@ __PACKAGE__->table("media_asset_features");
   is_foreign_key: 1
   is_nullable: 1
 
+=head2 detection_confidence
+
+  data_type: 'decimal'
+  is_nullable: 1
+  size: [9,6]
+
+=head2 recognition_confidence
+
+  data_type: 'decimal'
+  is_nullable: 1
+  size: [9,6]
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -110,6 +122,10 @@ __PACKAGE__->add_columns(
   { data_type => "text", is_nullable => 1 },
   "contact_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
+  "detection_confidence",
+  { data_type => "decimal", is_nullable => 1, size => [9, 6] },
+  "recognition_confidence",
+  { data_type => "decimal", is_nullable => 1, size => [9, 6] },
   "created_date",
   {
     data_type => "datetime",
@@ -189,8 +205,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-06 00:50:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:a8T1v5YF8BNhI2j6I2v3Dg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:57:00
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kMY5sYptfBIkJl4i1D4YoQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

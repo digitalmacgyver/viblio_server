@@ -61,6 +61,12 @@ __PACKAGE__->table("media_comments");
   is_auto_increment: 1
   is_nullable: 0
 
+=head2 uuid
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 36
+
 =head2 media_id
 
   data_type: 'integer'
@@ -101,6 +107,8 @@ __PACKAGE__->table("media_comments");
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
+  "uuid",
+  { data_type => "varchar", is_nullable => 1, size => 36 },
   "media_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "user_id",
@@ -135,6 +143,20 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key("id");
 
+=head1 UNIQUE CONSTRAINTS
+
+=head2 C<uuid_UNIQUE>
+
+=over 4
+
+=item * L</uuid>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
+
 =head1 RELATIONS
 
 =head2 media
@@ -168,8 +190,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-08-14 16:53:32
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:l3yuFfX26tdk3MHs6920MQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:57:01
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:VlRea7CBcKw/uA5hVOExnw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
