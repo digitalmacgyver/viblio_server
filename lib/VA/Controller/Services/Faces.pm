@@ -273,8 +273,6 @@ sub location :Local {
     my $latlng = "$lat,$lng";
     my $res = $c->model( 'GoogleMap' )->get( "/maps/api/geocode/json?latlng=$latlng&sensor=true" );
 
-    $c->logdump( $res );
-    $c->logdump( $res->data->{results} );
     $self->status_ok( $c, $res->data->{results} );
 }
 
