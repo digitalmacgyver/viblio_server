@@ -77,9 +77,18 @@ sub authenticate :Local {
 	$self->status_ok( $c, { user => $c->user->obj } );
 	return;
     } else {
+	# Lets try to create a more meaningful error message
+	#
+	my $err = $c->loc( "Login failed" );
+	my @hits = $c->model( 'RDS::User' )->search({ email => $username });
+	if ( $#hits == -1 ) {
+	    $err = $c->loc( "Login failed: Email does not exist: [_1]", $username );
+	}
+	else {
+	    $err = $c->loc( "Login failed: Password does not match for email [_1]", $username );
+	}
 	$self->status_unauthorized
-	    ( $c,
-	      $c->loc( "Login failed" ) );
+	    ( $c, $err );
     }
 }
 
@@ -438,7 +447,8 @@ sub new_user :Local {
 	( $c,
 	  [ email    => undef,
 	    password => undef,
-	    username => undef
+	    username => undef,
+	    displayname => undef
 	  ],
 	  @_ );
 
@@ -452,8 +462,18 @@ sub new_user :Local {
 	    ( $c, $c->loc( "Missing required field: [_1]", 'password' ) );
     }
 
+    if ( ! defined( $args->{username} ) && defined( $args->{displayname} ) ) {
+	$args->{username} = $args->{displayname};
+    }
+
     my $username = $self->auto_username
 	( $c, $args->{email}, $args->{username} );
+
+    my @hits = $c->model( 'RDS::User' )->search({ email => $args->{email} });
+    if ( $#hits >= 0 ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "The email address [_1] has already been taken.", $args->{email} ) );
+    }
 
     my $user = $c->model( 'RDS::User' )->create
 	({ email => $args->{email},
