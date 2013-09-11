@@ -182,11 +182,13 @@ __PACKAGE__->add_columns(
 
 =item * L</id>
 
+=item * L</user_id>
+
 =back
 
 =cut
 
-__PACKAGE__->set_primary_key("id");
+__PACKAGE__->set_primary_key("id", "user_id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -215,22 +217,10 @@ Related object: L<VA::RDSSchema::Result::MediaAsset>
 __PACKAGE__->has_many(
   "media_assets",
   "VA::RDSSchema::Result::MediaAsset",
-  { "foreign.media_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 media_comments
-
-Type: has_many
-
-Related object: L<VA::RDSSchema::Result::MediaComment>
-
-=cut
-
-__PACKAGE__->has_many(
-  "media_comments",
-  "VA::RDSSchema::Result::MediaComment",
-  { "foreign.media_id" => "self.id" },
+  {
+    "foreign.media_id" => "self.id",
+    "foreign.user_id"  => "self.user_id",
+  },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -305,8 +295,8 @@ Composing rels: L</media_workorders> -> workorder
 __PACKAGE__->many_to_many("workorders", "media_workorders", "workorder");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-06 00:50:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:OJSOPIBs32P6gnH0AgcOiA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:21j8UZGZXf0T974FMiZyVA
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

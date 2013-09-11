@@ -67,6 +67,20 @@ __PACKAGE__->table("media_asset_features");
   is_foreign_key: 1
   is_nullable: 0
 
+=head2 media_id
+
+  data_type: 'integer'
+  default_value: 0
+  is_foreign_key: 1
+  is_nullable: 0
+
+=head2 user_id
+
+  data_type: 'integer'
+  default_value: 0
+  is_foreign_key: 1
+  is_nullable: 0
+
 =head2 feature_type
 
   data_type: 'varchar'
@@ -116,6 +130,20 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "media_asset_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "media_id",
+  {
+    data_type      => "integer",
+    default_value  => 0,
+    is_foreign_key => 1,
+    is_nullable    => 0,
+  },
+  "user_id",
+  {
+    data_type      => "integer",
+    default_value  => 0,
+    is_foreign_key => 1,
+    is_nullable    => 0,
+  },
   "feature_type",
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 16 },
   "coordinates",
@@ -146,11 +174,17 @@ __PACKAGE__->add_columns(
 
 =item * L</id>
 
+=item * L</media_asset_id>
+
+=item * L</media_id>
+
+=item * L</user_id>
+
 =back
 
 =cut
 
-__PACKAGE__->set_primary_key("id");
+__PACKAGE__->set_primary_key("id", "media_asset_id", "media_id", "user_id");
 
 =head1 RELATIONS
 
@@ -200,13 +234,13 @@ Related object: L<VA::RDSSchema::Result::MediaAsset>
 __PACKAGE__->belongs_to(
   "media_asset",
   "VA::RDSSchema::Result::MediaAsset",
-  { id => "media_asset_id" },
+  { id => "media_asset_id", media_id => "media_id", user_id => "user_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:57:00
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kMY5sYptfBIkJl4i1D4YoQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:AIgG+EUZRAu4tUP6JwXLdQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

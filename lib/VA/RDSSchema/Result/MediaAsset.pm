@@ -67,6 +67,13 @@ __PACKAGE__->table("media_assets");
   is_foreign_key: 1
   is_nullable: 0
 
+=head2 user_id
+
+  data_type: 'integer'
+  default_value: 0
+  is_foreign_key: 1
+  is_nullable: 0
+
 =head2 uuid
 
   data_type: 'varchar'
@@ -184,6 +191,13 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "media_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "user_id",
+  {
+    data_type      => "integer",
+    default_value  => 0,
+    is_foreign_key => 1,
+    is_nullable    => 0,
+  },
   "uuid",
   { data_type => "varchar", is_nullable => 0, size => 36 },
   "asset_type",
@@ -240,11 +254,13 @@ __PACKAGE__->add_columns(
 
 =item * L</media_id>
 
+=item * L</user_id>
+
 =back
 
 =cut
 
-__PACKAGE__->set_primary_key("id", "media_id");
+__PACKAGE__->set_primary_key("id", "media_id", "user_id");
 
 =head1 UNIQUE CONSTRAINTS
 
@@ -293,7 +309,7 @@ Related object: L<VA::RDSSchema::Result::Media>
 __PACKAGE__->belongs_to(
   "media",
   "VA::RDSSchema::Result::Media",
-  { id => "media_id" },
+  { id => "media_id", user_id => "user_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
@@ -308,7 +324,11 @@ Related object: L<VA::RDSSchema::Result::MediaAssetFeature>
 __PACKAGE__->has_many(
   "media_asset_features",
   "VA::RDSSchema::Result::MediaAssetFeature",
-  { "foreign.media_asset_id" => "self.id" },
+  {
+    "foreign.media_asset_id" => "self.id",
+    "foreign.media_id"       => "self.media_id",
+    "foreign.user_id"        => "self.user_id",
+  },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -333,8 +353,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:57:00
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:PQNNW3rQRjRZ+T5UvM0cFw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:08
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4dE6UQiRWgThOjy2qzO8MQ
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

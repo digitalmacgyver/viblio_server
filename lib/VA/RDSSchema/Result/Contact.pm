@@ -109,6 +109,12 @@ __PACKAGE__->table("contacts");
   data_type: 'integer'
   is_nullable: 1
 
+=head2 picture_uri
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 2048
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -142,6 +148,8 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 1, size => 45 },
   "intellivision_id",
   { data_type => "integer", is_nullable => 1 },
+  "picture_uri",
+  { data_type => "varchar", is_nullable => 1, size => 2048 },
   "created_date",
   {
     data_type => "datetime",
@@ -255,8 +263,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:56:59
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nZF+AAFqowGsqk0fQaSLfg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:06
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:I/IC5QNMxEFBZmkwzutW0A
 
 sub TO_JSON {
     my $self = shift;

@@ -206,6 +206,9 @@ sub media_face_appears_in :Local {
     }
 }
 
+# print $_->contact->contact_name, ' ', $_->media_asset->uri,"\n" foreach(  $schema->resultset( 'MediaAssetFeature' )->search({'me.user_id'=>$u->id,contact_id => {'!=',undef}},{columns=>[qw/contact_id media_asset_id/],group_by=>[qw/contact_id/],prefetch=>[qw/contact media_asset/]}) )
+#
+# $schema->resultset( 'MediaAssetFeature' )->search({contact_id=>251,user_id=>124})->count
 sub contacts :Local {
     my $self = shift; my $c = shift;
     my $args = $self->parse_args
@@ -217,31 +220,40 @@ sub contacts :Local {
 
     my $user = $c->user->obj;
 
-    my @contacts = ();
-    my $pager;
+    # Find all contacts for a user that appear in at least one video.
+    my $search = {
+	'me.user_id' => $user->id,
+	contact_id => {'!=',undef}
+    };
+    my $where = {
+	columns => [qw/contact_id media_asset_id/],
+	group_by => [qw/contact_id/],
+	prefetch=>[qw/contact media_asset/]
+    };
     if ( $args->{page} ) {
-	my $rs = $user->contacts->search({},{page => $args->{page},rows => $args->{rows}});
-	$pager = $rs->pager;
-	@contacts = $rs->all;
+	$where->{page} = $args->{page};
+	$where->{rows} = $args->{rows};
     }
-    else {
-	@contacts = $user->contacts;
-    }
+    my $pager;
+    my $rs = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
+    $pager = $rs->pager if ( $args->{page} );
+    my @feats = ();
+    @feats = $rs->all if ( $rs );
 
     my @data = ();
-    foreach my $contact ( @contacts ) {
-	my @feat = $c->model( 'RDS::MediaAssetFeature' )
-	    ->search({ contact_id => $contact->id }, { prefetch => 'media_asset' });
-	next unless( $#feat >= 0 );
-	my $feat = $feat[0];
-	my $asset = $feat->media_asset;
+    foreach my $feat ( @feats ) {
+	my $contact = $feat->contact;
+	my $asset   = $feat->media_asset;
+	my $hash    = $contact->TO_JSON;
+
 	my $klass = $c->config->{mediafile}->{$asset->location};
 	my $fp = new $klass;
 	my $url = $fp->uri2url( $c, $asset->uri );
-	my $hash = $contact->TO_JSON;
+
 	$hash->{url} = $url;
-	$hash->{assert_id} = $asset->uuid;
-	$hash->{appears_in} = ( $#feat + 1 );
+	$hash->{asset_id} = $asset->uuid;
+	$hash->{appears_in} = $c->model( 'RDS::MediaAssetFeature' )
+	    ->search({contact_id=>$feat->contact_id,user_id=>$user->id})->count; 
 	push( @data, $hash );
     }
 
@@ -263,7 +275,7 @@ sub contacts :Local {
     else {
 	$self->status_ok( $c, { faces => \@data } );
     }
-}    
+}
 
 sub location :Local {
     my( $self, $c ) = @_;
