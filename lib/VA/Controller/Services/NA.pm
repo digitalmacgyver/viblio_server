@@ -527,9 +527,11 @@ sub forgot_password_request :Local {
     }
 
     my $user = $c->model( 'RDS::User' )->find({ email => $args->{email} });
+
+    # Design team wants to ignore this error and let the user think they
+    # sent an email.  I guess when it does not arrive, they'll try again.
     unless( $user ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Cannot find user for [_1]", $args->{email} ) );
+	$self->status_ok( $c, {} );
     }
 
     my $code = $self->invite_code;
