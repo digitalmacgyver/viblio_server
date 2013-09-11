@@ -46,7 +46,7 @@ app.post( '/enqueue', function( req, res, next ) {
     var uid = req.param( 'uid' );
     var msg = req.body;
 
-    log.info( "enqueuing message for " + uid );
+    log.info( "enqueuing message for " + uid, msg );
 
     mQueue.enqueue( uid, msg, function( err ) {
 	if ( err ) {
@@ -74,6 +74,7 @@ app.get( '/dequeue', function( req, res, next ) {
 	if ( err ) {
 	    return req.json({ error: true, message: err });
 	}
+	log.info( JSON.stringify(messages,null,2) );
 	res.jsonp({messages: messages});
     });
 });
