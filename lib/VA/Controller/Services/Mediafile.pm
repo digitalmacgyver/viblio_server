@@ -338,6 +338,11 @@ sub get_metadata :Local {
     my( $self, $c, $mid ) = @_;
     $mid = $c->req->param( 'mid' ) unless( $mid );
 
+    unless( $mid ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
+    }
+
     my $mf = $c->user->media->find({uuid=>$mid});
 
     unless( $mf ) {
@@ -352,6 +357,26 @@ sub get_metadata :Local {
     else {
 	$self->status_bad_request( $c, $c->loc( 'Failed to obtain metadata' ) );
     }
+}
+
+sub set_title_description :Local {
+    my( $self, $c) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $title = $c->req->param( 'title' );
+    my $description = $c->req->param( 'description' );
+    unless( $mid ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
+    }
+    my $mf = $c->user->media->find({uuid=>$mid});
+    unless( $mf ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+    }
+    $mf->title( $title ) if ( $title );
+    $mf->description( $description ) if ( $description );
+    $mf->update;
+    $self->status_ok( $c, { title => $mf->title, description => $mf->description } );
 }
 
 __PACKAGE__->meta->make_immutable;
