@@ -72,20 +72,6 @@ __PACKAGE__->config(
 	root_dir => __PACKAGE__->path_to( 'root', 'static', 'images' ),
     },
 
-    'Model::DDB' => {
-	access_key     => 'AKIAIJ25CQBCBCNFK7LA',
-	secret_key     => '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',
-	host => 'dynamodb.us-west-1.amazonaws.com',
-	tables => {
-	    'va-users' => {
-		hash_key => 'email',
-		attributes => {
-		    email => 'S',
-		},
-	    },
-	},
-    },
-
     'View::HTML' => {
 	TEMPLATE_EXTENSION => '.tt',
 	render_die => 1,

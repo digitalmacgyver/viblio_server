@@ -25,15 +25,6 @@ Model::Popeye:
   server: http://localhost:2222
   type: application/json
 
-Model::DB:
-  schema_class: VA::Schema
-  connect_info:
-    dsn: dbi:mysql:vadb_staging
-    user: vaadmin
-    password: viblio
-    mysql_enable_utf8: 1
-    AutoCommit: 1
-
 Plugin::Log::Log4perlSimple:
   catalyst_debug: 1
   catalyst_stats: 0
@@ -42,31 +33,10 @@ Plugin::Log::Log4perlSimple:
   screen: 0
   file: /tmp/va-staging.log
 
-# Worker (eventually on SNS)
-Model::FD:
-  server: http://localhost:3001
-  type: application/json
-
 # Message Queue REST service
 Model::MQ:
   server: http://localhost:3002
   type: application/json
-
-# For web clients, where is the
-# message server?
-message_queue:
-  server: http://staging.viblio.com:3002
-
-# Local File Storage REST service
-Model::FS:
-  server: http://staging.viblio.com:5000
-  type: application/json
-
-# Local File Storage (jQuery File Upload ) REST service
-Model::JFS:
-  server: http://staging.viblio.com:5000
-  type: application/json
-  secret: viblio321
 
 # For web clients, where is the
 # fs server?

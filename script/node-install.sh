@@ -1,6 +1,6 @@
 #!/bin/sh
 
-servers='fd fu mq fs'
+servers='mq'
 for server in $servers; do
     ( cd node/$server; npm install )
 done

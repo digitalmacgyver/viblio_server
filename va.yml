@@ -71,15 +71,6 @@ authentication:
         user_model: RDS::User
       auto_create_user: 1
 
-Model::DB:
-  schema_class: VA::Schema
-  connect_info:
-    dsn: dbi:mysql:vadb
-    user: vaadmin
-    password: viblio
-    mysql_enable_utf8: 1
-    AutoCommit: 1
-
 Model::RDS:
   schema_class: VA::RDSSchema
   connect_info:
@@ -105,32 +96,10 @@ Model::GoogleMap:
   server: http://maps.googleapis.com
   type: application/json
 
-# File Downloader REST service
-Model::FD:
-  server: http://localhost:3001
-  type: application/json
-
-# Filepicker.io REST
-Model::FP:
-  server: https://www.filepicker.io
-  type: application/json
-
 # Message Queue REST service
 Model::MQ:
   server: http://localhost:3002
   type: application/json
-
-# Local File Storage REST service
-Model::FS:
-  server: http://localhost:5000
-  type: application/json
-
-# Local File Storage (jQuery File Upload ) REST service
-Model::JFS:
-  server: http://localhost:5000
-  type: application/json
-  secret: viblio321
-  expires: 86400
 
 # This secret is used by the nginx in front of the 'fs'
 # server to provide secure streaming of stored media files.
