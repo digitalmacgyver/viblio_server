@@ -209,6 +209,43 @@ sub media_face_appears_in :Local {
 # print $_->contact->contact_name, ' ', $_->media_asset->uri,"\n" foreach(  $schema->resultset( 'MediaAssetFeature' )->search({'me.user_id'=>$u->id,contact_id => {'!=',undef}},{columns=>[qw/contact_id media_asset_id/],group_by=>[qw/contact_id/],prefetch=>[qw/contact media_asset/]}) )
 #
 # $schema->resultset( 'MediaAssetFeature' )->search({contact_id=>251,user_id=>124})->count
+
+sub ratings_db :Private {
+    my( $self, $c, $uid ) = @_;
+    my $hash_db = {};
+    my @feats = $c->model( 'RDS::MediaAssetFeature' )
+	->search({ 'me.user_id' => $uid,
+		   contact_id => {'!=',undef},
+		 }, 
+		 { columns => [qw/contact_id/],
+		 });
+    foreach my $feat ( @feats ) {
+	if ( defined( $hash_db->{$feat->contact_id} ) ) {
+	    $hash_db->{$feat->contact_id}->{appears_in} += 1;
+	}
+	else {
+	    $hash_db->{$feat->contact_id} = {
+		appears_in => 1,
+		star_power => 'star0',
+		contact_id => $feat->contact_id };
+	}
+    }
+    # Sort these to determine the #1, 2 and 3 folks in terms of
+    # how many videos they appear in.
+
+    my @sorted = sort { $b->{appears_in} <=> $a->{appears_in} } values( %$hash_db );
+    if ( $#sorted >= 0 ) {
+	$hash_db->{ $sorted[0]->{contact_id} }->{star_power} = 'star1';
+    }
+    if ( $#sorted >= 1 ) {
+	$hash_db->{ $sorted[1]->{contact_id} }->{star_power} = 'star2';
+    }
+    if ( $#sorted >= 2 ) {
+	$hash_db->{ $sorted[2]->{contact_id} }->{star_power} = 'star3';
+    }
+    return $hash_db;
+}
+
 sub contacts :Local {
     my $self = shift; my $c = shift;
     my $args = $self->parse_args
@@ -219,6 +256,8 @@ sub contacts :Local {
         @_ );
 
     my $user = $c->user->obj;
+
+    my $ratings = $self->ratings_db( $c, $user->id );
 
     # Find all contacts for a user that appear in at least one video.
     my $search = {
@@ -252,8 +291,8 @@ sub contacts :Local {
 
 	$hash->{url} = $url;
 	$hash->{asset_id} = $asset->uuid;
-	$hash->{appears_in} = $c->model( 'RDS::MediaAssetFeature' )
-	    ->search({contact_id=>$feat->contact_id,user_id=>$user->id})->count; 
+	$hash->{appears_in} = $ratings->{$contact->id}->{appears_in};
+	$hash->{star_power} = $ratings->{$contact->id}->{star_power} if ( $ratings->{$contact->id}->{star_power} );
 	push( @data, $hash );
     }
 
