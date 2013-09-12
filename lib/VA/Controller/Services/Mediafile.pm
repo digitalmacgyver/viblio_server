@@ -312,7 +312,7 @@ sub list :Local {
     else {
 	my @media = ();
 	push( @media, VA::MediaFile->new->publish( $c, $_, { include_contact_info => $args->{include_contact_info} } ) )
-	    foreach( $c->user->media->search( $where, {order_by => { -desc => 'id' }} ) );
+	    foreach( $c->user->media->search( $where, {prefetch=>'assets', order_by => { -desc => 'me.id' }} ) );
 	$self->status_ok( $c, { media => \@media } );
     }
 }
@@ -323,7 +323,7 @@ sub get :Local {
     $include_contact_info = $c->req->param( 'include_contact_info' ) unless( $include_contact_info );
     $include_contact_info = 0 unless( $include_contact_info );
 
-    my $mf = $c->user->media->find({uuid=>$mid});
+    my $mf = $c->user->media->find({uuid=>$mid},{prefetch=>'assets'});
 
     unless( $mf ) {
 	$self->status_bad_request
