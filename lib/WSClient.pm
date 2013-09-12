@@ -9,6 +9,7 @@ use LWP::UserAgent;
 use FileHandle;
 use File::Basename;
 use JSON;
+use IO::Socket::SSL qw();
 
 sub new {
     my $class = shift;
@@ -19,7 +20,8 @@ sub new {
 	( 
 	  $this->{base_url} );
 
-    $this->{ua} = LWP::UserAgent->new;
+    $this->{ua} = LWP::UserAgent->new(ssl_opts=>{SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE,
+						 verify_hostname => 0});
 
     $this->{ua}->agent( 'Mozilla/5.0 (Linux; U; Android 3.1; en-us; GT-P7310 Build/HMJ37) AppleWebKit/534.13 (KHTML, like Gecko) Version/4.0 XXX/534.13' );
 
