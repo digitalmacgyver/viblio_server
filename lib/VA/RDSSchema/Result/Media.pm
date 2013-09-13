@@ -317,6 +317,13 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+__PACKAGE__->has_many(
+  "comments",
+  "VA::RDSSchema::Result::MediaComment",
+  { "foreign.media_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 # Accessor to return the first asset of the matching type.
 #
 sub asset {
