@@ -5,9 +5,10 @@ use namespace::autoclean;
 BEGIN { extends 'VA::Controller::Services' }
 
 sub valid :Private {
-    my( $self, $v ) = @_;
-    return $v if ( defined($v) && $v != 0 );
-    return undef;
+    my( $self, $lat, $lng ) = @_;
+    return( undef, undef ) if ( !defined( $lat ) || !defined( $lng ) );
+    return( undef, undef ) if ( $lat==0 && $lng==0 );
+    return( $lat, $lng );
 }
 
 sub all :Local {
@@ -18,10 +19,12 @@ sub all :Local {
 		 {prefetch=>'media'});
     my @data = ();
     foreach my $asset ( @thumbnails ) {
+	my( $lat, $lng ) = $self->valid( $asset->media->lat, $asset->media->lng ); 
 	my $data = {
-	    lat => $self->valid( $asset->media->lat ),
-	    lng => $self->valid( $asset->media->lng ),
-	    uuid => $asset->media->uuid
+	    lat => $lat,
+	    lng => $lng,
+	    uuid => $asset->media->uuid,
+	    title => $asset->media->title,
 	};
 	my $klass = $c->config->{mediafile}->{$asset->location};
 	my $fp = new $klass;
