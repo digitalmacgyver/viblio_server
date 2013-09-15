@@ -391,8 +391,16 @@ sub comments :Local {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
     }
-    my @comments = $mf->comments->search({},{order_by=>'created_date desc'});
-    $self->status_ok( $c, { comments => \@comments } );
+    my @comments = $mf->comments->search({},{prefetch=>'user', order_by=>'me.created_date desc'});
+    my @data = ();
+    foreach my $comment ( @comments ) {
+	my $hash = $comment->TO_JSON;
+	if ( $comment->user_id ) {
+	    $hash->{who} = $comment->user->displayname;
+	}
+	push( @data, $hash );
+    }
+    $self->status_ok( $c, { comments => \@data } );
 }
 
 sub sanitize :Private {
