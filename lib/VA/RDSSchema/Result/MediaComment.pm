@@ -177,6 +177,33 @@ __PACKAGE__->belongs_to(
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:08
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kHkBVCm3nHk9onRncm+fjA
 
+__PACKAGE__->uuid_columns( 'uuid' );
+
+__PACKAGE__->add_columns(
+    "created_date" =>
+    {
+	data_type => "datetime",
+	datetime_undef_if_invalid => 1,
+	is_nullable => 1,
+	timezone => 'America/Los Angeles',
+	locale => 'en_US',
+    },
+    "updated_date" =>
+    {
+	data_type => "datetime",
+	datetime_undef_if_invalid => 1,
+	is_nullable => 1,
+	timezone => 'America/Los Angeles',
+	locale => 'en_US',
+    },
+    );
+
+sub TO_JSON {
+    my $self = shift;
+    my $hash = { %{$self->{_column_data}} };
+    return $hash;
+}
+
 __PACKAGE__->belongs_to(
   "media",
   "VA::RDSSchema::Result::Media",

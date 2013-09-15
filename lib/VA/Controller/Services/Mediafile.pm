@@ -379,6 +379,72 @@ sub set_title_description :Local {
     $self->status_ok( $c, { title => $mf->title, description => $mf->description } );
 }
 
+sub comments :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    unless( $mid ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
+    }
+    my $mf = $c->model( 'RDS::Media' )->find({uuid=>$mid});
+    unless( $mf ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+    }
+    my @comments = $mf->comments->search({},{order_by=>'created_date desc'});
+    $self->status_ok( $c, { comments => \@comments } );
+}
+
+sub sanitize :Private {
+    my( $self, $c, $txt ) = @_;
+
+
+    # Finally, comments can only be 2048 chars in length
+    if ( length( $txt ) > 2048 ) {
+	$txt = substr( $txt, 0, 2047 );
+    }
+    return $txt;
+}
+
+sub add_comment :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $txt = $c->req->param( 'txt' );
+    if ( !defined( $txt ) || $txt eq '' ) {
+	# noop
+	$self->status_ok( $c, {} );
+    }
+    # comments need to be sanitized before being written to any database!
+    $txt = $self->sanitize( $c, $txt );
+    if ( !defined( $txt ) || $txt eq '' ) {
+	# noop
+	$self->status_ok( $c, {} );
+    }
+    # This version of add comment is being called by the logged in user...
+    my $who = $c->user->displayname;
+
+    unless( $mid ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
+    }
+    my $mf = $c->model( 'RDS::Media' )->find({uuid=>$mid});
+    unless( $mf ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+    }
+
+    my $comment = $mf->create_related( 'comments', {
+	user_id => $c->user->id,
+	comment => $txt });
+
+    unless( $comment ) {
+	$self->status_bad_request(
+	    $c, $c->loc( "Failed to add this comment to the database." ) );
+    }	
+
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

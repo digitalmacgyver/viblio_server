@@ -266,6 +266,8 @@ __PACKAGE__->belongs_to(
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:06
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:I/IC5QNMxEFBZmkwzutW0A
 
+__PACKAGE__->uuid_columns( 'uuid' );
+
 sub TO_JSON {
     my $self = shift;
     my $hash = { %{$self->{_column_data}} };
