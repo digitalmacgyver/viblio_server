@@ -601,6 +601,44 @@ sub change_password :Local {
     }
 }
 
+sub tell_a_friend :Local {
+    my( $self, $c ) = @_;
+    my $list = $c->req->param( 'list' );
+    my $message = $c->req->param( 'message' );
+
+    my $user = $c->user->obj;
+
+    # We don't want to return any errors from this routine
+    unless( $list && $message ) {
+	$self->status_ok( $c, {} );
+    }
+
+    my @list = split( /[ ,]+/, $list );
+    my @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
+
+    foreach my $recip ( @clean ) {
+	$c->stash->{no_wrapper} = 1;
+	$c->stash->{message} = $message;
+	$c->stash->{from} = $user->displayname;
+	$c->stash->{url} = $c->server;
+	$c->stash->{email} =
+	{ to       => $recip,
+	  from     => $user->email,
+	  subject  => $c->loc( "Invitation to join Viblio" ),
+	  template => 'email/tell_a_friend.tt'
+	};
+	$c->stash->{user} = $user;
+	$c->forward( $c->view('Email::Template') );
+
+	if ( scalar( @{ $c->error } ) ) {
+	    $c->log->error( "tell_a_friend: error sending email: failed to send email to $recip" );
+	    $c->clear_errors;
+	}
+    }
+
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
