@@ -96,10 +96,6 @@ sub media_face_appears_in :Local {
     }
 }
 
-# print $_->contact->contact_name, ' ', $_->media_asset->uri,"\n" foreach(  $schema->resultset( 'MediaAssetFeature' )->search({'me.user_id'=>$u->id,contact_id => {'!=',undef}},{columns=>[qw/contact_id media_asset_id/],group_by=>[qw/contact_id/],prefetch=>[qw/contact media_asset/]}) )
-#
-# $schema->resultset( 'MediaAssetFeature' )->search({contact_id=>251,user_id=>124})->count
-
 sub ratings_db :Private {
     my( $self, $c, $uid ) = @_;
     my $hash_db = {};
@@ -147,7 +143,7 @@ sub contacts :Local {
 
     my $user = $c->user->obj;
 
-    my $ratings = $self->ratings_db( $c, $user->id );
+    # my $ratings = $self->ratings_db( $c, $user->id );
 
     # Find all contacts for a user that appear in at least one video.
     my $search = {
@@ -184,8 +180,17 @@ sub contacts :Local {
 	$hash->{url} = $url;
 	$hash->{asset_id} = $asset->uuid;
 	$hash->{appears_in} = $feat->{_column_data}->{appears_in};
-	$hash->{star_power} = $ratings->{$contact->id}->{star_power} if ( $ratings->{$contact->id}->{star_power} );
 	push( @data, $hash );
+    }
+
+    # If this is page one, or if we're not paging, then the top three actors
+    # are the star1, 2 and 3 picks, because we sorted by the number of videos
+    # each actor appeared in.
+    #
+    if ( ( $pager && $pager->current_page == 1 ) || !defined( $pager ) ) {
+	$data[0]->{star_power} = 'star1' if ( $#data >=0 );
+	$data[1]->{star_power} = 'star2' if ( $#data >=1 );
+	$data[2]->{star_power} = 'star3' if ( $#data >=2 );
     }
 
     if ( $pager ) {
