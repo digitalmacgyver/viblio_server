@@ -46,5 +46,24 @@ sub location :Local {
     $self->status_ok( $c, $res->data->{results} );
 }
 
+sub change_latlng :Local {
+    my( $self, $c ) = @_;
+    my $lat = $c->req->param( 'lat' );
+    my $lng = $c->req->param( 'lng' );
+
+    my $mid = $c->req->param( 'mid' );
+    my $m = $c->user->media->find({uuid=>$mid});
+    unless( $m ) {
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc( 'Unable to find mediafile for [_1]', $mid ) );
+    }
+
+    $m->lat( $lat );
+    $m->lng( $lng );
+    $m->update();
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
