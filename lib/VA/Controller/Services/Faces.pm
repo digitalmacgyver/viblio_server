@@ -148,7 +148,9 @@ sub contacts :Local {
     # Find all contacts for a user that appear in at least one video.
     my $search = {
 	'me.user_id' => $user->id,
-	contact_id => {'!=',undef}
+	contact_id => {'!=',undef},
+	'contact.contact_name' => { '!=',undef},
+	'contact.picture_uri' => { '!=',undef},
     };
     my $where = {
 	select => ['contact_id', 'media_asset_id', {count => 'media_asset.media_id', -as => 'appears_in'}],
@@ -175,7 +177,7 @@ sub contacts :Local {
 
 	my $klass = $c->config->{mediafile}->{$asset->location};
 	my $fp = new $klass;
-	my $url = $fp->uri2url( $c, $asset->uri );
+	my $url = $fp->uri2url( $c, $contact->picture_uri );
 
 	$hash->{url} = $url;
 	$hash->{asset_id} = $asset->uuid;
