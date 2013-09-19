@@ -16,10 +16,10 @@ Services related to the Year In Review
 sub years :Local {
     my( $self, $c ) = @_;
     my @dates = $c->user->media
-	->search({}, {columns=>['created_date'], 
-		      order_by=>'created_date desc'});
+	->search({}, {columns=>['recording_date'], 
+		      order_by=>'recording_date desc'});
     my $years = {};
-    $years->{$_->created_date->year} = 1 foreach( @dates );
+    $years->{$_->recording_date->year} = 1 foreach( @dates );
     my @data = keys( %$years );
     $self->status_ok( $c, { years => \@data } );
 }
@@ -55,7 +55,7 @@ sub videos_for_year :Local {
     my @posters = $c->model( 'RDS::MediaAsset' )->
 	search({ 'me.asset_type' => 'thumbnail',
 		 'me.user_id' => $c->user->id,
-		 'me.created_date' => {
+		 'media.recording_date' => {
 		     -between => [
 			  $dtf->format_datetime( $from ),
 			  $dtf->format_datetime( $to )
@@ -76,7 +76,7 @@ sub videos_for_year :Local {
     #
     my $db = {};
     foreach my $poster ( @posters ) {
-	my $month = $month_names[ $poster->created_date->month ];
+	my $month = $month_names[ $poster->media->recording_date->month ];
 	unless( defined( $db->{$month} ) ) {
 	    $db->{$month} = ();
 	}
