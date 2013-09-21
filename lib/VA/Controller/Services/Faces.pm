@@ -24,14 +24,24 @@ sub media_face_appears_in :Local {
         [ page => undef,
           rows => 10,
 	  asset_id => undef,
-	  contact_id => undef
+	  contact_uuid => undef
         ],
         @_ );
 
     my $user = $c->user->obj;
 
     my $asset_id = $args->{asset_id};
-    my $contact_id = $args->{contact_id};
+    my $contact_id;
+
+    if ( $args->{contact_uuid} ) {
+	my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$args->{contact_uuid}});
+	if ( ! $contact ) {
+	    $contact = $c->model( 'RDS::Contact' )->find({id=>$args->{contact_uuid}});
+	}
+	if ( $contact ) {
+	    $contact_id = $contact->id;
+	}
+    }
 
     # If this is an unidentified face, then only asset_id will be
     # defined.  If it is an identifed face, then contact_id will be defined as well.
@@ -61,15 +71,15 @@ sub media_face_appears_in :Local {
 	    my $rs = $c->model( 'RDS::MediaAssetFeature' )
 		->search(
 		{ contact_id => $contact_id, 'me.user_id' => $user->id},
-		{ prefetch => 'media_asset', page => $args->{page}, rows => $args->{rows} } );
+		{ prefetch => { 'media_asset' => 'media' }, page => $args->{page}, rows => $args->{rows} } );
 	    $pager = $rs->pager;
 	    @features = $rs->all;
 	}
 	else {
 	    @features = $c->model( 'RDS::MediaAssetFeature' )
 		->search(
-		{ contact_id => $contact_id },
-		{ prefetch => 'media_asset' } );
+		{ contact_id => $contact_id, 'me.user_id' => $user->id },
+		{ prefetch => { 'media_asset' => 'media' } } );
 	}
 	my @media = ();
 	foreach my $feature ( @features ) {
@@ -182,6 +192,12 @@ sub contacts :Local {
 	$hash->{url} = $url;
 	$hash->{asset_id} = $asset->uuid;
 	$hash->{appears_in} = $feat->{_column_data}->{appears_in};
+
+	## REMOVE ME
+	if ( ! defined( $hash->{uuid} ) ) {
+	    $hash->{uuid} = $hash->{id};
+	}
+
 	push( @data, $hash );
     }
 
@@ -280,7 +296,32 @@ sub faces_in_mediafile :Local {
     }
     $self->status_ok( $c, { faces => \@data } );
 }
-    
+
+sub contact :Local {
+    my( $self, $c ) = @_;
+    my $cid = $c->req->param( 'cid' );
+    unless( $cid ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( 'Missing required param: [_1]', 'cid' ) );
+    }
+    my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
+    unless( $contact ) {
+	$contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
+    }
+    unless( $contact ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( 'Cannot find contact for [_1]', $cid ) );
+    }
+
+    my $klass = $c->config->{mediafile}->{'us'};
+    my $fp = new $klass;
+    my $url = $fp->uri2url( $c, $contact->picture_uri );
+
+    my $hash = $contact->TO_JSON;
+    $hash->{url} = $url;
+
+    $self->status_ok( $c, { contact => $hash } );
+}
 
 __PACKAGE__->meta->make_immutable;
 1;
