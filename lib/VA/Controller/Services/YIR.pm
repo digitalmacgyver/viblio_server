@@ -20,7 +20,7 @@ sub years :Local {
 		      order_by=>'recording_date desc'});
     my $years = {};
     $years->{$_->recording_date->year} = 1 foreach( @dates );
-    my @data = keys( %$years );
+    my @data = sort {$b <=> $a} keys( %$years );
     $self->status_ok( $c, { years => \@data } );
 }
 
@@ -53,7 +53,7 @@ sub videos_for_year :Local {
 
     # Do the query
     my @posters = $c->model( 'RDS::MediaAsset' )->
-	search({ 'me.asset_type' => 'thumbnail',
+	search({ 'me.asset_type' => 'poster',
 		 'me.user_id' => $c->user->id,
 		 'media.recording_date' => {
 		     -between => [
@@ -84,7 +84,7 @@ sub videos_for_year :Local {
 	my $klass = $c->config->{mediafile}->{$poster->location};
 	my $fp = new $klass;
 	my $url = $fp->uri2url( $c, $poster->uri );
-	$hash->{views}->{thumbnail}->{url} = $url;
+	$hash->{views}->{poster}->{url} = $url;
 	push( @{$db->{$month}}, $hash );
     }
 
