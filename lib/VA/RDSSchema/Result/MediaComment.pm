@@ -70,6 +70,7 @@ __PACKAGE__->table("media_comments");
 =head2 media_id
 
   data_type: 'integer'
+  is_foreign_key: 1
   is_nullable: 0
 
 =head2 user_id
@@ -109,7 +110,7 @@ __PACKAGE__->add_columns(
   "uuid",
   { data_type => "varchar", is_nullable => 1, size => 36 },
   "media_id",
-  { data_type => "integer", is_nullable => 0 },
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "comment",
@@ -158,6 +159,21 @@ __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
 
+=head2 media
+
+Type: belongs_to
+
+Related object: L<VA::RDSSchema::Result::Media>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "media",
+  "VA::RDSSchema::Result::Media",
+  { id => "media_id" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
 =head2 user
 
 Type: belongs_to
@@ -174,8 +190,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kHkBVCm3nHk9onRncm+fjA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-22 09:23:23
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:KiZWQWOxk9St1dzj3FaGUw
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
@@ -203,13 +219,6 @@ sub TO_JSON {
     my $hash = { %{$self->{_column_data}} };
     return $hash;
 }
-
-__PACKAGE__->belongs_to(
-  "media",
-  "VA::RDSSchema::Result::Media",
-  { id => "media_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
-);
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
