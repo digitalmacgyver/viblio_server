@@ -174,6 +174,11 @@ __PACKAGE__->add_unique_constraint("app_UNIQUE", ["app", "version_string", "feat
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-22 09:23:21
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:F6p8kXyygfFJLOezsy7Itg
 
+sub TO_JSON {
+    my $self = shift;
+    my $hash = { %{$self->{_column_data}} };
+    return $hash;
+}
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
