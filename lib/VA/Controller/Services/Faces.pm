@@ -323,5 +323,86 @@ sub contact :Local {
     $self->status_ok( $c, { contact => $hash } );
 }
 
+sub fix_uploads :Private {
+    my( $self, $c ) = @_;
+    # find all media assert features of type face with contact_id == NULL,
+    # a case that happends with uploaded files from popeye, until popeye is
+    # fixed.
+    my @features = $c->model( 'RDS::MediaAssetFeature' )->
+	search({ feature_type => 'face',
+		 'me.user_id' => $c->user->obj->id,
+		 contact_id => undef },
+	       { prefetch => 'media_asset' });
+
+    foreach my $feat ( @features ) {
+	my $contact = $c->model( 'RDS::Contact' )->find_or_create(
+	    {
+		picture_uri => $feat->media_asset->uri,
+		user_id => $c->user->obj->id,
+	    });
+	if ( $contact ) {
+	    $feat->contact_id( $contact->id );
+	    $feat->update;
+	}
+    }
+}
+
+sub all_contacts :Local {
+    my( $self, $c) = @_;
+    my $q = $c->req->param( 'term' );
+
+    $self->fix_uploads( $c );  ## REMOVE ME WHEN POPEYE IS FIXED
+
+    my $where = {};
+    if ( $q ) {
+	$where = { contact_name => { '!=', undef }, 'LOWER(contact_name)' => { 'like', '%'.lc($q).'%' } };
+    }
+
+    my @contacts = $c->user->contacts->search($where,{order_by => 'contact_name'});
+    $c->log->debug( 'FOUND: ' . ($#contacts + 1) );
+    my @data = ();
+    foreach my $contact ( @contacts ) {
+	my $hash = $contact->TO_JSON;
+	if ( $contact->picture_uri ) {
+	    $hash->{url} = new VA::MediaFile::US()->uri2url( $c, $contact->picture_uri );
+	}
+	else {
+	    $hash->{url} = 'css/images/nopic-red-90.png';
+	}
+	$hash->{uuid} = $hash->{id} unless( $hash->{uuid} );
+	push( @data, $hash );
+    }
+    $c->log->debug( 'returning: ' . ($#data + 1) );
+    if ( $q ) {
+	my @ret = ();
+	foreach my $con ( @data ) {
+	    push( @ret, { label => $con->{contact_name}, cid => $con->{uuid}, url => $con->{url} });
+	}
+	$self->status_ok( $c, \@ret );
+    }
+    else {
+	$self->status_ok( $c, { contacts => \@data } );
+    }
+}
+
+sub photos_of :Local {
+    my( $self, $c ) = @_;
+    my $cid = $c->req->param( 'cid' );
+    my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
+    unless( $contact ) {
+	$contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
+    }
+    unless( $contact ) {
+	$self->status_ok( $c, {} );
+    }
+    my @features = $c->model( 'RDS::Contact' )->search({contact_name => undef});
+    my @data = ();
+    foreach my $feat ( @features ) {
+	my $url = new VA::MediaFile::US()->uri2url( $c, $feat->picture_uri );
+	push( @data, $url );
+    }
+    $self->status_ok( $c, \@data );
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
