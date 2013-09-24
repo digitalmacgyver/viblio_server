@@ -39,6 +39,33 @@ sub _build_oauth {
     );
 }
 
+sub _get_extended_access_token {
+    my( $self, $ctx, $token ) = @_;
+    my $args = {
+	client_id => $self->application_id,
+	client_secret => $self->application_secret,
+	grant_type => "fb_exchange_token",
+	fb_exchange_token => $token };
+    my $uri = URI->new( "https://graph.facebook.com/oauth/access_token" );
+    $uri->query_form( $args );
+    my $res = FB->request( $uri );
+    my $extended_token = $token;
+    if ( $res && $res->response && $res->response->code == 200 ) {
+	$uri = URI->new( 'http://aaa.com?' . $res->as_json );
+	if ( $uri ) {
+	    my %q = $uri->query_form;
+	    if ( defined( $q{access_token} ) ) {
+		$extended_token = $q{access_token};
+	    }
+	}
+    }
+    elsif ( $res ) {
+	$ctx->log->error( 'Failed to obtain FB extended token' );
+	$ctx->logdump( $res );
+    }
+    return $extended_token;
+}
+
 sub BUILDARGS {
     my ($self, $config, $ctx, $realm) = @_;
 
@@ -79,7 +106,8 @@ sub authenticate {
     }
     else {
 	$ctx->log->debug( "FB Token: " . $code );
-        # my $token = $oauth->request_access_token($code)->token;
+	$code = $self->_get_extended_access_token( $ctx, $code );
+	$ctx->log->debug( "FB Extended Token: " . $code );
 	$oauth->access_token( $code );
 	my $fb_user = $oauth->fetch( 'me' );
 	unless( $fb_user ) { 
@@ -118,6 +146,21 @@ sub authenticate {
 		$needs_update = 1;
 	    }
 	    $user->get_object->update if ( $needs_update );
+
+	    # Get the facebook profile photo for our profile pic, 
+	    # if we don't already have one.
+	    #
+	    if ( ! $user->get_object->profile->image ) {
+		my $uri = URI->new( 'https://graph.facebook.com/me/picture' );
+		$uri->query_form({ access_token => $code, width => 128, height => 128 });
+		my $res = FB->request( $uri );
+		if ( $res && $res->response && $res->response->code == 200 ) {
+		    $user->get_object->profile->image( $res->response->content );
+		    $user->get_object->profile->image_mimetype( $res->response->header( 'Content-Type' ) );
+		    $user->get_object->profile->image_size( length $res->response->content );
+		    $user->get_object->profile->update;
+		}
+	    }
 
 	    # If the user has already linked their account to
 	    # facebook, then update the access_token and call popeye.
