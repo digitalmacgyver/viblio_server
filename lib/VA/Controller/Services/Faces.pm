@@ -395,11 +395,26 @@ sub photos_of :Local {
     unless( $contact ) {
 	$self->status_ok( $c, {} );
     }
-    my @features = $c->model( 'RDS::Contact' )->search({contact_name => undef});
+
+=perl
+    # THIS WAS HERE TO DEBUG, NEEDED BEFORE IV CAN AGGRAGATE FACES
+    my @features = $c->model( 'RDS::Contact' )->search({contact_name => undef, user_id => $c->user->id});
     my @data = ();
     foreach my $feat ( @features ) {
 	my $url = new VA::MediaFile::US()->uri2url( $c, $feat->picture_uri );
-	push( @data, $url );
+	push( @data, { url => $url, id => $feat->id } );
+    }
+    $self->status_ok( $c, \@data );
+=cut
+
+    my @features = $c->model( 'RDS::MediaAssetFeature' )->
+	search({ contact_id => $contact->id,
+		 'me.user_id' => $c->user->id },
+	       { prefetch => 'media_asset' });
+    my @data = ();
+    foreach my $feat ( @features ) {
+	my $url = new VA::MediaFile::US()->uri2url( $c, $feat->media_asset->uri );
+	push( @data, { url => $url, uri => $feat->media_asset->uri, id => $feat->id } );
     }
     $self->status_ok( $c, \@data );
 }
