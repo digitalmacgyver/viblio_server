@@ -404,5 +404,25 @@ sub photos_of :Local {
     $self->status_ok( $c, \@data );
 }
 
+sub contact_emails :Local {
+    my( $self, $c ) = @_;
+    my $q = $c->req->param( "q" );
+    my $where = { -or => [
+		       'LOWER(contact_name)' => { 'like', '%'.lc($q).'%' },
+		       'LOWER(contact_email)' => { 'like', '%'.lc($q).'%' },
+		      ] };
+    my @contacts = $c->user->contacts->search($where);
+
+    if ( $#contacts == -1 ) {
+	my $email = $self->is_email_valid( $q );
+	if ( $email ) {
+	    $self->status_ok( $c, [{ id => $email->format, name => $email->format }] );
+	}
+    }
+    my @data = map { {id => $_->contact_email, name => $_->contact_name} } @contacts;
+    $self->status_ok( $c, \@data );
+}
+
+
 __PACKAGE__->meta->make_immutable;
 1;
