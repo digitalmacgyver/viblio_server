@@ -438,6 +438,90 @@ sub contact_emails :Local {
     $self->status_ok( $c, \@data );
 }
 
+sub change_contact :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ uuid => undef,
+	  cid => undef,
+	  new_uri => undef,
+	  contact_name => undef,
+	  contact_email => undef
+	], @_ );
+
+    my $contact = $c->user->contacts->find({ uuid => $args->{uuid} });
+    unless( $contact ) {
+	$contact = $c->user->contacts->find({ id => $args->{uuid} });
+    }
+    unless( $contact ) {
+	$self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ));
+    }
+
+    $contact->contact_name( $args->{contact_name} );
+    $contact->contact_email( $args->{contact_email} );
+    if ( $args->{new_uri} ) {
+	$contact->picture_uri( $args->{new_uri} );
+    }
+    $contact->update;
+
+    $self->status_ok( $c, { contact => $contact->TO_JSON } );
+}
+
+sub tag :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ uuid => undef,
+	  cid => undef,
+	  new_uri => undef,
+	  contact_name => undef
+	], @_ );
+
+    $c->logdump( $args );
+
+    my $contact = $c->user->contacts->find({ uuid => $args->{uuid} });
+    unless( $contact ) {
+	$contact = $c->user->contacts->find({ id => $args->{uuid} });
+    }
+    unless( $contact ) {
+	$self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ));
+    }
+
+    if ( ! $args->{cid} ) {
+	# Just giving this unknown person a name
+	$contact->contact_name( $args->{contact_name} );
+	if ( $args->{new_uri} ) {
+	    $contact->picture_uri( $args->{new_uri} );
+	}
+	$contact->update;
+	$self->status_ok( $c, { contact => $contact->TO_JSON } );
+    }
+    else {
+	# We are identifying this previously unknown person
+	# to be the same person as contact_id 'cid'.  For now
+	# I think this means finding all media asset features
+	# containing $contact->id and changing it to $identified->id
+	#
+	my $identified = $c->user->contacts->find({ uuid => $args->{cid} });
+	unless( $identified ) {
+	    $identified = $c->user->contacts->find({ id => $args->{cid} });
+	}
+	unless( $identified ) {
+	    $self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{cid} ));
+	}
+
+	foreach my $feat ( $c->model( 'RDS::MediaAssetFeature' )->search({ contact_id => $contact->id }) ) {
+	    $feat->contact_id( $identified->id );
+	    $feat->update;
+	}
+
+	# Then delete the unknown contact
+	$contact->delete; $contact->update;
+
+	$self->status_ok( $c, { contact => $identified->TO_JSON } );
+    }
+}
+
 
 __PACKAGE__->meta->make_immutable;
 1;
