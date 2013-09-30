@@ -8,6 +8,8 @@ use DateTime;
 use Try::Tiny;
 
 use VA::MediaFile;
+use JSON;
+use Email::Address;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -899,14 +901,48 @@ sub mediafile_create :Local {
 sub incoming_email :Local {
     my( $self, $c ) = @_;
 
-    $c->log->debug( 'INCOMING EMAIL' );
-    if ( $c->{data} ) {
-	$c->log->debug( '  Data has been parsed' );
-	$c->logdump( $c->{data} );
+    my $content = $c->req->body_params->{'mandrill_events'};
+    if ( $content ) {
+	try {
+	    my $json = from_json( $content );
+	    my @messages = ();
+	    if ( ref $json eq 'ARRAY' ) {
+		@messages = @$json;
+	    }
+	    else {
+		push( @messages, $json );
+	    }
+	    foreach my $message ( @messages ) {
+		if ( $message->{msg} ) {
+		    my $m = $message->{msg};
+		    $c->log->debug( "mailchip: from:    $m->{from_email}" );
+		    $c->log->debug( "mailchip: subject: $m->{subject}" );
+		    $c->log->debug( "mailchip: message: \n$m->{text}" );
+
+		    my @addrs = Email::Address->parse( ${$m->{to}}[0][0] );
+		    if ( $#addrs >= 0 ) {
+			my $name = $addrs[0]->name;
+			$c->log->debug( "mailchimp: TO: $name" );
+			#
+			# $name tells us where this is directed.  It
+			# might be 'reply' or 'help', or 'feedback' or
+			# something like that.  From this tag we'd probably
+			# want to route this message somewhere ... to the
+			# database, log files, or maybe send some email.
+			#
+		    }
+		}
+		else {
+		    $c->log->error( "Mailchimp incoming email: No {msg}" );
+		}
+	    }
+	} catch {
+	    $c->log->error( "Mailchimp incoming email: $_" );
+	};
     }
     else {
-	$c->log->debug( '  Cannot parse data' );
-	$c->log->debug( $c->req->body );
+	$c->log->error( "Mailchimp incoming email: No body params" );
+	$c->logdump( $c->req->body );
     }
 
     $self->status_ok( $c, {} );
