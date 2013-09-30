@@ -895,6 +895,24 @@ sub mediafile_create :Local {
     $self->status_ok( $c, {} );
 }
 
+# Mailchimp incoming email 
+sub incoming_email :Local {
+    my( $self, $c ) = @_;
+
+    $c->log->debug( 'INCOMING EMAIL' );
+    if ( $c->{data} ) {
+	$c->log->debug( '  Data has been parsed' );
+	$c->logdump( $c->{data} );
+    }
+    else {
+	$c->log->debug( '  Cannot parse data' );
+	$c->log->debug( $c->req->body );
+    }
+
+    $self->status_ok( $c, {} );
+}
+
+
 __PACKAGE__->meta->make_immutable;
 
 1;

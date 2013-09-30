@@ -57,7 +57,7 @@ sub mailchimp :Local {
     # https://mandrillapp.com/api/docs/
     my $model = {
 	subject => 'Testing Mailchimp',
-	from_email => $c->config->{viblio_return_email_address},
+	from_email => 'reply@' . $c->config->{viblio_return_email_domain},
 	from_name  => 'Viblio',
 	to => [{
 	    email => $c->user->email,

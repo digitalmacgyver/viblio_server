@@ -1,3 +1,5 @@
+viblio_return_email_domain: support-staging.viblio.com
+
 authentication:
   default_realm: facebook
   realms:

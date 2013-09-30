@@ -1,3 +1,5 @@
+viblio_return_email_domain: support-prod.viblio.com
+
 s3:
   bucket: viblio-mediafiles
   aws_use_https: 1

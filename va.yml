@@ -1,6 +1,7 @@
 application_name: Viblio!
 
 viblio_return_email_address: no-reply@www.viblio.com
+viblio_return_email_domain: support-staging.viblio.com
 
 filepicker:
   key: AUBFLi68nRXe7sDddBPBVz
