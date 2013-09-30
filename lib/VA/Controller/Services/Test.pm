@@ -63,7 +63,7 @@ sub mailchimp :Local {
 	    email => $c->user->email,
 	    name  => $c->user->displayname }],
 	headers => {
-	    'Reply-To' => $c->config->{viblio_return_email_address},
+	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
 	}
     };
     $DB::single = 1;
