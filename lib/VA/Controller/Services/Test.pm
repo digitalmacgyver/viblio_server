@@ -41,6 +41,7 @@ sub email_me :Local {
     $c->stash->{no_wrapper} = 1;
 
     $c->stash->{email} = $email;
+
     $c->forward( $c->view('Email::Template') );
 
     $self->status_ok( $c, 
@@ -48,6 +49,35 @@ sub email_me :Local {
 			from => $c->config->{viblio_return_email_address},
 			subject => $c->loc( 'test' ),
 		      } );
+}
+
+sub mailchimp :Local {
+    my( $self, $c ) = @_;
+    
+    # https://mandrillapp.com/api/docs/
+    my $model = {
+	subject => 'Testing Mailchimp',
+	from_email => $c->config->{viblio_return_email_address},
+	from_name  => 'Viblio',
+	to => [{
+	    email => $c->user->email,
+	    name  => $c->user->displayname }],
+	headers => {
+	    'Reply-To' => $c->config->{viblio_return_email_address},
+	}
+    };
+    $DB::single = 1;
+    $c->stash->{no_wrapper} = 1;
+    $c->stash->{model} = $model;
+    my $html = $c->view( 'HTML' )->render( $c, 'test-email.tt' );
+    $model->{html} = $html;
+    # $model->{text} = $text;
+    my $res = $c->model( 'Mandrill' )->send( $model );
+    $c->logdump( $res );
+    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+	$c->logdump( $model );
+    }
+    $self->status_ok( $c, $res );
 }
 
 sub i18n :Local {
