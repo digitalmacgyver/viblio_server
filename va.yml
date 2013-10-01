@@ -101,6 +101,7 @@ Model::Mandrill:
   server: https://mandrillapp.com/api/1.0
   type: application/json
   key: 0r2A4KAwtMm660j8R-cwDA
+  webhook_key: qBk_S-C_tPC4mA1EalDcYw
 
 # Message Queue REST service
 Model::MQ:

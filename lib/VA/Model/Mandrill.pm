@@ -3,6 +3,25 @@ package VA::Model::Mandrill;
 use strict;
 use base 'Catalyst::Model::REST';
 use JSON;
+use Digest::SHA qw(hmac_sha1 hmac_sha1_base64);
+
+sub authenticate {
+    my( $self, $c ) = @_;
+
+    my $signed_data = $c->req->uri;
+    foreach my $key ( sort keys %{$c->req->body_params} ) {
+	$signed_data .= $key;
+	$signed_data .= $c->req->body_params->{$key};
+    }
+
+    # Ok this is dubious, but I've sort of learned by trial and
+    # error to remove this padding stuff.  
+    my $mandrill = $c->req->header( 'X-Mandrill-Signature' );
+    $mandrill =~ s/==$//g;
+    $mandrill =~ s/=$//g;
+
+    return( $mandrill eq hmac_sha1_base64( $signed_data, $self->{webhook_key} ) );
+}
 
 sub info {
     my( $self ) = @_;

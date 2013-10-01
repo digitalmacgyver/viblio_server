@@ -897,9 +897,44 @@ sub mediafile_create :Local {
     $self->status_ok( $c, {} );
 }
 
-# Mailchimp incoming email 
+=head2 /services/na/incoming_email
+
+This is a "webhook" used my the Mailchip/Mandrill email delivery service to
+deliver mail that was sent in response to a reply from an email we sent. See
+
+  http://help.mandrill.com/categories/20102127-Inbound-Email-Processing
+
+for details about inbound processing and the format of the incoming data.
+
+We have (or might have) various email Reply-To's that we use for different
+emails that go out.  
+
+  reply@support.viblio.com
+
+is used to send out general notifications that are not really meant to be
+replied to, but handling them is better than bouncing back to the user!
+
+  help@support.viblio.com
+  feedback@support.viblio.com
+
+This handler below is used to route reply, or help, or feedback to the 
+appropriate destination; the database, the log, or even sending an email
+to someone.
+
+Although this endpoint is unauthenticated, it is protected by using Mandrill
+webhook authentication (see http://help.mandrill.com/entries/23704122-Authenticating-webhook-requests).
+This is meant to ensure that anything coming in this way is definitely from
+Mailchimp/Mandrill.
+
+=cut
+
 sub incoming_email :Local {
     my( $self, $c ) = @_;
+
+    unless( $c->model( 'Mandrill' )->authenticate( $c ) ) {
+	$c->log->error( "mailchimp: authentication failure" );
+	$self->status_ok( $c, {} );
+    }
 
     my $content = $c->req->body_params->{'mandrill_events'};
     if ( $content ) {

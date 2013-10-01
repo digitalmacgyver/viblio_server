@@ -66,15 +66,18 @@ sub mailchimp :Local {
 	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
 	}
     };
-    $DB::single = 1;
+
     $c->stash->{no_wrapper} = 1;
     $c->stash->{model} = $model;
+
     my $html = $c->view( 'HTML' )->render( $c, 'test-email.tt' );
     $model->{html} = $html;
     # $model->{text} = $text;
+
     my $res = $c->model( 'Mandrill' )->send( $model );
-    $c->logdump( $res );
     if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+	$c->log->error( "Error using Mailchimp to send" );
+	$c->logdump( $res );
 	$c->logdump( $model );
     }
     $self->status_ok( $c, $res );
