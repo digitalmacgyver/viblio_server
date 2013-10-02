@@ -622,17 +622,23 @@ sub tell_a_friend :Local {
 	$c->stash->{from} = $user->displayname;
 	$c->stash->{url} = $c->server;
 	$c->stash->{email} =
-	{ to       => $recip,
-	  from     => $user->email,
-	  subject  => $c->loc( "Invitation to join Viblio" ),
-	  template => 'email/tell_a_friend.tt'
+	{ subject    => $c->loc( "Invitation to join Viblio" ),
+	  from_email => $c->user->email,
+	  from_name  => $c->user->displayname,
+	  to => [{
+	      email => $recip}],
+	  headers => {
+	      'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+	  }
 	};
 	$c->stash->{user} = $user;
-	$c->forward( $c->view('Email::Template') );
+	$c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/tell_a_friend.tt' );
 
-	if ( scalar( @{ $c->error } ) ) {
-	    $c->log->error( "tell_a_friend: error sending email: failed to send email to $recip" );
-	    $c->clear_errors;
+	my $res = $c->model( 'Mandrill' )->send( $c->stash->{email} );
+	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+	    $c->log->error( "Error using Mailchimp to send" );
+	    $c->logdump( $res );
+	    $c->logdump( $c->stash->{email} );
 	}
     }
 

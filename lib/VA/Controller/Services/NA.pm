@@ -551,26 +551,27 @@ sub forgot_password_request :Local {
     }
 =cut
     $c->stash->{new_password} = $code;
-    
 
     $c->stash->{no_wrapper} = 1;
-    $c->stash->{email} =
-    { to       => $args->{email},
-      from     => $c->config->{viblio_return_email_address},
-      subject  => $c->loc( "Reset your password on Viblio" ),
-      template => 'email/reset-password.tt'
+    $c->stash->{email} = 
+    { subject  => $c->loc( "Reset your password on Viblio" ),
+      from_email => 'reply@' . $c->config->{viblio_return_email_domain},
+      from_name  => 'Viblio',
+      to => [{
+	  email => $args->{email} }],
+      headers => {
+	  'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+      }
     };
-    $c->stash->{user} = $user;
-    # $c->stash->{rec}  = $rec;
-    $c->forward( $c->view('Email::Template') );
 
-    if ( scalar( @{ $c->error } ) ) {
-	# Sending email failed!  
-	# The error will get properly communicated in the end() method,
-	# so we just need to clean up.
-	# $rec->delete;
-	$c->log->error( "forgot_password_request(), failed to send email to " . $args->{email} . ", password not reset!" );
-	$c->log->error( $c->error );
+    $c->stash->{user} = $user;
+    $c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/reset-password.tt' );
+
+    my $res = $c->model( 'Mandrill' )->send( $c->stash->{email} );
+    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+	$c->log->error( "Error using Mailchimp to send" );
+	$c->logdump( $res );
+	$c->logdump( $c->stash->{email} );
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to reset your password!" ) );
     }
@@ -865,24 +866,29 @@ sub mediafile_create :Local {
 	#
 	$c->log->debug( 'Sending email to ' . $user->email );
 
-	$c->stash->{no_wrapper} = 1;
-	$c->stash->{email} =
-	{ to       => $user->email,
-	  from     => $c->config->{viblio_return_email_address},
-	  subject  => $c->loc( "Your Viblio Video is Ready" ),
-	  template => 'email/ready.tt'
+	my $email = {
+	    subject    => $c->loc( "Your Viblio Video is Ready" ),
+	    from_email => 'reply@' . $c->config->{viblio_return_email_domain},
+	    from_name  => 'Viblio',
+	    to => [{
+		email => $c->user->email,
+		name  => $c->user->displayname }],
+	    headers => {
+		'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+	    }
 	};
+
+	$c->stash->{no_wrapper} = 1;
 	$c->stash->{user} = $user;
 	$c->stash->{media} = $mf;
 	$c->stash->{server} = $c->server;
-
-	$c->forward( $c->view('Email::Template') );
 	
-	if ( scalar( @{ $c->error } ) ) {
-	    # Sending email failed!  
-	    # The error will get properly communicated in the end() method,
-	    # so we just need to clean up.
-	    $c->log->debug( "SENDMAIL PROBLEM:" . $c->error );
+	$email->{html} = $c->view( 'HTML' )->render( $c, 'email/ready.tt' );
+	my $res = $c->model( 'Mandrill' )->send( $email );
+	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+	    $c->log->error( "Error using Mailchimp to send" );
+	    $c->logdump( $res );
+	    $c->logdump( $email );
 	}
     }
 
