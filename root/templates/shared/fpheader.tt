@@ -6,8 +6,8 @@
   <title>Shared Video from Viblio.com</title>
 
   <meta name="medium" content="video" />
-  <meta name="title" content="Video Title" />
-  <meta name="description" content="Video Description" />
+  <meta name="title" content="[% mediafile.title || 'Video Title' %]" />
+  <meta name="description" content="[% mediafile.description || 'Video Description' %]" />
   <meta name="video_type" content="application/x-shockwave-flash" />
   <meta name="video_height" content="360" />
   <meta name="video_width" content="640" />
@@ -17,10 +17,10 @@
   <meta property="og:url" content="[% server %]shared/flowplayer/[% mediafile.uuid %]" />
   <meta property="og:site_name" content="Viblio" />
   <meta property="og:type" content="movie" />
-  <meta property="og:title" content="Video Title" />
-  <meta property="og:description" content="Video Description" />
+  <meta property="og:title" content="[% mediafile.title || 'Video Title' %]" />
+  <meta property="og:description" content="[% mediafile.description || 'Video Description' %]" />
 
-  <meta property="og:image" content="[% server %]s3_image_proxy/[% mediafile.views.poster.uri %]" />
+  <meta property="og:image" content="[% server %]shared/s3_image_proxy/[% mediafile.views.poster.uri %]" />
 
   <meta property="og:video" content="http://releases.flowplayer.org/swf/flowplayer-3.2.16.swf?config=[% fpconfig_insecure %]" \>
   <meta property="og:video:secure_url" content="https://releases.flowplayer.org/swf/flowplayer-3.2.16.swf?config=[% fpconfig %]" \>

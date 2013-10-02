@@ -36,10 +36,10 @@ sub flowplayer :Local {
 
     my $shash = VA::MediaFile->new->publish( $c, $mediafile, { expires => (60*60*24*365), aws_use_https => 0 } );
 
-    my $config = $c->view( 'HTML' )->render( $c, 'shared/fpjs.tt', {no_wrapper => 1, mediafile => $mhash } );
+    my $config = $c->view( 'HTML' )->render( $c, 'shared/fpjs.tt', {no_wrapper => 1, mediafile => $mhash, bucket => $c->config->{s3}->{bucket} } );
     $config =~ s/\n//g;
 
-    my $insecure_config = $c->view( 'HTML' )->render( $c, 'shared/fpjs-insecure.tt', {no_wrapper => 1, mediafile => $shash } );
+    my $insecure_config = $c->view( 'HTML' )->render( $c, 'shared/fpjs-insecure.tt', {no_wrapper => 1, mediafile => $shash, bucket => $c->config->{s3}->{bucket} } );
     $insecure_config =~ s/\n//g;
     
 
@@ -69,9 +69,11 @@ no other assets.
 
 =cut
 
-sub s3_image_proxy :Chained( '/' ) :PathPart :Args() {
-    my( $self, $c ) = @_;
-    my $filename = join( '/', @{$c->req->args} );
+sub s3_image_proxy :Local {
+    my( $self, $c, $path, $file ) = @_;
+    my $filename = "$path/$file";
+
+    $c->log->debug( 'Filename: ' . $filename );
 
     # Only expose posters
     unless( $filename =~ /.+_poster\..+$/ ) {

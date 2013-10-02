@@ -1,6 +1,6 @@
 {
     'clip': {
-	'url': 'mp4:amazons3/viblio-mediafiles/[% mediafile.views.main.uri %]',
+	'url': 'mp4:amazons3/[% bucket %]/[% mediafile.views.main.uri %]',
 	'scaling': 'fit',
 	'provider': 'rtmp'
     },
