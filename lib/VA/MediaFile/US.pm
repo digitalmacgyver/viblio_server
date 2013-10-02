@@ -22,35 +22,33 @@ sub delete {
         return undef;
     }
 
-    my $ret = $mediafile;
-    my $uri;
+    # Collect all the uri's (s3 keys) from all the assets that have
+    # them, except for faces.  We never want to delete a face
+    #
+    my @uris = ();
     if ( ref $mediafile eq 'HASH' ) {
-        $uri = $mediafile->{views}->{main}->{uri};
+	foreach my $view ( keys( %{$mediafile->{views}} ) ) {
+	    push( @uris, $mediafile->{views}->{$view}->{uri} ) unless
+		( $view eq 'face' );
+	}
     }
     else {
-        $uri = $mediafile->asset( 'main' )->uri;
+	my @assets = $mediafile->assets->search({ 'asset_type.type' => { '!=', 'face' }},
+						{ prefetch => 'asset_type' });
+	@uris = map { $_->uri } @assets;
     }
-    unless( $uri ) {
-        $self->error( $c, "Cannot determine uri of this media file" );
-        return undef;
-    }
-
-    my( $basename, $path, $suffix ) = fileparse( $uri, qr/\.[^.]*/ );
+    
+    my $ret = $mediafile;
 
     try {
-        my $stream = $bucket->list({ prefix => $path });
-        unless( $stream ) {
-            $c->log->debug( "Cannot create a bucket stream for " . $path );
-            return undef;
-        }
-        until( $stream->is_done ) {
-            foreach my $s3file ( $stream->items ) {
-                $c->log->debug( "Deleting S3 file: " . $s3file->key );
-                $s3file->delete;
-            }
-        }
-    } catch {
-        $c->log->error( "Trying to delete S3 object: Caught exception for " . $path . ": $_" );
+	foreach my $uri ( @uris ) {
+	    my $o = $bucket->object( key => $uri );
+	    if ( $o ) {
+		$o->delete;
+	    }
+	}
+    } catch { 
+        $c->log->error( "Trying to delete S3 object: $_" );
         $ret = undef;
     };
 
