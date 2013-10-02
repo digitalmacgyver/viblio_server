@@ -27,6 +27,14 @@
   <meta property="og:video:type" content="application/x-shockwave-flash" />
   <meta property="og:video:height" content="360" />
   <meta property="og:video:width" content="640" />
+
+  <!-- Twitter (http://www.quicksprout.com/2013/03/25/social-media-meta-tags-how-to-use-open-graph-and-cards/) -->
+  <meta name="twitter:card" content="photo" />
+  <meta name="twitter:title" content="[% mediafile.title || 'Video Title' %]" />
+  <meta name="twitter:description" content="[% mediafile.description || 'Video Description' %]" />
+  <meta name="twitter:image" content="[% server %]shared/s3_image_proxy/[% mediafile.views.poster.uri %]" />
+  <meta name="twitter:url" content="[% server %]#/web_player/?mid=[% mediafile.uuid %]" />
+
 </head>
 <body>
 This is a cool video generated with the help of Viblio.com!
