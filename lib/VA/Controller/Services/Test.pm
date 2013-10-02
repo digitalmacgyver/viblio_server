@@ -111,12 +111,21 @@ sub role_test :Local {
 
 sub new_video_test :Local {
     my( $self, $c ) = @_;
-    my @media = $c->user->media->search({},{prefetch=>'assets'});
+    my @media = $c->user->media->search
+	({'media_assets.asset_type' => 'face'},
+	 {order_by => 'me.id desc', 
+	  prefetch=>'media_assets',
+	  });
     my $uuid;
-    foreach my $media ( @media ) {
-	if ( my $a = $media->assets->first({asset_type => 'face' }) ) {
-	    $uuid = $media->uuid;
-	    last;
+    if ( $#media >= 0 ) {
+	$uuid = $media[0]->uuid;
+    }
+    else {
+	my @media = $c->user->media->search
+	    ({},
+	     {order_by => 'me.id desc'});
+	if ( $#media >= 0 ) {
+	    $uuid = $media[0]->uuid;
 	}
     }
     if ( $uuid ) {
