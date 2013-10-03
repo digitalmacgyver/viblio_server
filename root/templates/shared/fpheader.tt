@@ -16,7 +16,7 @@
 
   <meta property="og:url" content="[% server %]shared/flowplayer/[% mediafile.uuid %]" />
   <meta property="og:site_name" content="Viblio" />
-  <meta property="og:type" content="movie" />
+  <meta property="og:type" content="website" />
   <meta property="og:title" content="[% mediafile.title || 'Video Title' %]" />
   <meta property="og:description" content="[% mediafile.description || 'Video Description' %]" />
 

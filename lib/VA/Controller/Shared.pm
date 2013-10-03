@@ -52,6 +52,13 @@ sub flowplayer :Local {
     $c->stash->{template}  = 'shared/fpheader.tt';
 }
 
+sub simple :Local {
+    my( $self, $c ) = @_;
+    $c->stash->{no_wrapper} = 1;
+    $c->stash->{server} = $c->req->base;
+    $c->stash->{template}  = 'shared/simple.tt';
+}
+
 =head2 /s3_image_proxy/$s3_uri
 
 Sharing on Facebook requires a og:image meta tag who's content points to a publically
