@@ -871,8 +871,8 @@ sub mediafile_create :Local {
 	    from_email => 'reply@' . $c->config->{viblio_return_email_domain},
 	    from_name  => 'Viblio',
 	    to => [{
-		email => $c->user->email,
-		name  => $c->user->displayname }],
+		email => $user->email,
+		name  => $user->displayname }],
 	    headers => {
 		'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
 	    }
