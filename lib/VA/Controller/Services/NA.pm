@@ -994,14 +994,47 @@ sub media_shared :Local {
     my $mid = $c->req->param( 'mid' );
     my $uid = $c->req->param( 'uid' );
 
-    # For right now, we're wide open!
-
     my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid });
     unless( $mediafile ) {
 	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
     }
-    my $mf = VA::MediaFile->new->publish( $c, $mediafile );
-    $self->status_ok( $c, { media => $mf } );
+
+    # Gather all of the media_shares ...
+    my @shares = $mediafile->media_shares;
+
+    # If there are no shares, then this mediafile is private!
+    if ( $#shares == -1 ) {
+	$self->status_bad_request( $c, $c->loc( "This mediafile is private." ) );
+    }
+
+    my $is = {};
+    $is->{$_->{_column_data}->{share_type}} = 1 foreach @shares;
+    # possible values: private, hidden, public
+    my $OK = 0;
+    my $found;
+
+    if ( $is->{public} ) {
+	$OK = 1;
+	$found = 'public';
+    }
+
+    if ( $OK ) {
+	# increment the view count
+	$mediafile->view_count( $mediafile->view_count + 1 );
+	$mediafile->update;
+
+	my $share = $mediafile->media_shares->find({ share_type => 'found' });
+	if ( $share ) {
+	    $share->view_count( $share->view_count + 1 );
+	    $share->update;
+	}
+
+	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+	$self->status_ok( $c, { media => $mf } );
+    }
+    else {
+	$self->status_bad_request( $c, $c->loc( "You are not authorized to view this media." ) );
+    }
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -453,6 +453,40 @@ sub add_comment :Local {
     $self->status_ok( $c, {} );
 }
 
+sub add_share :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $share_type = $c->req->param( 'share_type' );
+
+    unless( $share_type ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Missing required param: [_1]", "share_type" ) );
+    }
+
+    unless( $share_type eq 'private' ||
+	    $share_type eq 'hidden' ||
+	    $share_type eq 'public' ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Illegal value for share_type: [_1]", $share_type ) );
+    }
+
+    my $media = $c->user->media->find({ uuid => $mid });
+    unless( $media ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+    }
+
+    my $share = $media->find_or_create_related( 'media_shares', { user_id => $c->user->obj->id,
+								  share_type => $share_type } );
+    unless( $share ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
+    }
+
+    $self->status_ok( $c, {} );
+}
+						      
+
 __PACKAGE__->meta->make_immutable;
 
 1;
