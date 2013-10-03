@@ -493,17 +493,17 @@ sub add_share :Local {
 		    $self->status_bad_request
 			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 		}
-		$addrs->{$email} = $c->server . '/#/new_player?mid=' . $media->uuid;
+		$addrs->{$email} = $c->server . '#/new_player?mid=' . $media->uuid;
 	    }
 	    else {
 		# This is a hidden share, emailed to someone but technically viewable
 		# by anyone with the link
-		$media->find_or_create_related( 'media_shares', { share_type => 'hidden' } );
+		$share = $media->find_or_create_related( 'media_shares', { share_type => 'hidden', user_id => $c->user->id } );
 		unless( $share ) {
 		    $self->status_bad_request
 			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 		}
-		$addrs->{$email} = $c->server . '/#/web_player?mid=' . $media->uuid;
+		$addrs->{$email} = $c->server . '#/web_player?mid=' . $media->uuid;
 	    }
 	}
 	# If we're here, then everything is ok so far and we can send emails
@@ -534,7 +534,7 @@ sub add_share :Local {
 	}
     }
     else {
-	my $share = $media->find_or_create_related( 'media_shares', { share_type => 'public' } );
+	my $share = $media->find_or_create_related( 'media_shares', { share_type => 'public', user_id => $c->user->id } );
 	unless( $share ) {
 	    $self->status_bad_request
 		( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
