@@ -453,34 +453,92 @@ sub add_comment :Local {
     $self->status_ok( $c, {} );
 }
 
+=head2 /services/mediafile/add_share
+
+Called to share a video with someone or someones.  Requires a mid media uuid.  The
+list parameter is optional.  If not present, this share is 'public', a post to a
+social networking site.  If the list is present, its assumed to be a clean, sanitized
+comma delimitted list of email address.  If an email address belongs to a viblio user,
+a private share is created, otherwise a hidden share.  Email is sent to each address
+on the list.  The url to the video is different depending on private or hidden.
+
+=cut
+
 sub add_share :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $share_type = $c->req->param( 'share_type' );
-
-    unless( $share_type ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Missing required param: [_1]", "share_type" ) );
-    }
-
-    unless( $share_type eq 'private' ||
-	    $share_type eq 'hidden' ||
-	    $share_type eq 'public' ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Illegal value for share_type: [_1]", $share_type ) );
-    }
+    my $list = $c->req->param( 'list' );
+    my $subject = $c->req->param( 'subject' );
+    my $body = $c->req->param( 'body' );
 
     my $media = $c->user->media->find({ uuid => $mid });
     unless( $media ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
     }
+    
+    if ( $list ) {
+	my @list = split( /[ ,]+/, $list );
+	my @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
+	my $addrs = {};
+	foreach my $email ( @clean ) {
+	    my $share;
+	    my $recip = $c->model( 'RDS::User' )->find({ email => $email });
+	    if ( $recip ) {
+		# This is a private share to another viblio user
+		$share = $media->find_or_create_related( 'media_shares', { 
+		    user_id => $recip->id,
+		    share_type => 'private' } );
+		unless( $share ) {
+		    $self->status_bad_request
+			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
+		}
+		$addrs->{$email} = $c->server . '/#/new_player?mid=' . $media->uuid;
+	    }
+	    else {
+		# This is a hidden share, emailed to someone but technically viewable
+		# by anyone with the link
+		$media->find_or_create_related( 'media_shares', { share_type => 'hidden' } );
+		unless( $share ) {
+		    $self->status_bad_request
+			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
+		}
+		$addrs->{$email} = $c->server . '/#/web_player?mid=' . $media->uuid;
+	    }
+	}
+	# If we're here, then everything is ok so far and we can send emails
+	foreach my $addr ( keys %$addrs ) {
+	    my $email = {
+		subject => $subject || $c->loc( "Check out this video on viblio.com" ),
+		from_email => $c->user->email,
+		from_name => $c->user->displayname,
+		to => [{
+		    email => $addr }],
+		headers => {
+		    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+		}
+	    };
+	    $c->stash->{no_wrapper} = 1;
+	    $c->stash->{body} = $body;
+	    $c->stash->{media} = VA::MediaFile->new->publish( $c, $media, { expires => (60*60*24*365) } );
+	    $c->stash->{from} = $c->user;
+	    $c->stash->{url} = $addrs->{$addr};
 
-    my $share = $media->find_or_create_related( 'media_shares', { user_id => $c->user->obj->id,
-								  share_type => $share_type } );
-    unless( $share ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
+	    $email->{html} = $c->view( 'HTML' )->render( $c, 'email/share.tt' );
+	    my $res = $c->model( 'Mandrill' )->send( $email );
+	    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+		$c->log->error( "Error using Mailchimp to send" );
+		$c->logdump( $res );
+		$c->logdump( $email );
+	    }
+	}
+    }
+    else {
+	my $share = $media->find_or_create_related( 'media_shares', { share_type => 'public' } );
+	unless( $share ) {
+	    $self->status_bad_request
+		( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
+	}
     }
 
     $self->status_ok( $c, {} );

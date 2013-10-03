@@ -857,7 +857,7 @@ sub mediafile_create :Local {
 	$self->status_bad_request( $c, 'Cannot find media for $mid' );
     }
 
-    my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_contact_info => 1 } );
+    my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_contact_info => 1, expires => (60*60*24*365) } );
 
     if ( $user->profile->setting( 'email_notifications' ) &&
 	 $user->profile->setting( 'email_upload' ) ) {
@@ -1011,23 +1011,38 @@ sub media_shared :Local {
     $is->{$_->{_column_data}->{share_type}} = 1 foreach @shares;
     # possible values: private, hidden, public
     my $OK = 0;
-    my $found;
 
-    if ( $is->{public} ) {
+    if ( $is->{public} || $is->{hidden} ) {
+	my $found = 'public';
+	if ( $is->{hidden} ) {
+	    $found = 'hidden';
+	}
+	# In this case, we do not know how they got here.  If it has a hidden
+	# share, then we care more about this method for tracking.  
+	my $share = $mediafile->media_shares->find({ share_type => $found });
+	if ( $share ) {
+	    $share->view_count( $share->view_count + 1 );
+	    $share->update;
+	}
 	$OK = 1;
-	$found = 'public';
+    }
+    elsif ( $is->{private} ) {
+	if ( $c->user ) {
+	    my $share = $mediafile->media_shares->find({ 
+		share_type => 'private', 
+		user_id => $c->user->id });
+	    if ( $share ) {
+		$share->view_count( $share->view_count + 1 );
+		$share->update;
+		$OK = 1;
+	    }
+	}
     }
 
     if ( $OK ) {
 	# increment the view count
 	$mediafile->view_count( $mediafile->view_count + 1 );
 	$mediafile->update;
-
-	my $share = $mediafile->media_shares->find({ share_type => 'found' });
-	if ( $share ) {
-	    $share->view_count( $share->view_count + 1 );
-	    $share->update;
-	}
 
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
 	$self->status_ok( $c, { media => $mf } );
