@@ -989,6 +989,20 @@ sub incoming_email :Local {
     $self->status_ok( $c, {} );
 }
 
+sub media_shared :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $uid = $c->req->param( 'uid' );
+
+    # For right now, we're wide open!
+
+    my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid });
+    unless( $mediafile ) {
+	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
+    }
+    my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+    $self->status_ok( $c, { media => $mf } );
+}
 
 __PACKAGE__->meta->make_immutable;
 
