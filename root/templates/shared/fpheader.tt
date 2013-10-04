@@ -17,8 +17,8 @@
   <meta property="og:url" content="[% server %]shared/flowplayer/[% mediafile.uuid %]" />
   <meta property="og:site_name" content="Viblio" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="[% mediafile.title || 'Video Title' %]" />
-  <meta property="og:description" content="[% mediafile.description || 'Video Description' %]" />
+  <meta property="og:title" content="[% mediafile.title || 'My Viblio Video' %]" />
+  <meta property="og:description" content="[% mediafile.description || 'I am sharing this video from my Vibio collection.' %]" />
 
   <meta property="og:image" content="[% server %]shared/s3_image_proxy/[% mediafile.views.poster.uri %]" />
 
@@ -32,8 +32,8 @@
 
   <!-- Twitter (http://www.quicksprout.com/2013/03/25/social-media-meta-tags-how-to-use-open-graph-and-cards/) -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="[% mediafile.title || 'Video Title' %]" />
-  <meta name="twitter:description" content="[% mediafile.description || 'Video Description' %]" />
+  <meta name="twitter:title" content="[% mediafile.title || 'My Viblio Video' %]" />
+  <meta name="twitter:description" content="[% mediafile.description || 'I am sharing this video from my Viblio collection.' %]" />
   <meta name="twitter:image" content="[% server %]shared/s3_image_proxy/[% mediafile.views.poster.uri %]" />
   <meta name="twitter:url" content="[% server %]shared/flowplayer/[% mediafile.uuid %]" />
 
