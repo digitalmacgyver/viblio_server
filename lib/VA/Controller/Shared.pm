@@ -21,35 +21,34 @@ sub flowplayer :Local {
     $uuid = $c->req->param( 'uuid' ) unless( $uuid );
     my $mediafile = $c->model( 'RDS::Media' )->find( { uuid => $uuid },
 						     { prefetch => 'assets' } );
-    unless( $mediafile ) {
-	$c->log->error( 'Cannot find media file' );
-	$c->res->body( $c->req->path . ': ' . $c->loc('Page not found' ));
-	$c->res->status( 404 ); # NOT FOUND
-	$c->detach;
+
+    if ( $mediafile ) {
+	# my $mhash = VA::MediaFile->new->publish( $c, $mediafile, { expires => (60*60*24*365), aws_use_https => 1 } );
+
+	# The fpheader needs only limitted information, so don't leak anything
+	# we don't have too.
+	my $mhash = {
+	    title => $mediafile->title,
+	    description => $mediafile->description,
+	    uuid => $mediafile->uuid,
+	    views => {
+		poster => {
+		    uri => $mediafile->asset( 'poster' )->uri,
+		}
+	    }
+	};
+
+	$c->stash->{no_wrapper} = 1;
+	$c->stash->{server} = $c->req->base;
+	$c->stash->{mediafile} = $mhash;
+	$c->stash->{template}  = 'shared/fpheader.tt';
     }
-
-    my $mhash = VA::MediaFile->new->publish( $c, $mediafile, { expires => (60*60*24*365), aws_use_https => 1 } );
-
-    undef $mediafile;
-    $mediafile = $c->model( 'RDS::Media' )->find( { uuid => $uuid },
-						  { prefetch => 'assets' } );
-
-    my $shash = VA::MediaFile->new->publish( $c, $mediafile, { expires => (60*60*24*365), aws_use_https => 0 } );
-
-    my $config = $c->view( 'HTML' )->render( $c, 'shared/fpjs.tt', {no_wrapper => 1, mediafile => $mhash, bucket => $c->config->{s3}->{bucket} } );
-    $config =~ s/\n//g;
-
-    my $insecure_config = $c->view( 'HTML' )->render( $c, 'shared/fpjs-insecure.tt', {no_wrapper => 1, mediafile => $shash, bucket => $c->config->{s3}->{bucket} } );
-    $insecure_config =~ s/\n//g;
-    
-
-    $c->stash->{no_wrapper} = 1;
-    $c->stash->{server} = $c->req->base;
-    $c->stash->{mediafile} = $mhash;
-    $c->stash->{insecure}  = $shash;
-    $c->stash->{fpconfig}  = uri_escape( $config );
-    $c->stash->{fpconfig_insecure}  = uri_escape( $insecure_config );
-    $c->stash->{template}  = 'shared/fpheader.tt';
+    else {
+	$c->stash->{no_wrapper} = 1;
+	$c->stash->{server} = $c->req->base;
+	$c->stash->{mediafile} = {};
+	$c->stash->{template}  = 'shared/fpheader.tt';
+    }
 }
 
 sub simple :Local {

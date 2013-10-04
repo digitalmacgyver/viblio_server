@@ -239,23 +239,23 @@ sub end : Private {
         ],
         @_ );
 
-    # Try to communicate fatal perl exceptions in a more reasonable way.
-    #
-    if ( @{$c->error} ) {
-	my @arr = @{$c->error};
-	$c->log->debug( join( '\n', @arr ) );
-	my @lines = split(/\n/,$arr[0]);
-	my $reason = 'unknown';
-	while ( $reason = shift @lines ) {
-	    chomp $reason;
-	    next if ( $reason =~ /^$/ );
-	    last;
-	}
-	$c->stash->{entity} = { error => 1,
-				message => $c->loc( 'Fatal server error' ),
-				detail => $reason };
-	$c->clear_errors;
-    }
+   # Try to communicate fatal perl exceptions in a more reasonable way.
+   #
+   if ( @{$c->error} ) {
+       my @arr = @{$c->error};
+       $c->log->debug( join( '\n', @arr ) );
+       my @lines = split(/\n/,$arr[0]);
+       my $reason = 'unknown';
+       while ( $reason = shift @lines ) {
+	   chomp $reason;
+	   next if ( $reason =~ /^$/ );
+	   last;
+       }
+       $c->stash->{entity} = { error => 1,
+			       message => $c->loc( 'Fatal server error' ),
+			       detail => $reason };
+       $c->clear_errors;
+   }
 
     if ( $c->stash->{current_view} ) {
 	$c->forward( 'View::' . $c->stash->{current_view} );

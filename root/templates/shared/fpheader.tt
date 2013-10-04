@@ -6,31 +6,16 @@
   <title>Shared Video from Viblio.com</title>
 
   <meta name="medium" content="website" />
-  <meta name="title" content="[% mediafile.title || 'Video Title' %]" />
-  <meta name="description" content="[% mediafile.description || 'Video Description' %]" />
-  <meta name="video_type" content="application/x-shockwave-flash" />
-  <meta name="video_height" content="360" />
-  <meta name="video_width" content="640" />
-  <meta name="image_src" content="[% insecure.views.poster.url %]" />
-  <meta name="video_src" content="http://releases.flowplayer.org/swf/flowplayer-3.2.16.swf?config=[% fpconfig_insecure %]" \>
+  <meta name="title" content="[% mediafile.title || 'My Viblio Video' %]" />
+  <meta name="description" content="[% mediafile.description || 'I am sharing this video from my Vibio collection.' %]" />
 
   <meta property="og:url" content="[% server %]shared/flowplayer/[% mediafile.uuid %]" />
   <meta property="og:site_name" content="Viblio" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="[% mediafile.title || 'My Viblio Video' %]" />
   <meta property="og:description" content="[% mediafile.description || 'I am sharing this video from my Vibio collection.' %]" />
-
   <meta property="og:image" content="[% server %]shared/s3_image_proxy/[% mediafile.views.poster.uri %]" />
 
-  <!-- UNCOMMENT this to get inline video player on FB
-  <meta property="og:video" content="http://releases.flowplayer.org/swf/flowplayer-3.2.16.swf?config=[% fpconfig_insecure %]" \>
-  <meta property="og:video:secure_url" content="https://releases.flowplayer.org/swf/flowplayer-3.2.16.swf?config=[% fpconfig %]" \>
-  <meta property="og:video:type" content="application/x-shockwave-flash" />
-  <meta property="og:video:height" content="360" />
-  <meta property="og:video:width" content="640" />
-  -->
-
-  <!-- Twitter (http://www.quicksprout.com/2013/03/25/social-media-meta-tags-how-to-use-open-graph-and-cards/) -->
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="[% mediafile.title || 'My Viblio Video' %]" />
   <meta name="twitter:description" content="[% mediafile.description || 'I am sharing this video from my Viblio collection.' %]" />

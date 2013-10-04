@@ -994,16 +994,26 @@ sub media_shared :Local {
     my $mid = $c->req->param( 'mid' );
     my $uid = $c->req->param( 'uid' );
 
+    # Is caller logged in?
+    my $user = $c->user;
+
     my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid });
     unless( $mediafile ) {
 	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
     }
 
+    # If the user is logged in and its their video, show it
+    if ( $user && $mediafile->user_id == $user->id ) {
+	# They own it
+	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+	$self->status_ok( $c, { media => $mf } );
+    }
+
     # Gather all of the media_shares ...
     my @shares = $mediafile->media_shares;
 
-    # If there are no shares, then this mediafile is private!
     if ( $#shares == -1 ) {
+	# Its private
 	$self->status_bad_request( $c, $c->loc( "This mediafile is private." ) );
     }
 
@@ -1027,10 +1037,10 @@ sub media_shared :Local {
 	$OK = 1;
     }
     elsif ( $is->{private} ) {
-	if ( $c->user ) {
+	if ( $user ) {
 	    my $share = $mediafile->media_shares->find({ 
 		share_type => 'private', 
-		user_id => $c->user->id });
+		user_id => $user->id });
 	    if ( $share ) {
 		$share->view_count( $share->view_count + 1 );
 		$share->update;
