@@ -493,7 +493,7 @@ sub add_share :Local {
 		    $self->status_bad_request
 			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 		}
-		$addrs->{$email} = $c->server . '#/new_player?mid=' . $media->uuid;
+		$addrs->{$email} = $c->server . '#/web_player?mid=' . $media->uuid;
 	    }
 	    else {
 		# This is a hidden share, emailed to someone but technically viewable
