@@ -18,10 +18,10 @@
   <meta property="og:image" content="[% server %]css/images/logo-color-300.png" />
 
   <!-- Twitter (http://www.quicksprout.com/2013/03/25/social-media-meta-tags-how-to-use-open-graph-and-cards/) -->
-  <meta name="twitter:card" content="photo" />
+  <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Viblio Video" />
   <meta name="twitter:description" content="If only the rest of your digital life could be this organized!" />
-  <meta name="twitter:image" content="[% server %]css/images/logo-color-300.png" />
+  <meta name="twitter:image" content="[% server %]css/images/logo-106.png" />
   <meta name="twitter:url" content="[% server %]shared/simple" />
 
 </head>
