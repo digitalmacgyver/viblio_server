@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Shared Video from Viblio.com</title>
 
-  <meta name="medium" content="video" />
+  <meta name="medium" content="website" />
   <meta name="title" content="[% mediafile.title || 'Video Title' %]" />
   <meta name="description" content="[% mediafile.description || 'Video Description' %]" />
   <meta name="video_type" content="application/x-shockwave-flash" />
@@ -31,7 +31,7 @@
   -->
 
   <!-- Twitter (http://www.quicksprout.com/2013/03/25/social-media-meta-tags-how-to-use-open-graph-and-cards/) -->
-  <meta name="twitter:card" content="photo" />
+  <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="[% mediafile.title || 'Video Title' %]" />
   <meta name="twitter:description" content="[% mediafile.description || 'Video Description' %]" />
   <meta name="twitter:image" content="[% server %]shared/s3_image_proxy/[% mediafile.views.poster.uri %]" />
