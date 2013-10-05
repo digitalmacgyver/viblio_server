@@ -54,7 +54,7 @@ sub media_face_appears_in :Local {
 	    ->find(
 	    { 'media.user_id' => $user->id, 
 	      'me.uuid' => $asset_id },
-	    { join => 'media', prefetch => 'media' } );
+	    { join => 'media', prefetch => 'media', group_by => ['media.id'] } );
 	unless( $asset ) {
 	    $self->status_bad_request
 	    ( $c, 
@@ -71,7 +71,7 @@ sub media_face_appears_in :Local {
 	    my $rs = $c->model( 'RDS::MediaAssetFeature' )
 		->search(
 		{ contact_id => $contact_id, 'me.user_id' => $user->id},
-		{ prefetch => { 'media_asset' => 'media' }, page => $args->{page}, rows => $args->{rows} } );
+		{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'], page => $args->{page}, rows => $args->{rows} } );
 	    $pager = $rs->pager;
 	    @features = $rs->all;
 	}
@@ -79,7 +79,7 @@ sub media_face_appears_in :Local {
 	    @features = $c->model( 'RDS::MediaAssetFeature' )
 		->search(
 		{ contact_id => $contact_id, 'me.user_id' => $user->id },
-		{ prefetch => { 'media_asset' => 'media' } } );
+		{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
 	}
 	my @media = ();
 	foreach my $feature ( @features ) {
@@ -164,8 +164,8 @@ sub contacts :Local {
     };
     my $where = {
 	select => ['contact_id', 'media_asset_id', {count => 'media_asset.media_id', -as => 'appears_in'}],
-	group_by => [qw/contact_id/],
-	prefetch=>[qw/contact media_asset/],
+	prefetch=>['contact', { 'media_asset' => 'media'}],
+	group_by => ['contact_id'],
 	order_by => 'appears_in desc'
     };
     if ( $args->{page} ) {
@@ -184,6 +184,8 @@ sub contacts :Local {
 	my $contact = $feat->contact;
 	my $asset   = $feat->media_asset;
 	my $hash    = $contact->TO_JSON;
+
+	$c->log->error( "XXX " . $contact->id . " " . $asset->media->id . " " .  $feat->{_column_data}->{appears_in} );
 
 	my $klass = $c->config->{mediafile}->{$asset->location};
 	my $fp = new $klass;
@@ -279,7 +281,9 @@ sub faces_in_mediafile :Local {
     my @feat = $c->model( 'RDS::MediaAssetFeature' )
 	->search({'me.media_id'=>$m->id,
 		  'me.feature_type'=>'face'},
-		 {prefetch=>['contact','media_asset']});
+		 {prefetch=>['contact','media_asset'],
+		  group_by=>['contact.id']
+		 });
     my @data = ();
     foreach my $feat ( @feat ) {
 	my $klass = $c->config->{mediafile}->{$feat->media_asset->location};

@@ -23,7 +23,7 @@ sub dates_for_contact :Private {
     my @features = $c->model( 'RDS::MediaAssetFeature' )
 	->search(
 	{ contact_id => $cid },
-	{ prefetch => { 'media_asset' => 'media' } } );
+	{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
     my @media = map { $_->media_asset->media } @features;
     return @media;
 }
@@ -65,6 +65,7 @@ sub posters_for_user :Private {
 			  $dtf->format_datetime( $to )
 			 ]}},
 	       { prefetch => 'media',
+		 group_by => ['media.id'],
 		 order_by => 'media.recording_date desc' });
 
     return @posters;
@@ -82,6 +83,7 @@ sub posters_for_contact :Private {
 		  ]},
 	},
 	{ prefetch => { 'media_asset' => 'media' },
+	  group_by => ['media.id'],
 	  order_by => 'media.recording_date desc',
 	} );
     my @posters = map { $_->media_asset->media->assets->find({ asset_type => 'poster' }) } @features;
