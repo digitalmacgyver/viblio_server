@@ -379,69 +379,6 @@ The caller may redirect into the application.
 
 =cut
 
-sub old_new_user :Local {
-    my $self = shift;
-    my $c    = shift;
-    my $args = $self->parse_args
-	( $c,
-	  [ email    => undef,
-	    password => undef,
-	    username => undef,
-	    code     => undef,
-	  ],
-	  @_ );
-
-    unless( $args->{email} ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Missing required field: [_1]", 'email' ) );
-    }
-
-    unless( $args->{password} ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Missing required field: [_1]", 'password' ) );
-    }
-
-    unless( $args->{code} ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Missing required field: [_1]", 'code' ) );
-    }
-
-    my $username = $self->auto_username
-	( $c, $args->{email}, $args->{username} );
-
-    my $pending = $c->model( 'RDS::PendingUser' )
-	->find({ code => $args->{code} });
-    unless( $pending ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "No matching pending user for email/code." ) );
-    }
-    unless( $pending->email eq $args->{email} ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Email does not match for given code." ) );
-    }
-
-    my $user = $c->model( 'RDS::User' )->create
-	({ email => $pending->email,
-	   password => $pending->password,
-	   displayname => $pending->username || $username,
-	 });
-
-    if ($c->authenticate({ email    => $user->email,
-			   password => $args->{password}  }, 'db' )) {
-	$pending->delete;
-
-	# Create a profile
-	$user->create_profile();
-
-	$self->status_ok( $c, { user => $c->user->obj } );
-    }
-    else {
-	$user->delete;
-	$self->status_bad_request
-	    ( $c, $c->loc( "Unable to create new user." ) );
-    }
-}
-
 sub new_user :Local {
     my $self = shift;
     my $c    = shift;

@@ -80,12 +80,6 @@ __PACKAGE__->table("users");
   is_nullable: 1
   size: 45
 
-=head2 username
-
-  data_type: 'varchar'
-  is_nullable: 1
-  size: 128
-
 =head2 password
 
   data_type: 'varchar'
@@ -138,8 +132,6 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 16 },
   "provider_id",
   { data_type => "varchar", is_nullable => 1, size => 45 },
-  "username",
-  { data_type => "varchar", is_nullable => 1, size => 128 },
   "password",
   { data_type => "varchar", is_nullable => 1, size => 128 },
   "email",
@@ -358,8 +350,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:57:04
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:5wvpA7vpojEMiLXE7ppeUg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-04 22:00:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ZY7ye8Iac8RSoLv5eyEr1g
 
 # I like this relationship name better
 #
