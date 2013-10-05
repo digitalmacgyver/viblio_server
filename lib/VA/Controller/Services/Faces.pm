@@ -2,6 +2,7 @@ package VA::Controller::Services::Faces;
 use Moose;
 
 use VA::MediaFile;
+use Data::Page;
 
 use namespace::autoclean;
 
@@ -163,20 +164,11 @@ sub contacts :Local {
 	'contact.picture_uri' => { '!=',undef},
     };
     my $where = {
-	select => ['contact_id', 'media_asset_id', {count => 'media_asset.media_id', -as => 'appears_in'}],
-	prefetch=>['contact', { 'media_asset' => 'media'}],
+	select => ['contact_id', 'media_asset_id'],
+	prefetch=>['contact', 'media_asset'],
 	group_by => ['contact_id'],
-	order_by => 'appears_in desc'
     };
-    if ( $args->{page} ) {
-	$where->{page} = $args->{page};
-	$where->{rows} = $args->{rows};
-    }
-    my $pager;
-    my $rs = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
-    $pager = $rs->pager if ( $args->{page} );
-    my @feats = ();
-    @feats = $rs->all if ( $rs );
+    my @feats = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
 
     my @data = ();
     foreach my $feat ( @feats ) {
@@ -185,7 +177,6 @@ sub contacts :Local {
 	my $asset   = $feat->media_asset;
 	my $hash    = $contact->TO_JSON;
 
-	$c->log->error( "XXX " . $contact->id . " " . $asset->media->id . " " .  $feat->{_column_data}->{appears_in} );
 
 	my $klass = $c->config->{mediafile}->{$asset->location};
 	my $fp = new $klass;
@@ -193,7 +184,8 @@ sub contacts :Local {
 
 	$hash->{url} = $url;
 	$hash->{asset_id} = $asset->uuid;
-	$hash->{appears_in} = $feat->{_column_data}->{appears_in};
+	$hash->{appears_in} = $c->model( 'RDS::MediaAssetFeature' )->
+	    search({contact_id=>$feat->contact_id},{prefetch => { 'media_asset' => 'media' }, group_by => ['media.id']})->count;
 
 	## REMOVE ME
 	if ( ! defined( $hash->{uuid} ) ) {
@@ -203,18 +195,20 @@ sub contacts :Local {
 	push( @data, $hash );
     }
 
-    # If this is page one, or if we're not paging, then the top three actors
-    # are the star1, 2 and 3 picks, because we sorted by the number of videos
-    # each actor appeared in.
+    # Because of the nature of this query, I could not use the native DBIX pager,
+    # and therefore I need to implement that functionality myself, including the
+    # sort.
     #
-    if ( ( $pager && $pager->current_page == 1 ) || !defined( $pager ) ) {
-	$data[0]->{star_power} = 'star1' if ( $#data >=0 );
-	$data[1]->{star_power} = 'star2' if ( $#data >=1 );
-	$data[2]->{star_power} = 'star3' if ( $#data >=2 );
-    }
-
-    if ( $pager ) {
-	$self->status_ok( $c, { faces => \@data, 
+    my @sorted = sort { $b->{appears_in} <=> $a->{appears_in} } @data;
+    $sorted[0]->{star_power} = 'star1' if ( $#sorted >=0 );
+    $sorted[1]->{star_power} = 'star2' if ( $#sorted >=1 );
+    $sorted[2]->{star_power} = 'star3' if ( $#sorted >=2 );
+    
+    if ( $args->{page} ) {
+	my $pager = Data::Page->new( $#sorted + 1, $args->{rows}, $args->{page} );
+	my @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
+	
+	$self->status_ok( $c, { faces => \@slice, 
 				pager => {
 				    total_entries => $pager->total_entries,
 				    entries_per_page => $pager->entries_per_page,
@@ -229,7 +223,7 @@ sub contacts :Local {
 				} } );
     }
     else {
-	$self->status_ok( $c, { faces => \@data } );
+	$self->status_ok( $c, { faces => \@sorted } );
     }
 }
 
