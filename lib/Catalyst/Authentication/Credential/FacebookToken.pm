@@ -137,10 +137,6 @@ sub authenticate {
 
 	    # Also set some user fields directly from FB data:
 	    my $needs_update = 0;
-	    unless( $user->get_object->username ) {
-		$user->get_object->username( $fb_user->{username} );
-		$needs_update = 1;
-	    }
 	    unless( $user->get_object->displayname ) {
 		$user->get_object->displayname( $fb_user->{name} );
 		$needs_update = 1;
