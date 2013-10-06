@@ -206,7 +206,10 @@ sub contacts :Local {
     
     if ( $args->{page} ) {
 	my $pager = Data::Page->new( $#sorted + 1, $args->{rows}, $args->{page} );
-	my @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
+	my @slice = ();
+	if ( $#sorted >= 0 ) {
+	    @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
+	}
 	
 	$self->status_ok( $c, { faces => \@slice, 
 				pager => {
