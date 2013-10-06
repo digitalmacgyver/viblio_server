@@ -926,10 +926,16 @@ sub incoming_email :Local {
     $self->status_ok( $c, {} );
 }
 
+=head2 /services/na/media_shared
+
+This is the endpoint that is called when someone views a media file that has
+been shared.
+
+=cut
+
 sub media_shared :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $uid = $c->req->param( 'uid' );
 
     # Is caller logged in?
     my $user = $c->user;
@@ -942,6 +948,7 @@ sub media_shared :Local {
     # If the user is logged in and its their video, show it
     if ( $user && $mediafile->user_id == $user->id ) {
 	# They own it
+	$c->log->error( 'LOGGED in User Owns Share' );
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
 	$self->status_ok( $c, { media => $mf } );
     }
@@ -960,6 +967,7 @@ sub media_shared :Local {
     my $OK = 0;
 
     if ( $is->{public} || $is->{hidden} ) {
+	$c->log->error( 'Public or Hidden Share' );
 	my $found = 'public';
 	if ( $is->{hidden} ) {
 	    $found = 'hidden';
@@ -974,15 +982,24 @@ sub media_shared :Local {
 	$OK = 1;
     }
     elsif ( $is->{private} ) {
+	$c->log->error( 'Private Share' );
 	if ( $user ) {
 	    my $share = $mediafile->media_shares->find({ 
 		share_type => 'private', 
 		user_id => $user->id });
 	    if ( $share ) {
+		$c->log->error( 'Logged in user was target of share' );
 		$share->view_count( $share->view_count + 1 );
 		$share->update;
 		$OK = 1;
 	    }
+	}
+	else {
+	    # This is a private share, but the user coming in is not
+	    # authenticated.  Return an indication that this user needs
+	    # to be prompted to either log in or create an account.
+	    $c->log->error( 'Prompt user to login to view share' );
+	    $self->status_ok( $c, { auth_required => 1 } );
 	}
     }
 

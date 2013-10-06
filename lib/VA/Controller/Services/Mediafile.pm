@@ -470,6 +470,8 @@ sub add_share :Local {
     my $list = $c->req->param( 'list' );
     my $subject = $c->req->param( 'subject' );
     my $body = $c->req->param( 'body' );
+    my $disposition = $c->req->param( 'private' );
+    $disposition = 'private' unless( $disposition );
 
     my $media = $c->user->media->find({ uuid => $mid });
     unless( $media ) {
@@ -484,9 +486,10 @@ sub add_share :Local {
 	foreach my $email ( @clean ) {
 	    my $share;
 	    my $recip = $c->model( 'RDS::User' )->find({ email => $email });
-	    if ( $recip ) {
+	    if ( $disposition eq 'private' ) {
 		# This is a private share to another viblio user
 		$share = $media->find_or_create_related( 'media_shares', { 
+		    view_count => 0,
 		    user_id => $recip->id,
 		    share_type => 'private' } );
 		unless( $share ) {
@@ -498,7 +501,7 @@ sub add_share :Local {
 	    else {
 		# This is a hidden share, emailed to someone but technically viewable
 		# by anyone with the link
-		$share = $media->find_or_create_related( 'media_shares', { share_type => 'hidden', user_id => $c->user->id } );
+		$share = $media->find_or_create_related( 'media_shares', { share_type => 'hidden', view_count => 0 } );
 		unless( $share ) {
 		    $self->status_bad_request
 			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
@@ -534,7 +537,7 @@ sub add_share :Local {
 	}
     }
     else {
-	my $share = $media->find_or_create_related( 'media_shares', { share_type => 'public', user_id => $c->user->id } );
+	my $share = $media->find_or_create_related( 'media_shares', { share_type => 'public', view_count => 0 } );
 	unless( $share ) {
 	    $self->status_bad_request
 		( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
