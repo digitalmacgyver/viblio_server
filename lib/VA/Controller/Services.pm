@@ -53,15 +53,7 @@ sub auto_username :Private {
     my $username = $uname;
     my $post = 123;
     do {
-	$exists = $c->model( 'RDS::User' )->find({ username => $username });
-	if ( $exists ) {
-	    $username = $uname . $post;
-	    $post += 1;
-	}
-    } while ( $exists );
-
-    do {
-	$exists = $c->model( 'RDS::PendingUser' )->find({ username => $username });
+	$exists = $c->model( 'RDS::User' )->find({ displayname => $username });
 	if ( $exists ) {
 	    $username = $uname . $post;
 	    $post += 1;
