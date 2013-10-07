@@ -58,7 +58,7 @@ sub authenticate :Local {
     my ( $self, $c ) = @_;
 
     # Get the username and password from form
-    my $username = $c->req->params->{email};
+    my $email = $c->req->params->{email};
     my $password = $c->req->params->{password};
     my $realm = $c->req->params->{realm} || 'facebook';
 
@@ -66,8 +66,17 @@ sub authenticate :Local {
     #
     my $creds = {};
     if ( $realm eq 'db' ) {
+	if ( $c->config->{in_beta} ) {
+	    unless( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'whitelist'}) ) {
+		$self->status_unauthorized( $c, $c->loc( "Login failed: Not registered in the beta program." ) );
+	    }
+	}
+
+	if ( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'blacklist'}) ) {
+	    $self->status_unauthorized( $c, $c->loc( "Login failed: This account has been black listed." ) );
+	}
 	$creds = {
-	    email => $username,
+	    email => $email,
 	    password => $password,
 	};
     }
@@ -82,12 +91,23 @@ sub authenticate :Local {
 	# Lets try to create a more meaningful error message
 	#
 	my $err = $c->loc( "Login failed" );
-	my @hits = $c->model( 'RDS::User' )->search({ email => $username });
+
+	if ( $c->config->{in_beta} ) {
+	    unless( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'whitelist'}) ) {
+		$self->status_unauthorized( $c, $c->loc( "Login failed: Not registered in the beta program." ) );
+	    }
+	}
+
+	if ( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'blacklist'}) ) {
+	    $self->status_unauthorized( $c, $c->loc( "Login failed: This account has been black listed." ) );
+	}
+
+	my @hits = $c->model( 'RDS::User' )->search({ email => $email });
 	if ( $#hits == -1 ) {
-	    $err = $c->loc( "Login failed: Email does not exist: [_1]", $username );
+	    $err = $c->loc( "Login failed: Email does not exist: [_1]", $email );
 	}
 	else {
-	    $err = $c->loc( "Login failed: Password does not match for email [_1]", $username );
+	    $err = $c->loc( "Login failed: Password does not match for email [_1]", $email );
 	}
 	$self->status_unauthorized
 	    ( $c, $err );

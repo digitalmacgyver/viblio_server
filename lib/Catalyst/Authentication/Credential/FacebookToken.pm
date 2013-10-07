@@ -113,19 +113,17 @@ sub authenticate {
 	unless( $fb_user ) { 
 	    return undef;
 	}
-        # die 'Error validating verification code' unless $fb_user;
-	$ctx->log->debug( Dumper $fb_user );
-=perl
-	my $attributes = {
-	    provider => 'facebook',
-	    provider_id => $fb_user->{id},
-	    username => $fb_user->{username},
-	    displayname => $fb_user->{name},
-	};
-	if ( $fb_user->{email} ) {
-	    $attributes->{email} = $fb_user->{email};
+
+	# Check white and blak lists...
+	if ( $ctx->config->{in_beta} ) {
+	    unless( $ctx->model( 'RDS::EmailUser' )->find({email => $fb_user->{email}, status => 'whitelist'}) ) {
+		return undef;
+	    }
 	}
-=cut
+	if ( $ctx->model( 'RDS::EmailUser' )->find({email => $fb_user->{email}, status => 'blacklist'}) ) {
+	    return undef;
+	}
+
 	my $attributes = {
 	    email => $fb_user->{email},
 	};

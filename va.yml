@@ -11,6 +11,10 @@ Model::S3:
   aws_secret_access_key: gPKpaSdHdHwgc45DRFEsZkTDpX9Y8UzJNjz0fQlX
   retry: 1
 
+# Set to 1 when in beta.  This activates whitelist checking
+# for authentication and sharing.
+in_beta: 0
+
 s3:
   bucket: viblio-uploaded-files
   aws_use_https: 1
