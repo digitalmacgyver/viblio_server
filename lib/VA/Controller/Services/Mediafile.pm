@@ -513,8 +513,8 @@ sub add_share :Local {
 	foreach my $addr ( keys %$addrs ) {
 	    my $email = {
 		subject => $subject || $c->loc( "Check out this video on viblio.com" ),
-		from_email => $c->user->email,
-		from_name => $c->user->displayname,
+		from_email => 'reply@' . $c->config->{viblio_return_email_domain},
+		from_name => 'Viblio',
 		to => [{
 		    email => $addr }],
 		headers => {
