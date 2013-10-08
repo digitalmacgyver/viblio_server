@@ -1,0 +1,7 @@
+[%- META no_wrapper = 1 -%]
+[%# For welcoming a new user
+    to: $c->user (the user we are sending the email)
+    url: url to click on in email
+%]
+<h2>Welcome to Viblio</h2>
+<a href="[% url %]">Go check it out!<a>

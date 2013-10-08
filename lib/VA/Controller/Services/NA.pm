@@ -438,6 +438,7 @@ sub new_user :Local {
 	({ email => $args->{email},
 	   password => $args->{password},
 	   displayname => $args->{username} || $username,
+	   accepted_terms => 1,
 	 });
 
     unless( $user ) {
@@ -450,6 +451,44 @@ sub new_user :Local {
 			   password => $args->{password}  }, 'db' )) {
 	# Create a profile
 	$user->create_profile();
+
+	# There may be a "pending user" record corresponding to this email.
+	# If there is, in media_shares table, replace all 'private' shares
+	# with pending user id with this new user's id.
+	my $pending_user = $c->model( 'RDS::User' )->find({ provider_id => 'pending', displayname => $args->{email} });
+	if ( $pending_user ) {
+	    foreach my $share ( $c->model( 'RDS::MediaShare' )->search({ share_type => 'private', user_id => $pending_user->id }) ) {
+		$share->user_id( $user->id );
+		$share->update;
+	    }
+	    $pending_user->delete;
+	    $pending_user->update;
+	}
+
+	# And finally, send them a nice welcome email
+	#
+	my $headers = {
+	    subject => $c->loc( "Welcome to Viblio" ),
+	    from_email => 'reply@' . $c->config->{viblio_return_email_domain},
+	    from_name => 'Viblio',
+	    to => [{
+		email => $user->email,
+		name  => $user->displayname }],
+	    headers => {
+		    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+	    }
+	};
+	$c->stash->{no_wrapper} = 1;
+	$c->stash->{to} = $user;
+	$c->stash->{url} = $c->server;
+
+	$headers->{html} = $c->view( 'HTML' )->render( $c, 'email/welcome.tt' );
+	my $res = $c->model( 'Mandrill' )->send( $headers );
+	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+	    $c->log->error( "Error using Mailchimp to send" );
+	    $c->logdump( $res );
+	    $c->logdump( $headers );
+	}
 
 	$self->status_ok( $c, { user => $c->user->obj } );
     }
@@ -1034,6 +1073,30 @@ sub media_shared :Local {
     else {
 	$self->status_bad_request( $c, $c->loc( "You are not authorized to view this media." ) );
     }
+}
+
+sub terms :Local {
+    my( $self, $c ) = @_;
+    $c->stash->{no_wrapper} = 1;
+    my $terms = $c->view( 'HTML' )->render( $c, 'terms.tt' );
+    $self->status_ok( $c, { terms => $terms } );
+}
+
+sub valid_email :Local {
+    my( $self, $c ) = @_;
+    my $email = $c->req->param( 'email' );
+    my $valid = 0;
+    my $why = 'No email address supplied';
+    unless( $email ) {
+	$self->status_ok( $c, { valid => $valid, why => $why } );
+    }
+    unless( $self->is_email_valid( $email ) ) {
+	$self->status_ok( $c, { valid => $valid, why => 'malformed email address' } );
+    }
+    if ( $c->model( 'RDS::User' )->find({ email => $email }) ) {
+	$self->status_ok( $c, { valid => $valid, why => 'email address taken' } );
+    }
+    $self->status_ok( $c, { valid => 1, why => '' } );
 }
 
 __PACKAGE__->meta->make_immutable;

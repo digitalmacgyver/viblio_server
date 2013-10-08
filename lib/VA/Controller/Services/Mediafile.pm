@@ -3,6 +3,7 @@ use Moose;
 use namespace::autoclean;
 
 use JSON;
+use URI::Escape;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -488,15 +489,56 @@ sub add_share :Local {
 	    my $recip = $c->model( 'RDS::User' )->find({ email => $email });
 	    if ( $disposition eq 'private' ) {
 		# This is a private share to another viblio user
-		$share = $media->find_or_create_related( 'media_shares', { 
-		    view_count => 0,
-		    user_id => $recip->id,
-		    share_type => 'private' } );
-		unless( $share ) {
-		    $self->status_bad_request
-			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
+		if ( $recip ) {
+		    # The target user already exists
+		    $share = $media->find_or_create_related( 'media_shares', { 
+			view_count => 0,
+			user_id => $recip->id,
+			share_type => 'private' } );
+		    unless( $share ) {
+			$self->status_bad_request
+			    ( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
+		    }
+		    $addrs->{$email} = $c->server . '#/web_player?mid=' . $media->uuid;
 		}
-		$addrs->{$email} = $c->server . '#/web_player?mid=' . $media->uuid;
+		else {
+		    # 1.  Create a "pending user" as a placeholder for this future user
+		    # 2.  Create the share pointing to this pending user
+		    # 3.  If we're in beta, auto-whitelist this future user (they will
+		    #     get a welcome email upon actual registration)
+		    #
+		    # During registration, the share will be looked up by pending user
+		    # and replaced with actual user, and pending user will be deleted.
+		    my $pending_user = $c->model( 'RDS::User' )->find_or_create({
+			displayname => $email,
+			provider_id => 'pending' });
+		    unless( $pending_user ) {
+			$self->status_bad_request
+			    ( $c, $c->loc( "Failed to create a pending user for for [_1]", $email ) );
+		    }
+		    $share = $media->find_or_create_related( 'media_shares', { 
+			share_type => 'private',
+			view_count => 0,
+			user_id => $pending_user->id });
+		    unless( $share ) {
+			$self->status_bad_request
+			    ( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
+		    }
+		    if ( $c->config->{in_beta} ) {
+			my $wl = $c->model( 'RDS::EmailUser' )->find_or_create({
+			    email => $email,
+			    status => 'whitelist' });
+			unless( $wl ) {
+			    $c->log->error( "Failed to add $email to whitelist for private share." );
+			}
+		    }
+		    # my $url = URI->new( $c->server . '#/register' );
+		    # $url->query_form( email => $email, url => '#/web_player?mid=' . $media->uuid );
+		    my $url = $c->server . '#/register?email=' .
+			uri_escape( $email ) . '&url=' .
+			uri_escape( '#/web_player?mid=' . $media->uuid );
+		    $addrs->{$email} = $url;
+ 		}
 	    }
 	    else {
 		# This is a hidden share, emailed to someone but technically viewable
@@ -546,7 +588,28 @@ sub add_share :Local {
 
     $self->status_ok( $c, {} );
 }
-						      
+
+=head2 /services/mediafile/count
+
+Simply return the total number of mediafiles owned by the logged in user.
+
+=cut
+
+sub count :Local {
+    my( $self, $c ) = @_;
+    my $uid = $c->req->param( 'uid' );
+    my $count = 0;
+    if ( $uid ) {
+	my $user = $c->model( 'RDS::User' )->find({uuid => $uid });
+	if ( $user ) {
+	    $count = $user->media->count;
+	}
+    }
+    else {
+	$count = $c->user->media->count;
+    }
+    $self->status_ok( $c, { count => $count } );
+}
 
 __PACKAGE__->meta->make_immutable;
 

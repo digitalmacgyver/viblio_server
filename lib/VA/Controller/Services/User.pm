@@ -476,10 +476,9 @@ the terms of use document.
 sub accept_terms :Local {
     my( $self, $c ) = @_;
 
-    $c->user->accepted_terms( DateTime->now );
+    $c->user->accepted_terms( 1 );
     $c->user->update;
-    $c->persist_user;
-    $self->status_ok( $c, { accepted => sprintf( "%s", $c->user->accepted_terms) } );
+    $self->status_ok( $c, {} );
 }
 
 =head2 /services/user/media
