@@ -1,0 +1,64 @@
+Sharing
+-------
+
+1. Public Share
+
+Posting to a social site (facebook, google+, twitter, and the as-yet untested
+tumblr) creates a "public" share.  A link is posted to the site in question
+that would allow anyone to view the video in question on our unauthenticated
+web_player page.
+
+2. Hidden Share
+
+In the "share this video" dialog, you can choose "hidden" or "private" ( private
+is the default) and then start entering email addresses in a To: field.  If
+the sharing user selected "hidden", then typed in email addresses and submit,
+then a "hidden" share is created, and an email goes out to each recipient with
+a link that would allow them (and anyone else with that link) to view the video
+in question on our unauthenticated web_player page.
+
+In the case that a hidden was sent to a viblio user, and they have not recently 
+logged into the viblio site, then they will visit the web_player as an
+anonymous user, although there is a link in the header to "sign in".
+
+In the case that a hidden was sent to a viblio user, and they have recently 
+logged into the viblio site, then they will visit the web_player as an
+authenticated user.
+
+3. Private Share
+
+If the sharing user selected "private", then typed in email addresses and 
+submit, then a "private" share is created for each address in the list.
+
+If the target user is already a viblio user, the viblio user's id is inserted
+into the private share record.  They will receive an email about the share
+with a link that takes them directly to the web_player page.  If they arrive
+on that page without a session cookie, they are bounced directly to the viblio
+login page.  After successfully authenticating, they are then automatically
+bounced back to the web_player as an authenticated user.
+
+If the target of a private share is not already a viblio user, then a special
+"pending user" is created (users table, displayname=email, 
+provider_id='pending') and that user_id is inserted into the share record.
+If we are in BETA (there is an application flag for this), then this pending
+user's email is automatically entered onto the whitelist.  The user will get
+an email with a different share link that shows the video with a link to play
+it, but will take them first to a registration page.
+
+If they arrive at this registration page and they have already registered by
+some other means (either in the past and they are clicking on the email again,
+or maybe independently via the tray app, etc) then they are directed to the
+web_player.  If they have a session key, they see the video, else they are
+bounced to the login page, and if they log in, bouced back to the web_player.
+
+If they arrive at the registration page for the first time, they must enter
+password, password confirmation and a display name, view the terms of service,
+check an "I accept" button, and submit.  This will create a new viblio user,
+and then look up the pending user record by matching email, and then replace
+all private share user_id==pending_user to user_id==new_user_id.  They are
+sent a "welcome to viblio email".  They are then bounced back to the web_player
+where they are automatically authenticated.
+
+This functionality has been released into staging after some basic testing of
+most of the various corner cases.
+
