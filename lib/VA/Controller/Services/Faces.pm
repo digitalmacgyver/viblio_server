@@ -107,40 +107,27 @@ sub media_face_appears_in :Local {
     }
 }
 
-sub ratings_db :Private {
-    my( $self, $c, $uid ) = @_;
-    my $hash_db = {};
-    my @feats = $c->model( 'RDS::MediaAssetFeature' )
-	->search({ 'me.user_id' => $uid,
-		   contact_id => {'!=',undef},
-		 }, 
-		 { columns => [qw/contact_id/],
-		 });
-    foreach my $feat ( @feats ) {
-	if ( defined( $hash_db->{$feat->contact_id} ) ) {
-	    $hash_db->{$feat->contact_id}->{appears_in} += 1;
-	}
-	else {
-	    $hash_db->{$feat->contact_id} = {
-		appears_in => 1,
-		star_power => 'star0',
-		contact_id => $feat->contact_id };
-	}
-    }
-    # Sort these to determine the #1, 2 and 3 folks in terms of
-    # how many videos they appear in.
+=head2 /services/faces/contact_mediafiles_count
 
-    my @sorted = sort { $b->{appears_in} <=> $a->{appears_in} } values( %$hash_db );
-    if ( $#sorted >= 0 ) {
-	$hash_db->{ $sorted[0]->{contact_id} }->{star_power} = 'star1';
+Return the total number of mediafiles that this contact uniquely appears in.
+
+=cut
+
+sub contact_mediafile_count :Local {
+    my( $self, $c ) = @_;
+    my $cid = $c->req->param( 'cid' );
+    my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
+    unless( $contact ) {
+	$contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
     }
-    if ( $#sorted >= 1 ) {
-	$hash_db->{ $sorted[1]->{contact_id} }->{star_power} = 'star2';
+    unless( $contact ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find contact for [_1]', $cid ) );
     }
-    if ( $#sorted >= 2 ) {
-	$hash_db->{ $sorted[2]->{contact_id} }->{star_power} = 'star3';
-    }
-    return $hash_db;
+    my $count =  $c->model( 'RDS::MediaAssetFeature' )
+	->search(
+	{ contact_id => $contact->id, 'me.user_id' => $c->user->id },
+	{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } )->count;
+    $self->status_ok( $c, { count => $count } );
 }
 
 sub contacts :Local {
@@ -153,8 +140,6 @@ sub contacts :Local {
         @_ );
 
     my $user = $c->user->obj;
-
-    # my $ratings = $self->ratings_db( $c, $user->id );
 
     # Find all contacts for a user that appear in at least one video.
     my $search = {
