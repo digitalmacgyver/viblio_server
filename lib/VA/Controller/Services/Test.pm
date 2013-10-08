@@ -1,6 +1,8 @@
 package VA::Controller::Services::Test;
 use Moose;
 use namespace::autoclean;
+use JSON;
+use Try::Tiny;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -80,6 +82,82 @@ sub mailchimp :Local {
 	$c->logdump( $res );
 	$c->logdump( $model );
     }
+    $self->status_ok( $c, $res );
+}
+
+sub email_test :Local {
+    my( $self, $c ) = @_;
+    my $to = $c->req->param( 'to' );
+    my $add = $c->req->param( 'model' );
+    unless( $to ) {
+	$self->status_bad_request( $c, "missing 'to' param" );
+    }
+    my $additional_model = {};
+    my $exception;
+    if ( $add ) {
+	try {
+	    $additional_model = decode_json( $add );
+	} catch {
+	    $exception = $_;
+	};
+	if ( $exception ) {
+	    $self->status_bad_request( $c, $exception );
+	}
+    }
+    my $headers = {
+	subject => $c->loc( "This is a test" ),
+	from_email => 'reply@' . $c->config->{viblio_return_email_domain},
+	from_name => 'Viblio',
+	to => [{
+	    email => $to,
+	    name  => $c->user->displayname }],
+	headers => {
+	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+	}
+    };
+
+    my @media = $c->user->media->search
+	({'media_assets.asset_type' => 'face'},
+	 {order_by => 'me.id desc', 
+	  prefetch=>'media_assets',
+	  });
+    my $media;
+    if ( $#media >= 0 ) {
+	$media = $media[0];
+    }
+    else {
+	@media = $c->user->media->search
+	    ({},
+	     {order_by => 'me.id desc'});
+	if ( $#media >= 0 ) {
+	    $media = $media[0];
+	}
+    }
+
+    unless( $media ) {
+	$self->status_bad_request( $c, "Could not obtain a media file" );
+    }
+
+    my $mf = VA::MediaFile->new->publish
+	( $c, $media, 
+	  { include_contact_info => 1, 
+	    expires => (60*60*24*365) } );
+
+    $c->stash->{no_wrapper} = 1;
+    $c->stash->{model} = {
+	user  => $c->user,
+	media => $mf,
+	vars  => $additional_model,
+    };
+    try {
+	$headers->{html} = $c->view( 'HTML' )->render( $c, 'email/test.tt' );
+    } catch {
+	$exception = $_;
+    };
+    if ( $exception ) {
+	$self->status_bad_request( $c, $exception );
+    }
+    my $res = $c->model( 'Mandrill' )->send( $headers );
     $self->status_ok( $c, $res );
 }
 

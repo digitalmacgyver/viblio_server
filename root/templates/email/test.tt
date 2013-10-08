@@ -1,0 +1,2 @@
+<p>Welcome [% model.user.displayname %]</p>
+Foo = [% model.vars.foo %]
