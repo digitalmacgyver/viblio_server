@@ -3,6 +3,8 @@ use Moose;
 use VA::MediaFile;
 use namespace::autoclean;
 use URI::Escape;
+use MIME::Types;
+use Try::Tiny;
 
 BEGIN {extends 'Catalyst::Controller'; }
 
@@ -81,17 +83,30 @@ sub s3_image_proxy :Local {
 
     $c->log->debug( 'Filename: ' . $filename );
 
-    # Only expose posters
-    unless( $filename =~ /.+_poster\..+$/ ) {
+    # Only expose images
+    my $mimetype = MIME::Types->new()->mimeTypeOf( $filename );
+    unless( $mimetype ) {
 	$c->res->status( 403 );
 	$c->res->body( 'Forbidden' );
 	$c->detach;
     }
     
-    my $bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );
+    unless( $mimetype =~ /^image/ ) {
+	$c->res->status( 403 );
+	$c->res->body( 'Forbidden' );
+	$c->detach;
+    }
+
+    my $exception;
+    my $bucket;
+    try {
+	$bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );
+    } catch {
+	$exception = $_;
+    };
     unless( $bucket ) {
 	$c->res->status( 404 );
-	$c->res->body( 'Not found' );
+	$c->res->body( 'Not found: ' . $exception );
 	$c->detach;
     }
 
@@ -107,7 +122,17 @@ sub s3_image_proxy :Local {
 	$c->res->body( 'Not found' );
 	$c->detach;
     }
-    my $res = $object->client->_send_request( $req );
+    my $res;
+    try {
+	$res = $object->client->_send_request( $req );
+    } catch {
+	$exception = $_;
+    };
+    if ( $exception ) {
+	$c->res->status( 404 );
+	$c->res->body( 'Not found' );
+	$c->detach;
+    }
     unless( $res->is_success ) {
 	$c->res->status( $res->code );
 	$c->res->body( $res->message );
