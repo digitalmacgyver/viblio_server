@@ -113,7 +113,8 @@ sub email_test :Local {
 	    name  => $c->user->displayname }],
 	headers => {
 	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-	}
+	},
+	inline_css => 1,
     };
 
     my @media = $c->user->media->search
