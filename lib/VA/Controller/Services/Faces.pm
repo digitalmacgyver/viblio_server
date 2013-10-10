@@ -130,6 +130,13 @@ sub contact_mediafile_count :Local {
     $self->status_ok( $c, { count => $count } );
 }
 
+=head2 /services/faces/contacts
+
+Return all contacts for logged in user that appear in at
+least one video.
+
+=cut
+
 sub contacts :Local {
     my $self = shift; my $c = shift;
     my $args = $self->parse_args
@@ -283,6 +290,12 @@ sub faces_in_mediafile :Local {
     $self->status_ok( $c, { faces => \@data } );
 }
 
+=head2 /services/faces/contact
+
+Return the contact information for the passed in contact uuid
+
+=cut
+
 sub contact :Local {
     my( $self, $c ) = @_;
     my $cid = $c->req->param( 'cid' );
@@ -333,6 +346,13 @@ sub fix_uploads :Private {
     }
 }
 
+=head2 /services/faces/all_contacts
+
+Returns list of contacts that match the regular expression passed
+in as 'term'.
+
+=cut
+
 sub all_contacts :Local {
     my( $self, $c) = @_;
     my $q = $c->req->param( 'term' );
@@ -345,20 +365,21 @@ sub all_contacts :Local {
     }
 
     my @contacts = $c->user->contacts->search($where,{order_by => 'contact_name'});
-    $c->log->debug( 'FOUND: ' . ($#contacts + 1) );
+
     my @data = ();
     foreach my $contact ( @contacts ) {
 	my $hash = $contact->TO_JSON;
 	if ( $contact->picture_uri ) {
 	    $hash->{url} = new VA::MediaFile::US()->uri2url( $c, $contact->picture_uri );
 	}
-	else {
-	    $hash->{url} = 'css/images/nopic-red-90.png';
-	}
+	#else {
+	#    DO NOT PUT A PLACE HOLDER PIC HERE.  The GUI will look to see it this is
+	#    null to determine how to render.
+	#}
 	$hash->{uuid} = $hash->{id} unless( $hash->{uuid} );
 	push( @data, $hash );
     }
-    $c->log->debug( 'returning: ' . ($#data + 1) );
+
     if ( $q ) {
 	my @ret = ();
 	foreach my $con ( @data ) {
@@ -371,6 +392,11 @@ sub all_contacts :Local {
     }
 }
 
+=head2 /services/faces/photos_of
+
+Return all the known photos of a contact uuid
+
+=cut
 sub photos_of :Local {
     my( $self, $c ) = @_;
     my $cid = $c->req->param( 'cid' );
@@ -463,8 +489,6 @@ sub tag :Local {
 	  contact_name => undef
 	], @_ );
 
-    $c->logdump( $args );
-
     my $contact = $c->user->contacts->find({ uuid => $args->{uuid} });
     unless( $contact ) {
 	$contact = $c->user->contacts->find({ id => $args->{uuid} });
@@ -507,7 +531,6 @@ sub tag :Local {
 	$self->status_ok( $c, { contact => $identified->TO_JSON } );
     }
 }
-
 
 __PACKAGE__->meta->make_immutable;
 1;
