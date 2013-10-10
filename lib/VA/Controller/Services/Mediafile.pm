@@ -459,9 +459,12 @@ sub add_comment :Local {
 Called to share a video with someone or someones.  Requires a mid media uuid.  The
 list parameter is optional.  If not present, this share is 'public', a post to a
 social networking site.  If the list is present, its assumed to be a clean, sanitized
-comma delimitted list of email address.  If an email address belongs to a viblio user,
+comma delimitted list of email addresses.  If an email address belongs to a viblio user,
 a private share is created, otherwise a hidden share.  Email is sent to each address
 on the list.  The url to the video is different depending on private or hidden.
+
+If a list is passed, every email address on that list is added to the user's
+contact list unless it is already present.
 
 =cut
 
@@ -539,6 +542,12 @@ sub add_share :Local {
 			uri_escape( '#/web_player?mid=' . $media->uuid );
 		    $addrs->{$email} = $url;
  		}
+
+		# Add to user's contact list
+		my $contact = $c->user->obj->find_or_create_related( 'contacts', { contact_email => $email, contact_name => $email } );
+		unless( $contact ) {
+		    $c->log->error( "Failed to create a contact out of a shared email address!" );
+		}
 	    }
 	    else {
 		# This is a hidden share, emailed to someone but technically viewable
