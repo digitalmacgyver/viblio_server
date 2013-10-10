@@ -113,6 +113,9 @@ sub uri2url {
         $aws_use_https = 1;
     }
     my $aws_bucket_name = $c->config->{s3}->{bucket};
+    if ( $params && defined($params->{bucket}) ) {
+	$aws_bucket_name = $params->{bucket};
+    }
     my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
     my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
         $aws_key, $aws_secret, $aws_use_https, $aws_endpoint );

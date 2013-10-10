@@ -36,8 +36,15 @@ sub check :Local {
 	if ( $hash->{config} ) {
 	    my $json = $encoder->decode( $hash->{config} );
 	    $hash->{config} = $json;
+
+	    ## The uri in the config struct is of the form:
+	    ## bucket/key
+	    my @parts = split( /\//, $hash->{config}->{uri} );
+	    my $bucket = shift @parts;
+	    my $key = join( '/', @parts );
+
 	    $hash->{url} = 
-		new VA::MediaFile::US()->uri2url( $c, $hash->{config}->{uri} );
+		new VA::MediaFile::US()->uri2url( $c, $key, { bucket => $bucket } );
 	}
 
 	$self->status_ok( $c, $hash );
