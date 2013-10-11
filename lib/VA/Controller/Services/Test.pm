@@ -144,10 +144,16 @@ sub email_test :Local {
 	  { include_contact_info => 1, 
 	    expires => (60*60*24*365) } );
 
+    my @media_array = ( $mf );
+    if ( $#media > 0 ) {
+	push( @media_array, VA::MediaFile->new->publish
+	      ( $c, $media[1], { include_contact_info => 1, expires => (60*60*24*365) } ) );
+    }
+
     $c->stash->{no_wrapper} = 1;
     $c->stash->{model} = {
 	user  => $c->user,
-	media => $mf,
+	media => \@media_array,
 	vars  => $additional_model,
     };
     try {
