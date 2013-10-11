@@ -557,7 +557,8 @@ sub forgot_password_request :Local {
 	  email => $args->{email} }],
       headers => {
 	  'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-      }
+      },
+      inline_css => 1,
     };
 
     $c->stash->{user} = $user;
