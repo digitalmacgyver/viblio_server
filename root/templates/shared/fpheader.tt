@@ -9,18 +9,18 @@
   <meta name="title" content="[% mediafile.title || 'My Viblio Video' %]" />
   <meta name="description" content="[% mediafile.description || 'I am sharing this video from my Vibio collection.' %]" />
 
-  <meta property="og:url" content="[% server %]shared/flowplayer/[% mediafile.uuid %]" />
+  <meta property="og:url" content="[% server %]s/p/[% mediafile.uuid %]" />
   <meta property="og:site_name" content="Viblio" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="[% mediafile.title || 'My Viblio Video' %]" />
   <meta property="og:description" content="[% mediafile.description || 'I am sharing this video from my Vibio collection.' %]" />
-  <meta property="og:image" content="[% server %]shared/s3_image_proxy/[% mediafile.views.poster.uri %]" />
+  <meta property="og:image" content="[% server %]s/ip/[% mediafile.views.poster.uri %]" />
 
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="[% mediafile.title || 'My Viblio Video' %]" />
   <meta name="twitter:description" content="[% mediafile.description || 'I am sharing this video from my Viblio collection.' %]" />
-  <meta name="twitter:image" content="[% server %]shared/s3_image_proxy/[% mediafile.views.poster.uri %]" />
-  <meta name="twitter:url" content="[% server %]shared/flowplayer/[% mediafile.uuid %]" />
+  <meta name="twitter:image" content="[% server %]s/ip/[% mediafile.views.poster.uri %]" />
+  <meta name="twitter:url" content="[% server %]s/p/[% mediafile.uuid %]" />
 
 </head>
 <body>

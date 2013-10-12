@@ -9,7 +9,7 @@
   <meta name="description" content="If only the rest of your digital life could be this organized!" />
   <meta name="image_src" content="[% server %]css/images/logo-color-300.png" />
 
-  <meta property="og:url" content="[% server %]shared/simple" />
+  <meta property="og:url" content="[% server %]s/x" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Viblio" />
   <meta property="og:title" content="Viblio Video" />
@@ -22,7 +22,7 @@
   <meta name="twitter:title" content="Viblio Video" />
   <meta name="twitter:description" content="Viblio is a new video platform that stores, sorts and allows you to privately share your personal videos all in a secure cloud location.  Try it out by signing up at www.viblio.com." />
   <meta name="twitter:image" content="[% server %]css/images/logo-106.png" />
-  <meta name="twitter:url" content="[% server %]shared/simple" />
+  <meta name="twitter:url" content="[% server %]s/x" />
 
 </head>
 <body>

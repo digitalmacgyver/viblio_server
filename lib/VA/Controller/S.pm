@@ -1,4 +1,4 @@
-package VA::Controller::Shared;
+package VA::Controller::S;
 use Moose;
 use VA::MediaFile;
 use namespace::autoclean;
@@ -18,7 +18,7 @@ to share a video.
 
 =cut
 
-sub flowplayer :Local {
+sub p :Local {
     my( $self, $c, $uuid ) = @_;
     $uuid = $c->req->param( 'uuid' ) unless( $uuid );
     my $mediafile = $c->model( 'RDS::Media' )->find( { uuid => $uuid },
@@ -53,7 +53,7 @@ sub flowplayer :Local {
     }
 }
 
-sub simple :Local {
+sub x :Local {
     my( $self, $c ) = @_;
     $c->stash->{no_wrapper} = 1;
     $c->stash->{server} = $c->req->base;
@@ -77,7 +77,7 @@ no other assets.
 
 =cut
 
-sub s3_image_proxy :Local {
+sub ip :Local {
     my( $self, $c, $path, $file ) = @_;
     my $filename = "$path/$file";
 

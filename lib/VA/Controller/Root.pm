@@ -123,7 +123,7 @@ sub auto :Private {
     # added above.
     #
     if ($c->controller eq $c->controller('Login') ||
-	$c->controller eq $c->controller('Shared') ||
+	$c->controller eq $c->controller('S') ||
 	$c->controller eq $c->controller('Services::NA')) {
 	return 1;
     }
