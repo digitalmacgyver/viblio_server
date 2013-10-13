@@ -100,6 +100,7 @@ sub profile :Local {
     my $data = {
 	uid => $c->user->uuid,
 	email => $c->user->email,
+	displayname => $c->user->displayname,
 	fields => \@fields,
 	links => \@link_data,
     };
@@ -126,6 +127,33 @@ sub change_profile :Local {
 	}
     }
     $c->forward( '/services/user/profile' );
+}
+
+=head2 /services/user/change_email_or_displayname
+
+Pass in one or both of 'email', 'displayname' to change these
+values for the logged in user.  Presently 'email' does not
+do anything, as changing the primary user key is frought with
+danger.
+
+Returns the user struct. { user: {userinfo} }
+
+=cut
+
+sub change_email_or_displayname :Local {
+    my( $self, $c ) = @_;
+    my $email = $c->req->param( 'email' );
+    my $displayname = $c->req->param( 'displayname' );
+    if ( $email ) {
+	# $c->user->obj->email( $email );
+	# DO NOT ALLOW THIS AT THIS TIME ... changing the user's email address has
+	# large ramifications.
+    }
+    if ( $displayname ) {
+	$c->user->obj->displayname( $displayname );
+    }
+    $c->user->obj->update;
+    $self->status_ok($c, { user => $c->user->obj->TO_JSON });
 }
 
 sub link_facebook_account :Local {
