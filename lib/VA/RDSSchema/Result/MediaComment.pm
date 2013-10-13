@@ -195,25 +195,6 @@ __PACKAGE__->belongs_to(
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
-__PACKAGE__->add_columns(
-    "created_date" =>
-    {
-	data_type => "datetime",
-	datetime_undef_if_invalid => 1,
-	is_nullable => 1,
-	timezone => 'America/Los Angeles',
-	locale => 'en_US',
-    },
-    "updated_date" =>
-    {
-	data_type => "datetime",
-	datetime_undef_if_invalid => 1,
-	is_nullable => 1,
-	timezone => 'America/Los Angeles',
-	locale => 'en_US',
-    },
-    );
-
 sub TO_JSON {
     my $self = shift;
     my $hash = { %{$self->{_column_data}} };

@@ -421,13 +421,13 @@ sub add_comment :Local {
     my $txt = $c->req->param( 'txt' );
     if ( !defined( $txt ) || $txt eq '' ) {
 	# noop
-	$self->status_ok( $c, {} );
+	$self->status_ok( $c, { comment => {} } );
     }
     # comments need to be sanitized before being written to any database!
     $txt = $self->sanitize( $c, $txt );
     if ( !defined( $txt ) || $txt eq '' ) {
 	# noop
-	$self->status_ok( $c, {} );
+	$self->status_ok( $c, { comment => {} } );
     }
     # This version of add comment is being called by the logged in user...
     my $who = $c->user->displayname;
@@ -451,7 +451,15 @@ sub add_comment :Local {
 	    $c, $c->loc( "Failed to add this comment to the database." ) );
     }	
 
-    $self->status_ok( $c, {} );
+    # Refetch, to get a valid create_date
+    my $id = $comment->id;
+    undef $comment;
+    $comment = $c->model( 'RDS::MediaComment' )->find({id=>$id});
+
+    my $hash = $comment->TO_JSON;
+    $hash->{who} = $comment->user->displayname;
+
+    $self->status_ok( $c, { comment => $hash } );
 }
 
 =head2 /services/mediafile/add_share
