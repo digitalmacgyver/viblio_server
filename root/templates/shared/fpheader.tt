@@ -17,6 +17,7 @@
   <meta property="og:image" content="[% server %]s/ip/[% mediafile.views.poster.uri %]" />
 
   <meta name="twitter:card" content="summary" />
+  <meta	name="twitter:site" content="iviblio" />
   <meta name="twitter:title" content="[% mediafile.title || 'My Viblio Video' %]" />
   <meta name="twitter:description" content="[% mediafile.description || 'I am sharing this video from my Viblio collection.' %]" />
   <meta name="twitter:image" content="[% server %]s/ip/[% mediafile.views.poster.uri %]" />

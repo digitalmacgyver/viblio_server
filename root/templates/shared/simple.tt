@@ -19,6 +19,7 @@
 
   <!-- Twitter (http://www.quicksprout.com/2013/03/25/social-media-meta-tags-how-to-use-open-graph-and-cards/) -->
   <meta name="twitter:card" content="summary" />
+  <meta	name="twitter:site" content="iviblio" />
   <meta name="twitter:title" content="Viblio Video" />
   <meta name="twitter:description" content="Viblio is a new video platform that stores, sorts and allows you to privately share your personal videos all in a secure cloud location.  Try it out by signing up at www.viblio.com." />
   <meta name="twitter:image" content="[% server %]css/images/logo-106.png" />
