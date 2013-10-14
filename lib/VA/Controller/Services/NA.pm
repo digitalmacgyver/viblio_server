@@ -1100,6 +1100,32 @@ sub valid_email :Local {
     $self->status_ok( $c, { valid => 1, why => '' } );
 }
 
+sub find_share_info_for_pending :Local {
+    my( $self, $c ) = @_;
+    my $email = $c->req->param( 'email' );
+    # find pending user
+    my @pending = $c->model( 'RDS::User' )->search({displayname => $email,
+						    provider_id => 'pending' });
+    if ( $#pending >= 0 ) {
+	# May have been shared to more than once, just pick the first one.
+	my $pending = $pending[0];
+
+	# Now find share record for this pending user.
+	my @shares = $c->model( 'RDS::MediaShare' )->search({share_type=>'private', user_id=>$pending->id});
+	if ( $#shares >= 0 ) {
+	    my $share = $shares[0];  # pick the first one
+	    # Get the media file and the user who owns it
+	    my $mediafile = $share->media;
+	    my $owner = $mediafile->user;
+	    $self->status_ok( $c, {
+		media => VA::MediaFile->publish( $c, $mediafile ),
+		owner => $owner->TO_JSON });
+	}
+    }
+
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
