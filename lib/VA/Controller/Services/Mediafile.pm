@@ -543,8 +543,6 @@ sub add_share :Local {
 			    $c->log->error( "Failed to add $email to whitelist for private share." );
 			}
 		    }
-		    # my $url = URI->new( $c->server . '#/register' );
-		    # $url->query_form( email => $email, url => '#/web_player?mid=' . $media->uuid );
 		    my $url = $c->server . '#/register?email=' .
 			uri_escape( $email ) . '&url=' .
 			uri_escape( '#/web_player?mid=' . $media->uuid );
