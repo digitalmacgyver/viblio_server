@@ -104,6 +104,11 @@ __PACKAGE__->table("users");
   is_nullable: 1
   size: 32
 
+=head2 confirmed
+
+  data_type: 'tinyint'
+  is_nullable: 1
+
 =head2 accepted_terms
 
   data_type: 'tinyint'
@@ -140,6 +145,8 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 1, size => 128 },
   "active",
   { data_type => "varchar", is_nullable => 1, size => 32 },
+  "confirmed",
+  { data_type => "tinyint", is_nullable => 1 },
   "accepted_terms",
   { data_type => "tinyint", is_nullable => 1 },
   "created_date",
@@ -350,8 +357,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-04 22:00:41
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ZY7ye8Iac8RSoLv5eyEr1g
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-15 16:49:38
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jVK5ov3e79gGbdv1v85Qdg
 
 # I like this relationship name better
 #

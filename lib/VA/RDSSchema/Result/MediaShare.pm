@@ -61,6 +61,12 @@ __PACKAGE__->table("media_shares");
   is_auto_increment: 1
   is_nullable: 0
 
+=head2 uuid
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 36
+
 =head2 media_id
 
   data_type: 'integer'
@@ -102,6 +108,8 @@ __PACKAGE__->table("media_shares");
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
+  "uuid",
+  { data_type => "varchar", is_nullable => 1, size => 36 },
   "media_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "user_id",
@@ -189,9 +197,10 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-04 22:00:37
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:8yP2JX3C9oW64P4RCySvDQ
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-15 16:49:36
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4Dba1XGUIKsNpnc6la7TxQ
 
+__PACKAGE__->uuid_columns( 'uuid' );
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
