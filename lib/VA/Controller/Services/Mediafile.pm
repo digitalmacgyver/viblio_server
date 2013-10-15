@@ -606,7 +606,7 @@ sub add_share :Local {
 	    $self->status_bad_request
 		( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 	}
-	my $url = $c->server . 's/ps/' . $share->id;
+	my $url = $c->server . 's/ps/' . $share->uuid;
 	$self->status_ok( $c, { url => $url } );
     }
     else {

@@ -1048,7 +1048,6 @@ sub media_shared :Local {
 		share_type => 'private', 
 		user_id => $user->id });
 	    if ( $share ) {
-		$c->log->error( 'Logged in user was target of share' );
 		$share->view_count( $share->view_count + 1 );
 		$share->update;
 		$OK = 1;
