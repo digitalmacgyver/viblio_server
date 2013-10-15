@@ -8,7 +8,7 @@ use Try::Tiny;
 
 BEGIN {extends 'Catalyst::Controller'; }
 
-=head2 /shared/flowplayer/$uuid
+=head2 /s/p/$uuid
 
 This unauthenticated API is used in the Flowplayer "viral video"
 plugin's 'pageUrl' field, which is the URL sent to Facebook, et. al.
@@ -53,6 +53,13 @@ sub p :Local {
     }
 }
 
+=head2 /s/x
+
+Used in shares to social sites that are essencially "likes" that
+point back to our site.
+
+=cut
+
 sub x :Local {
     my( $self, $c ) = @_;
     $c->stash->{no_wrapper} = 1;
@@ -60,7 +67,7 @@ sub x :Local {
     $c->stash->{template}  = 'shared/simple.tt';
 }
 
-=head2 /s3_image_proxy/$s3_uri
+=head2 /s/ip/$s3_uri
 
 Sharing on Facebook requires a og:image meta tag who's content points to a publically
 accessible image to represent the share.  The og:image content string cannot (apparently)
@@ -71,9 +78,8 @@ function then does the actual S3 assest download, then proxies it out.  So Faceb
 what appears to be a static, publically accessible image.
 
 The problem is security.  This is an un-authenticated API, which can access any protected
-S3 content and return it.  The best I can do is check the passed in uri for ".*_poster\.+$"
-which is the convension for storing video posters in S3.  Posters then are exposed, but
-no other assets.
+S3 content and return it.  So we check mimetype (based on file name extension) and reject
+anything that is not an image.
 
 =cut
 
@@ -146,6 +152,65 @@ sub ip :Local {
     $c->res->write( $res->content );
     $c->res->body('');
 }
+
+=head2 /s/ps/<share-uuid>
+
+This is used for turning a potential share into a hidden share.
+
+=cut
+
+sub ps :Local {
+    my( $self, $c, $sid ) = @_;
+
+    unless( $sid ) {
+	$c->res->status( 404 );
+	$c->res->body( 'Not found' );
+	$c->detach;
+    }
+
+    my $share = $c->model( 'RDS::MediaShare' )->find({uuid=>$sid, share_type=>'potential'});
+    unless( $share ) {
+	$share = $c->model( 'RDS::MediaShare' )->find({id=>$sid, share_type=>'potential'});
+    }
+
+    unless( $share ) {
+	$c->res->status( 404 );
+	$c->res->body( 'Not found' );
+	$c->detach;
+    }
+
+    my $mediafile = $share->media;
+
+    if ( $mediafile ) {
+	# Turn this potential share into a real, hidden share
+	my $hidden = $mediafile->find_or_create_related( 'media_shares', { share_type => 'hidden' } );
+
+	# The fpheader needs only limitted information, so don't leak anything
+	# we don't have too.
+	my $mhash = {
+	    title => $mediafile->title,
+	    description => $mediafile->description,
+	    uuid => $mediafile->uuid,
+	    views => {
+		poster => {
+		    uri => $mediafile->asset( 'poster' )->uri,
+		}
+	    }
+	};
+
+	$c->stash->{no_wrapper} = 1;
+	$c->stash->{server} = $c->req->base;
+	$c->stash->{mediafile} = $mhash;
+	$c->stash->{template}  = 'shared/fpheader.tt';
+    }
+    else {
+	$c->stash->{no_wrapper} = 1;
+	$c->stash->{server} = $c->req->base;
+	$c->stash->{mediafile} = {};
+	$c->stash->{template}  = 'shared/fpheader.tt';
+    }
+}
+    
 
 __PACKAGE__->meta->make_immutable;
 

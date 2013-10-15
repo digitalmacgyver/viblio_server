@@ -503,7 +503,6 @@ sub add_share :Local {
 		if ( $recip ) {
 		    # The target user already exists
 		    $share = $media->find_or_create_related( 'media_shares', { 
-			view_count => 0,
 			user_id => $recip->id,
 			share_type => 'private' } );
 		    unless( $share ) {
@@ -529,7 +528,6 @@ sub add_share :Local {
 		    }
 		    $share = $media->find_or_create_related( 'media_shares', { 
 			share_type => 'private',
-			view_count => 0,
 			user_id => $pending_user->id });
 		    unless( $share ) {
 			$self->status_bad_request
@@ -558,7 +556,7 @@ sub add_share :Local {
 	    else {
 		# This is a hidden share, emailed to someone but technically viewable
 		# by anyone with the link
-		$share = $media->find_or_create_related( 'media_shares', { share_type => 'hidden', view_count => 0 } );
+		$share = $media->find_or_create_related( 'media_shares', { share_type => 'hidden' } );
 		unless( $share ) {
 		    $self->status_bad_request
 			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
@@ -593,8 +591,26 @@ sub add_share :Local {
 	    }
 	}
     }
+    elsif ( $disposition eq 'potential' ) {
+	# This is a potential share.  A potencial share is created in any context
+	# where we don't otherwise know that the share will ever actually be used.
+	# Currently this is the case for cut-n-paste or copy-to-clipboard link
+	# displayed in the shareVidModal in the web gui.  We don't know if the user
+	# will actually c-n-p or c-t-c, and if they do, we don't know if they 
+	# actually utilize the information.  So we create a potencial share, which
+	# will turn into a "hidden" share if anyone ever comes into viblio via the
+	# special link we will specify.
+	#
+	my $share = $media->create_related( 'media_shares', { share_type => 'potential' } );
+	unless( $share ) {
+	    $self->status_bad_request
+		( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
+	}
+	my $url = $c->server . 's/ps/' . $share->id;
+	$self->status_ok( $c, { url => $url } );
+    }
     else {
-	my $share = $media->find_or_create_related( 'media_shares', { share_type => 'public', view_count => 0 } );
+	my $share = $media->find_or_create_related( 'media_shares', { share_type => 'public' } );
 	unless( $share ) {
 	    $self->status_bad_request
 		( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
