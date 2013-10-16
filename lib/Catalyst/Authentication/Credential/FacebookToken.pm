@@ -117,10 +117,18 @@ sub authenticate {
 	# Check white and blak lists...
 	if ( $ctx->config->{in_beta} ) {
 	    unless( $ctx->model( 'RDS::EmailUser' )->find({email => $fb_user->{email}, status => 'whitelist'}) ) {
+		$ctx->{authfail_code} = "NOLOGIN_NOT_IN_BETA";
 		return undef;
 	    }
 	}
 	if ( $ctx->model( 'RDS::EmailUser' )->find({email => $fb_user->{email}, status => 'blacklist'}) ) {
+	    $ctx->{authfail_code} = "NOLOGIN_BLACKLISTED";
+	    return undef;
+	}
+
+	# User's email must already exist ... no auto creates here!!
+	if ( ! $ctx->model( 'RDS::User' )->find({email=>$fb_user->{email}}) ) {
+	    $ctx->{authfail_code} = "NOLOGIN_EMAIL_NOT_FOUND";
 	    return undef;
 	}
 
