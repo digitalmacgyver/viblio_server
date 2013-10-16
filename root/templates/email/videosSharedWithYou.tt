@@ -26,7 +26,7 @@
                                 	<!-- // Begin Module: Standard Preheader \\ -->
                                     <table border="0" cellpadding="10" cellspacing="0" width="100%">
                                     	<tr>
-                                            <td valign="top">
+                                        	<td valign="top">
                                             	<div mc:edit="std_preheader_content">
                                                 	Use one or two sentences in this area to offer a teaser of your email's content. Text here will show in a preview area in some email clients.
                                                 </div>
@@ -77,13 +77,37 @@
                                                         <td width="96"></td>
                                                         <td valign="top" width="600">
                                                             <div class='bottomBorder-Thick paddedDiv ' id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">
-                                                                <span>Your Viblio password has been reset. Please log into Viblio with this temporary password:</span>
+                                                                [% from.displayname %] has shared a video with you through Viblio!
                                                                 <br />
                                                                 <br />
-                                                                <b>[% new_password %]</b>
+                                                                <span>They say:</span><br />
+                                                                <span>"[% body %]"</span>
                                                                 <br />
                                                                 <br />
-                                                                <span>After logging in, you may go to your Viblio settings and change this temporary password to something else.</span>
+                                                                <span>Video: [% model.media.0.title %]</span>
+                                                                <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">   
+                                                                    <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+                                                                        <td cellspacing="0" cellpadding="0">
+                                                                            <a href='[% url %]'>
+                                                                                <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+                                                                            </a>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                                
+                                                                [% IF model.vars.shareType == "private" %]
+                                                                <span>To maintain the privacy of this video, <a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> and create your own password.  You'll then be able to access and watch [% from.displayname.split(' ').0 %]'s video online, and share private comments with [% from.displayname.split(' ').0 %].</span>
+                                                                    <br />
+                                                                    <br />
+                                                                [% END %]
+                                                                
+                                                                [% IF model.vars.shareType == "unlisted" %]
+                                                                <span><a class="tomato" href='[% url %]'><span class="tomato">CLICK HERE</span></a> to access and watch [% from.displayname.split(' ').0 %]'s video online.</span>
+                                                                    <br />
+                                                                    <br />
+                                                                [% END %]
+                                                                
+                                                                <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
                                                             </div>
 							</td>
                                                         <td width="96"></td>
@@ -111,7 +135,7 @@
                                                         <td colspan="2" valign="bottom" id="utility">
                                                             <div mc:edit="std_utility">
                                                                 <span>Viblio sent you this email because you signed up for our service.</span><br />
-                                                                <span>If you no longer want to receive these updates, you may <a href="*|UPDATE_PROFILE|*">edit your preferences</a> or <a href="*|UNSUB|*">unsubscribe</a></span><br />
+                                                                <span>If you no longer want to receive these updates, you may edit your preferences <a href="[% c.server %]#settings">here</a>.</span><br />
                                                                 <span><!-- *|IFNOT:ARCHIVE_PAGE|* --> <a href="*|ARCHIVE|*">view email in browser</a><!-- *|END:IF|* -->&nbsp;</span>
                                                             </div>
                                                         </td>

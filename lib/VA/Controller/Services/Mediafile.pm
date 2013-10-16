@@ -509,7 +509,8 @@ sub add_share :Local {
 			$self->status_bad_request
 			    ( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 		    }
-		    $addrs->{$email} = $c->server . '#/web_player?mid=' . $media->uuid;
+		    $addrs->{$email}->{url} = $c->server . '#/web_player?mid=' . $media->uuid;
+		    $addrs->{$email}->{type} = 'private';
 		}
 		else {
 		    # 1.  Create a "pending user" as a placeholder for this future user
@@ -544,7 +545,8 @@ sub add_share :Local {
 		    my $url = $c->server . '#/register?email=' .
 			uri_escape( $email ) . '&url=' .
 			uri_escape( '#/web_player?mid=' . $media->uuid );
-		    $addrs->{$email} = $url;
+		    $addrs->{$email}->{url} = $url;
+		    $addrs->{$email}->{type} = 'private';
  		}
 
 		# Add to user's contact list
@@ -561,7 +563,8 @@ sub add_share :Local {
 		    $self->status_bad_request
 			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 		}
-		$addrs->{$email} = $c->server . '#/web_player?mid=' . $media->uuid;
+		$addrs->{$email}->{url} = $c->server . '#/web_player?mid=' . $media->uuid;
+		$addrs->{$email}->{type} = 'unlisted';
 	    }
 	}
 	# If we're here, then everything is ok so far and we can send emails
@@ -574,15 +577,22 @@ sub add_share :Local {
 		    email => $addr }],
 		headers => {
 		    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-		}
+		},
+		inline_css => 1,
 	    };
 	    $c->stash->{no_wrapper} = 1;
 	    $c->stash->{body} = $body;
-	    $c->stash->{media} = VA::MediaFile->new->publish( $c, $media, { expires => (60*60*24*365) } );
 	    $c->stash->{from} = $c->user;
-	    $c->stash->{url} = $addrs->{$addr};
+	    $c->stash->{url} = $addrs->{$addr}->{url};
 
-	    $email->{html} = $c->view( 'HTML' )->render( $c, 'email/share.tt' );
+	    $c->stash->{model} = {
+		media => [ VA::MediaFile->new->publish( $c, $media, { expires => (60*60*24*365) } ) ],
+		vars => {
+		    shareType => $addrs->{$addr}->{type},
+		}
+	    };
+
+	    $email->{html} = $c->view( 'HTML' )->render( $c, 'email/videosSharedWithYou.tt' );
 	    my $res = $c->model( 'Mandrill' )->send( $email );
 	    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
 		$c->log->error( "Error using Mailchimp to send" );

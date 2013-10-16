@@ -476,13 +476,20 @@ sub new_user :Local {
 		name  => $user->displayname }],
 	    headers => {
 		    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-	    }
+	    },
+	    inline_css => 1,
 	};
 	$c->stash->{no_wrapper} = 1;
 	$c->stash->{to} = $user;
 	$c->stash->{url} = $c->server;
 
-	$headers->{html} = $c->view( 'HTML' )->render( $c, 'email/welcome.tt' );
+	$c->stash->{model} = {
+	    vars => {
+		user => $user,
+	    },
+	};
+
+	$headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountCreationConfirmation.tt' );
 	my $res = $c->model( 'Mandrill' )->send( $headers );
 	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
 	    $c->log->error( "Error using Mailchimp to send" );
@@ -562,7 +569,7 @@ sub forgot_password_request :Local {
     };
 
     $c->stash->{user} = $user;
-    $c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/reset-password.tt' );
+    $c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/forgotPasswordEmail.tt' );
 
     my $res = $c->model( 'Mandrill' )->send( $c->stash->{email} );
     if ( $res && $res->{status} && $res->{status} eq 'error' ) {
@@ -872,15 +879,20 @@ sub mediafile_create :Local {
 		name  => $user->displayname }],
 	    headers => {
 		'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-	    }
+	    },
+	    inline_css => 1,
 	};
 
 	$c->stash->{no_wrapper} = 1;
 	$c->stash->{user} = $user;
 	$c->stash->{media} = $mf;
 	$c->stash->{server} = $c->server;
+
+	$c->stash->{model} = {
+	    media => [ $mf ],
+	};
 	
-	$email->{html} = $c->view( 'HTML' )->render( $c, 'email/ready.tt' );
+	$email->{html} = $c->view( 'HTML' )->render( $c, 'email/newVideos.tt' );
 	my $res = $c->model( 'Mandrill' )->send( $email );
 	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
 	    $c->log->error( "Error using Mailchimp to send" );

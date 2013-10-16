@@ -76,10 +76,10 @@ sub server {
     $server =~ s/$path//g;
     $server =~ s/\/$//g;
 
-    if ( $c->req->header( 'port' ) ) {
+    if ( $c->req->header( 'port' ) && $c->req->header( 'port' ) != 80 ) {
 	$server .= ':' . $c->req->header( 'port' );
     }
-    elsif ( $uri->port ) {
+    elsif ( $uri->port && $uri->port != 80 ) {
 	$server .= ':' . $uri->port;
     }
     $server .= '/';

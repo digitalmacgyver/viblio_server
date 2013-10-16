@@ -601,10 +601,11 @@ sub tell_a_friend :Local {
 	      email => $recip}],
 	  headers => {
 	      'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-	  }
+	  },
+	  inline_css => 1,
 	};
 	$c->stash->{user} = $user;
-	$c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/tell_a_friend.tt' );
+	$c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/tellAFriend.tt' );
 
 	my $res = $c->model( 'Mandrill' )->send( $c->stash->{email} );
 	if ( $res && $res->{status} && $res->{status} eq 'error' ) {

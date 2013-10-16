@@ -26,7 +26,7 @@
                                 	<!-- // Begin Module: Standard Preheader \\ -->
                                     <table border="0" cellpadding="10" cellspacing="0" width="100%">
                                     	<tr>
-                                            <td valign="top">
+                                        	<td valign="top">
                                             	<div mc:edit="std_preheader_content">
                                                 	Use one or two sentences in this area to offer a teaser of your email's content. Text here will show in a preview area in some email clients.
                                                 </div>
@@ -44,7 +44,7 @@
                             </tr>
                         </table>
                         <!-- // End Template Preheader \\ -->
-                    	<table border="0" cellpadding="0" cellspacing="0" width="800"  id="templateContainer">
+                    	<table border="0" cellpadding="0" cellspacing="0" width="800" height='1200' id="templateContainer">
                             <tr>
                             	<td align="center" valign="top">
                                     <!-- // Begin Template Body \\ -->
@@ -77,13 +77,43 @@
                                                         <td width="96"></td>
                                                         <td valign="top" width="600">
                                                             <div class='bottomBorder-Thick paddedDiv ' id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">
-                                                                <span>Your Viblio password has been reset. Please log into Viblio with this temporary password:</span>
-                                                                <br />
-                                                                <br />
-                                                                <b>[% new_password %]</b>
-                                                                <br />
-                                                                <br />
-                                                                <span>After logging in, you may go to your Viblio settings and change this temporary password to something else.</span>
+                                                                <div class='centered'>
+                                                                    <span class='largeText'>Success!</span>
+                                                                    <br />
+                                                                    <br />
+                                                                    You now have your own Viblio account
+                                                                    <br />
+                                                                    <br />
+                                                                    You registered with: [% model.vars.user.email %]
+                                                                    <br />
+                                                                    <a class="tomato" href="[% c.server %]"><span class="tomato">Forgot your password?</span></a>
+                                                                    <br />
+                                                                    <br />
+                                                                    Viblio magically organizes your videos and helps you share them with family & friends.
+                                                                    <br />
+                                                                    <br />
+                                                                    We pull all your videos together in one secure cloud location.
+                                                                    <br />
+                                                                    <br />
+                                                                    We magic tag your videos for easy browsing and searching.
+                                                                    <br />
+                                                                    <br />
+                                                                    And then we make it easier than ever to share your videos, but only with the people you want to.
+                                                                    <br />
+                                                                    <br />
+                                                                    If you haven't downloaded our Viblio Video Finder yet, <a class="tomato" href="[% c.server %]" ><span class="tomato">let's get you started!</span></a>
+                                                                    <br />
+                                                                    <br />
+                                                                </div>
+                                                                <div>
+                                                                    Privacy is important to you - and to us too. We do not sell, rent, barter for beads, or otherwise share your name or address. At any point, you can select the link at the bottom of any email to unsubscribe or change your email preferences.
+                                                                    <br />
+                                                                    <br />
+                                                                    If you have questions about our service or suggestions for making it better, please contact us at <a class="tomato" href="mailto:feedback@viblio.com"><span class="tomato">feedback@viblio.com</span></a>.
+                                                                    <br />
+                                                                    <br />
+                                                                    Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.
+                                                                </div>
                                                             </div>
 							</td>
                                                         <td width="96"></td>
@@ -111,7 +141,7 @@
                                                         <td colspan="2" valign="bottom" id="utility">
                                                             <div mc:edit="std_utility">
                                                                 <span>Viblio sent you this email because you signed up for our service.</span><br />
-                                                                <span>If you no longer want to receive these updates, you may <a href="*|UPDATE_PROFILE|*">edit your preferences</a> or <a href="*|UNSUB|*">unsubscribe</a></span><br />
+                                                                <span>If you no longer want to receive these updates, you may edit your preferences <a href="[% c.server %]#settings">here</a>.</span><br />
                                                                 <span><!-- *|IFNOT:ARCHIVE_PAGE|* --> <a href="*|ARCHIVE|*">view email in browser</a><!-- *|END:IF|* -->&nbsp;</span>
                                                             </div>
                                                         </td>

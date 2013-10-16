@@ -248,7 +248,7 @@
 			.bodyContent div a:link, .bodyContent div a:visited{
 				/*@editable*/ color:#336699;
 				/*@editable*/ font-weight:normal;
-				/*@editable*/ text-decoration:underline;
+				/*@editable*/ text-decoration:none;
 			}
 
 			.bodyContent img{
@@ -359,9 +359,18 @@
                         
                         .name-Wrap {
                             height: 10px;
+                            overflow: hidden;
+                        }
+                        
+                        .name-Wrap td {
+                            height: 10px;
+                            overflow: hidden;
                         }
                         
                         .name {
+                            width: 64px;
+                            height: 10px;
+                            overflow: hidden;
                             font-size: 14px;
                         }
                         
@@ -374,9 +383,17 @@
                             font-size: 14px;
                         }
                         
-                        #weeklyDigestTable span {
+                        #weeklyDigestTable td {
                             color: white;
                             font-size: 14px;
+                            text-decoration: none;
+                            text-align: center;
+                        }
+                        
+                        #weeklyDigestTable td span {
+                            color: white;
+                            font-size: 14px;
+                            text-decoration: none;
                         }
                         
                         #weeklyDigestTable td span a:link,
@@ -385,12 +402,31 @@
                             color: white;
                         }
                         
+                        a {
+                            text-decoration: none !important;
+                        }
+                        
+                        a:-webkit-any-link {
+                            text-decoration: none !important;
+                        }
+                        
                         .numbers {
                             background-color: darkgrey;
                         }
                         
                         .description {
+                            display: inline-block;
                             background-color: lightgrey;
+                            font-size: 14px;
+                            color: white;
+                            cursor: pointer;
+                            text-decoration: none;
+                        }
+                        
+                        .tomato {
+                            display: inline-block;
+                            color: #EF5541;
+                            text-decoration: none;
                         }
 
 .bottomBorder-Thick {

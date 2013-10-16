@@ -26,7 +26,7 @@
                                 	<!-- // Begin Module: Standard Preheader \\ -->
                                     <table border="0" cellpadding="10" cellspacing="0" width="100%">
                                     	<tr>
-                                            <td valign="top">
+                                        	<td valign="top">
                                             	<div mc:edit="std_preheader_content">
                                                 	Use one or two sentences in this area to offer a teaser of your email's content. Text here will show in a preview area in some email clients.
                                                 </div>
@@ -77,13 +77,72 @@
                                                         <td width="96"></td>
                                                         <td valign="top" width="600">
                                                             <div class='bottomBorder-Thick paddedDiv ' id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">
-                                                                <span>Your Viblio password has been reset. Please log into Viblio with this temporary password:</span>
+                                                                It's the beginning of a wonderful relationship!
                                                                 <br />
                                                                 <br />
-                                                                <b>[% new_password %]</b>
+                                                                We have already uploaded [% model.vars.user.numVideos %] of your videos to your personal <a class="tomato" href='[% c.server %]/[% model.vars.user.username %]'><span class="tomato">Viblio channel</span></a>.
                                                                 <br />
                                                                 <br />
-                                                                <span>After logging in, you may go to your Viblio settings and change this temporary password to something else.</span>
+                                                                This is just one of the videos you have on your channel: [% model.media.0.title %]
+                                                                <br />
+                                                                    <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+                                                                <br />
+                                                                Your Viblio channel is easy to remember:  <a class="tomato" href='[% c.server %]/[% model.vars.user.username %]'><span class="tomato">www.viblio.com/[% model.vars.user.username %]</span></a>.  Visit it any time you want to browse your personal videos or share them with friends and family. 
+                                                                <br />
+                                                                <br />
+                                                                Viblio discovers faces of your friends and loved ones and makes sharing (and privacy!) easy.
+                                                                <br />
+                                                                <br />
+                                                                [% numFaces = [] %]
+                                                                [% FOREACH media IN model.media -%]
+                                                                    [% FOREACH face IN media.views.face -%]
+                                                                        [% numFaces.push(face) %]
+                                                                    [% END %]
+                                                                [% END %]
+                                                                
+                                                                [% IF numFaces.size > 0 %]
+                                                                    We found these new faces in your videos.
+                                                                    <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
+                                                                        <tbody>
+                                                                            
+                                                                                [% FOREACH face IN numFaces -%]
+                                                                                    [% LAST IF loop.count > 12 %]
+                                                                                    [%- "<tr>\n" IF loop.first || loop.count == 4 || loop.count == 7 || loop.count == 10 %]
+                                                                                        <td class="face" valign="top">
+                                                                                            <table cellspacing="0" style="text-align: center;margin-right: auto;margin-left: auto;">
+                                                                                                <tbody>
+                                                                                                    <tr cellspacing="0" cellpadding="0">
+                                                                                                        <td cellspacing="0" cellpadding="0">
+                                                                                                            <img width="64" height="64" src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
+                                                                                                        </td>
+                                                                                                    </tr>
+                                                                                                    [% IF face.contact.contact_name %]
+                                                                                                    <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="width: 64px;">
+                                                                                                        <td cellspacing="0" cellpadding="0" style="width: 64px;">
+                                                                                                            <span class="name">[% face.contact.contact_name %]</span>
+                                                                                                        </td>
+                                                                                                    </tr>
+                                                                                                    [% ELSE %]
+                                                                                                    <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="width: 64px;">
+                                                                                                        <td cellspacing="0" cellpadding="0" style="width: 64px;">
+                                                                                                            <span class="name">Stranger</span>
+                                                                                                        </td>
+                                                                                                    </tr>
+                                                                                                    [% END %]
+                                                                                                </tbody>
+                                                                                            </table> 
+                                                                                        </td>   
+                                                                                    [%- "</tr>\n" IF loop.last || loop.count == 3 || loop.count == 6 || loop.count == 9 %]
+                                                                                 [% END %]
+                                                                             
+                                                                        </tbody>
+                                                                    </table>
+                                                                    <br />
+                                                                    Connect with friends or family by sharing one of these videos.
+                                                                    <br />
+                                                                    <br />
+                                                                    <a class="tomato" href='[% c.server %]'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.
+                                                                [% END %]
                                                             </div>
 							</td>
                                                         <td width="96"></td>
@@ -111,7 +170,7 @@
                                                         <td colspan="2" valign="bottom" id="utility">
                                                             <div mc:edit="std_utility">
                                                                 <span>Viblio sent you this email because you signed up for our service.</span><br />
-                                                                <span>If you no longer want to receive these updates, you may <a href="*|UPDATE_PROFILE|*">edit your preferences</a> or <a href="*|UNSUB|*">unsubscribe</a></span><br />
+                                                                <span>If you no longer want to receive these updates, you may edit your preferences <a href="[% c.server %]#settings">here</a>.</span><br />
                                                                 <span><!-- *|IFNOT:ARCHIVE_PAGE|* --> <a href="*|ARCHIVE|*">view email in browser</a><!-- *|END:IF|* -->&nbsp;</span>
                                                             </div>
                                                         </td>
