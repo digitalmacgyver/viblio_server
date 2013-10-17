@@ -1,5 +1,6 @@
+[% previewText = "Here is some new and exciting preview text! Finally it's different. YAY!!" %]
 [% INCLUDE email/top.tt %]
-    <div class='bottomBorder-Thick paddedDiv whiteBG' id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">
+    
         <span>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</span>
         <br />
         <br />
@@ -87,5 +88,5 @@
             <br />
             <a class="tomato" href='[% c.server %]'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.
         [% END %]
-    </div>
+
 [% INCLUDE email/bottom.tt %]
