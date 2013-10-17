@@ -11,6 +11,11 @@ use VA::MediaFile;
 use JSON;
 use Email::Address;
 
+use VA::MediaFile::US;
+use MIME::Types;
+use LWP;
+use File::Basename;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 =head1 /services/na
@@ -1166,6 +1171,63 @@ sub find_share_info_for_pending :Local {
     }
 
     $self->status_ok( $c, {} );
+}
+
+=head2 /services/na/download_trayapp
+
+This will download the most current version of the tray app to the calling client.
+
+=cut
+
+sub download_trayapp :Local {
+    my( $self, $c ) = @_;
+    my $data = $c->model( 'RDS::AppConfig' )->
+	find({ app => 'TrayApp', current => 1 });
+    if ( $data ) {
+	my $hash = $data->TO_JSON;
+	if ( $hash->{config} ) {
+	    my $json = from_json( $hash->{config} );
+	    $hash->{config} = $json;
+
+	    ## The uri in the config struct is of the form:
+	    ## bucket/key
+	    my $mimetype = MIME::Types->new()->mimeTypeOf( $hash->{config}->{uri} );
+	    my $name = basename( $hash->{config}->{uri} );
+	    my @parts = split( /\//, $hash->{config}->{uri} );
+	    my $bucket = shift @parts;
+	    my $key = join( '/', @parts );
+
+	    $hash->{url} = 
+		new VA::MediaFile::US()->uri2url( $c, $key, { bucket => $bucket } );
+
+	    my $len = $hash->{config}->{size};
+
+	    $c->res->body( "Content-type: $mimetype\015\012\015\012" );
+	    $c->res->headers->header( 'Content-Type' => $mimetype );
+	    $c->res->headers->header( 'Content-Length' => $len );
+	    $c->res->headers->header( 'Content-Disposition' => "attachment; filename=\"$name\"" );
+	    $c->res->headers->header( 'filename' => "\"$name\"" );
+	    $c->res->headers->header( 'Accept-Ranges' => 'none' );
+
+	    LWP::UserAgent->new()->get( $hash->{url},
+					':content_cb' => sub {
+					    my( $data, $res ) = @_;
+					    return if ( $res->is_error );
+					    $c->response->write( $data );
+					} );
+	    $c->detach;
+	}
+	else {
+	    $c->res->status( 404 );
+	    $c->res->body( 'Not found' );
+	    $c->detach;
+	}
+    }
+    else {
+	$c->res->status( 404 );
+	$c->res->body( 'Not found' );
+	$c->detach;
+    }
 }
 
 __PACKAGE__->meta->make_immutable;
