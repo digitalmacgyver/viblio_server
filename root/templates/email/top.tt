@@ -53,13 +53,13 @@
                                                     <table width='590' height='100' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
                                                         <tr height='100'>
                                                             <td width="495">
-                                                                <a href="[% c.server %]"><img src="[% c.server %]css/images/viblioEmail/viblioEmail-Logo.png" align='left'></img></a>
+                                                                <a href="[% c.server %]"><img src="[% c.server %]css/images/viblioEmail/viblioEmail-Logo.png" align='left'>Where is this text??</img></a>
                                                             </td>
                                                             <td width='58'>
-                                                                <a href="*|FACEBOOK:PROFILEURL|*"><img src="[% c.server %]css/images/viblioEmail/viblioEmail-fb.png" align='left'></img></a>
+                                                                <a href="*|FACEBOOK:PROFILEURL|*"><img src="[% c.server %]css/images/viblioEmail/viblioEmail-fb.png" align='left'>And me?</img></a>
                                                             </td>
                                                             <td width='37'>
-                                                                <a href="*|TWITTER:PROFILEURL|*"><img src="[% c.server %]css/images/viblioEmail/viblioEmail-twitter.png" align='right'></img></a>
+                                                                <a href="*|TWITTER:PROFILEURL|*"><img src="[% c.server %]css/images/viblioEmail/viblioEmail-twitter.png" align='right'>Me too!</img></a>
                                                             </td>
                                                         </tr>
                                                     </table>
