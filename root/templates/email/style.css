@@ -428,6 +428,10 @@
                             color: #EF5541;
                             text-decoration: none;
                         }
+                        
+                        .whiteBG {
+                            background-color: white;
+                        }
 
 .bottomBorder-Thick {
     border-bottom: 8px solid lightgrey;
