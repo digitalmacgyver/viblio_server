@@ -1,4 +1,4 @@
-[% previewText = "Here is some new and exciting preview text! Finally it's different. YAY!!" %]
+[% previewText = "You have a new Viblio video!" %]
 [% INCLUDE email/top.tt %]
     
         <span>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</span>

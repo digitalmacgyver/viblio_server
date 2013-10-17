@@ -1,170 +1,36 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html>
-    <head>
-        <!-- This is a simple example template that you can edit to create your own custom templates -->
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-        <!-- Facebook sharing information tags -->
-        <meta property="og:title" content="*|MC:SUBJECT|*" />
-        
-        <title>*|MC:SUBJECT|*</title>
-        <style>
-            [% INCLUDE email/style.css %]
-        </style>
-        <link rel="stylesheet" href="email.css" />
-    </head>
-    
-    <body leftmargin="0" marginwidth="0" topmargin="0" marginheight="0" offset="0">
-    	<center>
-        	<table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%" id="backgroundTable">
-            	<tr>
-                	<td align="center" valign="top">
-                        <!-- // Begin Template Preheader \\ -->
-                        <table border="0" cellpadding="10" cellspacing="0" width="800" id="templatePreheader">
-                            <tr>
-                                <td valign="top" class="preheaderContent">
-                                
-                                	<!-- // Begin Module: Standard Preheader \\ -->
-                                    <table border="0" cellpadding="10" cellspacing="0" width="100%">
-                                    	<tr>
-                                        	<td valign="top">
-                                            	<div mc:edit="std_preheader_content">
-                                                	Use one or two sentences in this area to offer a teaser of your email's content. Text here will show in a preview area in some email clients.
-                                                </div>
-                                            </td>
-                                            <td valign="top" width="180">
-                                            	<div mc:edit="std_preheader_links">
-                                                	<!-- *|IFNOT:ARCHIVE_PAGE|* -->Is this email not displaying correctly?<br /><a href="*|ARCHIVE|*" target="_blank">View it in your browser</a>.<!-- *|END:IF|* -->
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                	<!-- // End Module: Standard Preheader \\ -->
-                                
-                                </td>
-                            </tr>
-                        </table>
-                        <!-- // End Template Preheader \\ -->
-                    	<table border="0" cellpadding="0" cellspacing="0" width="800"  id="templateContainer">
-                            <tr>
-                            	<td align="center" valign="top">
-                                    <!-- // Begin Template Body \\ -->
-                                	<table cellpadding="0" cellspacing="0" width="800" id="templateBody">
-                                        <tr>
-                                            <td colspan="2" valign="middle" id="social">
-                                                <table width='800' height='100'>
-                                                    <tr height='100'>
-                                                        <td width='96'></td>
-                                                        <td width="505">
-                                                            <a href="[% c.server %]"><img src="[% c.server %]css/images/viblioEmail/viblioEmail-Logo.png" align='left'></img></a>
-                                                        </td>
-                                                        <td width='58'>
-                                                            <a href="*|FACEBOOK:PROFILEURL|*"><img src="[% c.server %]css/images/viblioEmail/viblioEmail-fb.png" align='left'></img></a>
-                                                        </td>
-                                                        <td width='37'>
-                                                            <a href="*|TWITTER:PROFILEURL|*"><img src="[% c.server %]css/images/viblioEmail/viblioEmail-twitter.png" align='right'></img></a>
-                                                        </td>
-                                                        <td width='96'></td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>    
-                                    	<tr>
-                                            <td style="background-color: #313543" class="bodyContent">
-                                
-                                                <!-- // Begin Module: Standard Content \\ -->
-                                                <table id='bodyContent-Wrap' cellspacing="0" width="800">
-                                                    <tr width="800">
-                                                        <td width="96"></td>
-                                                        <td valign="top" width="600">
-                                                            <div class='bottomBorder-Thick paddedDiv ' id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">
-                                                                [% from.displayname %] has shared a video with you through Viblio!
-                                                                <br />
-                                                                <br />
-                                                                <span>They say:</span><br />
-                                                                <span>"[% body %]"</span>
-                                                                <br />
-                                                                <br />
-                                                                <span>Video: [% model.media.0.title %]</span>
-                                                                <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">   
-                                                                    <tr cellspacing="0" cellpadding="0" style="margin: 0;">
-                                                                        <td cellspacing="0" cellpadding="0">
-                                                                            <a href='[% url %]'>
-                                                                                <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
-                                                                            </a>
-                                                                        </td>
-                                                                    </tr>
-                                                                </table>
-                                                                
-                                                                [% IF model.vars.shareType == "private" %]
-                                                                <span>To maintain the privacy of this video, <a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> and create your own password.  You'll then be able to access and watch [% from.displayname.split(' ').0 %]'s video online, and share private comments with [% from.displayname.split(' ').0 %].</span>
-                                                                    <br />
-                                                                    <br />
-                                                                [% END %]
-                                                                
-                                                                [% IF model.vars.shareType == "unlisted" %]
-                                                                <span><a class="tomato" href='[% url %]'><span class="tomato">CLICK HERE</span></a> to access and watch [% from.displayname.split(' ').0 %]'s video online.</span>
-                                                                    <br />
-                                                                    <br />
-                                                                [% END %]
-                                                                
-                                                                <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
-                                                            </div>
-							</td>
-                                                        <td width="96"></td>
-                                                    </tr>
-                                                </table>
-                                                <!-- // End Module: Standard Content \\ -->
-                                                
-                                            </td>
-                                        </tr>
-                                    </table>
-                                    <!-- // End Template Body \\ -->
-                                </td>
-                            </tr>
-                            
-                        	<tr>
-                            	<td align="center" valign="bottom">
-                                    <!-- // Begin Template Footer \\ -->
-                                	<table border="0" cellpadding="0" cellspacing="0" width="800" id="templateFooter">
-                                    	<tr>
-                                        	<td valign="top" class="footerContent">
-                                            
-                                                <!-- // Begin Module: Standard Footer \\ -->
-                                                <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                                                    <tr>
-                                                        <td colspan="2" valign="bottom" id="utility">
-                                                            <div mc:edit="std_utility">
-                                                                <span>Viblio sent you this email because you signed up for our service.</span><br />
-                                                                <span>If you no longer want to receive these updates, you may edit your preferences <a href="[% c.server %]#settings">here</a>.</span><br />
-                                                                <span><!-- *|IFNOT:ARCHIVE_PAGE|* --> <a href="*|ARCHIVE|*">view email in browser</a><!-- *|END:IF|* -->&nbsp;</span>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td valign="top" width="600">
-                                                            <br />
-                                                            <br />
-                                                            <div mc:edit="std_footer">
-                                                                <span>&copy;2013 Video Analytics, Inc &emsp; 2901 Tasman Dr. #210 &emsp; Santa Clara, CA &emsp; 95054</span>
-                                                            </div>
-                                                            <br />
-                                                            <br />
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                                <!-- // End Module: Standard Footer \\ -->
-                                            
-                                            </td>
-                                        </tr>
-                                    </table>
-                                    <!-- // End Template Footer \\ -->
-                                </td>
-                            </tr>
-                        </table>
-                        <br />
-                    </td>
-                </tr>
-            </table>
-        </center>
-    </body>
-</html>
+[% previewText = "Your friend [% from.displayname %] has shared a video with you on Viblio!" %]
+[% INCLUDE email/top.tt %]
+
+    <span><strong>[% from.displayname %] has shared a video with you through Viblio!</strong></span>
+    <br />
+    <br />
+    <span>They say:</span><br />
+    <span>"[% body %]"</span>
+    <br />
+    <br />
+    <span>Video: [% model.media.0.title %]</span>
+    <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">   
+        <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+            <td cellspacing="0" cellpadding="0">
+                <a href='[% url %]'>
+                    <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+                </a>
+            </td>
+        </tr>
+    </table>
+
+    [% IF model.vars.shareType == "private" %]
+    <span>To maintain the privacy of this video, <a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> and create your own password.  You'll then be able to access and watch [% from.displayname.split(' ').0 %]'s video online, and share private comments with [% from.displayname.split(' ').0 %].</span>
+        <br />
+        <br />
+    [% END %]
+
+    [% IF model.vars.shareType == "unlisted" %]
+    <span><a class="tomato" href='[% url %]'><span class="tomato">CLICK HERE</span></a> to access and watch [% from.displayname.split(' ').0 %]'s video online.</span>
+        <br />
+        <br />
+    [% END %]
+
+    <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
+
+[% INCLUDE email/bottom.tt %]                                                            
