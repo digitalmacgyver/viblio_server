@@ -1,8 +1,7 @@
 # bootstrap server
 # sh bootstrap-server
 sudo apt-get install build-essential
-sudo apt-get install apache2 \
-  libapache2-mod-fastcgi \
+sudo apt-get install \
   mysql-server \
   mysql-client \
   git \
@@ -28,37 +27,12 @@ cpanm Catalyst::Devel
 # Perl debugger command line editting
 cpanm Term::ReadLine::Gnu
 
-# Set up git:
-git config --global user.name "<Your Name>"
-git config --global user.email "<your-username>@video-analytics-inc.com"
-git config --global color.diff auto
-git config --global color.status auto
-git config --global color.branch auto
-git config --global core.editor emacs
-
-# Generate ssh keys ...
-ssh-keygen -t rsa
-
-# and send ~/.ssh/id_rsa.pub to :
-#  peebles@video-analytics-inc.com
-# BE SURE TO TELL ME YOUR LINUX USERNAME
-#
-
-# When you are added to the server, then git clone ...
-git clone git@ec2-54-244-162-35.us-west-2.compute.amazonaws.com:viblio-server.git
 # Install application dependencies
 cd viblio-server
 perl Makefile.PL
 PERL_MM_USE_DEFAULT=1 make installdeps_notest
 # Might need to do it twice.  Keep doing perl Makefile.PL to see.
 
-# These commands populate the database with fake, initial
-# data you can test with
-
-# 1.  Create the database ** from scratch **
-sh sql/FROM-SCRATCH 
-
-# 2.  Populate with random data
-./script/test-populate.pl vadb
-./script/test-populate.pl vadb_staging
-
+# To run the server:
+cd viblio-server
+./script/va_server.pl -p 30001

@@ -54,6 +54,18 @@ If unsuccessful, the response will be a JSON struct that looks something like:
 
 =cut
 
+sub authfailure_response :Private {
+    my( $self, $c, $code ) = @_;
+    my $hash = {
+	"NOLOGIN_NOT_IN_BETA" => "Login failed: Not registered in the beta program.",
+	"NOLOGIN_BLACKLISTED" => "Login failed: This account has been black listed.",
+	"NOLOGIN_EMAIL_NOT_FOUND" => "Login failed: Email address is not registered.",
+	"NOLOGIN_PASSWORD_MISMATCH" => "Login failed: Password does not match for email address.",
+	"NOLOGIN_UNKNOWN" => "Login failed",
+    };
+    return $c->loc( $hash->{$code} );
+}
+
 sub authenticate :Local {
     my ( $self, $c ) = @_;
 
@@ -87,30 +99,49 @@ sub authenticate :Local {
     if ( $c->authenticate( $creds, $realm ) ) {
 	$self->status_ok( $c, { user => $c->user->obj } );
 	return;
-    } else {
+    } 
+    else {
 	# Lets try to create a more meaningful error message
 	#
-	my $err = $c->loc( "Login failed" );
+	if ( $creds->{email} ) {
+	    my $code = "NOLOGIN_UNKNOWN";
 
-	if ( $c->config->{in_beta} ) {
-	    unless( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'whitelist'}) ) {
-		$self->status_unauthorized( $c, $c->loc( "Login failed: Not registered in the beta program." ) );
+	    if ( $c->config->{in_beta} ) {
+		unless( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'whitelist'}) ) {
+		    $code = "NOLOGIN_NOT_IN_BETA";
+		}
 	    }
-	}
 
-	if ( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'blacklist'}) ) {
-	    $self->status_unauthorized( $c, $c->loc( "Login failed: This account has been black listed." ) );
-	}
+	    if ( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'blacklist'}) ) {
+		$code = "NOLOGIN_BLACKLISTED";
+	    }
 
-	my @hits = $c->model( 'RDS::User' )->search({ email => $email });
-	if ( $#hits == -1 ) {
-	    $err = $c->loc( "Login failed: Email does not exist: [_1]", $email );
+	    my @hits = $c->model( 'RDS::User' )->search({ email => $email });
+	    if ( $#hits == -1 ) {
+		$code = "NOLOGIN_EMAIL_NOT_FOUND";
+	    }
+	    else {
+		$code = "NOLOGIN_PASSWORD_MISMATCH";
+	    }
+
+	    $self->status_unauthorized
+		( $c, $self->authfailure_response( $c, $code ), $code );
 	}
 	else {
-	    $err = $c->loc( "Login failed: Password does not match for email [_1]", $email );
+	    # This was a social oauth login attempt.  The plugin will need to communicate back to
+	    # us via $c.  I've made custom hacks to the oauth plugins to ensure this.
+	    if ( $c->{authfail_code} ) {
+		$self->status_unauthorized
+		    ( $c, $self->authfailure_response( $c, $c->{authfail_code} ), 
+		      $c->{authfail_code} );
+	    }
+	    else {
+		# we just don't know
+		$self->status_unauthorized
+		    ( $c, $self->authfailure_response( $c, "NOLOGIN_UNKNOWN" ),
+		      "NOLOGIN_UNKNOWN" );
+	    }
 	}
-	$self->status_unauthorized
-	    ( $c, $err );
     }
 }
 
