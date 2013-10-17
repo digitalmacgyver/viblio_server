@@ -1,7 +1,6 @@
 [% INCLUDE email/top.tt %]
     <div class='bottomBorder-Thick paddedDiv whiteBG' id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">
-HEY, I'm new here!!        
-<span>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</span>
+        <span>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</span>
         <br />
         <br />
 
