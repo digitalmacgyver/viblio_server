@@ -206,12 +206,13 @@
 			* @section body style
 			* @tip Set the background color for your email's body area.
 			*/
-			#templateContainer, .bodyContent {
+			#templateContainer {
 				/*@editable*/ background-color:#313543;
 			}
                         
                         .bodyContent {
                             /*padding: 0 100px;*/
+                            background-color:white;
                         }
 
 			/**

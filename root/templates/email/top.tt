@@ -67,11 +67,11 @@
                                                 </td>
                                             </tr>    
                                             <tr>
-                                                <td style="background-color: #313543" class="bodyContent">
+                                                <td class="bodyContent">
 
                                                     <!-- // Begin Module: Standard Content \\ -->
                                                     <table width='590' height='100' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
                                                         <tr>
-                                                            <td width="45" style="width:45px"></td>
+                                                            <td class='bottomBorder-Thick' width="45" style="width:45px"></td>
                                                             <td valign="top" width="500" style="width:500px">
-                                                                <div class='bottomBorder-Thick paddedDiv whiteBG' id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">
+                                                                <div class='bottomBorder-Thick' id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">
