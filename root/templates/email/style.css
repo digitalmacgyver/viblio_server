@@ -142,7 +142,7 @@
 			
 			.preheaderContent div img{
 				height:auto;
-				max-width:800px;
+				max-width:100%;
 			}
 
 			/* /\/\/\/\/\/\/\/\/\/\ STANDARD STYLING: HEADER /\/\/\/\/\/\/\/\/\/\ */
@@ -192,7 +192,7 @@
 
 			#headerImage{
 				height:auto;
-				max-width:800px !important;
+				max-width:100% !important;
 			}
 
 			/* /\/\/\/\/\/\/\/\/\/\ STANDARD STYLING: MAIN BODY /\/\/\/\/\/\/\/\/\/\ */
