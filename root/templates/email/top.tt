@@ -72,6 +72,9 @@
                                                     <!-- // Begin Module: Standard Content \\ -->
                                                     <table width='590' height='100' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
                                                         <tr>
-                                                            <td class='bottomBorder-Thick' width="45" style="width:45px"></td>
+                                                            <tdwidth='590' height='55' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px; height:55px;"></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td width="45" style="width:45px"></td>
                                                             <td valign="top" width="500" style="width:500px">
-                                                                <div class='bottomBorder-Thick' id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">
+                                                                <div id='mainContent' mc:edit="std_content00" width="100%" style="color: #7a7e87;">

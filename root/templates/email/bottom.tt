@@ -1,6 +1,9 @@
                                                     </div>                                                  
                                                         </td>   
-                                                        <td class='bottomBorder-Thick' width="45" style="width:45px"></td>
+                                                        <td width="45" style="width:45px"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class='bottomBorder-Thick' width='590' height='55' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px; height:55px;"></td>
                                                     </tr>
                                                 </table>
                                                 <!-- // End Module: Standard Content \\ -->
