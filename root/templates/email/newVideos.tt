@@ -5,7 +5,7 @@
         <br />
         <br />
 
-        <table cellspacing="10" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
+        <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
             <tbody>
                 <tr>
                 [% FOREACH media IN model.media %]
