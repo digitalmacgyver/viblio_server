@@ -212,7 +212,6 @@
 			}
                         
                         .bodyContent {
-                            /*padding: 0 100px;*/
                             background-color:white;
                         }
 
@@ -255,7 +254,6 @@
 
 			.bodyContent img{
 				display:inline;
-				margin-bottom:10px;
 			}
 
 			/* /\/\/\/\/\/\/\/\/\/\ STANDARD STYLING: FOOTER /\/\/\/\/\/\/\/\/\/\ */
