@@ -1,4 +1,4 @@
-
+[% previewText = Your friend [% from %] is using Viblio, and they want you to join them! %]
 [% INCLUDE email/top.tt %]
 
     [%- META no_wrapper = 1 -%]
