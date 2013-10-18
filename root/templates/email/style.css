@@ -432,6 +432,10 @@
                         .whiteBG {
                             background-color: white;
                         }
+                        
+                        .im {
+                            color:#7a7e87; 
+                        }
 
 .bottomBorder-Thick {
     border-bottom: 8px solid lightgrey;
