@@ -27,7 +27,6 @@
                                                             <div mc:edit="std_utility">
                                                                 <span>Viblio sent you this email because you signed up for our service.</span><br />
                                                                 <span>If you no longer want to receive these updates, you may edit your preferences <a href="[% c.server %]#settings">here</a>.</span><br />
-                                                                <span><!-- *|IFNOT:ARCHIVE_PAGE|* --> <a href="*|ARCHIVE|*">view email in browser</a><!-- *|END:IF|* -->&nbsp;</span>
                                                             </div>
                                                         </td>
                                                         <td width="45" style="width:45px"></td>

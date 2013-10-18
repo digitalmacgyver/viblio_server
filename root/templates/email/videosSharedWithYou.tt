@@ -1,4 +1,5 @@
-[% INCLUDE email/top.tt 
+[% INCLUDE email/top.tt
+    subject = "A Video has been Shared with you on Viblio."
     previewText = "Your friend has shared a video with you on Viblio!"
 %]
 
