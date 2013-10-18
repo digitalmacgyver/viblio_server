@@ -1,5 +1,6 @@
-[% previewText = "Your friend is using Viblio and they want you to join them." %]
-[% INCLUDE email/top.tt %]
+[% INCLUDE email/top.tt 
+    previewText = "Your friend is using Viblio and they want you to join them."
+%]
 
     [%- META no_wrapper = 1 -%]
     <span>Your friend [% from %] is using Viblio to organize and share their personal video collection. They have sent you a personal message below:</span>

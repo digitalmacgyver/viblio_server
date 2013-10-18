@@ -1,5 +1,6 @@
-[% previewText = "See your weekly Viblio activity summary." %]
-[% INCLUDE email/top.tt %]
+[% INCLUDE email/top.tt 
+    previewText = "See your weekly Viblio activity summary."
+%]
 
     <span class="largeText">Hi [% model.user.name %]!</span>
     <br />

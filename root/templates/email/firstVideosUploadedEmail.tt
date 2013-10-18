@@ -1,5 +1,6 @@
-[% previewText = "Welcome to Viblio. Your first videos are ready!" %]
-[% INCLUDE email/top.tt %]
+[% INCLUDE email/top.tt 
+    previewText = "Welcome to Viblio. Your first videos are ready!"
+%]
 
     It's the beginning of a wonderful relationship!
     <br />

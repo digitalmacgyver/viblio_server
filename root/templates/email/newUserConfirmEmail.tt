@@ -1,5 +1,6 @@
-[% previewText = "Please confirm your Viblio account registration." %]
-[% INCLUDE email/top.tt %]
+[% INCLUDE email/top.tt 
+    previewText = "Please confirm your Viblio account registration."
+%]
 
     <div class='bottomBorder-Thin paddedDiv'>
         <span>Thanks for choosing to be part of the Viblio community.  Your account is almost active.</span>
