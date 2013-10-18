@@ -442,6 +442,7 @@
 }
 
 .button {
+    height: 50px;
     text-align:center;
     background-color:#EF5541;
     padding:5px 10px 5px 10px;
