@@ -10,6 +10,6 @@
     </span>
     <br />
     <br />
-    <a class="button" href="[% url %]"><span>Go to Viblio</span></a>
+    <a href="[% url %]"><span class="button"><span>Go to Viblio</span></span></a>
     
 [% INCLUDE email/bottom.tt %]                                                        
