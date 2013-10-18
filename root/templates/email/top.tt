@@ -76,6 +76,6 @@
                                                             <td width="45" style="width:45px;"></td>
                                                         </tr>
                                                         <tr>
-                                                            <td width="45" style="width:45px"></td>
-                                                            <td valign="top" width="500" style="width:500px;">
+                                                            <td class='bottomBorder-Thick' width="45" style="width:45px"></td>
+                                                            <td class='bottomBorder-Thick' valign="top" width="500" style="width:500px;padding-bottom:55px">
                                                                 <div id='mainContent' mc:edit="std_content00" width="500" style="color: #7a7e87; width:500px;">
