@@ -2,7 +2,7 @@
     previewText = "You have a new Viblio video!"
 %]
     
-        <span>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</span>
+        <span><strong>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</strong></span>
         <br />
         <br />
 
@@ -35,7 +35,7 @@
         </table>
 
         [% IF model.media.size > 3 %]
-        To see other videos uploaded today, go to your <a class="tomato" href='[% c.server %]#/home'><span class="tomato">Viblio Channel</span></a>
+        <span>To see other videos uploaded today, go to your <a class="tomato" href='[% c.server %]#/home'><span class="tomato">Viblio Channel</span></a></span>
             <br />
             <br />
         [% END %]
@@ -48,10 +48,14 @@
         [% END %]
 
         [% IF numFaces.size > 0 %]
-            Viblio discovers faces of your friends and loved ones and makes sharing (and privacy!) easy.
+            <span>Viblio discovers faces of your friends and loved ones and makes sharing (and privacy!) easy.</span>
             <br />
             <br />
-            We found these new faces in your videos.
+            [% IF numFaces.size == 1 %]
+                <span><strong>We found this new face in your videos:</strong><span>
+            [% ELSE %]
+                <span><strong>We found these new faces in your videos:</strong><span>
+            [% END %]
             <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
                 <tbody>
                     [% FOREACH face IN numFaces -%]
