@@ -27,7 +27,7 @@
                                     	<tr>
                                             <td valign="top">
                                             	<div mc:edit="std_preheader_content">
-                                                	[% INCLUDE previewText %]
+                                                	[% previewText %]
                                                 </div>
                                             </td>
                                             <td valign="top" width="180">
