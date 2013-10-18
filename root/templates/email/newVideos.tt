@@ -21,7 +21,9 @@
                                     </tr>
                                     <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                         <td cellspacing="0" cellpadding="0">
-                                            <img class='videoThumb' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
+                                            <a href='[% url %]'>
+                                                <img class='videoThumb' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
+                                            </a>
                                         </td>
                                     </tr>
                                 </tbody>
