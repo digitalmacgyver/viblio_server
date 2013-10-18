@@ -11,6 +11,24 @@
     </span>
     <br />
     <br />
-    <a class="button" href="[% url %]"><span>Go to Viblio</span></a>
+    <table>
+        <tbody>
+            <tr>
+                <td width="30" style="width:30px;"></td>
+                <td width="530" style="width:530px;">
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td width="169" align="center" style="width:169px;text-align:center;background-color:#EF5541;padding:13px 10px 14px 10px;border-bottom:3px inset rgba(0,0,0,.2);">
+                                    <a class="buttonSpan" href="[% url %]"><span>Go to Viblio&raquo;</span></a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+                <td width="30" style="width:30px;"></td>
+            </tr>
+        </tbody>
+    </table>
     
 [% INCLUDE email/bottom.tt %]                                                        
