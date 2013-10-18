@@ -1,4 +1,3 @@
-[% INCLUDE email/header.tt %]
 [% previewText = "Your friend is using Viblio and they want you to join them." %]
 [% INCLUDE email/top.tt %]
 
