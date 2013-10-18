@@ -1,4 +1,4 @@
-[% previewText = "Your friend [% from.displayname %] has shared a video with you on Viblio!" %]
+[% previewText = "Your friend has shared a video with you on Viblio!" %]
 [% INCLUDE email/top.tt %]
 
     <span><strong>[% from.displayname %] has shared a video with you through Viblio!</strong></span>
