@@ -455,6 +455,11 @@
     text-decoration: none;
 }
 
+.noUnderline {
+    display: inline-block;
+    text-decoration: none;
+}
+
 .button span {
     display: inline-block;
     padding: 3px 20px;

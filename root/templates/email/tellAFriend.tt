@@ -19,7 +19,7 @@
                         <tbody>
                             <tr>
                                 <td class="button" width="150" align="center" style="width:150px;">
-                                    <a href="[% url %]"><b><span class="buttonSpan">Go to Viblio&raquo;</span></b></a>
+                                    <a class="noUnderline" href="[% url %]"><b><span class="buttonSpan">Go to Viblio&raquo;</span></b></a>
                                 </td>
                                 <td width="350" style="width:350px;"></td>
                             </tr>
