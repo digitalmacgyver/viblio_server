@@ -111,10 +111,11 @@ sub authenticate {
 	$oauth->access_token( $code );
 	my $fb_user = $oauth->fetch( 'me' );
 	unless( $fb_user ) { 
+	    $ctx->{authfail_code} = "NOLOGIN_OAUTH_FAILURE";
 	    return undef;
 	}
 
-	# Check white and blak lists...
+	# Check white and black lists...
 	if ( $ctx->config->{in_beta} ) {
 	    unless( $ctx->model( 'RDS::EmailUser' )->find({email => $fb_user->{email}, status => 'whitelist'}) ) {
 		$ctx->{authfail_code} = "NOLOGIN_NOT_IN_BETA";
@@ -126,10 +127,12 @@ sub authenticate {
 	    return undef;
 	}
 
-	# User's email must already exist ... no auto creates here!!
-	if ( ! $ctx->model( 'RDS::User' )->find({email=>$fb_user->{email}}) ) {
-	    $ctx->{authfail_code} = "NOLOGIN_EMAIL_NOT_FOUND";
-	    return undef;
+	if ( $ctx->{no_autocreate} ) {
+	    # User's email must already exist ... no auto creates here!!
+	    if ( ! $ctx->model( 'RDS::User' )->find({email=>$fb_user->{email}}) ) {
+		$ctx->{authfail_code} = "NOLOGIN_EMAIL_NOT_FOUND";
+		return undef;
+	    }
 	}
 
 	my $attributes = {
@@ -164,10 +167,13 @@ sub authenticate {
 		}
 	    }
 
-	    # If the user has already linked their account to
-	    # facebook, then update the access_token and call popeye.
+	    # Automatically link the user's facebook account, and tell 
+	    # the video processor pipeline.
 	    #
-	    my $link = $user->get_object->links->find({provider => 'facebook'});
+	    my $link = $user->get_object->update_or_create_related
+		( 'links', {
+		    provider => 'facebook',
+		  });
 	    if ( $link ) {
 		$link->data({
 		    link => $fb_user->{link},

@@ -35,6 +35,18 @@ sub is_email_valid :Private {
     return $addresses[0];
 }
 
+# Create a username from email
+#
+sub displayname_from_email :Private {
+    my( $self, $email ) = @_;
+    my @addresses = Email::Address->parse( $email );
+    return undef if ( $#addresses == -1 );
+    return undef unless( $addresses[0] );
+    my $uname = $addresses[0]->user;
+    return undef unless( $uname );
+    return $uname;
+}
+
 # Create a user name automatically
 #
 sub auto_username :Private {
