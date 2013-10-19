@@ -47,13 +47,13 @@
                                                     <table width='590' height='100' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
                                                         <tr height='100'>
                                                             <td width="495" style="width:495px;">
-                                                                <a href="[% c.server %]"><img src="http://staging.viblio.com/css/images/viblioEmail/viblioEmail-Logo.png" alt="Viblio Logo" align='left'></img></a>
+                                                                <a href="[% c.server %]"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-Logo.png" alt="Viblio Logo" align='left'></img></a>
                                                             </td>
                                                             <td width='58' style="width:58px;">
-                                                                <a href="*|FACEBOOK:PROFILEURL|*"><img src="http://staging.viblio.com/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" align='left'></img></a>
+                                                                <a href="*|FACEBOOK:PROFILEURL|*"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" align='left'></img></a>
                                                             </td>
                                                             <td width='37' style="width:37px;">
-                                                                <a href="*|TWITTER:PROFILEURL|*"><img src="http://staging.viblio.com/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" align='right'></img></a>
+                                                                <a href="*|TWITTER:PROFILEURL|*"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" align='right'></img></a>
                                                             </td>
                                                         </tr>
                                                     </table>
