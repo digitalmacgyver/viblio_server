@@ -85,12 +85,14 @@ sub authenticate :Local {
     if ( $realm eq 'db' ) {
 	if ( $c->config->{in_beta} ) {
 	    unless( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'whitelist'}) ) {
-		$self->status_unauthorized( $c, $c->loc( "Login failed: Not registered in the beta program." ) );
+		my $code = "NOLOGIN_NOT_IN_BETA";
+		$self->status_unauthorized( $c, $self->authfailure_response( $c, $code ), $code );
 	    }
 	}
 
 	if ( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'blacklist'}) ) {
-	    $self->status_unauthorized( $c, $c->loc( "Login failed: This account has been black listed." ) );
+	    my $code = "NOLOGIN_BLACKLISTED";
+	    $self->status_unauthorized( $c, $self->authfailure_response( $c, $code ), $code );
 	}
 	$creds = {
 	    email => $email,
