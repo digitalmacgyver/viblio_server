@@ -1,0 +1,63 @@
+                                                    </div>                                                  
+                                                        </td>   
+                                                        <td class='bottomBorder-Thick' width="45" style="width:45px"></td>
+                                                    </tr>
+                                                </table>
+                                                <!-- // End Module: Standard Content \\ -->
+                                                
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <!-- // End Template Body \\ -->
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                            	<td align="center" valign="bottom">
+                                    <!-- // Begin Template Footer \\ -->
+                                	<table width='590' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
+                                    	<tr>
+                                        	<td valign="top" class="footerContent">
+                                            
+                                                <!-- // Begin Module: Standard Footer \\ -->
+                                                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                    <tr>
+                                                        <td width="45" style="width:45px"></td>
+                                                        <td width="500" style="width:500px" valign="bottom" id="utility">
+                                                            <div mc:edit="std_utility">
+                                                                <span>Viblio sent you this email because you signed up for our service.</span><br />
+                                                                <span>If you no longer want to receive these updates, you may edit your preferences <a href="[% c.server %]#settings">here</a>.</span><br />
+                                                            </div>
+                                                        </td>
+                                                        <td width="45" style="width:45px"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td width="45" style="width:45px"></td>
+                                                        <td valign="top" width="500" style="width:500px">
+                                                            <br />
+                                                            <br />
+                                                            <div mc:edit="std_footer">
+                                                                <span>&copy;2013 Video Analytics, Inc &emsp; 2901 Tasman Dr. #210 &emsp; Santa Clara, CA &emsp; 95054</span>
+                                                            </div>
+                                                            <br />
+                                                            <br />
+                                                        </td>
+                                                        <td width="45" style="width:45px"></td>
+                                                    </tr>
+                                                </table>
+                                                <!-- // End Module: Standard Footer \\ -->
+                                            
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <!-- // End Template Footer \\ -->
+                                </td>
+                            </tr>
+                        </table>
+                        <br />
+                    </td>
+                </tr>
+            </table>
+        </center>
+    </body>
+</html>

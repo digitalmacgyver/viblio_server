@@ -1,0 +1,75 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <!-- Facebook sharing information tags -->
+        <meta property="og:title" content="[% subject %]" />
+        
+        <title>[% subject %]</title>
+        <style>
+            [% INCLUDE email/style.css %]
+        </style>
+    </head>
+    
+    <body leftmargin="0" marginwidth="0" topmargin="0" marginheight="0" offset="0">
+    	<center>
+        	<table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%" id="backgroundTable" style="width:100%;">
+            	<tr>
+                	<td align="center" valign="top">
+                        <!-- // Begin Template Preheader \\ -->
+                        <table border="0" cellpadding="10" cellspacing="0" width="100%" id="templatePreheader" style="width:100%;">
+                            <tr>
+                                <td valign="top" class="preheaderContent">
+                                
+                                	<!-- // Begin Module: Standard Preheader \\ -->
+                                    <table border="0" cellpadding="10" cellspacing="0" width="100%" style="width:100%;">
+                                    	<tr>
+                                            <td valign="top">
+                                            	<div mc:edit="std_preheader_content">
+                                                	[% previewText %]
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                	<!-- // End Module: Standard Preheader \\ -->
+                                
+                                </td>
+                            </tr>
+                        </table>
+                        <!-- // End Template Preheader \\ -->
+                    	<table border="0" cellpadding="0" cellspacing="0" width="100%" align="center" id="templateContainer" style="width:100%;">
+                            <tr>
+                            	<td valign="top" width="100%" style="width:100%;">
+                                    <!-- // Begin Template Body \\ -->
+                                	<table cellpadding="0" cellspacing="0" align="center" width="590" id="templateBody" style="width:590px;">
+                                            <tr>
+                                                <td width='590' height='100' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;" valign="middle" id="social">
+                                                    <table width='590' height='100' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
+                                                        <tr height='100'>
+                                                            <td width="495" style="width:495px;">
+                                                                <a href="[% c.server %]"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-Logo.png" alt="Viblio Logo" align='left'></img></a>
+                                                            </td>
+                                                            <td width='58' style="width:58px;">
+                                                                <a href="*|FACEBOOK:PROFILEURL|*"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" align='left'></img></a>
+                                                            </td>
+                                                            <td width='37' style="width:37px;">
+                                                                <a href="*|TWITTER:PROFILEURL|*"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" align='right'></img></a>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>    
+                                            <tr>
+                                                <td class="bodyContent">
+
+                                                    <!-- // Begin Module: Standard Content \\ -->
+                                                    <table width='590' height='100' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
+                                                        <tr>
+                                                            <td width="45" style="width:45px;"></td>
+                                                            <td width='500' height='55' align="center" border="0" cellspacing="0" cellpadding="0" style="width:500px; height:55px;"></td>
+                                                            <td width="45" style="width:45px;"></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class='bottomBorder-Thick' width="45" style="width:45px"></td>
+                                                            <td class='bottomBorder-Thick' valign="top" width="500" style="width:500px; padding-bottom:50px">
+                                                                <div id='mainContent' mc:edit="std_content00" width="500" style="color: #7a7e87; width:500px;">

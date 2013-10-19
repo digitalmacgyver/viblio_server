@@ -23,6 +23,7 @@
 			*/
 			body, .backgroundTable{
 				/*@editable*/ background-color:white;
+                                font-family: Arial, sans-serif;
 			}
 
 			/**
@@ -142,7 +143,7 @@
 			
 			.preheaderContent div img{
 				height:auto;
-				max-width:800px;
+				max-width:100%;
 			}
 
 			/* /\/\/\/\/\/\/\/\/\/\ STANDARD STYLING: HEADER /\/\/\/\/\/\/\/\/\/\ */
@@ -192,7 +193,7 @@
 
 			#headerImage{
 				height:auto;
-				max-width:800px !important;
+				max-width:100% !important;
 			}
 
 			/* /\/\/\/\/\/\/\/\/\/\ STANDARD STYLING: MAIN BODY /\/\/\/\/\/\/\/\/\/\ */
@@ -206,12 +207,12 @@
 			* @section body style
 			* @tip Set the background color for your email's body area.
 			*/
-			#templateContainer, .bodyContent {
+			#templateContainer {
 				/*@editable*/ background-color:#313543;
 			}
                         
                         .bodyContent {
-                            /*padding: 0 100px;*/
+                            background-color:white;
                         }
 
 			/**
@@ -253,7 +254,6 @@
 
 			.bodyContent img{
 				display:inline;
-				margin-bottom:10px;
 			}
 
 			/* /\/\/\/\/\/\/\/\/\/\ STANDARD STYLING: FOOTER /\/\/\/\/\/\/\/\/\/\ */
@@ -313,8 +313,6 @@
 			*/
 			#social div{
 				/*@editable*/ text-align:center;
-                                width: 600px;
-                                margin: 18px auto 0px;
 			}
 
 			/**
@@ -344,7 +342,7 @@
                         }
                         
                         .largeText {
-                            font-size: 34px;
+                            font-size: 24px;
                             font-weight: bolder;
                         }
                         
@@ -354,7 +352,7 @@
                         }
                         
                         .face {
-                            padding: 0 20px;
+                            padding: 0 18px;
                         }
                         
                         .name-Wrap {
@@ -428,6 +426,14 @@
                             color: #EF5541;
                             text-decoration: none;
                         }
+                        
+                        .whiteBG {
+                            background-color: white;
+                        }
+                        
+                        .im {
+                            color:#7a7e87; 
+                        }
 
 .bottomBorder-Thick {
     border-bottom: 8px solid lightgrey;
@@ -438,20 +444,38 @@
 }
 
 .button {
-    display: inline-block;
-    background-color: #ef5541;
-    padding: 3px 20px;
+    height: 33px;
+    text-align:center;
+    background-color:#EF5541;
+    padding:5px 10px 5px 10px;
+    border-bottom:3px inset #bb4634;
     font-size: 18px;
     -moz-text-shadow: 2px 2px rgba(0,0,0,.2);
     -webkit-text-shadow: 2px 2px rgba(0,0,0,.2);
     text-shadow: 2px 2px rgba(0,0,0,.2);
-    border-bottom: 3px inset rgba(0,0,0,.2);
     color: white;
     cursor: pointer;
     text-decoration: none;
 }
 
+.noUnderline {
+    display: inline-block;
+    text-decoration: none;
+}
+
 .button span {
+    display: inline-block;
+    padding: 3px 20px;
+    font-size: 18px;
+    -moz-text-shadow: 2px 2px rgba(0,0,0,.2);
+    -webkit-text-shadow: 2px 2px rgba(0,0,0,.2);
+    text-shadow: 2px 2px rgba(0,0,0,.2);
+    color: white;
+    text-decoration: none;
+}
+
+.buttonSpan {
+    display: inline-block;
     font-size: 18px;
     -moz-text-shadow: 2px 2px rgba(0,0,0,.2);
     -webkit-text-shadow: 2px 2px rgba(0,0,0,.2);
