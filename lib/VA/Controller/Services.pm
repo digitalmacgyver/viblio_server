@@ -162,6 +162,9 @@ sub status_bad_request : Private {
 #    $c->res->status( 400 ); # BAD REQUEST
     $c->stash->{entity}->{code} = 400;
     $c->res->status( 200 );
+
+    $c->log->error( "BAD REQUEST: " . $message );
+
     $c->detach;
 }
 
@@ -172,6 +175,9 @@ sub status_forbidden : Private {
 #    $c->res->status( 403 ); # FORBIDDEN
     $c->stash->{entity}->{code} = 403;
     $c->res->status( 200 );
+
+    $c->log->error( "FORBIDDEN: " . $message );
+
     $c->detach;
 }
 
@@ -182,6 +188,9 @@ sub status_unauthorized : Private {
 #    $c->res->status( 401 ); # NOT AUTHORIZED
     $c->stash->{entity}->{code} = 401;
     $c->res->status( 200 );
+
+    $c->log->error( "NOT AUTHORIZED: " . $message );
+
     $c->detach;
 }
 
@@ -192,11 +201,17 @@ sub status_not_found : Private {
 #    $c->res->status( 404 ); # NOT FOUND
     $c->stash->{entity}->{code} = 404;
     $c->res->status( 200 );
+
+    $c->log->error( "NOT FOUND: " . $message );
+
     $c->detach;
 }
 
 sub begin :Private {
     my( $self, $c ) = @_;
+
+    # Make the context available to the logger object
+    $c->log()->{context} = $c;
 
     # Check if incoming request content type is json, and if so,
     # if the request has a body, decode it and place it in $c->{data}
@@ -247,7 +262,6 @@ sub end : Private {
    #
    if ( @{$c->error} ) {
        my @arr = @{$c->error};
-       $c->log->debug( join( '\n', @arr ) );
        my @lines = split(/\n/,$arr[0]);
        my $reason = 'unknown';
        while ( $reason = shift @lines ) {
@@ -259,6 +273,8 @@ sub end : Private {
 			       message => $c->loc( 'Fatal server error' ),
 			       detail => $reason };
        $c->clear_errors;
+
+       $c->log->error( "EXCEPTION: $reason" );
    }
 
     if ( $c->stash->{current_view} ) {
@@ -266,9 +282,6 @@ sub end : Private {
     }
     else {
 	if ( $c->stash->{entity} ) {
-	    if ( $c->debug ) {
-		# $c->logdump( $c->stash->{entity} );
-	    }
 	    if ( $args->{callback} ) {
 		$c->res->content_type( 'application/javascript' );
 		$c->res->body( $args->{callback} . '(' .

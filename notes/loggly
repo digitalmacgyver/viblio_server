@@ -1,0 +1,15 @@
+username: viblio
+password: Viblio2013
+
+Syslogd setup:
+
+wget https://www.loggly.com/install/configure-syslog.py
+sudo python configure-syslog.py install \
+     --auth 32c3f593-612f-4f75-81e6-8f253573c95d --subdomain viblio
+
+Optional: 
+Edit /etc/rsyslog.d/22-loggy.conf, add tag="sometag" tag="someothertag" within 
+[] containing api key:
+
+(...) [32c3f593-612f-4f75-81e6-8f253573c95d@41058 tag="someothertag"] %msg%
+

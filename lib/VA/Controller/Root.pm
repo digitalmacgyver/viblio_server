@@ -49,12 +49,12 @@ Standard 404 error page
 
 sub default :Path {
    my $self = shift; my $c = shift;
-   $c->log->debug( $c->req->header( 'Accept' ) );
    my $callback = $c->req->param( 'callback' );
    my $entity = {
        error => 1,
        message => $c->loc( 'Page not found' ),
        detail => $c->req->path };
+   $c->log->error( "Page Not Found" );
    if ( $c->req->header( 'Accept' ) =~ /json/ ) {
        $c->res->status( 200 );
        $c->res->content_type( 'application/json' );
