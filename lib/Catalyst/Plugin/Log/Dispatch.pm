@@ -150,11 +150,8 @@ sub _format_to_cb_o {
 		    if ( $ctx ) {
 			$hash->{path} = $ctx->req->path;
 			$hash->{params} = $ctx->req->params;
-			if ( $ctx->session && $ctx->session->{__user} ) {
-			    $hash->{user} = $ctx->session->{__user}->{id};
-			}
-			else {
-			    $hash->{user} = 0; # anonymous
+			if ( $ctx->user ) {
+			    $hash->{user} = $ctx->user->obj->{_column_data};
 			}
 		    }
 		    $p{X} = to_json( $hash );
