@@ -47,19 +47,6 @@
                                                 <img width="64" height="64" src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
                                             </td>
                                         </tr>
-                                        [% IF face.contact.contact_name %]
-                                        <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="width: 64px;">
-                                            <td cellspacing="0" cellpadding="0" style="width: 64px;">
-                                                <span class="name">[% face.contact.contact_name %]</span>
-                                            </td>
-                                        </tr>
-                                        [% ELSE %]
-                                        <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="width: 64px;">
-                                            <td cellspacing="0" cellpadding="0" style="width: 64px;">
-                                                <span class="name">Stranger</span>
-                                            </td>
-                                        </tr>
-                                        [% END %]
                                     </tbody>
                                 </table> 
                             </td>   
