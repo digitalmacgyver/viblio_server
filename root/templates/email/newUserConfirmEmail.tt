@@ -17,11 +17,11 @@
                             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
                                 <tbody>
                                     <tr>
-                                        <td width="110" style="width:110px;"></td>
-                                        <td class="button" width="280" height="33" align="center" style="width:280px;">
+                                        <td width="100" style="width:100px;"></td>
+                                        <td class="button" width="300" height="33" align="center" style="width:300px;">
                                             <a class="noUnderline" href="[% url %]"><b><span class="buttonSpan">Yes, confirm my registration&raquo;</span></b></a>
                                         </td>
-                                        <td width="110" style="width:110px;"></td>
+                                        <td width="100" style="width:100px;"></td>
                                     </tr>
                                 </tbody>
                             </table>
