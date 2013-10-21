@@ -11,7 +11,7 @@
     <span>This is just one of the videos you have on your channel: [% model.media.0.title %]</span>
     <br />
     <a href='http://staging.viblio.com/#/new_player?mid=[% media.uuid %]'>
-        <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+        <img class='videoThumb' src="http://staging.viblio.com/s/ip/[% model.media.0.views.poster.uri %]" />
     </a>
     <br />
     <span>Your Viblio channel is easy to remember:  <a class="tomato" href='[% c.server %]/[% model.user.displayname %]'><span class="tomato">www.viblio.com/[% model.user.displayname %]</span></a>.  Visit it any time you want to browse your personal videos or share them with friends and family.</span> 
