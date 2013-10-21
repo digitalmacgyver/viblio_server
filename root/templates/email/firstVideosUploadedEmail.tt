@@ -10,7 +10,7 @@
     <br />
     <span>This is just one of the videos you have on your channel: [% model.media.0.title %]</span>
     <br />
-    <a href='[% c.server  %]/#/new_player?mid=[% media.uuid %]'>
+    <a href='http://staging.viblio.com/#/new_player?mid=[% media.uuid %]'>
         <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
     </a>
     <br />
