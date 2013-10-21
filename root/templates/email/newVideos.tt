@@ -11,7 +11,7 @@
                 <tr>
                 [% FOREACH media IN model.media %]
                     [% LAST IF loop.count > 3 %]
-                        <td class="video" valign="top">
+                        <td class="video" valign="bottom">
                             <table cellspacing="0">
                                 <tbody>
                                     <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
@@ -66,22 +66,11 @@
                                     <tbody>
                                         <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td cellspacing="0" cellpadding="0">
-                                                <img width="64" height="64" src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
+                                                <a href='[% c.server %]#/faces'>
+                                                    <img width="64" height="64" src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
+                                                </a>    
                                             </td>
                                         </tr>
-                                        [% IF face.contact.contact_name %]
-                                        <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                            <td class="name" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                                [% face.contact.contact_name %]
-                                            </td>
-                                        </tr>
-                                        [% ELSE %]
-                                        <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                            <td class="name" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                                Stranger
-                                            </td>
-                                        </tr>
-                                        [% END %]
                                     </tbody>
                                 </table> 
                             </td>   
