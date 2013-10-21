@@ -5,16 +5,16 @@
     <span><strong>It's the beginning of a wonderful relationship!</strong></span>
     <br />
     <br />
-    <span>We have already uploaded [% model.vars.user.numVideos %] of your videos to your personal <a class="tomato" href='[% c.server %]/[% model.vars.user.username %]'><span class="tomato">Viblio channel</span></a>.</span>
+    <span>We have already uploaded [% model.media.size %] of your videos to your personal <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio channel</span></a>.</span>
     <br />
     <br />
     <span>This is just one of the videos you have on your channel: [% model.media.0.title %]</span>
     <br />
-    <a href='[% url %]'>
+    <a href='[% c.server  %]/#/new_player?mid=[% media.uuid %]'>
         <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
     </a>
     <br />
-    <span>Your Viblio channel is easy to remember:  <a class="tomato" href='[% c.server %]/[% model.vars.user.username %]'><span class="tomato">www.viblio.com/[% model.vars.user.username %]</span></a>.  Visit it any time you want to browse your personal videos or share them with friends and family.</span> 
+    <span>Your Viblio channel is easy to remember:  <a class="tomato" href='[% c.server %]/[% model.user.displayname %]'><span class="tomato">www.viblio.com/[% model.user.displayname %]</span></a>.  Visit it any time you want to browse your personal videos or share them with friends and family.</span> 
     <br />
     <br />
     <span>Viblio discovers faces of your friends and loved ones and makes sharing (and privacy!) easy.</span>

@@ -9,7 +9,7 @@
         You now have your own Viblio account
         <br />
         <br />
-        You registered with: [% model.vars.user.email %]
+        You registered with: [% model.user.email %]
         <br />
         <a class="tomato" href="[% c.server %]"><span class="tomato">Forgot your password?</span></a>
         <br />

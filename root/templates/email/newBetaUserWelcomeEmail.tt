@@ -3,7 +3,7 @@
 %]
 
     <div class='bottomBorder-Thin paddedDiv'>
-        <span class="largeText">Hi [% model.vars.user.firstname %],</span>
+        <span class="largeText">Hi [% model.user.displayname %],</span>
         <br />
         <br />
         <span>My name is Mona Sabet and I'm a co-founder of Viblio.  I want to personally thank you for agreeing to try out Viblio's beta service.  The Viblio team is committed to delivering an awesome personal video platform to you and we look forward to hearing your thoughts on our beta product.</span>
