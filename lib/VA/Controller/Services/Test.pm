@@ -11,6 +11,8 @@ BEGIN { extends 'VA::Controller::Services' }
 sub me :Local {
     my( $self, $c ) = @_;
 
+    $DB::single = 1;
+    $c->log->info( 'This is a test' );
     if ( $c->{data} ) {
 	$c->logdump( $c->{data} );
     }

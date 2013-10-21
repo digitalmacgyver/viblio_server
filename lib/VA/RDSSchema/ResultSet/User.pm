@@ -7,8 +7,6 @@ use base qw( DBIx::Class::ResultSet );
 sub auto_create {
     my ( $class, $hashref, $c ) = @_;
     my $user = $class->create( $hashref );
-    # Create the profile
-    $user->create_profile();
     return $user;
 }
 1;

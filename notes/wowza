@@ -1,0 +1,8 @@
+ssh -i ~/va-services.pem ec2-user@ec2-54-214-160-185.us-west-2.compute.amazonaws.com
+
+/usr/local/WowzaMediaServer/
+
+http://ec2-54-214-160-185.us-west-2.compute.amazonaws.com:8086/streammanager/index.html
+
+admin username: wowza
+      password: i-1ed3bc2b

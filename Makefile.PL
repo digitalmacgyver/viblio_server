@@ -73,6 +73,10 @@ requires 'DBIx::Class::ColumnDefault';
 requires 'Catalyst::Model::S3';
 requires 'Net::Amazon::S3::Client';
 requires 'Digest::HMAC_MD5';
+requires 'Catalyst::Plugin::Log::Dispatch';
+requires 'Log::Dispatch::Screen::Color';
+requires 'Log::Dispatch::Syslog';
+requires 'Log::Dispatch::Config';
 
 test_requires 'Test::More' => '0.88';
 catalyst;

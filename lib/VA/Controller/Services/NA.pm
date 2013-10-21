@@ -66,6 +66,12 @@ sub authfailure_response :Private {
 	"NOLOGIN_BLACKLISTED" => "Login failed: This account has been black listed.",
 	"NOLOGIN_EMAIL_NOT_FOUND" => "Login failed: Email address is not registered.",
 	"NOLOGIN_PASSWORD_MISMATCH" => "Login failed: Password does not match for email address.",
+	"NOLOGIN_MISSING_EMAIL" => "Login failed: Missing email address.",
+	"NOLOGIN_MISSING_PASSWORD" => "Login failed: Missing password.",
+	"NOLOGIN_EMAIL_TAKEN" => "Login failed: Email address already taken.",
+	"NOLOGIN_DB_FAILED" => "Login failed: Server could not create account.",
+	"NOLOGIN_XCHECK" => "Login failed: If you created your account with Facebook, please log in with Facebook.",
+	"NOLOGIN_OAUTH_FAILURE" => "Login failed: Authentication failure against social network.",
 	"NOLOGIN_UNKNOWN" => "Login failed",
     };
     return $c->loc( $hash->{$code} );
@@ -85,22 +91,35 @@ sub authenticate :Local {
     if ( $realm eq 'db' ) {
 	if ( $c->config->{in_beta} ) {
 	    unless( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'whitelist'}) ) {
-		$self->status_unauthorized( $c, $c->loc( "Login failed: Not registered in the beta program." ) );
+		my $code = "NOLOGIN_NOT_IN_BETA";
+		$self->status_unauthorized( $c, $self->authfailure_response( $c, $code ), $code );
 	    }
 	}
 
 	if ( $c->model( 'RDS::EmailUser' )->find({email => $email, status => 'blacklist'}) ) {
-	    $self->status_unauthorized( $c, $c->loc( "Login failed: This account has been black listed." ) );
+	    my $code = "NOLOGIN_BLACKLISTED";
+	    $self->status_unauthorized( $c, $self->authfailure_response( $c, $code ), $code );
 	}
 	$creds = {
 	    email => $email,
 	    password => $password,
 	};
+
+	# There is one case that causes perl exceptions; when someone created an account
+	# via OAuth, but is now trying to authenticate with an email/password.  Since the
+	# OAuth based account does not have a password, the password check in PassphraseColumn.pm
+	# line 55 causes an exception trying to match() on an undefined value.
+	my $xcheck = $c->model( 'RDS::User' )->find({ email => $email });
+	if ( $xcheck && ! defined( $xcheck->password() ) ) {
+	    my $code = "NOLOGIN_XCHECK";
+	    $self->status_unauthorized( $c, $self->authfailure_response( $c, $code ), $code );
+	}
     }
     elsif ( $realm =~ /facebook/ ) {
 	$creds = {};
     }
-
+    
+    $c->{no_autocreate} = 1;
     if ( $c->authenticate( $creds, $realm ) ) {
 	$self->status_ok( $c, { user => $c->user->obj } );
 	return;
@@ -443,48 +462,74 @@ sub new_user :Local {
 	  [ email    => undef,
 	    password => undef,
 	    username => undef,
-	    displayname => undef
+	    displayname => undef,
+	    realm => 'db'
 	  ],
 	  @_ );
 
-    unless( $args->{email} ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Missing required field: [_1]", 'email' ) );
+    my $creds = {};
+    my $dbuser;
+
+    if ( $args->{realm} eq 'db' ) {
+	unless( $args->{email} ) {
+	    my $code = "NOLOGIN_MISSING_EMAIL";
+	    $self->status_bad_request
+		( $c, $self->authfailure_response( $c, $code ), $code );
+	}
+
+	$args->{displayname} = $args->{username} unless( $args->{displayname} );
+	$args->{displayname} = $self->displayname_from_email( $args->{email} ) unless( $args->{displayname} );
+	$args->{displayname} = $args->{email} unless( $args->{displayname} );
+
+	unless( $args->{password} ) {
+	    my $code = "NOLOGIN_MISSING_PASSWORD";
+	    $self->status_bad_request
+		( $c, $self->authfailure_response( $c, $code ), $code );
+	}
+
+	my @hits = $c->model( 'RDS::User' )->search({ email => $args->{email} });
+	if ( $#hits >= 0 ) {
+	    my $code = "NOLOGIN_EMAIL_TAKEN";
+	    $self->status_bad_request
+		( $c, $self->authfailure_response( $c, $code ), $code );
+	}
+
+	if ( $c->config->{in_beta} ) {
+	    unless( $c->model( 'RDS::EmailUser' )->find({email => $args->{email}, status => 'whitelist'}) ) {
+		my $code = "NOLOGIN_NOT_IN_BETA";
+		$self->status_unauthorized( $c, $self->authfailure_response( $c, $code ), $code );
+	    }
+	}
+
+	if ( $c->model( 'RDS::EmailUser' )->find({email => $args->{email}, status => 'blacklist'}) ) {
+	    my $code = "NOLOGIN_BLACKLISTED";
+	    $self->status_unauthorized( $c, $self->authfailure_response( $c, $code ), $code );
+	}
+
+	$dbuser = $c->model( 'RDS::User' )->create
+	    ({ email => $args->{email},
+	       password => $args->{password},
+	       displayname => $args->{displayname},
+	       accepted_terms => 1,
+	     });
+
+	unless( $dbuser ) {
+	    $c->log->error( "new_user: Failed to create new user for $args->{email}" );
+	    my $code = "NOLOGIN_DB_FAILED";
+	    $self->status_bad_request
+		( $c, $self->authfailure_response( $c, $code ), $code );
+	}
+
+	$creds = {
+	    email => $dbuser->email,
+	    password => $args->{password} 
+	};
     }
 
-    unless( $args->{password} ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Missing required field: [_1]", 'password' ) );
-    }
+    if ($c->authenticate( $creds, $args->{realm} ) ) {
+	my $user = $c->user->obj;
+	$user->provider( ( $args->{realm} eq 'db' ? 'local' : $args->{realm}) ); $user->update;
 
-    if ( ! defined( $args->{username} ) && defined( $args->{displayname} ) ) {
-	$args->{username} = $args->{displayname};
-    }
-
-    my $username = $self->auto_username
-	( $c, $args->{email}, $args->{username} );
-
-    my @hits = $c->model( 'RDS::User' )->search({ email => $args->{email} });
-    if ( $#hits >= 0 ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "The email address [_1] has already been taken.", $args->{email} ) );
-    }
-
-    my $user = $c->model( 'RDS::User' )->create
-	({ email => $args->{email},
-	   password => $args->{password},
-	   displayname => $args->{username} || $username,
-	   accepted_terms => 1,
-	 });
-
-    unless( $user ) {
-	$c->log->error( "new_user: Failed to create new user for $args->{email}" );
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to create user for: [_1]", $args->{email} ) );
-    }
-
-    if ($c->authenticate({ email    => $user->email,
-			   password => $args->{password}  }, 'db' )) {
 	# Create a profile
 	$user->create_profile();
 
@@ -536,9 +581,11 @@ sub new_user :Local {
 	$self->status_ok( $c, { user => $c->user->obj } );
     }
     else {
-	$user->delete;
+	$dbuser->delete if ( $dbuser );
+	$c->log->error( "new_user: Failed to create new user for $args->{email}" );
+	my $code = "NOLOGIN_DB_FAILED";
 	$self->status_bad_request
-	    ( $c, $c->loc( "Unable to create new user." ) );
+	    ( $c, $self->authfailure_response( $c, $code ), $code );
     }
 }
 

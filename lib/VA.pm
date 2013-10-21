@@ -24,7 +24,7 @@ use Catalyst qw/
     Redirect
 
     StackTrace
-    Log::Log4perlSimple
+    Log::Dispatch
 
     Authentication
     AdditionalRoles
