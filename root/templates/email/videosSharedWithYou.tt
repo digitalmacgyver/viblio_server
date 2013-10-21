@@ -27,7 +27,7 @@
     <span>If you don't already have an account, create your own password at the page from the link above, or better yet, <a class="tomato" href="[% c.server %]services/na/download_trayapp"><span class="tomato">DOWNLOAD</span></a> YOUR OWN VIBLIO FINDER SO THAT YOU CAN CREATE YOUR OWN VIBLIO LIBRARY.</span>
     <br />
     <br 
-    <span>Either way, you'll then be able to access and watch [% from.displayname.split(' ').0 %]'s video online, and share private comments with [% from.displayname.split(' ').0 %].</span>
+    <span>Either way, you'll then be able to access and watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span>
     <br />
     <br />
 
