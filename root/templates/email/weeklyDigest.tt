@@ -24,7 +24,7 @@
                             </tr>
                             <tr>
                                 <td valign='bottom'>
-                                    <span><strong>[% model.media.size %]</strong></span>
+                                    <span><strong>[% model.vars.totalVideosInAccount %]</strong></span>
                                 </td>
                             </tr>
                         </tbody>
@@ -53,7 +53,7 @@
                             </tr>
                             <tr>
                                 <td valign='bottom'>
-                                    <span><strong>[% model.vars.newVids %]</strong></span>
+                                    <span><strong>[% model.vars.numVideosUploadedLastWeek %]</strong></span>
                                 </td>
                             </tr>
                         </tbody>
@@ -115,7 +115,7 @@
                             </tr>
                             <tr>
                                 <td valign='bottom'>
-                                    <span><strong>[% model.vars.totalViews %]</strong></span>
+                                    <span><strong>[% model.vars.numVideosViewedLastWeek %]</strong></span>
                                 </td>
                             </tr>
                         </tbody>
