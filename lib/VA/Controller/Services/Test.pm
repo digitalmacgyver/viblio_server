@@ -244,14 +244,17 @@ sub template_test :Local {
 	model => {
 	    user  => $c->user,
 	    media => \@media_array,
+	    vars => {
+		shareType => 'private',
+		user => $c->user,
+		numVideosUploadedLastWeek => 10,
+		numVideosViewedLastWeek => 4,
+		totalVideosInAccount => $c->user->media->count
+	    },
 	},
 	from => $c->user,
 	body => "This was text from textarea.",
 	url => sprintf( "%s#register?email=%s", $c->server,  $mf->{uuid} ),
-	vars => {
-	    shareType => 'private',
-	    user => $c->user,
-	},
 	new_password => 'xxxyyyzzzfff',
 	      });
 
