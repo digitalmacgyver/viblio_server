@@ -254,7 +254,7 @@ sub template_test :Local {
 	},
 	from => $c->user,
 	body => "This was text from textarea.",
-	url => sprintf( "%s#register?email=%s", $c->server,  $mf->{uuid} ),
+	url => sprintf( "%s#register?email=%s", $c->server,  $c->user->email ),
 	new_password => 'xxxyyyzzzfff',
 	      });
 
