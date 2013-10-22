@@ -21,7 +21,7 @@
                                     </tr>
                                     <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                         <td cellspacing="0" cellpadding="0">
-                                            <a href='[% c.server  %]/#/new_player?mid=[% media.uuid %]'>
+                                            <a href='[% c.server  %]/#new_player?mid=[% media.uuid %]'>
                                                 <img class='videoThumb' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
                                             </a>
                                         </td>
@@ -35,7 +35,7 @@
         </table>
 
         [% IF model.media.size > 3 %]
-        <span>To see other videos uploaded today, go to your <a class="tomato" href='[% c.server %]#/home'><span class="tomato">Viblio Channel</span></a></span>
+        <span>To see other videos uploaded today, go to your <a class="tomato" href='[% c.server %]#home'><span class="tomato">Viblio Channel</span></a></span>
             <br />
             <br />
         [% END %]
@@ -66,7 +66,7 @@
                                     <tbody>
                                         <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td cellspacing="0" cellpadding="0">
-                                                <a href='[% c.server %]#/faces'>
+                                                <a href='[% c.server %]#faces'>
                                                     <img width="64" height="64" src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
                                                 </a>    
                                             </td>
