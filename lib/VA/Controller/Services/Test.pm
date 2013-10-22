@@ -174,11 +174,17 @@ sub template_test :Local {
     my( $self, $c ) = @_;
     my $to = $c->req->param( 'email' );
     my $template = $c->req->param( 'template' );
+    my $force_staging = $c->req->param( 'force_staging' );
+
     unless( $to ) {
 	$self->status_bad_request( $c, "missing 'to' param" );
     }
     unless( $template ) {
 	$self->status_bad_request( $c, "missing 'template' param" );
+    }
+
+    if ( $force_staging ) {
+	$c->{server_override} = 'http://staging.viblio.com/';
     }
 
     my $headers = {
@@ -238,14 +244,17 @@ sub template_test :Local {
 	model => {
 	    user  => $c->user,
 	    media => \@media_array,
+	    vars => {
+		shareType => 'private',
+		user => $c->user,
+		numVideosUploadedLastWeek => 10,
+		numVideosViewedLastWeek => 4,
+		totalVideosInAccount => $c->user->media->count
+	    },
 	},
 	from => $c->user,
 	body => "This was text from textarea.",
-	url => sprintf( "%s#register?email=%s", $c->server,  $mf->{uuid} ),
-	vars => {
-	    shareType => 'private',
-	    user => $c->user,
-	},
+	url => sprintf( "%s#register?email=%s", $c->server,  $c->user->email ),
 	new_password => 'xxxyyyzzzfff',
 	      });
 

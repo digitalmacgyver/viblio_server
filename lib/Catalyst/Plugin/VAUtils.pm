@@ -69,6 +69,14 @@ sub localhost {
 sub server {
     my( $c ) = @_;
 
+    if ( $c->{server_override} ) {
+	my $server = $c->{server_override};
+	unless( $server =~ /\/$/ ) {
+	    $server .= '/';
+	}
+	return $server;
+    }
+
     my $server = $c->req->base;
     my $uri = URI->new( $c->req->uri );
     my $path = $uri->path;
