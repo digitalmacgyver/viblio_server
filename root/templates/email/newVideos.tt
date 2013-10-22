@@ -1,5 +1,5 @@
 [% INCLUDE email/top.tt 
-    previewText = "You have a new Viblio video!"
+    previewText = "You have a new video ready on Viblio!"
 %]
     
         <span><strong>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</strong></span>
@@ -11,7 +11,7 @@
                 <tr>
                 [% FOREACH media IN model.media %]
                     [% LAST IF loop.count > 3 %]
-                        <td class="video" valign="top">
+                        <td class="video" valign="bottom">
                             <table cellspacing="0">
                                 <tbody>
                                     <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
@@ -21,7 +21,7 @@
                                     </tr>
                                     <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                         <td cellspacing="0" cellpadding="0">
-                                            <a href='[% url %]'>
+                                            <a href='[% c.server  %]/#/new_player?mid=[% media.uuid %]'>
                                                 <img class='videoThumb' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
                                             </a>
                                         </td>
@@ -66,22 +66,11 @@
                                     <tbody>
                                         <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td cellspacing="0" cellpadding="0">
-                                                <img width="64" height="64" src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
+                                                <a href='[% c.server %]#/faces'>
+                                                    <img width="64" height="64" src="[% face.url %]" alt="" style="width: 64px;height: 64px;">
+                                                </a>    
                                             </td>
                                         </tr>
-                                        [% IF face.contact.contact_name %]
-                                        <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                            <td class="name" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                                [% face.contact.contact_name %]
-                                            </td>
-                                        </tr>
-                                        [% ELSE %]
-                                        <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                            <td class="name" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                                Stranger
-                                            </td>
-                                        </tr>
-                                        [% END %]
                                     </tbody>
                                 </table> 
                             </td>   
@@ -89,7 +78,6 @@
                     [% END %]
                 </tbody>
             </table>
-            <br />
             Connect with friends or family by sharing one of these videos.
             <br />
             <br />

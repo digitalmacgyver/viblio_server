@@ -234,11 +234,11 @@
                         }
                         
                         .paddedDiv {
-                            padding: 47px 53px;
+                            padding-bottom: 45px;
                         }
                         
                         .signatureDiv {
-                            padding: 34px 53px 32px;
+                            padding-top: 34px;
                         }
 
 			/**
@@ -377,7 +377,6 @@
                             text-align: center;
                             margin-right: auto;
                             margin-left: auto;
-                            margin-bottom: 20px;
                             font-size: 14px;
                         }
                         
