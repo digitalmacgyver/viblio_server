@@ -11,6 +11,12 @@ s3:
   aws_use_https: 1
   expires:  86400
 
+# for cloudfront signed urls
+cloudfront:
+  keypairid: APKAIT7GXEAJMNP76GCQ
+  rtmp_domain: s3vrmtwctzbu8n.cloudfront.net
+  web_domain: dbmhmc4gog1yo.cloudfront.net
+
 Model::RDS:
   schema_class: VA::RDSSchema
   connect_info:

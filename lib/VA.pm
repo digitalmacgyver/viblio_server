@@ -35,6 +35,7 @@ use Catalyst qw/
     Session::State::Cookie
 
     VAUtils
+    Cloudfront
 
     I18N
     Unicode

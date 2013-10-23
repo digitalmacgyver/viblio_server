@@ -25,8 +25,6 @@ sub p :Local {
 						     { prefetch => 'assets' } );
 
     if ( $mediafile ) {
-	# my $mhash = VA::MediaFile->new->publish( $c, $mediafile, { expires => (60*60*24*365), aws_use_https => 1 } );
-
 	# The fpheader needs only limitted information, so don't leak anything
 	# we don't have too.
 	my $mhash = {

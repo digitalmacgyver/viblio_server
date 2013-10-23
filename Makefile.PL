@@ -77,6 +77,8 @@ requires 'Catalyst::Plugin::Log::Dispatch';
 requires 'Log::Dispatch::Screen::Color';
 requires 'Log::Dispatch::Syslog';
 requires 'Log::Dispatch::Config';
+requires 'Crypt::OpenSSL::Random';
+requires 'Crypt::OpenSSL::RSA';
 
 test_requires 'Test::More' => '0.88';
 catalyst;
