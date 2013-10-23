@@ -1103,9 +1103,9 @@ sub media_shared :Local {
     # If the user is logged in and its their video, show it
     if ( $user && $mediafile->user_id == $user->id ) {
 	# They own it
-	$c->log->error( 'LOGGED in User Owns Share' );
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
-	$self->status_ok( $c, { media => $mf } );
+	$self->status_ok( $c, { share_type => "owned_by_user", 
+				media => $mf } );
     }
 
     # Gather all of the media_shares ...
@@ -1118,11 +1118,12 @@ sub media_shared :Local {
 
     my $is = {};
     $is->{$_->{_column_data}->{share_type}} = 1 foreach @shares;
+    my $share_type;
+
     # possible values: private, hidden, public
     my $OK = 0;
 
     if ( $is->{public} || $is->{hidden} ) {
-	$c->log->error( 'Public or Hidden Share' );
 	my $found = 'public';
 	if ( $is->{hidden} ) {
 	    $found = 'hidden';
@@ -1134,10 +1135,11 @@ sub media_shared :Local {
 	    $share->view_count( $share->view_count + 1 );
 	    $share->update;
 	}
+	$share_type = $found;
 	$OK = 1;
     }
     elsif ( $is->{private} ) {
-	$c->log->error( 'Private Share' );
+	$share_type = "private";
 	if ( $user ) {
 	    my $share = $mediafile->media_shares->find({ 
 		share_type => 'private', 
@@ -1152,7 +1154,6 @@ sub media_shared :Local {
 	    # This is a private share, but the user coming in is not
 	    # authenticated.  Return an indication that this user needs
 	    # to be prompted to either log in or create an account.
-	    $c->log->error( 'Prompt user to login to view share' );
 	    $self->status_ok( $c, { auth_required => 1 } );
 	}
     }
@@ -1163,7 +1164,7 @@ sub media_shared :Local {
 	$mediafile->update;
 
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
-	$self->status_ok( $c, { media => $mf } );
+	$self->status_ok( $c, { share_type => $share_type, media => $mf } );
     }
     else {
 	$self->status_bad_request( $c, $c->loc( "You are not authorized to view this media." ) );
