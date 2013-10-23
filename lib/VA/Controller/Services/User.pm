@@ -199,6 +199,7 @@ sub link_facebook_account :Local {
     $c->session->{fb_token} = $token;
     
     # Call popeye with access_token, so popeye can fetch facebook data
+=perl
     my $res = $c->model( 'Popeye' )->get( '/processor/facebook',
 					  { uid => $c->user->uuid,
 					    id => $fb_user->{id},
@@ -209,7 +210,7 @@ sub link_facebook_account :Local {
     if ( $res->data->{error} ) {
 	$c->log->error( "Popeye post returned error: " . $res->data->message );
     }
-
+=cut
     $self->status_ok( $c, { user => $fb_user } );
 }
 
