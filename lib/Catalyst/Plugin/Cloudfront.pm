@@ -142,7 +142,9 @@ sub cf_sign {
 
 
 	if ($stream ne "") {
-	    return escape_url_for_webpage($generated_url);
+	    # Escaping this url was *not* good for flow player!!
+	    # return escape_url_for_webpage($generated_url);
+	    return $generated_url;
 	} else {
 	    return $generated_url;
 	}
