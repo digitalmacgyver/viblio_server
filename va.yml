@@ -25,7 +25,7 @@ cloudfront:
   web_domain: d2mf9egnrvb3mr.cloudfront.net
 
 s3:
-  bucket: viblio-cf
+  bucket: viblio-uploaded-files
   aws_use_https: 1
   expires:  86400
 

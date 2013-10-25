@@ -5,6 +5,7 @@ use namespace::autoclean;
 use URI::Escape;
 use MIME::Types;
 use Try::Tiny;
+use DateTime;
 
 BEGIN {extends 'Catalyst::Controller'; }
 
@@ -109,46 +110,29 @@ sub ip :Local {
 	$exception = $_;
     };
     unless( $bucket ) {
+	$c->log->error( "Could not obtain bucket $c->config->{s3}->{bucket}" );
 	$c->res->status( 404 );
 	$c->res->body( 'Not found: ' . $exception );
 	$c->detach;
     }
 
-    my $object = $bucket->object( key => $filename );
-
-    my $req = Net::Amazon::S3::Request::GetObject->new
-	( s3 => $object->client->s3, 
-	  bucket => $object->bucket->name, 
-	  key => $object->key, 
-	  method => 'GET' )->http_request;
-    unless( $req ) {
-	$c->res->status( 404 );
-	$c->res->body( 'Not found' );
-	$c->detach;
-    }
-    my $res;
     try {
-	$res = $object->client->_send_request( $req );
+	my $object = $bucket->object( key => $filename,
+				      expires => DateTime->now->add( days => 1 ) );
+	my $data = $object->get;
+	$c->res->status( 200 );
+	$c->res->headers->header( 'Content-Type' => $mimetype );
+	$c->res->headers->header( 'Content-Length' => length( $data ) );
+
+	$c->res->write( $data );
+	$c->res->body('');
     } catch {
-	$exception = $_;
-    };
-    if ( $exception ) {
+	my $e = $_;
+	$c->log->error( $e );
 	$c->res->status( 404 );
 	$c->res->body( 'Not found' );
 	$c->detach;
-    }
-    unless( $res->is_success ) {
-	$c->res->status( $res->code );
-	$c->res->body( $res->message );
-	$c->detach;
-    }
-    
-    $c->res->status( 200 );
-    $c->res->headers->header( 'Content-Type' => $res->header( 'Content-Type' ) );
-    $c->res->headers->header( 'Content-Length' => $res->header( 'Content-Length' ) );
-
-    $c->res->write( $res->content );
-    $c->res->body('');
+    };
 }
 
 =head2 /s/ps/<share-uuid>
