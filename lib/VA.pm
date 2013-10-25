@@ -19,6 +19,7 @@ use Catalyst::Runtime 5.80;
 use CatalystX::RoleApplicator;
 
 use Catalyst qw/
+    -Debug
     ConfigLoader
     Static::Simple
     Redirect

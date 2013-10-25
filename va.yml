@@ -3,6 +3,9 @@ application_name: Viblio!
 viblio_return_email_address: no-reply@www.viblio.com
 viblio_return_email_domain: support-staging.viblio.com
 
+Plugin::Session:
+  cookie_secure: 1
+
 filepicker:
   key: AUBFLi68nRXe7sDddBPBVz
 
@@ -92,6 +95,10 @@ Model::RDS:
     AutoCommit: 1
 
 Log::Dispatch:
+  - class: File
+    name: file
+    min_level: debug
+    filename: /tmp/viblio.log
   - class: Screen::Color
     name: screen
     min_level: debug
