@@ -89,6 +89,10 @@ Model::RDS:
     AutoCommit: 1
 
 Log::Dispatch:
+  - class: File
+    name: file
+    min_level: debug
+    filename: /tmp/viblio.log
   - class: Screen::Color
     name: screen
     min_level: debug
