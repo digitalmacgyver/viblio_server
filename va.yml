@@ -18,6 +18,12 @@ Model::S3:
 # for authentication and sharing.
 in_beta: 0
 
+# for cloudfront signed urls
+cloudfront:
+  keypairid: APKAIT7GXEAJMNP76GCQ
+  rtmp_domain: s2gdj4u4bxrah6.cloudfront.net
+  web_domain: d2mf9egnrvb3mr.cloudfront.net
+
 s3:
   bucket: viblio-uploaded-files
   aws_use_https: 1

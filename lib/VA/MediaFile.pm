@@ -1,7 +1,8 @@
 package VA::MediaFile;
 use Moose;
 use Module::Find;
-usesub VA::MediaFile;
+use VA::MediaFile;
+use MIME::Types;
 
 # This is a proxy class, not a super class.  The methods
 # called here will proxy to the class indicated by the
@@ -114,6 +115,15 @@ sub publish {
 	my $fp = new $klass;
 	$view_json->{url} = 
 	    $fp->uri2url( $c, $view_json, $params );
+
+	# If this is a video, also generate a cloudfront url
+	my $mimetype = MIME::Types->new()->mimeTypeOf( $view_json->{uri} );
+	if ( $mimetype =~ /^video/ ) {
+	    $view_json->{cf_url} = $c->cf_sign( $view_json->{uri}, {
+		stream => 1,
+		expires => ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ),
+	    });
+	}
 
 	if ( defined( $mf_json->{'views'}->{$type} ) ) {
 	    if ( ref $mf_json->{'views'}->{$type} eq 'ARRAY' ) {

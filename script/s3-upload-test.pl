@@ -22,11 +22,11 @@ die "Cannot create s3" unless( $s3 );
 my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
 die "Cannot create client" unless( $client );
 
-my $bucket = $client->bucket( name => 'viblio-uploaded-files' );
+my $bucket = $client->bucket( name => 'viblio-cf' );
 die "Cannot find bucket" unless( $bucket );
 
 my $object = $bucket->object(
-    key => 'thumbs/testfile',
+    key => 'test/test.png',
     content_type => 'image/png'
     );
 die "Cannot create object" unless( $object );
