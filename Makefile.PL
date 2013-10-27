@@ -79,6 +79,7 @@ requires 'Log::Dispatch::Syslog';
 requires 'Log::Dispatch::Config';
 requires 'Crypt::OpenSSL::Random';
 requires 'Crypt::OpenSSL::RSA';
+requires 'Net::GitHub::V3';
 
 test_requires 'Test::More' => '0.88';
 catalyst;

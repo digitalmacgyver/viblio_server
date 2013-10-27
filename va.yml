@@ -24,6 +24,11 @@ cloudfront:
   rtmp_domain: s2gdj4u4bxrah6.cloudfront.net
   web_domain: d2mf9egnrvb3mr.cloudfront.net
 
+github:
+  access_token: c3f3524e52b2074e77fc388f0d76e69ad63b61bb
+  repo: web-clients
+  owner: peebles
+
 s3:
   bucket: viblio-uploaded-files
   aws_use_https: 1
