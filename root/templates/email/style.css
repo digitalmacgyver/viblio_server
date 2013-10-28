@@ -22,7 +22,7 @@
 			* @theme page
 			*/
 			body, .backgroundTable{
-				/*@editable*/ background-color:white;
+				/*@editable*/ background-color:#FFFFFF;
                                 font-family: Arial, sans-serif;
 			}
 
@@ -114,7 +114,7 @@
 			* @theme page
 			*/
 			#templatePreheader{
-				/*@editable*/ background-color:#FAFAFA;
+				/*@editable*/ background-color:#FFFFFF;
 			}
 
 			/**
@@ -199,7 +199,7 @@
 			/* /\/\/\/\/\/\/\/\/\/\ STANDARD STYLING: MAIN BODY /\/\/\/\/\/\/\/\/\/\ */
             
                         #templateBody {
-                            background-color: #313543;
+                            background-color: #FFFFFF;
                         }
 
 			/**
@@ -208,7 +208,7 @@
 			* @tip Set the background color for your email's body area.
 			*/
 			#templateContainer {
-				/*@editable*/ background-color:#313543;
+				/*@editable*/ background-color:#FFFFFF;
 			}
                         
                         .bodyContent {
@@ -222,7 +222,7 @@
 			* @theme main
 			*/
 			.bodyContent div {
-				/*@editable*/ color:#7a7e87;
+				/*@editable*/ color:#FFFFFF;
 				/*@editable*/ font-family:Arial;
 				/*@editable*/ font-size:18px;
 				/*@editable*/ line-height:150%;
@@ -265,7 +265,7 @@
 			* @theme footer
 			*/
 			#templateFooter{
-				/*@editable*/ background-color:#313543;
+				/*@editable*/ background-color:#FFFFFF;
 			}
 
 			/**
@@ -321,7 +321,7 @@
 			* @tip Set the background color and border for your email's footer utility bar.
 			*/
 			#utility{
-				/*@editable*/ background-color:#313543;
+				/*@editable*/ background-color:#FFFFFF;
 			}
 
 			/**
