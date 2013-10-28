@@ -354,6 +354,7 @@
                         .line {
                             width: 500px;
                             border-bottom: 1px solid #7a7e87;
+                            margin-top: 20px;
                         }
                         
                         .videoThumb-Lrg {
