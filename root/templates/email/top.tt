@@ -47,7 +47,7 @@
                                                     <table width='590' height='104' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
                                                         <tr height='104'>
                                                             <td width="495" style="width:495px;">
-                                                                <a href="[% c.server %]"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-Logo.png" alt="Viblio Logo" align='left'></img></a>
+                                                                <a href="[% c.server %]"><img src="[% c.server %]/css/images/viblioLogo-WhiteWText.png" alt="Viblio Logo" align='left'></img></a>
                                                             </td>
                                                             <td width='58' style="width:58px;">
                                                                 <a href="https://www.facebook.com/pages/Viblio/452842304820094"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" align='left'></img></a>

@@ -32,7 +32,7 @@
 			* @tip Set the border for your email.
 			*/
 			#templateContainer{
-				/*@editable*/ border: 1px solid #DDDDDD;
+				/*@editable border: 1px solid #DDDDDD;*/
                                 height: 1200px;
                                 min-height: 1200px;
 			}
@@ -212,7 +212,7 @@
 			}
                         
                         .bodyContent {
-                            background-color:white;
+                            background-color:#FFFFFF;
                         }
 
 			/**
@@ -222,7 +222,7 @@
 			* @theme main
 			*/
 			.bodyContent div {
-				/*@editable*/ color:#FFFFFF;
+				/*@editable*/ color:#7a7e87;
 				/*@editable*/ font-family:Arial;
 				/*@editable*/ font-size:18px;
 				/*@editable*/ line-height:150%;
@@ -230,7 +230,7 @@
 			}
                         
                         #mainContent {
-                            background-color: white;
+                            background-color: #FFFFFF;
                         }
                         
                         .paddedDiv {
@@ -288,7 +288,7 @@
 			* @tip Set the styling for your email's footer links. Choose a color that helps them stand out from your text.
 			*/
 			.footerContent div a:link, .footerContent div a:visited{
-				/*@editable*/ color:#c0c5c9;
+				/*@editable*/ color:#313543;
 				/*@editable*/ font-weight:normal;
 				/*@editable*/ text-decoration:underline;
 			}
