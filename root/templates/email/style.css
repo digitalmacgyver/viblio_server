@@ -353,11 +353,10 @@
                         
                         .line {
                             height: 0;
-                            width: 590px;
+                            width: 100%;
                             border-bottom: 1px solid lightgrey;
                             margin-top: 40px;
                             margin-bottom: 40px;
-                            margin-right: 45px;
                         }
                         
                         .videoThumb-Lrg {
