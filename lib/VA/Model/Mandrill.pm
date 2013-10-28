@@ -9,6 +9,11 @@ sub authenticate {
     my( $self, $c ) = @_;
 
     my $signed_data = $c->req->uri;
+    # Because nginx is resolving https and proxying to
+    # me as http, I need to turn this uri back into https
+    # so the signing works!
+    $signed_data =~ s/^http:/https:/g;
+
     foreach my $key ( sort keys %{$c->req->body_params} ) {
 	$signed_data .= $key;
 	$signed_data .= $c->req->body_params->{$key};

@@ -182,6 +182,7 @@ sub authenticate {
 		$link->update; 
 	    
 		# Call popeye with access_token, so popeye can fetch facebook data
+=perl
 		my $res = $ctx->model( 'Popeye' )->get( '/processor/facebook',
 							{ uid => $user->get_object->uuid,
 							  id => $fb_user->{id},
@@ -192,6 +193,7 @@ sub authenticate {
 		if ( $res->data->{error} ) {
 		    $ctx->log->error( "Popeye post returned error: " . $res->data->message );
 		}
+=cut
 	    }
 
 	    return $user;

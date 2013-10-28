@@ -15,6 +15,7 @@ use VA::MediaFile::US;
 use MIME::Types;
 use LWP;
 use File::Basename;
+use Net::GitHub::V3;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -1063,6 +1064,29 @@ sub incoming_email :Local {
 			# want to route this message somewhere ... to the
 			# database, log files, or maybe send some email.
 			#
+
+			# feedback will be stored as a github issue
+			# on the viblio-server repo.
+			try {
+			    # Authenticate with an access token
+			    my $gh = Net::GitHub::V3->new(
+				access_token => $c->config->{github}->{access_token} );
+			    my $issue = $gh->issue;
+			    # Set the default repo to operate on
+			    $issue->set_default_user_repo( 
+				'viblio',
+				$c->config->{github}->{repo} );
+			    # Create the issue
+			    my $i = $issue->create_issue({
+				title => $m->{subject},
+				body  => $m->{from_email} . "\n\n" . $m->{text},
+				assignee => $c->config->{github}->{owner},
+				labels => [ 'pending' ],
+				milestone => 1 });
+			}
+			catch {
+			    $c->log->error( "Incoming email from feeback, failure to save to github: $_" );
+			};
 		    }
 		}
 		else {

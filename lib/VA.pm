@@ -19,6 +19,7 @@ use Catalyst::Runtime 5.80;
 use CatalystX::RoleApplicator;
 
 use Catalyst qw/
+    -Debug
     ConfigLoader
     Static::Simple
     Redirect
@@ -35,6 +36,7 @@ use Catalyst qw/
     Session::State::Cookie
 
     VAUtils
+    Cloudfront
 
     I18N
     Unicode

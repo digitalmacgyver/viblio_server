@@ -1,0 +1,28 @@
+For a bucket to be accessible privately via a cloud front distribution,
+a policy must be added and allows a cloudfront identity to read/get.
+
+For the server, the cloudfront config is in the va*.yml files:
+
+cloudfront:
+  keypairid: APKAIT7GXEAJMNP76GCQ
+  rtmp_domain: s2zz00dmduen0z.cloudfront.net
+  web_domain: d3h86hsrudlmfo.cloudfront.net
+
+The domains are associated with a particular bucket, so the staging and
+prod domains are different.
+
+Signing requires a private key file associated with 'keypairid'.  The
+done in use is located: lib/cloudfront/key-pairs/pk-APKAIT7GXEAJMNP76GCQ.pem
+
+The lib/Catalyst/Plugin/Cloudfront.pm plugin defined a cf_sign() helper
+that reads the private key file and uses the keypairid to sign uris and
+create urls.
+
+The web gui needs to know the domain to use to stream files.  Since the
+domain is different between staging and prod, app/lib/config.js defines
+a routine that the gui calls:  config.cf_domain() which returns the
+proper cloudfront streaming (rtmp) domain, or the one for staging if
+there is not one registered.
+
+
+

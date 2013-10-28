@@ -3,6 +3,9 @@ application_name: Viblio!
 viblio_return_email_address: no-reply@www.viblio.com
 viblio_return_email_domain: support-staging.viblio.com
 
+Plugin::Session:
+  cookie_secure: 1
+
 filepicker:
   key: AUBFLi68nRXe7sDddBPBVz
 
@@ -14,6 +17,17 @@ Model::S3:
 # Set to 1 when in beta.  This activates whitelist checking
 # for authentication and sharing.
 in_beta: 0
+
+# for cloudfront signed urls
+cloudfront:
+  keypairid: APKAIT7GXEAJMNP76GCQ
+  rtmp_domain: s2gdj4u4bxrah6.cloudfront.net
+  web_domain: d2mf9egnrvb3mr.cloudfront.net
+
+github:
+  access_token: c3f3524e52b2074e77fc388f0d76e69ad63b61bb
+  repo: web-clients
+  owner: peebles
 
 s3:
   bucket: viblio-uploaded-files
@@ -86,6 +100,10 @@ Model::RDS:
     AutoCommit: 1
 
 Log::Dispatch:
+  - class: File
+    name: file
+    min_level: debug
+    filename: /tmp/viblio.log
   - class: Screen::Color
     name: screen
     min_level: debug
