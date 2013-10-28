@@ -16,8 +16,9 @@
     </a>
     <br />
     <span>Visit <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio</span></a> any time you want to browse your personal videos or share them with friends and family.</span> 
-    <br />
-    <br />
+    
+    <div class="line centered"></div>
+
     <span>Viblio discovers faces of your friends and loved ones and makes sharing (and privacy!) easy.</span>
     <br />
     <br />
