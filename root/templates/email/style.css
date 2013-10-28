@@ -354,7 +354,7 @@
                         .line {
                             height: 0;
                             width: 590px;
-                            border-bottom: 1px solid #7a7e87;
+                            border-bottom: 1px solid lightgrey;
                             margin-top: 40px;
                             margin-bottom: 40px;
                             margin-left: -45px;
