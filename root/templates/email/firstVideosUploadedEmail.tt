@@ -2,78 +2,64 @@
     previewText = "Welcome to Viblio. Your first videos are ready!"
 %]
 
-<td width="45" style="width:45px"></td>
-    <td valign="top" width="500" style="width:500px; padding-bottom:50px">
-        <div id='mainContent centered' width="500" style="color: #7a7e87; width:500px;">
-            <span><strong>It's the beginning of a wonderful relationship!</strong></span>
-            <br />
-            <br />
-            <span>We have already uploaded [% model.media.size %] of your videos to your <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio account</span></a>.</span>
-            <br />
-        </div>
-        <tr>
-            <td class="bottomBorder-Thin" width="45" style="width:45px;"></td>
-            <td class="bottomBorder-Thin" width='500' height='55' align="center" border="0" cellspacing="0" cellpadding="0" style="width:500px; height:55px;"></td>
-            <td class="bottomBorder-Thin" width="45" style="width:45px;"></td>
-        </tr>
-    </td>   
-<td width="45" style="width:45px"></td>
+    <span><strong>It's the beginning of a wonderful relationship!</strong></span>
+    <br />
+    <br />
+    <span>We have already uploaded [% model.media.size %] of your videos to your <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio account</span></a>.</span>
+    <br />
+    <div class="line"></div>
+    <br />
+    <span>This is just one of the videos you have on your channel: [% model.media.0.title %]</span>
+    <br />
+    <a href='[% c.server %]/#new_player?mid=[% model.media.0.uuid %]'>
+        <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+    </a>
+    <br />
+    <span>Visit <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio</span></a> any time you want to browse your personal videos or share them with friends and family.</span> 
+    <br />
+    <br />
+    <span>Viblio discovers faces of your friends and loved ones and makes sharing (and privacy!) easy.</span>
+    <br />
+    <br />
+    [% numFaces = [] %]
+    [% FOREACH media IN model.media -%]
+        [% FOREACH face IN media.views.face -%]
+            [% numFaces.push(face) %]
+        [% END %]
+    [% END %]
 
-            <br />
-            <span>This is just one of the videos you have on your channel: [% model.media.0.title %]</span>
-            <br />
-            <a href='[% c.server %]/#new_player?mid=[% model.media.0.uuid %]'>
-                <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
-            </a>
-            <br />
-            <span>Visit <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio</span></a> any time you want to browse your personal videos or share them with friends and family.</span> 
-            <br />
-            <br />
-            <span>Viblio discovers faces of your friends and loved ones and makes sharing (and privacy!) easy.</span>
-            <br />
-            <br />
-            [% numFaces = [] %]
-            [% FOREACH media IN model.media -%]
-                [% FOREACH face IN media.views.face -%]
-                    [% numFaces.push(face) %]
-                [% END %]
-            [% END %]
+    [% IF numFaces.size > 0 %]
+        [% IF numFaces.size == 1 %]
+            <span><strong>We found this new face in your videos:</strong><span>
+        [% ELSE %]
+            <span><strong>We found these new faces in your videos:</strong><span>
+        [% END %]
+        <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
+            <tbody>
 
-            [% IF numFaces.size > 0 %]
-                [% IF numFaces.size == 1 %]
-                    <span><strong>We found this new face in your videos:</strong><span>
-                [% ELSE %]
-                    <span><strong>We found these new faces in your videos:</strong><span>
-                [% END %]
-                <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
-                    <tbody>
+                    [% FOREACH face IN numFaces -%]
+                        [% LAST IF loop.count > 12 %]
+                        [%- "<tr>\n" IF loop.first || loop.count == 4 || loop.count == 7 || loop.count == 10 %]
+                            <td class="face" valign="top">
+                                <table cellspacing="0" style="text-align: center;margin-right: auto;margin-left: auto;">
+                                    <tbody>
+                                        <tr cellspacing="0" cellpadding="0">
+                                            <td cellspacing="0" cellpadding="0">
+                                                <img class="boxShadowed" width="64" height="64" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 64px;height: 64px;">
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table> 
+                            </td>   
+                        [%- "</tr>\n" IF loop.last || loop.count == 3 || loop.count == 6 || loop.count == 9 %]
+                     [% END %]
 
-                            [% FOREACH face IN numFaces -%]
-                                [% LAST IF loop.count > 12 %]
-                                [%- "<tr>\n" IF loop.first || loop.count == 4 || loop.count == 7 || loop.count == 10 %]
-                                    <td class="face" valign="top">
-                                        <table cellspacing="0" style="text-align: center;margin-right: auto;margin-left: auto;">
-                                            <tbody>
-                                                <tr cellspacing="0" cellpadding="0">
-                                                    <td cellspacing="0" cellpadding="0">
-                                                        <img class="boxShadowed" width="64" height="64" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 64px;height: 64px;">
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table> 
-                                    </td>   
-                                [%- "</tr>\n" IF loop.last || loop.count == 3 || loop.count == 6 || loop.count == 9 %]
-                             [% END %]
-
-                    </tbody>
-                </table>
-                <span>Connect with friends or family by sharing one of these videos.</span>
-                <br />
-                <br />
-                <span><a class="tomato" href='[% c.server %]'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.</span>
-            [% END %]
-        </div>                                                  
-    </td>   
-<td width="45" style="width:45px"></td>
+            </tbody>
+        </table>
+        <span>Connect with friends or family by sharing one of these videos.</span>
+        <br />
+        <br />
+        <span><a class="tomato" href='[% c.server %]'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.</span>
+    [% END %]
 
 [% INCLUDE email/bottom.tt %]                                                            
