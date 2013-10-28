@@ -22,7 +22,7 @@
                                     <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                         <td cellspacing="0" cellpadding="0">
                                             <a href='[% c.server  %]/#new_player?mid=[% media.uuid %]'>
-                                                <img class='videoThumb' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
+                                                <img class='videoThumb boxShadowed' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
                                             </a>
                                         </td>
                                     </tr>
@@ -67,7 +67,7 @@
                                         <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td cellspacing="0" cellpadding="0">
                                                 <a href='[% c.server %]#faces'>
-                                                    <img width="64" height="64" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 64px;height: 64px;">
+                                                    <img class="boxShadowed" width="64" height="64" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 64px;height: 64px;">
                                                 </a>    
                                             </td>
                                         </tr>

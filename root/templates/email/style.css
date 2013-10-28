@@ -351,6 +351,17 @@
                             height: 90px;
                         }
                         
+                        .videoThumb-Lrg {
+                            width: 361px;
+                            height: 203px;
+                        }
+                        
+                        .boxShadowed {
+                            -moz-box-shadow: 3px 3px 0px 1px rgba(0,0,0,.2); /* Firefox */
+                            -webkit-box-shadow: 3px 3px 0px 1px rgba(0,0,0,.2);
+                            box-shadow: 3px 3px 0px 1px rgba(0,0,0,.2);
+                        }
+                        
                         .face {
                             padding: 0 18px;
                         }

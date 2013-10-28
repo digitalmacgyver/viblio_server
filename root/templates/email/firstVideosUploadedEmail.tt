@@ -11,7 +11,7 @@
     <span>This is just one of the videos you have on your channel: [% model.media.0.title %]</span>
     <br />
     <a href='[% c.server %]/#new_player?mid=[% model.media.0.uuid %]'>
-        <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+        <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
     </a>
     <br />
     <span>Visit <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio</span></a> any time you want to browse your personal videos or share them with friends and family.</span> 
@@ -44,7 +44,7 @@
                                     <tbody>
                                         <tr cellspacing="0" cellpadding="0">
                                             <td cellspacing="0" cellpadding="0">
-                                                <img width="64" height="64" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 64px;height: 64px;">
+                                                <img class="boxShadowed" width="64" height="64" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 64px;height: 64px;">
                                             </td>
                                         </tr>
                                     </tbody>
