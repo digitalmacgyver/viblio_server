@@ -32,9 +32,9 @@
 
         [% IF numFaces.size > 0 %]
             [% IF numFaces.size == 1 %]
-                <span><strong>We found this new face in your videos:</strong><span>
+                <span><strong>We found this new face in your videos:</strong><span><br /><br />
             [% ELSE %]
-                <span><strong>We found these new faces in your videos:</strong><span><br />
+                <span><strong>We found these new faces in your videos:</strong><span><br /><br />
             [% END %]
             <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
                 <tbody>
