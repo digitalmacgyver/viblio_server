@@ -351,15 +351,20 @@
                             height: 90px;
                         }
                         
+                        .line {
+                            width: 100%;
+                            border-bottom: 1px solid #7a7e87;
+                        }
+                        
                         .videoThumb-Lrg {
                             width: 361px;
                             height: 203px;
                         }
                         
                         .boxShadowed {
-                            -moz-box-shadow: 3px 3px 0px 1px rgba(0,0,0,.2); /* Firefox */
-                            -webkit-box-shadow: 3px 3px 0px 1px rgba(0,0,0,.2);
-                            box-shadow: 3px 3px 0px 1px rgba(0,0,0,.2);
+                            -moz-box-shadow: 3px 3px 0px 1px #7a7e87; /* Firefox */
+                            -webkit-box-shadow: 3px 3px 0px 1px #7a7e87;
+                            box-shadow: 3px 3px 0px 1px #7a7e87;
                         }
                         
                         .face {
