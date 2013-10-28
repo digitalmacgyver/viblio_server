@@ -7,25 +7,7 @@
     <br />
     <span>We have already uploaded [% model.media.size %] of your videos to your <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio account</span></a>.</span>    
     
-    <table width='590' height='100' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
-        <tr>
-            <td width="45" style="width:45px;"></td>
-            <td width='500' height='55' align="center" border="0" cellspacing="0" cellpadding="0" style="width:500px; height:55px;"></td>
-            <td width="45" style="width:45px;"></td>
-        </tr>
-        <tr>
-            <td width="45" style="width:45px;"></td>
-            <td width='500' height='55' align="center" cellspacing="0" cellpadding="0" style="width:500px; height:55px;">
-                <div class="line"></div>    
-            </td>
-            <td width="45" style="width:45px;"></td>
-        </tr>
-        <tr>
-            <td class="bottomBorder-Thin" width="45" style="width:45px;"></td>
-            <td class="bottomBorder-Thin" width='500' height='55' align="center" border="0" cellspacing="0" cellpadding="0" style="width:500px; height:55px;"></td>
-            <td class="bottomBorder-Thin" width="45" style="width:45px;"></td>
-        </tr>
-    </table>
+    <div class="line centered"></div>
 
     <span>This is just one of the videos you have on your channel: [% model.media.0.title %]</span>
     <br />
