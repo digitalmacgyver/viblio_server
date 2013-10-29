@@ -40,20 +40,22 @@
                 <tbody>
 
                         [% FOREACH face IN numFaces -%]
-                            [% LAST IF loop.count > 12 %]
-                            [%- "<tr>\n" IF loop.first || loop.count == 4 || loop.count == 7 || loop.count == 10 %]
+                            [% LAST IF loop.count > 8 %]
+                            [%- "<tr>\n" IF loop.first || loop.count == 5 || loop.count == 9 %]
                                 <td class="face" valign="top">
-                                    <table cellspacing="0" style="text-align: center;margin-right: auto;margin-left: auto;">
+                                    <table cellspacing="0">
                                         <tbody>
-                                            <tr cellspacing="0" cellpadding="0">
+                                            <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                                 <td cellspacing="0" cellpadding="0">
-                                                    <img class="boxShadowed" width="64" height="64" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 64px;height: 64px;">
+                                                    <a href='[% c.server %]#faces'>
+                                                        <img class="boxShadowed" width="100" height="100" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 100px;height: 100px;">
+                                                    </a>    
                                                 </td>
                                             </tr>
                                         </tbody>
                                     </table> 
                                 </td>   
-                            [%- "</tr>\n" IF loop.last || loop.count == 3 || loop.count == 6 || loop.count == 9 %]
+                            [%- "</tr>\n" IF loop.last || loop.count == 4 || loop.count == 8 %]
                          [% END %]
 
                 </tbody>
