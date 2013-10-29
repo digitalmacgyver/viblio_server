@@ -3,8 +3,8 @@
 %]
     <div>
         <span><strong>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</strong></span>
-        <br />
-        <br />
+        
+        <div class="line"></div>
 
         <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
             <tbody>
@@ -39,6 +39,8 @@
             <br />
             <br />
         [% END %]
+
+        <div class="line"></div>
 
         [% numFaces = [] %]
         [% FOREACH media IN model.media -%]
