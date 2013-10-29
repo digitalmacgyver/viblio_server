@@ -19,12 +19,16 @@ First I created a image, by selecting upload.viblio.com in EC2, Actions:Create I
  http://docs.aws.amazon.com/cli/latest/reference/autoscaling/index.html)
 
 (a) Create launch config
+    - use uploader ami template
+    - medium size machines
+    - security groups WebServerSG and upload (for RDS)
   $ aws autoscaling create-launch-configuration \
     	--launch-configuration-name uploader-lc \
 	--image-id ami-94ff67a4 --instance-type m1.medium \
-	--security-groups sg-e8a4ad8a
+	--security-groups sg-e8a4ad8a sg-6210f30d
 
 (b) Create autoscaling group (THE LOAD BALANCER MUST ALREADY EXIST)
+    - in the public subnet, in the west-2a region
   $ aws autoscaling create-auto-scaling-group \
     	--auto-scaling-group-name uploader-grp \
 	--launch-configuration-name uploader-lc \
@@ -45,6 +49,8 @@ aws autoscaling terminate-instance-in-auto-scaling-group \
     --instance-id i-f79303c3
 aws --output table autoscaling delete-auto-scaling-group \
     --auto-scaling-group-name uploader-grp
+aws --output table autoscaling  delete-launch-configuration \
+    --launch-configuration-name uploader-lc
 
 -------------------------------------------------------------
 VPC: vpc-71633119
