@@ -346,6 +346,10 @@
                             font-weight: bolder;
                         }
                         
+                        .video {
+                            padding: 0 4px;
+                        }
+                        
                         .videoThumb {
                             width: 240px;
                             height: 135px;
