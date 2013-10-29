@@ -349,6 +349,8 @@
                         .videoThumb {
                             width: 240px;
                             height: 135px;
+                            margin-left: 4px;
+                            margin-right: 4px;
                         }
                         
                         .videoThumb-Lrg {

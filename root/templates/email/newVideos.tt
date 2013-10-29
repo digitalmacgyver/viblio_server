@@ -38,9 +38,49 @@
         <span>To see other videos uploaded today, go to your <a class="tomato" href='[% c.server %]#home'><span class="tomato">Viblio Channel</span></a></span>
             <br />
             <br />
+        [% ELSE %]
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tbody>
+                    <tr>
+                        <td width="500" style="width:500px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                                <tbody>
+                                    <tr>
+                                        <td width="99" style="width:99px;"></td>
+                                        <td class="button" width="302" height="33" align="center" style="width:302px;">
+                                            <a class="noUnderline" href="[% c.server  %]/#new_player?mid=[% model.media.0.uuid %]"><b><span class="buttonSpan">Share [% IF model.media.size == 1 %]this video [% ELSE %] these videos [% END %] privately&raquo;</span></b></a>
+                                        </td>
+                                        <td width="99" style="width:99px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         [% END %]
 
         <div class="line"></div>
+
+<table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tbody>
+                    <tr>
+                        <td width="500" style="width:500px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                                <tbody>
+                                    <tr>
+                                        <td width="99" style="width:99px;"></td>
+                                        <td class="button" width="302" height="33" align="center" style="width:302px;">
+                                            <a class="noUnderline" href="[% c.server  %]/#new_player?mid=[% media.0.uuid %]"><b><span class="buttonSpan">Share [% IF model.media.size == 1 %]this video [% ELSE %] these videos [% END %] privately&raquo;</span></b></a>
+                                        </td>
+                                        <td width="99" style="width:99px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
         [% numFaces = [] %]
         [% FOREACH media IN model.media -%]
@@ -84,6 +124,7 @@
             <br />
             <br />
             <a class="tomato" href='[% c.server %]'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.
+        
         [% END %]
     </div>
 
