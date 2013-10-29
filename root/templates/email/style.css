@@ -347,8 +347,13 @@
                         }
                         
                         .videoThumb {
-                            width: 160px;
-                            height: 90px;
+                            width: 271px;
+                            height: 152px;
+                        }
+                        
+                        .videoThumb-Lrg {
+                            width: 361px;
+                            height: 203px;
                         }
                         
                         .line {
@@ -359,11 +364,6 @@
                             margin-bottom: 40px;
                         }
                         
-                        .videoThumb-Lrg {
-                            width: 361px;
-                            height: 203px;
-                        }
-                        
                         .boxShadowed {
                             -moz-box-shadow: 3px 3px 0px 1px #7a7e87; /* Firefox */
                             -webkit-box-shadow: 3px 3px 0px 1px #7a7e87;
@@ -371,7 +371,7 @@
                         }
                         
                         .face {
-                            padding: 0 18px;
+                            padding: 0 12px;
                         }
                         
                         .name-Wrap {

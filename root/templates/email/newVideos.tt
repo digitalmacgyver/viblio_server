@@ -1,7 +1,7 @@
 [% INCLUDE email/top.tt 
     previewText = "You have a new video ready on Viblio!"
 %]
-    
+    <div>
         <span><strong>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</strong></span>
         <br />
         <br />
@@ -10,7 +10,7 @@
             <tbody>
                 <tr>
                 [% FOREACH media IN model.media %]
-                    [% LAST IF loop.count > 3 %]
+                    [% LAST IF loop.count > 2 %]
                         <td class="video" valign="bottom">
                             <table cellspacing="0">
                                 <tbody>
@@ -34,7 +34,7 @@
             </tbody>
         </table>
 
-        [% IF model.media.size > 3 %]
+        [% IF model.media.size > 2 %]
         <span>To see other videos uploaded today, go to your <a class="tomato" href='[% c.server %]#home'><span class="tomato">Viblio Channel</span></a></span>
             <br />
             <br />
@@ -59,22 +59,22 @@
             <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
                 <tbody>
                     [% FOREACH face IN numFaces -%]
-                        [% LAST IF loop.count > 10 %]
-                        [%- "<tr>\n" IF loop.first || loop.count == 6 || loop.count == 11 %]
+                        [% LAST IF loop.count > 8 %]
+                        [%- "<tr>\n" IF loop.first || loop.count == 5 || loop.count == 9 %]
                             <td class="face" valign="top">
                                 <table cellspacing="0">
                                     <tbody>
                                         <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td cellspacing="0" cellpadding="0">
                                                 <a href='[% c.server %]#faces'>
-                                                    <img class="boxShadowed" width="64" height="64" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 64px;height: 64px;">
+                                                    <img class="boxShadowed" width="100" height="100" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 100px;height: 100px;">
                                                 </a>    
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table> 
                             </td>   
-                        [%- "</tr>\n" IF loop.last || loop.count == 5 || loop.count == 10 %]
+                        [%- "</tr>\n" IF loop.last || loop.count == 4 || loop.count == 8 %]
                     [% END %]
                 </tbody>
             </table>
@@ -83,5 +83,6 @@
             <br />
             <a class="tomato" href='[% c.server %]'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.
         [% END %]
+    </div>
 
 [% INCLUDE email/bottom.tt %]
