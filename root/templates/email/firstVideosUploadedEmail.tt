@@ -12,7 +12,7 @@
 
         <span>This is just one of the videos you have on your channel: [% model.media.0.title %]</span>
         <br />
-        <a class="noUnderline" href='[% c.server %]/#new_player?mid=[% model.media.0.uuid %]'>
+        <a class="noUnderline" href='[% c.server %]#new_player?mid=[% model.media.0.uuid %]'>
             <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
         </a>
         <br />

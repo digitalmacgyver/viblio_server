@@ -21,7 +21,7 @@
                                     </tr>
                                     <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                         <td cellspacing="0" cellpadding="0">
-                                            <a href='[% c.server  %]/#new_player?mid=[% media.uuid %]'>
+                                            <a href='[% c.server  %]#new_player?mid=[% media.uuid %]'>
                                                 <img class='videoThumb boxShadowed' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
                                             </a>
                                         </td>
@@ -48,7 +48,7 @@
                                     <tr>
                                         <td width="99" style="width:99px;"></td>
                                         <td class="button" width="302" height="33" align="center" style="width:302px;">
-                                            <a class="noUnderline" href="[% c.server  %]/#new_player?mid=[% model.media.0.uuid %]"><b><span class="buttonSpan">Share [% IF model.media.size == 1 %]this video [% ELSE %] these videos [% END %] privately&raquo;</span></b></a>
+                                            <a class="noUnderline" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><b><span class="buttonSpan">Share [% IF model.media.size == 1 %]this video [% ELSE %] these videos [% END %] privately&raquo;</span></b></a>
                                         </td>
                                         <td width="99" style="width:99px;"></td>
                                     </tr>
@@ -71,7 +71,7 @@
                                     <tr>
                                         <td width="99" style="width:99px;"></td>
                                         <td class="button" width="302" height="33" align="center" style="width:302px;">
-                                            <a class="noUnderline" href="[% c.server  %]/#new_player?mid=[% media.0.uuid %]"><b><span class="buttonSpan">Share [% IF model.media.size == 1 %]this video [% ELSE %] these videos [% END %] privately&raquo;</span></b></a>
+                                            <a class="noUnderline" href="[% c.server  %]#new_player?mid=[% media.0.uuid %]"><b><span class="buttonSpan">Share [% IF model.media.size == 2 %]this video [% ELSE %] these videos [% END %] privately&raquo;</span></b></a>
                                         </td>
                                         <td width="99" style="width:99px;"></td>
                                     </tr>
