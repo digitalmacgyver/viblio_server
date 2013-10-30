@@ -104,10 +104,12 @@ sub uri2url {
 
     my $s3key = ( ref $view eq 'HASH' ? $view->{uri} : $view );
 
-    return $c->cf_sign( $s3key, {
-	stream => 0,
-	expires => ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ),
-    });
+    if ( ! $params->{use_s3} ) {
+	return $c->cf_sign( $s3key, {
+	    stream => 0,
+	    expires => ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ),
+	});
+    }
 
     my $aws_key = $c->config->{'Model::S3'}->{aws_access_key_id};
     my $aws_secret = $c->config->{'Model::S3'}->{aws_secret_access_key};

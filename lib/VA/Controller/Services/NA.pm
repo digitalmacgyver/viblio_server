@@ -1270,7 +1270,7 @@ sub download_trayapp :Local {
 	    my $key = join( '/', @parts );
 
 	    $hash->{url} = 
-		new VA::MediaFile::US()->uri2url( $c, $key, { bucket => $bucket } );
+		new VA::MediaFile::US()->uri2url( $c, $key, { use_s3 => 1, bucket => $bucket } );
 
 	    my $len = $hash->{config}->{size};
 
@@ -1281,10 +1281,14 @@ sub download_trayapp :Local {
 	    $c->res->headers->header( 'filename' => "\"$name\"" );
 	    $c->res->headers->header( 'Accept-Ranges' => 'none' );
 
+	    $c->log->debug( 'download_trayapp: ' . $hash->{url} ); 
 	    LWP::UserAgent->new()->get( $hash->{url},
 					':content_cb' => sub {
 					    my( $data, $res ) = @_;
-					    return if ( $res->is_error );
+					    if ( $res->is_error ) {
+						$c->log->error( 'download_trayapp: ' . $res->content );
+						return;
+					    }
 					    $c->response->write( $data );
 					} );
 	    $c->detach;

@@ -1,0 +1,78 @@
+Creating the load balancer for uploading/brewtus/popeye
+-------------------------------------------------------
+
+1. Auto-scaling
+
+We wish to create an auto scaling group of uploader AMIs in our VPC
+that will be controlled and accessed by a load balancer.
+
+VPC-ID (the same one currently hosting upload.viblio.com)
+  $ aws ec2 describe-subnets
+  "VpcId": "vpc-71633119"
+  "SubnetId": "subnet-7663311e"
+  "AvailabilityZone": "us-west-2a"
+
+First I created a image, by selecting upload.viblio.com in EC2, Actions:Create Image
+-> image ID: ami-94ff67a4
+
+(aws command reference:
+ http://docs.aws.amazon.com/cli/latest/reference/autoscaling/index.html)
+
+(a) Create launch config
+    - use uploader ami template
+    - medium size machines
+    - security groups WebServerSG and upload (for RDS)
+  $ aws autoscaling create-launch-configuration \
+    	--launch-configuration-name uploader-lc \
+	--image-id ami-94ff67a4 --instance-type m1.medium \
+	--security-groups sg-e8a4ad8a sg-6210f30d
+
+(b) Create autoscaling group (THE LOAD BALANCER MUST ALREADY EXIST)
+    - in the public subnet, in the west-2a region
+  $ aws autoscaling create-auto-scaling-group \
+    	--auto-scaling-group-name uploader-grp \
+	--launch-configuration-name uploader-lc \
+	--min-size 0 --max-size 6 --desired-capacity 2 \
+	--availability-zones "us-west-2a" \
+	--vpc-zone-identifier "subnet-7663311e" \
+	--load-balancer-names UploadBalancer
+
+(c) aws autoscaling describe-auto-scaling-groups
+    aws autoscaling describe-auto-scaling-instances
+
+-------------------------------------------------------------
+(deleting)
+
+aws autoscaling describe-auto-scaling-groups
+aws autoscaling terminate-instance-in-auto-scaling-group \
+     --should-decrement-desired-capacity \
+    --instance-id i-f79303c3
+aws --output table autoscaling delete-auto-scaling-group \
+    --auto-scaling-group-name uploader-grp
+aws --output table autoscaling  delete-launch-configuration \
+    --launch-configuration-name uploader-lc
+
+-------------------------------------------------------------
+VPC: vpc-71633119
+  Route Table: rtb-7363311b
+    routes:
+      -- PUBLIC --
+      destination         target
+      10.0.0.0.16	  local
+      0.0.0.0/0		  igw-7563311d
+      (associated with 10.0.0.0)
+      -- PRIVATE --
+      10.0.0.0/16	  local
+      0.0.0.0/0		  eni-3c6d665e / i-8a9854bd (NAT instance)
+      (associated with 10.0.1.0)
+
+  Network ACL: acl-7263311a
+    associations:
+      subnet-4356772b (10.0.1.0/24) (private)
+      subnet-7663311e (10.0.0.0/24) (public)
+
+* Getting to a machine on the private net:
+  (1) ssh into NAT box:
+      ssh -i ~/va-services.pem ec2-user@ec2-54-200-208-252.us-west-2.compute.amazonaws.com
+  (2) ssh into private ip:
+      ssh ubuntu@10.0.1.24
