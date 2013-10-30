@@ -91,6 +91,7 @@ sub server {
 	$server .= ':' . $uri->port;
     }
     $server .= '/';
+    $server =~ s/^http:/https:/g;
     return $server;
 }
 
