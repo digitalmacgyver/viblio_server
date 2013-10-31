@@ -3,14 +3,16 @@
     previewText = "See your weekly Viblio activity summary."
 %]
 
-    <span class="largeText">Hi [% model.user.name %]!</span>
-    <br />
-    <br />
-    <span>Happy weekend.  Take time this weekend to connect with friends or family by sharing a personal moment from a 
-    video in your <a class="tomato" href='[% c.server %]#home'><span class="tomato">Viblio library</span></a>.</span>
-    <br />
-    <br />
-    <span><strong>Combined Summary of Your Last Week's Activities on Viblio:</strong></strong>
+    <div class="regSize darkText">
+        <span class="largeText">Hi [% model.user.name %]!</span>
+        <br />
+        <br />
+        <span>Happy weekend.  Take time this weekend to connect with friends or family by sharing a personal moment from a 
+        video in your <a class="tomato" href='[% c.server %]#home'><span class="tomato">Viblio library</span></a>.</span>
+        <br />
+        <br />
+        <span><strong>Combined Summary of Your Last Week's Activities on Viblio:</strong></strong>
+    </div>
     <table id='weeklyDigestTable' valign='top' align='center' cellspacing="10" cellpadding="0" style='font-size: 14px;'>
         <tbody>
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
