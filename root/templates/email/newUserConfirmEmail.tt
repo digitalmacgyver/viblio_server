@@ -2,7 +2,7 @@
     previewText = "Please confirm your Viblio account registration."
 %]
 
-    <div class='bottomBorder-Thin paddedDiv'>
+    <div class='bottomBorder-Thin paddedDiv regSize darkText'>
         <span>Thanks for choosing to be part of the Viblio community.  Your account is almost active.</span>
         <br />
         <br />
@@ -33,7 +33,7 @@
         <br />
         <span>Once you've done that, start <strong>uploading</strong> your videos.  We'll keep them in a <strong>secure</strong> cloud location where you'll be able to easily <strong>browse</strong> through your videos by the people in them, and <strong>share</strong> them with specific people in your family or community.</span>
     </div>
-    <div class='signatureDiv'>
+    <div class='signatureDiv regSize darkText'>
         <span>Welcome to the Viblio community!</span>
         <br />
         <br />
