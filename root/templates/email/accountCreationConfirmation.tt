@@ -11,7 +11,7 @@
         <br />
         You registered with: [% model.user.email %]
         <br />
-        <a class="tomato" href="[% c.server %]/login"><span class="tomato">Forgot your password?</span></a>
+        <a class="tomato" href="[% c.server %]#login"><span class="tomato">Forgot your password?</span></a>
         
         <div class="line"></div>
         
@@ -41,7 +41,7 @@
                 <tr>
                     <td width="99" style="width:99px;"></td>
                     <td class="button" width="302" height="33" align="center" style="width:302px;">
-                        <a class="noUnderline" href="[% c.server %]"><b><span class="buttonSpan">Go to Viblio on the web &raquo;</span></b></a>
+                        <a class="noUnderline" href="[% c.server %]#login"><b><span class="buttonSpan">Go to Viblio on the web &raquo;</span></b></a>
                     </td>
                     <td width="99" style="width:99px;"></td>
                 </tr>
@@ -65,5 +65,7 @@
             Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.
         </span>
     </div>
+    <br />
+    <br />
 
 [% INCLUDE email/bottom.tt %]
