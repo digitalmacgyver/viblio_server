@@ -2,35 +2,36 @@
     subject = "A Video has been Shared with you on Viblio."
     previewText = "Your friend has shared a video with you on Viblio!"
 %]
+    <div class="regSize darkText">
+        <span><strong>[% from.displayname %] has shared a video with you through Viblio!</strong></span>
+        <br />
+        <br />
+        <span>They say:</span><br />
+        <span>"[% body %]"</span>
+        <br />
+        <br />
+        <span>Video: [% model.media.0.title %]</span>
+        <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">   
+            <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+                <td cellspacing="0" cellpadding="0">
+                    <a href='[% url %]'>
+                        <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+                    </a>
+                </td>
+            </tr>
+        </table>
 
-    <span><strong>[% from.displayname %] has shared a video with you through Viblio!</strong></span>
-    <br />
-    <br />
-    <span>They say:</span><br />
-    <span>"[% body %]"</span>
-    <br />
-    <br />
-    <span>Video: [% model.media.0.title %]</span>
-    <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">   
-        <tr cellspacing="0" cellpadding="0" style="margin: 0;">
-            <td cellspacing="0" cellpadding="0">
-                <a href='[% url %]'>
-                    <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
-                </a>
-            </td>
-        </tr>
-    </table>
+        <span>To maintain the privacy of this video, <a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> </span>
+        <br />
+        <br />
+        <span>If you don't already have an account, create your own password at the page from the link above, or better yet, <a class="tomato" href="[% c.server %]services/na/download_trayapp"><span class="tomato">DOWNLOAD</span></a> YOUR OWN VIBLIO FINDER SO THAT YOU CAN CREATE YOUR OWN VIBLIO LIBRARY.</span>
+        <br />
+        <br 
+        <span>Either way, you'll then be able to access and watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span>
+        <br />
+        <br />
 
-    <span>To maintain the privacy of this video, <a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> </span>
-    <br />
-    <br />
-    <span>If you don't already have an account, create your own password at the page from the link above, or better yet, <a class="tomato" href="[% c.server %]services/na/download_trayapp"><span class="tomato">DOWNLOAD</span></a> YOUR OWN VIBLIO FINDER SO THAT YOU CAN CREATE YOUR OWN VIBLIO LIBRARY.</span>
-    <br />
-    <br 
-    <span>Either way, you'll then be able to access and watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span>
-    <br />
-    <br />
-
-    <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
+        <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
+    </div>
 
 [% INCLUDE email/bottom.tt %]                                                            
