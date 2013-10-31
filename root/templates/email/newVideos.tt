@@ -5,7 +5,7 @@
         <span class="largeText">You have new Videos!</span>
         <br />
         <br />
-        <span><strong>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</strong></span>
+        <span>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your <a class="tomato" href='[% c.server %]#home'><span class="tomato">Viblio account</span></a>.</span>
         
         <div class="line"></div>
 
