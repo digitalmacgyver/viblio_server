@@ -1,7 +1,7 @@
 [% INCLUDE email/top.tt 
     previewText = "You have a new video ready on Viblio!"
 %]
-    <div class="centered">
+    <div class="centered regSize darkText">
         <span><strong>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</strong></span>
         
         <div class="line"></div>
