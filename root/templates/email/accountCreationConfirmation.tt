@@ -36,6 +36,19 @@
         And then we make it easier than ever to share your videos, but only with the people you want to.
         <br />
         <br />
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+            <tbody>
+                <tr>
+                    <td width="99" style="width:99px;"></td>
+                    <td class="button" width="302" height="33" align="center" style="width:302px;">
+                        <a class="noUnderline" href="[% c.server %]"><b><span class="buttonSpan">Go to Viblio on the web &raquo;</span></b></a>
+                    </td>
+                    <td width="99" style="width:99px;"></td>
+                </tr>
+            </tbody>
+        </table>
+        <br />
+        <br />
         If you haven't downloaded our Viblio Video Finder yet, <a class="tomato" href="[% c.server %]services/na/download_trayapp" ><span class="tomato">let's get you started!</span></a>
         <br />
         <br />
