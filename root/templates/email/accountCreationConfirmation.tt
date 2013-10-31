@@ -34,7 +34,7 @@
         <br />
         <br />
     </div>
-    <span class="centered smallPrivacy">
+    <div class="centered smallPrivacy">
         Privacy is important to you - and to us too. We do not sell, rent, barter for beads, or otherwise share your name or address. At any point, you can select the link at the bottom of any email to unsubscribe or change your email preferences.
         <br />
         <br />
@@ -42,6 +42,6 @@
         <br />
         <br />
         Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.
-    </span>
+    </div>
 
 [% INCLUDE email/bottom.tt %]
