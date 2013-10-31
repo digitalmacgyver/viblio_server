@@ -6,7 +6,7 @@
         <span class="largeText">Your First Viblio Videos</span>
         <br />
         <br />
-        <span>It's the beginning of a wonderful relationship! We have already uploaded [% model.media.size %] of your videos to your <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio account</span></a>.</span>    
+        <span>It's the beginning of a wonderful relationship! We have already uploaded [% model.media.size %] of your videos to your <a class="tomato" href='[% c.server %]#login'><span class="tomato">Viblio account</span></a>.</span>    
 
         <div class="line centered"></div>
 
@@ -18,7 +18,7 @@
         </a>
         <br />
         <br />
-        <span>Visit <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio</span></a> any time you want to browse your personal videos or share them with friends and family.</span> 
+        <span>Visit <a class="tomato" href='[% c.server %]#login'><span class="tomato">Viblio</span></a> any time you want to browse your personal videos or share them with friends and family.</span> 
 
         <div class="line centered"></div>
 
@@ -65,7 +65,7 @@
             <span>Connect with friends or family by sharing one of these videos.</span>
             <br />
             <br />
-            <span><a class="tomato" href='[% c.server %]'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.</span>
+            <span><a class="tomato" href='[% c.server %]#login'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.</span>
         [% END %]
     </div>
 
