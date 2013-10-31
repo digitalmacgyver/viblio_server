@@ -2,6 +2,9 @@
     previewText = "You have a new video ready on Viblio!"
 %]
     <div class="centered regSize darkText">
+        <span class="largeText">You have new Videos!</span>
+        <br />
+        <br />
         <span><strong>Congratulations!  You have [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %]in your personal Viblio channel.</strong></span>
         
         <div class="line"></div>
@@ -35,7 +38,7 @@
         </table>
 
         [% IF model.media.size > 2 %]
-        <span>To see other videos uploaded today, go to your <a class="tomato" href='[% c.server %]#home'><span class="tomato">Viblio Channel</span></a></span>
+        <span>To see other videos uploaded today, visit <a class="tomato" href='[% c.server %]#home'><span class="tomato">Viblio</span></a></span>
             <br />
             <br />
         [% END %]
