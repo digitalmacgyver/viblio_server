@@ -14,7 +14,7 @@
         <a class="tomato" href="[% c.server %]"><span class="tomato">Forgot your password?</span></a>
         <br />
         <br />
-        <img src="[% c.server %]/css/images/viblioEmail/organizeTagShare-Email.png" alt="Viblio Logo" align='left'></img>
+        <img src="http://localhost/css/images/viblioEmail/organizeTagShare-Email.png" alt="Viblio Logo" align='left'></img>
         Viblio magically organizes your videos and helps you share them with family & friends.
         <br />
         <br />
