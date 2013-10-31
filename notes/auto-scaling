@@ -25,6 +25,7 @@ First I created a image, by selecting upload.viblio.com in EC2, Actions:Create I
   $ aws autoscaling create-launch-configuration \
     	--launch-configuration-name uploader-lc \
 	--image-id ami-94ff67a4 --instance-type m1.medium \
+	--associate-public-ip-address \
 	--security-groups sg-e8a4ad8a sg-6210f30d
 
 (b) Create autoscaling group (THE LOAD BALANCER MUST ALREADY EXIST)

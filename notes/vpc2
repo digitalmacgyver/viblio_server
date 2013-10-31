@@ -1,0 +1,37 @@
+mysql -h video-vpc.c9azfz8yt9lz.us-west-2.rds.amazonaws.com \
+      -u web_prod --password=AVxXwDC9Y%sKaPG@ video_dev
+
+(a) Create launch config
+    - use uploader ami template
+    - medium size machines
+    - security group webserver-sg
+  $ aws autoscaling create-launch-configuration \
+    	--launch-configuration-name uploader2-lc \
+	--image-id ami-94ff67a4 --instance-type m1.medium \
+	--associate-public-ip-address \
+	--security-groups sg-3e1c145c
+
+(b) Create autoscaling group (THE LOAD BALANCER MUST ALREADY EXIST)
+    - in the public subnet, in the west-2a region
+  $ aws autoscaling create-auto-scaling-group \
+    	--auto-scaling-group-name uploader2-grp \
+	--launch-configuration-name uploader2-lc \
+	--min-size 0 --max-size 6 --desired-capacity 2 \
+	--vpc-zone-identifier "subnet-fb2d2499" \
+	--load-balancer-names LB2
+
+(c) aws autoscaling describe-auto-scaling-groups
+    aws autoscaling describe-auto-scaling-instances
+
+-------------------------------------------------------------
+(deleting)
+
+aws autoscaling describe-auto-scaling-groups
+aws autoscaling terminate-instance-in-auto-scaling-group \
+     --should-decrement-desired-capacity \
+    --instance-id xxx
+aws --output table autoscaling delete-auto-scaling-group \
+    --auto-scaling-group-name uploader2-grp
+aws --output table autoscaling  delete-launch-configuration \
+    --launch-configuration-name uploader2-lc
+
