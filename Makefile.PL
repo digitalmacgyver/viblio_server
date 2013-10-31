@@ -80,6 +80,7 @@ requires 'Log::Dispatch::Config';
 requires 'Crypt::OpenSSL::Random';
 requires 'Crypt::OpenSSL::RSA';
 requires 'Net::GitHub::V3';
+requires 'Amazon::SQS::Simple';
 
 test_requires 'Test::More' => '0.88';
 catalyst;
