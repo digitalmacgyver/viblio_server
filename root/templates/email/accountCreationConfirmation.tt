@@ -19,7 +19,7 @@
         <table width='590' height='100' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
                 <tr>
                     <td width='500' height='55' align="center" border="0" cellspacing="0" cellpadding="0" style="width:500px; height:55px;">
-                        <img src="http://localhost//css/images/viblioEmail/organizeTagShare-Email.png" alt="Viblio Logo" align='left'></img>
+                        <img src="[% c.server %]/css/images/viblioEmail/organizeTagShare-Email.png" alt="Viblio Logo" align='left'></img>
                     </td>
                 </tr>
         </table>
