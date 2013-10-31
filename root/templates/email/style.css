@@ -222,11 +222,8 @@
 			* @theme main
 			*/
 			.bodyContent div {
-				/*@editable*/ color:#313543;
 				/*@editable*/ font-family:Arial;
-				/*@editable*/ font-size:18px;
 				/*@editable*/ line-height:150%;
-				/*@editable*/ text-align:left;
 			}
                         
                         #mainContent {
@@ -457,6 +454,18 @@
                         
                         .im {
                             color:#7a7e87; 
+                        }
+                        
+                        .leftAligned {
+                            text-align:left;
+                        }
+                        
+                        .regSize{
+                            font-size: 18px;
+                        }
+                        
+                        .darkText {
+                            color:#313543;
                         }
 
                         .smallPrivacy {

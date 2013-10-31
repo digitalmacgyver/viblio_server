@@ -2,7 +2,7 @@
     previewText = "Welcome to Viblio! Here are some more details regarding your new account."
 %]
 
-    <div class='centered'>
+    <div class='centered regSize darkText leftAligned'>
         <span class='largeText'>Success!</span>
         <br />
         <br />
