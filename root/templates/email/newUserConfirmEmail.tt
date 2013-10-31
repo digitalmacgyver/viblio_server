@@ -19,7 +19,7 @@
                                     <tr>
                                         <td width="99" style="width:99px;"></td>
                                         <td class="button" width="302" height="33" align="center" style="width:302px;">
-                                            <a class="noUnderline" href="[% url %]"><b><span class="buttonSpan">Yes, confirm my registration&raquo;</span></b></a>
+                                            <a class="noUnderline" href="[% url %]"><b><span class="buttonSpan">Yes, confirm my registration &raquo;</span></b></a>
                                         </td>
                                         <td width="99" style="width:99px;"></td>
                                     </tr>
