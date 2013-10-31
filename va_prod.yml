@@ -25,8 +25,8 @@ Model::RDS:
   schema_class: VA::RDSSchema
   connect_info:
     dsn: dbi:mysql:database=video_dev;host=videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com;port=3306
-    user: video_dev
-    password: video_dev
+    user: web_prod
+    password: AVxXwDC9Y%sKaPG@
     mysql_enable_utf8: 1
     AutoCommit: 1
 
