@@ -6,7 +6,7 @@ __PACKAGE__->config();
 
 # Usage:
 # try {
-#   $response = $c->model( 'SQS', $queue )->SendMessage( "some string" );
+#   $response = $c->model( 'SQS', $c->config->{sqs}->{facebook_link} )->SendMessage( "some string" );
 # } catch {
 #   $c->log->error( $_ );
 # };
@@ -15,15 +15,11 @@ __PACKAGE__->config();
 sub ACCEPT_CONTEXT {
     my $self = shift;
     my $c = shift;
-    my $queue = shift;
+    my $endpoint = shift;
 
     my $sqs = new Amazon::SQS::Simple( 
-	$self->{aws_access_key_id},
-	$self->{aws_secret_access_key} );
-
-    # my $endpoint = <some function of $queue>
-    #   arn:aws:sqs:$host:$user:$queue
-    my $endpoint = $self->{arn} . ":$queue";
+	$c->config->{'Model::S3'}->{aws_access_key_id},
+	$c->config->{'Model::S3'}->{aws_secret_access_key} );
 
     my $q = $sqs->GetQueue( $endpoint );
     return $q;

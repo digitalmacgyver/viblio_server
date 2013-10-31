@@ -197,8 +197,8 @@ sub authenticate {
 =cut
 		# Send a facebook link message to the Amazon SQS queue
 		try {
-		    my $sqs_response = $ctx->model( 'SQS', 'user_fb_link' )
-			->SendMessage( to_json({
+		    my $sqs_response = $ctx->model( 'SQS', $ctx->config->{sqs}->{facebook_link} )
+			->SendMessage( encode_json({
 			    user_uuid => $user->get_object->uuid,
 			    fb_access_token => $code,
 			    action => 'link',

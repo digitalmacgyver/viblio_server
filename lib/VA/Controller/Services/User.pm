@@ -216,7 +216,7 @@ sub link_facebook_account :Local {
 
     # Send a facebook link message to the Amazon SQS queue
     try {
-	my $sqs_response = $c->model( 'SQS', 'user_fb_link' )
+	my $sqs_response = $c->model( 'SQS', $c->config->{sqs}->{facebook_link} )
 	    ->SendMessage( to_json({
 		user_uuid => $c->user->obj->uuid,
 		fb_access_token => $token,
