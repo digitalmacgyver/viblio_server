@@ -8,18 +8,22 @@
         <br />
         <span>They say:</span><br />
         <span>"[% body %]"</span>
-        <br />
-        <br />
+        
+        <div class="line"></div>
+
         <span>Video: [% model.media.0.title %]</span>
+        <br />
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                 <td cellspacing="0" cellpadding="0">
                     <a href='[% url %]'>
-                        <img class='videoThumb' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+                        <img class='videoThumb-Lrg' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
                     </a>
                 </td>
             </tr>
         </table>
+
+        <div class="line"></div>
 
         <span>To maintain the privacy of this video, <a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> </span>
         <br />
