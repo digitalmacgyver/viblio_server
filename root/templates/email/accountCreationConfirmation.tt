@@ -48,7 +48,6 @@
             </tbody>
         </table>
         <br />
-        <br />
         If you haven't downloaded our Viblio Video Finder yet, <a class="tomato" href="[% c.server %]services/na/download_trayapp" ><span class="tomato">let's get you started!</span></a>
         <br />
         <br />
