@@ -1,9 +1,10 @@
 #!/usr/bin/env perl
 use strict;
 use lib "lib";
+use FileHandle;
 
 my $Usage = <<_EOM;
-Usage: $0 <staging|prod>
+Usage: $0 <staging|prod> [email|email,list|file]
 _EOM
 
 use VA::RDSSchema;
@@ -25,8 +26,26 @@ my $conn = {
 my $db = $ARGV[0];
 die $Usage unless( $db );
 
+my @emails = ();
+my $arg = $ARGV[1];
+die $Usage unless( $arg );
+if ( -f $arg ) {
+    my $f = new FileHandle "<$arg";
+    die "Cannot open $arg to read: $_" unless( $f );
+    while(<$f>) {
+	chomp;
+	push( @emails, $_ );
+    }
+    close $f;
+}
+else {
+    @emails = split( /,/, $arg );
+}
+
 my $schema = VA::RDSSchema->connect
     ( $conn->{$db}->{dsn}, $conn->{$db}->{user}, $conn->{$db}->{pass} ); 
 
-my $u = $schema->resultset( 'User' )->find({email => 'aqpeeb@gmail.com'});
-print $u->displayname, "\n";
+foreach my $email ( @emails ) {
+    my $e = $schema->resultset( 'EmailUser' )->find_or_create({ email=>$email, status=>'whitelist'});
+    die "Cannot create record: $_" unless( $e );
+}

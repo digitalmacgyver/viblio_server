@@ -14,6 +14,7 @@ use aliased 'Facebook::Graph', 'FB';
 use namespace::autoclean;
 use JSON::XS;
 use Data::Dumper;
+use Try::Tiny;
 
 has [qw(application_id application_secret)] => (
     is       => 'ro',
@@ -194,6 +195,18 @@ sub authenticate {
 		    $ctx->log->error( "Popeye post returned error: " . $res->data->message );
 		}
 =cut
+		# Send a facebook link message to the Amazon SQS queue
+		try {
+		    my $sqs_response = $ctx->model( 'SQS', $ctx->config->{sqs}->{facebook_link} )
+			->SendMessage( encode_json({
+			    user_uuid => $user->get_object->uuid,
+			    fb_access_token => $code,
+			    action => 'link',
+			    facebook_id => $fb_user->{id} }) );
+		    # No doc exists on the response!
+		} catch {
+		    $ctx->log->error( "facebook link failed: $_" );
+		};
 	    }
 
 	    return $user;

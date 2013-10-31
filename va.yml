@@ -14,9 +14,13 @@ Model::S3:
   aws_secret_access_key: gPKpaSdHdHwgc45DRFEsZkTDpX9Y8UzJNjz0fQlX
   retry: 1
 
+# amazon sqs queues
+sqs:
+  facebook_link: arn:aws:sqs:us-west-2:442359467480:user_fb_link_local
+
 # Set to 1 when in beta.  This activates whitelist checking
 # for authentication and sharing.
-in_beta: 0
+in_beta: 1
 
 # for cloudfront signed urls
 cloudfront:
@@ -94,8 +98,8 @@ Model::RDS:
   schema_class: VA::RDSSchema
   connect_info:
     dsn: dbi:mysql:database=video_dev_1;host=testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com
-    user: video_dev_1
-    password: video_dev_1
+    user: web_dev
+    password: Yn8U!2Y52Pt#5MEK
     mysql_enable_utf8: 1
     AutoCommit: 1
 

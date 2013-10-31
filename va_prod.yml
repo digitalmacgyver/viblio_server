@@ -6,6 +6,10 @@ Model::Mandrill:
   key: 0r2A4KAwtMm660j8R-cwDA
   webhook_key: ACDYSKdQZHe4fDj5Lw1sPg
 
+# amazon sqs queues
+sqs:
+  facebook_link: arn:aws:sqs:us-west-2:442359467480:user_fb_link_prod
+
 s3:
   bucket: viblio-mediafiles
   aws_use_https: 1
@@ -21,8 +25,8 @@ Model::RDS:
   schema_class: VA::RDSSchema
   connect_info:
     dsn: dbi:mysql:database=video_dev;host=videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com;port=3306
-    user: video_dev
-    password: video_dev
+    user: web_prod
+    password: AVxXwDC9Y%sKaPG@
     mysql_enable_utf8: 1
     AutoCommit: 1
 

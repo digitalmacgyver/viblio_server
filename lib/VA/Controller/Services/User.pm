@@ -4,6 +4,8 @@ use VA::MediaFile;
 use namespace::autoclean;
 use MIME::Base64;
 use Imager;
+use Try::Tiny;
+use JSON;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -211,6 +213,20 @@ sub link_facebook_account :Local {
 	$c->log->error( "Popeye post returned error: " . $res->data->message );
     }
 =cut
+
+    # Send a facebook link message to the Amazon SQS queue
+    try {
+	my $sqs_response = $c->model( 'SQS', $c->config->{sqs}->{facebook_link} )
+	    ->SendMessage( to_json({
+		user_uuid => $c->user->obj->uuid,
+		fb_access_token => $token,
+		action => 'link',
+		facebook_id => $fb_user->{id} }) );
+	# No doc exists on the response!
+    } catch {
+	$c->log->error( "facebook link failed: $_" );
+    };
+
     $self->status_ok( $c, { user => $fb_user } );
 }
 

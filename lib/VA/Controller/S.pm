@@ -40,13 +40,13 @@ sub p :Local {
 	};
 
 	$c->stash->{no_wrapper} = 1;
-	$c->stash->{server} = $c->req->base;
+	$c->stash->{server} = $c->server;
 	$c->stash->{mediafile} = $mhash;
 	$c->stash->{template}  = 'shared/fpheader.tt';
     }
     else {
 	$c->stash->{no_wrapper} = 1;
-	$c->stash->{server} = $c->req->base;
+	$c->stash->{server} = $c->server;
 	$c->stash->{mediafile} = {};
 	$c->stash->{template}  = 'shared/fpheader.tt';
     }
@@ -62,7 +62,7 @@ point back to our site.
 sub x :Local {
     my( $self, $c ) = @_;
     $c->stash->{no_wrapper} = 1;
-    $c->stash->{server} = $c->req->base;
+    $c->stash->{server} = $c->server;
     $c->stash->{template}  = 'shared/simple.tt';
 }
 
@@ -181,13 +181,13 @@ sub ps :Local {
 	};
 
 	$c->stash->{no_wrapper} = 1;
-	$c->stash->{server} = $c->req->base;
+	$c->stash->{server} = $c->server;
 	$c->stash->{mediafile} = $mhash;
 	$c->stash->{template}  = 'shared/fpheader.tt';
     }
     else {
 	$c->stash->{no_wrapper} = 1;
-	$c->stash->{server} = $c->req->base;
+	$c->stash->{server} = $c->server;
 	$c->stash->{mediafile} = {};
 	$c->stash->{template}  = 'shared/fpheader.tt';
     }
