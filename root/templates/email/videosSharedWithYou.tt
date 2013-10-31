@@ -2,7 +2,7 @@
     subject = "A Video has been Shared with you on Viblio."
     previewText = "Your friend has shared a video with you on Viblio!"
 %]
-    <div class="regSize darkText">
+    <div class="centered regSize darkText">
         <span><strong>[% from.displayname %] has shared a video with you through Viblio!</strong></span>
         <br />
         <br />
