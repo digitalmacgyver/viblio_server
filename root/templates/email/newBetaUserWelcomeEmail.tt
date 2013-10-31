@@ -2,7 +2,7 @@
     previewText = "Thank you for registering for Viblio's beta launch."
 %]
 
-    <div class='bottomBorder-Thin paddedDiv'>
+    <div class='bottomBorder-Thin paddedDiv regSize darkText'>
         <span class="largeText">Hi [% model.user.displayname %],</span>
         <br />
         <br />
@@ -20,7 +20,7 @@
         <br />
         <span>Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.</span>
     </div>
-    <div class='signatureDiv'>
+    <div class='signatureDiv regSize darkText'>
         <span>Welcome to the Viblio community!</span>
         <br />
         <br />
