@@ -2,19 +2,21 @@
     previewText = "Welcome to Viblio. Your first videos are ready!"
 %]
 
-    <div class="centered">
-        <span><strong>It's the beginning of a wonderful relationship!</strong></span>
+    <div class="centered regSize darkText">
+        <span><strong>Your First Viblio Videos</strong></span>
         <br />
         <br />
-        <span>We have already uploaded [% model.media.size %] of your videos to your <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio account</span></a>.</span>    
+        <span>It's the beginning of a wonderful relationship! We have already uploaded [% model.media.size %] of your videos to your <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio account</span></a>.</span>    
 
         <div class="line centered"></div>
 
         <span>This is just one of the videos you have on your channel: [% model.media.0.title %]</span>
         <br />
+        <br />
         <a class="noUnderline" href='[% c.server %]#new_player?mid=[% model.media.0.uuid %]'>
             <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
         </a>
+        <br />
         <br />
         <span>Visit <a class="tomato" href='[% c.server %]'><span class="tomato">Viblio</span></a> any time you want to browse your personal videos or share them with friends and family.</span> 
 
