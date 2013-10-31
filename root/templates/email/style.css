@@ -222,7 +222,7 @@
 			* @theme main
 			*/
 			.bodyContent div {
-				/*@editable*/ color:#7a7e87;
+				/*@editable*/ color:#313543;
 				/*@editable*/ font-family:Arial;
 				/*@editable*/ font-size:18px;
 				/*@editable*/ line-height:150%;
@@ -459,6 +459,11 @@
                             color:#7a7e87; 
                         }
 
+                        .smallPrivacy {
+                            font-size: 12px;
+                            color:#313543;
+                        }
+                        
 .bottomBorder-Thick {
     border-bottom: 8px solid lightgrey;
 }

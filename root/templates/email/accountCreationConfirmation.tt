@@ -11,13 +11,17 @@
         <br />
         You registered with: [% model.user.email %]
         <br />
-        <a class="tomato" href="[% c.server %]"><span class="tomato">Forgot your password?</span></a>
-        <br />
-        <br />
+        <a class="tomato" href="[% c.server %]/login"><span class="tomato">Forgot your password?</span></a>
+        
+        <div class="line"></div>
+        
+        <span><strong>You're ready to start using Viblio's great features: </strong></span> 
         <img src="http://localhost//css/images/viblioEmail/organizeTagShare-Email.png" alt="Viblio Logo" align='left'></img>
+        <br />
         Viblio magically organizes your videos and helps you share them with family & friends.
-        <br />
-        <br />
+        
+        <div class="line"></div>
+
         We pull all your videos together in one secure cloud location.
         <br />
         <br />
@@ -31,7 +35,7 @@
         <br />
         <br />
     </div>
-    <div>
+    <div class="centered smallPrivacy">
         Privacy is important to you - and to us too. We do not sell, rent, barter for beads, or otherwise share your name or address. At any point, you can select the link at the bottom of any email to unsubscribe or change your email preferences.
         <br />
         <br />
