@@ -509,7 +509,7 @@ sub add_share :Local {
 			$self->status_bad_request
 			    ( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 		    }
-		    $addrs->{$email}->{url} = $c->server . '#/web_player?mid=' . $media->uuid;
+		    $addrs->{$email}->{url} = $c->server . '#web_player?mid=' . $media->uuid;
 		    $addrs->{$email}->{type} = 'private';
 		}
 		else {
@@ -542,9 +542,9 @@ sub add_share :Local {
 			    $c->log->error( "Failed to add $email to whitelist for private share." );
 			}
 		    }
-		    my $url = $c->server . '#/register?email=' .
+		    my $url = $c->server . '#register?email=' .
 			uri_escape( $email ) . '&url=' .
-			uri_escape( '#/web_player?mid=' . $media->uuid );
+			uri_escape( '#web_player?mid=' . $media->uuid );
 		    $addrs->{$email}->{url} = $url;
 		    $addrs->{$email}->{type} = 'private';
  		}
@@ -563,7 +563,7 @@ sub add_share :Local {
 		    $self->status_bad_request
 			( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 		}
-		$addrs->{$email}->{url} = $c->server . '#/web_player?mid=' . $media->uuid;
+		$addrs->{$email}->{url} = $c->server . '#web_player?mid=' . $media->uuid;
 		$addrs->{$email}->{type} = 'unlisted';
 	    }
 	}

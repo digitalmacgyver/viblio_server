@@ -357,7 +357,7 @@ sub all_contacts :Local {
     my( $self, $c) = @_;
     my $q = $c->req->param( 'term' );
 
-    $self->fix_uploads( $c );  ## REMOVE ME WHEN POPEYE IS FIXED
+    ## $self->fix_uploads( $c );  ## REMOVE ME WHEN POPEYE IS FIXED
 
     my $where = {};
     if ( $q ) {
