@@ -1,6 +1,8 @@
 Mandrill/Mailchip:
 
 peebles@viblio.com/Toeman0007
+admin@viblio.com/fgXrBHAMdi2Rqr6CUse
+
 Host: smtp.mandrillapp.com
 Port: 587
 SMTP Username: peebles@viblio.com
@@ -13,6 +15,7 @@ API Key: 0r2A4KAwtMm660j8R-cwDA
 CloudSponge:
 
 peebles@viblio.com/Toeman007
+admin@viblio.com/fgXrBHAMdi2Rqr6CUse
 
 'http://192.168.1.35': 'FD7C6RP5SE8ERDMB3RHR',
 'http://staging.viblio.com': 'VPP8BMSQ5AK6JLNRPKCV',
