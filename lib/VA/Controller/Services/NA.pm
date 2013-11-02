@@ -1259,7 +1259,7 @@ This will download the most current version of the tray app to the calling clien
 sub download_trayapp :Local {
     my( $self, $c ) = @_;
     my $data = $c->model( 'RDS::AppConfig' )->
-	find({ app => 'TrayApp', current => 1 });
+	find({ app => 'TrayAppDL', current => 1 });
     if ( $data ) {
 	my $hash = $data->TO_JSON;
 	if ( $hash->{config} ) {
