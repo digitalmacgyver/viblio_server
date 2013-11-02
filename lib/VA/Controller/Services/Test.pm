@@ -177,13 +177,13 @@ sub template_test :Local {
     my $force_staging = $c->req->param( 'force_staging' );
 
     unless( $to ) {
-	$self->status_bad_request( $c, "missing 'to' param" );
+	$self->status_bad_request( $c, "missing 'email' param" );
     }
     unless( $template ) {
 	$self->status_bad_request( $c, "missing 'template' param" );
     }
 
-    if ( $force_staging ) {
+    if ( $force_staging ne 'false' ) {
 	$c->{server_override} = 'http://staging.viblio.com/';
     }
 

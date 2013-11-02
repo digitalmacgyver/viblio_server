@@ -4,7 +4,7 @@ Model::Mandrill:
   server: https://mandrillapp.com/api/1.0
   type: application/json
   key: 0r2A4KAwtMm660j8R-cwDA
-  webhook_key: 2Wp4w_gsFFPbkszrlQMBXQ
+  webhook_key: -ozWNXgJlHoKFyKqN4W-wg
 
 # amazon sqs queues
 sqs:
