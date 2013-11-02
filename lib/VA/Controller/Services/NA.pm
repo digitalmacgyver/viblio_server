@@ -947,41 +947,46 @@ sub mediafile_create :Local {
 
     my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_contact_info => 1, expires => (60*60*24*365) } );
 
-    if ( $user->profile->setting( 'email_notifications' ) &&
-	 $user->profile->setting( 'email_upload' ) ) {
+    ### FOR NOW, LIMIT ANY EMAILS TO THE FIRST FEW VIDEOS UPLOADED
+    ### TO THE ACCOUNT
+    if ( $user->media->count < 4 ) {
 
-	# Send email notification
-	#
-	$c->log->debug( 'Sending email to ' . $user->email );
+	if ( $user->profile->setting( 'email_notifications' ) &&
+	     $user->profile->setting( 'email_upload' ) ) {
 
-	my $email = {
-	    subject    => $c->loc( "Your Viblio Video is Ready" ),
-	    from_email => 'reply@' . $c->config->{viblio_return_email_domain},
-	    from_name  => 'Viblio',
-	    to => [{
-		email => $user->email,
-		name  => $user->displayname }],
-	    headers => {
-		'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-	    },
-	    inline_css => 1,
-	};
+	    # Send email notification
+	    #
+	    $c->log->debug( 'Sending email to ' . $user->email );
 
-	$c->stash->{no_wrapper} = 1;
-	$c->stash->{user} = $user;
-	$c->stash->{media} = $mf;
-	$c->stash->{server} = $c->server;
+	    my $email = {
+		subject    => $c->loc( "Your Viblio Video is Ready" ),
+		from_email => 'reply@' . $c->config->{viblio_return_email_domain},
+		from_name  => 'Viblio',
+		to => [{
+		    email => $user->email,
+		    name  => $user->displayname }],
+		headers => {
+		    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+		},
+		inline_css => 1,
+	    };
 
-	$c->stash->{model} = {
-	    media => [ $mf ],
-	};
+	    $c->stash->{no_wrapper} = 1;
+	    $c->stash->{user} = $user;
+	    $c->stash->{media} = $mf;
+	    $c->stash->{server} = $c->server;
+
+	    $c->stash->{model} = {
+		media => [ $mf ],
+	    };
 	
-	$email->{html} = $c->view( 'HTML' )->render( $c, 'email/newVideos.tt' );
-	my $res = $c->model( 'Mandrill' )->send( $email );
-	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	    $c->log->error( "Error using Mailchimp to send" );
-	    $c->logdump( $res );
-	    $c->logdump( $email );
+	    $email->{html} = $c->view( 'HTML' )->render( $c, 'email/firstVideosUploadedEmail.tt' );
+	    my $res = $c->model( 'Mandrill' )->send( $email );
+	    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+		$c->log->error( "Error using Mailchimp to send" );
+		$c->logdump( $res );
+		$c->logdump( $email );
+	    }
 	}
     }
 

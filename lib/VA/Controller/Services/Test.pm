@@ -32,29 +32,6 @@ sub argtest :Local {
     $self->status_ok( $c, { args => $args } );
 }
 
-sub email_me :Local {
-    my( $self, $c ) = @_;
-
-    my $email = {
-	to => $c->user->email,
-	from => $c->config->{viblio_return_email_address},
-	subject => 'test',
-	template => 'test-email.tt',
-    };
-
-    $c->stash->{no_wrapper} = 1;
-
-    $c->stash->{email} = $email;
-
-    $c->forward( $c->view('Email::Template') );
-
-    $self->status_ok( $c, 
-		      { to => $c->user->email,
-			from => $c->config->{viblio_return_email_address},
-			subject => $c->loc( 'test' ),
-		      } );
-}
-
 sub mailchimp :Local {
     my( $self, $c ) = @_;
     
