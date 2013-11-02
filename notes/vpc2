@@ -7,7 +7,7 @@ mysql -h video-vpc.c9azfz8yt9lz.us-west-2.rds.amazonaws.com \
     - security group webserver-sg
   $ aws autoscaling create-launch-configuration \
     	--launch-configuration-name uploader2-lc \
-	--image-id ami-94ff67a4 --instance-type m1.medium \
+	--image-id ami-e8ad35d8 --instance-type m1.medium \
 	--associate-public-ip-address \
 	--security-groups sg-3e1c145c
 
@@ -27,9 +27,14 @@ mysql -h video-vpc.c9azfz8yt9lz.us-west-2.rds.amazonaws.com \
 (deleting)
 
 aws autoscaling describe-auto-scaling-groups
+===
 aws autoscaling terminate-instance-in-auto-scaling-group \
-     --should-decrement-desired-capacity \
+    --should-decrement-desired-capacity \
     --instance-id xxx
+or
+aws --output table autoscaling update-auto-scaling-group \
+    --auto-scaling-group-name uploader2-grp --min-size 0 --max-size 0
+===
 aws --output table autoscaling delete-auto-scaling-group \
     --auto-scaling-group-name uploader2-grp
 aws --output table autoscaling  delete-launch-configuration \
