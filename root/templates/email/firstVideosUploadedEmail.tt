@@ -65,7 +65,7 @@
             <span>Connect with friends or family by sharing one of these videos.</span>
             <br />
             <br />
-            <span><a class="tomato" href='[% c.server %]#login'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.</span>
+            <span><a class="tomato" href='[% c.server %]#home'><span class="tomato">LOGIN TO VIBLIO</span></a> TO NAME THESE AND OTHER FACES AND SHARE YOUR VIDEOS PRIVATELY.</span>
         [% END %]
     </div>
 

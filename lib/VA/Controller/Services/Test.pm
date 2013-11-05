@@ -32,29 +32,6 @@ sub argtest :Local {
     $self->status_ok( $c, { args => $args } );
 }
 
-sub email_me :Local {
-    my( $self, $c ) = @_;
-
-    my $email = {
-	to => $c->user->email,
-	from => $c->config->{viblio_return_email_address},
-	subject => 'test',
-	template => 'test-email.tt',
-    };
-
-    $c->stash->{no_wrapper} = 1;
-
-    $c->stash->{email} = $email;
-
-    $c->forward( $c->view('Email::Template') );
-
-    $self->status_ok( $c, 
-		      { to => $c->user->email,
-			from => $c->config->{viblio_return_email_address},
-			subject => $c->loc( 'test' ),
-		      } );
-}
-
 sub mailchimp :Local {
     my( $self, $c ) = @_;
     
@@ -177,13 +154,13 @@ sub template_test :Local {
     my $force_staging = $c->req->param( 'force_staging' );
 
     unless( $to ) {
-	$self->status_bad_request( $c, "missing 'to' param" );
+	$self->status_bad_request( $c, "missing 'email' param" );
     }
     unless( $template ) {
 	$self->status_bad_request( $c, "missing 'template' param" );
     }
 
-    if ( $force_staging ) {
+    if ( $force_staging ne 'false' ) {
 	$c->{server_override} = 'http://staging.viblio.com/';
     }
 

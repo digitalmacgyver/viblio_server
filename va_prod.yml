@@ -1,10 +1,10 @@
-viblio_return_email_domain: support-prod.viblio.com
+viblio_return_email_domain: support.viblio.com
 
 Model::Mandrill:
   server: https://mandrillapp.com/api/1.0
   type: application/json
   key: 0r2A4KAwtMm660j8R-cwDA
-  webhook_key: ACDYSKdQZHe4fDj5Lw1sPg
+  webhook_key: -ozWNXgJlHoKFyKqN4W-wg
 
 # amazon sqs queues
 sqs:
@@ -69,10 +69,4 @@ Plugin::Log::Log4perlSimple:
 Model::MQ:
   server: http://localhost:3002
   type: application/json
-
-# For web clients, where is the
-# fs server?
-file_storage:
-  secret: viblio321
-  server: http://prod.viblio.com:5000
 
