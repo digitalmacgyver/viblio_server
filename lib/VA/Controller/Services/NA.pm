@@ -550,7 +550,7 @@ sub new_user :Local {
 	# And finally, send them a nice welcome email
 	#
 	my $headers = {
-	    subject => $c->loc( "Welcome to Viblio" ),
+	    subject => $c->loc( "Viblio Account Confirmation" ),
 	    from_email => 'reply@' . $c->config->{viblio_return_email_domain},
 	    from_name => 'Viblio',
 	    to => [{
@@ -562,16 +562,9 @@ sub new_user :Local {
 	    inline_css => 1,
 	};
 	$c->stash->{no_wrapper} = 1;
-	$c->stash->{to} = $user;
-	$c->stash->{url} = $c->server;
+	$c->stash->{url} = $c->server . 'services/na/account_confirm?uuid=' . $user->uuid;
 
-	$c->stash->{model} = {
-	    vars => {
-		user => $user,
-	    },
-	};
-
-	$headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountCreationConfirmation.tt' );
+	$headers->{html} = $c->view( 'HTML' )->render( $c, 'email/newUserConfirmEmail.tt' );
 	my $res = $c->model( 'Mandrill' )->send( $headers );
 	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
 	    $c->log->error( "Error using Mailchimp to send" );
@@ -588,6 +581,57 @@ sub new_user :Local {
 	$self->status_bad_request
 	    ( $c, $self->authfailure_response( $c, $code ), $code );
     }
+}
+
+=head2 /services/na/account_confirm
+
+This endpoint sets the confirm bit in the passed in user's account, and
+sends them another email welcoming them to viblio.
+
+=cut
+
+sub account_confirm :Local {
+    my( $self, $c ) = @_;
+    my $uuid = $c->req->param( 'uuid' );
+    unless( $uuid ) {
+	$self->status_bad_request( $c, $c->loc( 'Missing required parameter: [_1]', 'uuid' ) );
+    }
+    my $user = $c->model( 'RDS::User' )->find({uuid => $uuid});
+    unless( $user ) {
+	$c->log->error( "Account confirm: cannot find a record for $uuid" );
+	$self->status_bad_request( $c, $c->loc( 'Cannot find user for uuid: [_1]', $uuid ) );
+    }
+    $user->confirmed( 1 ); $user->update;
+
+    my $headers = {
+	subject => $c->loc( "Welcome to Viblio" ),
+	from_email => 'reply@' . $c->config->{viblio_return_email_domain},
+	from_name => 'Viblio',
+	to => [{
+	    email => $user->email,
+	    name  => $user->displayname }],
+	headers => {
+	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+	},
+	inline_css => 1,
+    };
+    $c->stash->{no_wrapper} = 1;
+    $c->stash->{to} = $user;
+    $c->stash->{url} = $c->server;
+
+    $c->stash->{model} = {
+	user => $user,
+    };
+
+    $headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountCreationConfirmation.tt' );
+    my $res = $c->model( 'Mandrill' )->send( $headers );
+    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+	$c->log->error( "Error using Mailchimp to send" );
+	$c->logdump( $res );
+	$c->logdump( $headers );
+    }
+
+    $self->status_ok( $c, { user => $c->user->obj } );
 }
 
 =head2 /services/na/forgot_password_request
