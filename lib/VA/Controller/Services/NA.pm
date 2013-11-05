@@ -1271,6 +1271,8 @@ sub valid_email :Local {
 sub find_share_info_for_pending :Local {
     my( $self, $c ) = @_;
     my $email = $c->req->param( 'email' );
+    my $test  = $c->req->param( 'test' );
+
     # find pending user
     my @pending = $c->model( 'RDS::User' )->search({displayname => $email,
 						    provider_id => 'pending' });
@@ -1289,6 +1291,13 @@ sub find_share_info_for_pending :Local {
 		media => VA::MediaFile->publish( $c, $mediafile ),
 		owner => $owner->TO_JSON });
 	}
+    }
+
+    ## TEST ##
+    if ( $test ) {
+	$self->status_ok( $c, {
+	    owner => $c->model( 'RDS::User' )->find({ email => 'aqpeeb@gmail.com' })->TO_JSON
+	});
     }
 
     $self->status_ok( $c, {} );
@@ -1353,6 +1362,52 @@ sub download_trayapp :Local {
 	$c->res->body( 'Not found' );
 	$c->detach;
     }
+}
+
+# Uses View::Thumbnail to return profile photos.
+#
+sub avatar :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+	( $c,
+	  [ uid  => undef,
+	    zoom => undef,
+	    'x'  => '-',
+	    'y'  => 90  ],
+	  @_ );
+  
+    my $uid  = $args->{uid};
+    my $zoom = $args->{zoom};
+    my $x    = $args->{x};
+    my $y    = $args->{y};
+
+    if ( $x && $x eq '-' ) {
+	undef $x;
+    }
+
+    my $user;
+    if ( $uid ) {
+	$user = $c->model( 'RDS::User' )->find({ uuid => $uid });
+    }
+
+    my $photo;
+    if ( $user ) {
+	$photo = $user->profile->image;
+    }
+
+    if ( $photo ) {
+	$c->stash->{image} = $photo;
+	$c->stash->{zoom} = $zoom if ( $zoom );
+    }
+    else {
+	my @colors = ('red', 'green', 'yellow', 'purple' );
+	my $color  = $colors[ int( rand( 3 ) ) ];
+	$c->stash->{image} = $c->model( 'File' )->slurp( "nopic-" . $color . "-90.png" );
+    }
+
+    $c->stash->{y} = $y if ( $y );
+    $c->stash->{x} = $x if ( $x );
+    $c->stash->{current_view} = 'Thumbnail';
 }
 
 __PACKAGE__->meta->make_immutable;
