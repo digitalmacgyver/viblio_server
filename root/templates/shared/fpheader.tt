@@ -27,7 +27,7 @@
 <body>
   <script>
     function go() {
-      window.location = "/#/web_player?mid=[% mediafile.uuid %]";
+      window.location = "/#web_player?mid=[% mediafile.uuid %]";
     }
     window.onload = go;
   </script>
