@@ -261,7 +261,7 @@ record.  The second face is present but unknown.
 sub faces_in_mediafile :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $m = $c->user->media->find({uuid=>$mid});
+    my $m = $c->model( 'RDS::Media' )->find({uuid=>$mid});
     unless( $m ) {
 	$self->status_bad_request
 	    ( $c, 
