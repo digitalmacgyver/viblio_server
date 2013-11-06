@@ -222,7 +222,7 @@ sub contacts :Local {
     }
 }
 
-=head2 /services/faces/faces_in_mediafile
+=head2 /services/faces/faces_in_mediafile, /services/na/faces_in_mediafile
 
 For a passed in mediafile (uuid), return all the faces, known and unknown,
 present in that video.  Returns something that looks like:
@@ -260,34 +260,7 @@ record.  The second face is present but unknown.
 
 sub faces_in_mediafile :Local {
     my( $self, $c ) = @_;
-    my $mid = $c->req->param( 'mid' );
-    my $m = $c->model( 'RDS::Media' )->find({uuid=>$mid});
-    unless( $m ) {
-	$self->status_bad_request
-	    ( $c, 
-	      $c->loc( 'Unable to find mediafile for [_1]', $mid ) );
-    }
-    my @feat = $c->model( 'RDS::MediaAssetFeature' )
-	->search({'me.media_id'=>$m->id,
-		  'me.feature_type'=>'face'},
-		 {prefetch=>['contact','media_asset'],
-		  group_by=>['contact.id']
-		 });
-    my @data = ();
-    foreach my $feat ( @feat ) {
-	my $klass = $c->config->{mediafile}->{$feat->media_asset->location};
-	my $fp = new $klass;
-	my $url = $fp->uri2url( $c, $feat->media_asset->uri );
-	my $hash = {
-	  url => $url,
-	  appears_in => 1,
-	};
-	if ( $feat->contact_id ) {
-	    $hash->{contact} = $feat->contact->TO_JSON;
-	}
-	push( @data, $hash );
-    }
-    $self->status_ok( $c, { faces => \@data } );
+    $c->forward( '/services/na/faces_in_mediafile' );
 }
 
 =head2 /services/faces/contact

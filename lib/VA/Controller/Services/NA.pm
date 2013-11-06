@@ -1411,6 +1411,69 @@ sub avatar :Local {
     $c->stash->{current_view} = 'Thumbnail';
 }
 
+=head2 /services/na/media_comments
+
+Unauthenticated endpoint to get comments associated with the media file
+passed in as mid.  Needed for the web_player page.
+
+=cut
+
+sub media_comments :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    unless( $mid ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
+    }
+    my $mf = $c->model( 'RDS::Media' )->find({uuid=>$mid});
+    unless( $mf ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+    }
+    my @comments = $mf->comments->search({},{prefetch=>'user', order_by=>'me.created_date desc'});
+    my @data = ();
+    foreach my $comment ( @comments ) {
+	my $hash = $comment->TO_JSON;
+	if ( $comment->user_id ) {
+	    $hash->{who} = $comment->user->displayname;
+	}
+	push( @data, $hash );
+    }
+    $self->status_ok( $c, { comments => \@data } );
+}
+
+sub faces_in_mediafile :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $m = $c->model( 'RDS::Media' )->find({uuid=>$mid});
+    unless( $m ) {
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc( 'Unable to find mediafile for [_1]', $mid ) );
+    }
+    my @feat = $c->model( 'RDS::MediaAssetFeature' )
+	->search({'me.media_id'=>$m->id,
+		  'me.feature_type'=>'face'},
+		 {prefetch=>['contact','media_asset'],
+		  group_by=>['contact.id']
+		 });
+    my @data = ();
+    foreach my $feat ( @feat ) {
+	my $klass = $c->config->{mediafile}->{$feat->media_asset->location};
+	my $fp = new $klass;
+	my $url = $fp->uri2url( $c, $feat->media_asset->uri );
+	my $hash = {
+	  url => $url,
+	  appears_in => 1,
+	};
+	if ( $feat->contact_id ) {
+	    $hash->{contact} = $feat->contact->TO_JSON;
+	}
+	push( @data, $hash );
+    }
+    $self->status_ok( $c, { faces => \@data } );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

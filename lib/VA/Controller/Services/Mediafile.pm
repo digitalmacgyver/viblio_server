@@ -382,26 +382,7 @@ sub set_title_description :Local {
 
 sub comments :Local {
     my( $self, $c ) = @_;
-    my $mid = $c->req->param( 'mid' );
-    unless( $mid ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
-    }
-    my $mf = $c->model( 'RDS::Media' )->find({uuid=>$mid});
-    unless( $mf ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
-    }
-    my @comments = $mf->comments->search({},{prefetch=>'user', order_by=>'me.created_date desc'});
-    my @data = ();
-    foreach my $comment ( @comments ) {
-	my $hash = $comment->TO_JSON;
-	if ( $comment->user_id ) {
-	    $hash->{who} = $comment->user->displayname;
-	}
-	push( @data, $hash );
-    }
-    $self->status_ok( $c, { comments => \@data } );
+    $c->forward( '/services/na/media_comments' );
 }
 
 sub sanitize :Private {
