@@ -1296,7 +1296,8 @@ sub find_share_info_for_pending :Local {
     ## TEST ##
     if ( $test ) {
 	$self->status_ok( $c, {
-	    owner => $c->model( 'RDS::User' )->find({ email => 'aqpeeb@gmail.com' })->TO_JSON
+	    owner => $c->model( 'RDS::User' )->find({ email => 'aqpeeb@gmail.com' })->TO_JSON,
+	    media => VA::MediaFile->publish( $c, $c->model( 'RDS::User' )->find({ email => 'aqpeeb@gmail.com' })->media->first ),
 	});
     }
 
