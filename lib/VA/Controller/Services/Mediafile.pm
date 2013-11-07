@@ -272,15 +272,15 @@ sub list :Local {
       ( $c,
         [ page => undef,
           rows => 10,
-	  type => undef,
 	  include_contact_info => 0,
         ],
         @_ );
 
-    my $where = undef;
-    if ( $args->{type} ) {
-	$where = { type => $args->{type} };
-    }
+    my $where = {
+	-or => [ status => 'TranscodeComplete',
+		 status => 'FaceDetectComplete',
+		 status => 'FaceRecognizeComplete' ]
+    };
 
     if ( $args->{page} ) {
 	my $rs = $c->user->media
@@ -621,14 +621,23 @@ sub count :Local {
     my( $self, $c ) = @_;
     my $uid = $c->req->param( 'uid' );
     my $count = 0;
+
+    my $where = {
+	-or => [ status => 'TranscodeComplete',
+		 status => 'FaceDetectComplete',
+		 status => 'FaceRecognizeComplete' ]
+    };
+
     if ( $uid ) {
 	my $user = $c->model( 'RDS::User' )->find({uuid => $uid });
 	if ( $user ) {
-	    $count = $user->media->count;
+	    my $rs = $user->media->search($where);
+	    $count = $rs->count;
 	}
     }
     else {
-	$count = $c->user->media->count;
+	my $rs = $c->user->media->search($where);
+	$count = $rs->count;
     }
     $self->status_ok( $c, { count => $count } );
 }

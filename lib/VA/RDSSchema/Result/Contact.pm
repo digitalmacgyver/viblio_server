@@ -227,6 +227,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 media_share_messages
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::MediaShareMessage>
+
+=cut
+
+__PACKAGE__->has_many(
+  "media_share_messages",
+  "VA::RDSSchema::Result::MediaShareMessage",
+  { "foreign.contact_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 provider
 
 Type: belongs_to
@@ -263,8 +278,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:06
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:I/IC5QNMxEFBZmkwzutW0A
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-07 08:33:22
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:GVdkra0N2m4j6DYw8KOtqg
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

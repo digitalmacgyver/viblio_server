@@ -993,7 +993,11 @@ sub mediafile_create :Local {
 
     ### FOR NOW, LIMIT ANY EMAILS TO THE FIRST FEW VIDEOS UPLOADED
     ### TO THE ACCOUNT
-    if ( $user->media->count < 4 ) {
+    my $rs = $user->media->search({
+	-or => [ status => 'TranscodeComplete',
+		 status => 'FaceDetectComplete',
+		 status => 'FaceRecognizeComplete' ] });
+    if ( $rs->count < 4 ) {
 
 	if ( $user->profile->setting( 'email_notifications' ) &&
 	     $user->profile->setting( 'email_upload' ) ) {

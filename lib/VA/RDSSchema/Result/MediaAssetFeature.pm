@@ -111,6 +111,17 @@ __PACKAGE__->table("media_asset_features");
   is_nullable: 1
   size: [9,6]
 
+=head2 track_id
+
+  data_type: 'integer'
+  is_nullable: 1
+
+=head2 recognition_result
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 32
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -154,6 +165,10 @@ __PACKAGE__->add_columns(
   { data_type => "decimal", is_nullable => 1, size => [9, 6] },
   "recognition_confidence",
   { data_type => "decimal", is_nullable => 1, size => [9, 6] },
+  "track_id",
+  { data_type => "integer", is_nullable => 1 },
+  "recognition_result",
+  { data_type => "varchar", is_nullable => 1, size => 32 },
   "created_date",
   {
     data_type => "datetime",
@@ -239,8 +254,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:AIgG+EUZRAu4tUP6JwXLdQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-07 08:33:23
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:veysmD9joDf4ZjThtfOdtA
 
 sub TO_JSON {
     my $self = shift;
