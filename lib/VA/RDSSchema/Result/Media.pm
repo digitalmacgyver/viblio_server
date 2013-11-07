@@ -121,6 +121,12 @@ __PACKAGE__->table("media");
   is_nullable: 1
   size: [11,8]
 
+=head2 status
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 32
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -162,6 +168,8 @@ __PACKAGE__->add_columns(
   { data_type => "decimal", is_nullable => 1, size => [11, 8] },
   "lng",
   { data_type => "decimal", is_nullable => 1, size => [11, 8] },
+  "status",
+  { data_type => "varchar", is_nullable => 1, size => 32 },
   "created_date",
   {
     data_type => "datetime",
@@ -310,8 +318,8 @@ Composing rels: L</media_workorders> -> workorder
 __PACKAGE__->many_to_many("workorders", "media_workorders", "workorder");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-22 09:23:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Qur94dRzoetw+iJWkf4FHg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-07 08:33:22
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:l/Zra2zzkwCxYABeqnLg1A
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

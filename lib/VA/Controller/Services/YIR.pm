@@ -10,12 +10,15 @@ Services related to the Year In Review
 
 =cut
 
-
 sub dates_for_user :Private {
     my( $self, $c ) = @_;
     return $c->user->media
-	->search({}, {columns=>['recording_date'], 
-		      order_by=>'recording_date desc'});
+	->search({
+	    -or => [ status => 'TranscodeComplete',
+		     status => 'FaceDetectComplete',
+		     status => 'FaceRecognizeComplete' ] },
+		 {columns=>['recording_date'], 
+		  order_by=>'recording_date desc'});
 }
 
 sub dates_for_contact :Private {

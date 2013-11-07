@@ -1,12 +1,12 @@
 use utf8;
-package VA::RDSSchema::Result::MediaShare;
+package VA::RDSSchema::Result::MediaShareMessage;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::RDSSchema::Result::MediaShare
+VA::RDSSchema::Result::MediaShareMessage
 
 =cut
 
@@ -47,11 +47,11 @@ __PACKAGE__->load_components(
   "FilterColumn",
 );
 
-=head1 TABLE: C<media_shares>
+=head1 TABLE: C<media_share_messages>
 
 =cut
 
-__PACKAGE__->table("media_shares");
+__PACKAGE__->table("media_share_messages");
 
 =head1 ACCESSORS
 
@@ -67,28 +67,21 @@ __PACKAGE__->table("media_shares");
   is_nullable: 0
   size: 36
 
-=head2 media_id
+=head2 media_share_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 user_id
+=head2 contact_id
 
   data_type: 'integer'
-  is_foreign_key: 1
-  is_nullable: 1
-
-=head2 share_type
-
-  data_type: 'varchar'
   is_foreign_key: 1
   is_nullable: 0
-  size: 16
 
-=head2 view_count
+=head2 message
 
-  data_type: 'integer'
+  data_type: 'text'
   is_nullable: 1
 
 =head2 created_date
@@ -110,14 +103,12 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "uuid",
   { data_type => "varchar", is_nullable => 0, size => 36 },
-  "media_id",
+  "media_share_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "user_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
-  "share_type",
-  { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 16 },
-  "view_count",
-  { data_type => "integer", is_nullable => 1 },
+  "contact_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "message",
+  { data_type => "text", is_nullable => 1 },
   "created_date",
   {
     data_type => "datetime",
@@ -160,76 +151,40 @@ __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
 
-=head2 media
+=head2 contact
 
 Type: belongs_to
 
-Related object: L<VA::RDSSchema::Result::Media>
+Related object: L<VA::RDSSchema::Result::Contact>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "media",
-  "VA::RDSSchema::Result::Media",
-  { id => "media_id" },
+  "contact",
+  "VA::RDSSchema::Result::Contact",
+  { id => "contact_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
-=head2 media_share_messages
-
-Type: has_many
-
-Related object: L<VA::RDSSchema::Result::MediaShareMessage>
-
-=cut
-
-__PACKAGE__->has_many(
-  "media_share_messages",
-  "VA::RDSSchema::Result::MediaShareMessage",
-  { "foreign.media_share_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 share_type
+=head2 media_share
 
 Type: belongs_to
 
-Related object: L<VA::RDSSchema::Result::ShareType>
+Related object: L<VA::RDSSchema::Result::MediaShare>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "share_type",
-  "VA::RDSSchema::Result::ShareType",
-  { type => "share_type" },
-  { is_deferrable => 1, on_delete => "RESTRICT", on_update => "CASCADE" },
-);
-
-=head2 user
-
-Type: belongs_to
-
-Related object: L<VA::RDSSchema::Result::User>
-
-=cut
-
-__PACKAGE__->belongs_to(
-  "user",
-  "VA::RDSSchema::Result::User",
-  { id => "user_id" },
-  {
-    is_deferrable => 1,
-    join_type     => "LEFT",
-    on_delete     => "CASCADE",
-    on_update     => "CASCADE",
-  },
+  "media_share",
+  "VA::RDSSchema::Result::MediaShare",
+  { id => "media_share_id" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-07 08:33:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Ci8jRMazedghAEFHf/58dw
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:QMi7iqJ9O5VTRevmPrA4gA
 
-__PACKAGE__->uuid_columns( 'uuid' );
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
