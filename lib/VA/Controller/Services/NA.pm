@@ -1164,6 +1164,7 @@ been shared.
 sub media_shared :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
+    my $preview = $c->req->param( 'preview' );
 
     # Is caller logged in?
     my $user = $c->user;
@@ -1176,6 +1177,7 @@ sub media_shared :Local {
     # If the user is logged in and its their video, show it
     if ( $user && $mediafile->user_id == $user->id ) {
 	# They own it
+	$c->log->debug( "SHARE: OWNED BY USER" );
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
 	$self->status_ok( $c, { share_type => "owned_by_user", 
 				media => $mf } );
@@ -1196,29 +1198,48 @@ sub media_shared :Local {
     # possible values: private, hidden, public
     my $OK = 0;
 
-    if ( $is->{public} || $is->{hidden} ) {
+    # A media file can have multiple shares.  If it has both hidden/public
+    # and private, the hidden/public view will take precidence.  But if the
+    # use is logged in, we can look a bit closer to see if this is a private
+    # share specifically targetted to him, and show a private view.
+    if ( $is->{private} && $user ) {
+	my $share = $mediafile->media_shares->find({ 
+	    share_type => 'private', 
+	    user_id => $user->id });
+	if ( $share ) {
+	    $share->view_count( $share->view_count + 1 ) unless( $preview );
+	    $share->update;
+	    $share_type = "private";
+	    $OK = 1;
+	    $c->log->debug( "SHARE: PRIVATE AND USER LOGGED IN" );
+	}
+    }
+
+    if ( $OK == 0 && ($is->{public} || $is->{hidden}) ) {
 	my $found = 'public';
 	if ( $is->{hidden} ) {
 	    $found = 'hidden';
 	}
+	$c->log->debug( "SHARE: $found" ); 
 	# In this case, we do not know how they got here.  If it has a hidden
 	# share, then we care more about this method for tracking.  
 	my $share = $mediafile->media_shares->find({ share_type => $found });
 	if ( $share ) {
-	    $share->view_count( $share->view_count + 1 );
+	    $share->view_count( $share->view_count + 1 ) unless( $preview );
 	    $share->update;
 	}
 	$share_type = $found;
 	$OK = 1;
     }
-    elsif ( $is->{private} ) {
+    elsif ( $OK == 0 && $is->{private} ) {
 	$share_type = "private";
+	$c->log->debug( "SHARE: $share_type" ); 
 	if ( $user ) {
 	    my $share = $mediafile->media_shares->find({ 
 		share_type => 'private', 
 		user_id => $user->id });
 	    if ( $share ) {
-		$share->view_count( $share->view_count + 1 );
+		$share->view_count( $share->view_count + 1 ) unless( $preview );
 		$share->update;
 		$OK = 1;
 	    }
@@ -1233,7 +1254,7 @@ sub media_shared :Local {
 
     if ( $OK ) {
 	# increment the view count
-	$mediafile->view_count( $mediafile->view_count + 1 );
+	$mediafile->view_count( $mediafile->view_count + 1 ) unless( $preview );
 	$mediafile->update;
 
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
@@ -1387,7 +1408,10 @@ sub avatar :Local {
     }
 
     my $user;
-    if ( $uid ) {
+    if ( $uid && $uid eq '-' && $c->user ) {
+	$user = $c->user->obj;
+    }
+    elsif ( $uid ) {
 	$user = $c->model( 'RDS::User' )->find({ uuid => $uid });
     }
 
@@ -1472,6 +1496,17 @@ sub faces_in_mediafile :Local {
 	push( @data, $hash );
     }
     $self->status_ok( $c, { faces => \@data } );
+}
+
+sub geo_loc :Local {
+    my( $self, $c ) = @_;
+    my $lat = $c->req->param( 'lat' );
+    my $lng = $c->req->param( 'lng' );
+
+    my $latlng = "$lat,$lng";
+    my $res = $c->model( 'GoogleMap' )->get( "/maps/api/geocode/json?latlng=$latlng&sensor=true" );
+
+    $self->status_ok( $c, $res->data->{results} );
 }
 
 __PACKAGE__->meta->make_immutable;
