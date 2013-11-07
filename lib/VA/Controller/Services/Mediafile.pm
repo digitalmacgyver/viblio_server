@@ -440,6 +440,16 @@ sub add_comment :Local {
     my $hash = $comment->TO_JSON;
     $hash->{who} = $comment->user->displayname;
 
+    # Send emails and notifications (but not to myself!)
+    if ( $c->user->id != $mf->user->id ) {
+	my $published_mf = VA::MediaFile->new->publish( $c, $mf );
+	my $res = $c->model( 'MQ' )->post( '/enqueue', 
+					   { uid => $mf->user->uuid,
+					     type => 'new_comment',
+					     user => $c->user->obj->TO_JSON,
+					     media  => $published_mf } );
+    }
+
     $self->status_ok( $c, { comment => $hash } );
 }
 

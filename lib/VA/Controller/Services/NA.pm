@@ -943,6 +943,7 @@ sub workorder_done :Private {
 	# We'd like to distinguish between iOS clients and web clients so
 	# we only deliver the message once.  How?
 	my $res = $c->model( 'MQ' )->post( '/enqueue', { uid => $uuid,
+							 type => 'new_wo',
 							 wo  => $wo } );
 	if ( $res->code != 200 ) {
 	    $c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
@@ -1041,6 +1042,7 @@ sub mediafile_create :Local {
     # Send message queue notification
     #
     my $res = $c->model( 'MQ' )->post( '/enqueue', { uid => $uid,
+						     type => 'new_video',
 						     media  => $mf } );
     if ( $res->code != 200 ) {
 	$c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
