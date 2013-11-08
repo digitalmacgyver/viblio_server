@@ -12,6 +12,10 @@ use JSON;
 use Try::Tiny;
 use Logger::Syslog;
 use Data::Dumper;
+use File::Temp qw/ tempfile tempdir /;
+use Net::Amazon::S3;
+use Net::Amazon::S3::Client;
+use File::Basename;
 
 my $Usage = "$0 -db <staging|prod> -app <app> [-c config] [-force]";
 
@@ -111,13 +115,65 @@ print "Installing new $app because local version $version does not match release
 
 # Ok, we are installing.  Parse the app config (json).
 my $hash = from_json( $json );
-print Dumper $hash;
 
 # Download the image into a temporary directory and untar it
+my $tmpdir = tempdir( CLEANUP => 1 );
+## The uri in the config struct is of the form:
+## bucket/key
+my $filename = basename( $hash->{uri} );
+my @parts = split( /\//, $hash->{uri} );
+my $bucket = shift @parts;
+my $key = join( '/', @parts );
+
+try {
+    my $s3 = Net::Amazon::S3->new(
+	aws_access_key_id => $cfg->{s3}->{key},
+	aws_secret_access_key => $cfg->{s3}->{secret},
+	retry => 1 );
+    my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
+    my $bucket = $client->bucket( name => $bucket );
+    my $object = $bucket->object( key => $key );
+    print "Downloading $key into $tmpdir/$filename ...\n";
+    $object->get_filename( "$tmpdir/$filename" );
+    system( "ls -l $tmpdir/$filename" );
+} catch {
+    error( "$app: Failed to download $key from S3" );
+    print $_, "\n";
+    exit 2;
+};
+
+my $unpack = "unzip";
+if ( $filename =~ /\.tar.gz/ ) {
+    $unpack = "tar zxf";
+}
+if ( system( "cd $tmpdir; $unpack $filename" ) ) {
+    error( "Failed to unpack image for $app: $_" );
+    print "$_\n";
+    exit 2;
+}
+# system( "cd $tmpdir; ls -l" );
 
 # If it has a Makefile, execute it
-
-# Or if it has an executable 'runme', then run it
+if ( -f "$tmpdir/Makefile" ) {
+    if ( system( "cd $tmpdir; make LVL=$dbname APP=$app install" ) ) {
+	error( "Failed to run package make for $app: $_" );
+	print "Failed to run package make for $app: $_\n";
+	exit 2;
+    }
+}
+elsif ( -x "$tmpdir/runme" ) {
+  # Or if it has an executable 'runme', then run it
+    if ( system( "cd $tmpdir; ./runme -lvl $dbname -app $app -install" ) ) {
+	error( "Failed to run package runme for $app: $_" );
+	print "Failed to run package runme for $app: $_\n";
+	exit 2;
+    }
+}
+else {
+    error( "Package does not include a Makefile or a runme for installation" );
+    print "Package does not include a Makefile or a runme for installation\n";
+    exit 2;
+}
 
 # If we get here, the installation is finished and is successful.
 # Clean up the temporary directory ...
