@@ -1,31 +1,40 @@
 #!/usr/bin/env perl
 #
 # This script is used to update Viblio software on a running machine.
-# It returns 0 if no software was installed, 1 if software was installed,
-# and 2 if there was a script error.  It writes to syslog (so loggly has it)
-# if there was a script error.
+# It returns 0 if no software was installed, 1 if software was installed.
+# It writes to syslog (so loggly has it) if there was a script error.
 #
 use strict;
 use YAML;
 use DBI;
 use JSON;
 use Try::Tiny;
-use Logger::Syslog;
 use Data::Dumper;
 use File::Temp qw/ tempfile tempdir /;
 use Net::Amazon::S3;
 use Net::Amazon::S3::Client;
 use File::Basename;
 
-my $Usage = "$0 -db <staging|prod> -app <app> [-c config] [-force]";
+BEGIN {
+    # The way Logger::Syslog dumps app name and the way loggly wants
+    # to see it are different, so ...
+    $ENV{'MOD_PERL'} = 1;
+    $ENV{'SCRIPT_FILENAME'} = 'check-and-install-software';
+    use Logger::Syslog;
+    logger_init();
+}
 
-my( $dbname, $app, $config, $force );
+my $Usage = "$0 -db <staging|prod> -app <app> [-c config] [-quiet] [-force] [-check]";
+
+my( $dbname, $app, $config, $force, $check, $quiet );
 
 # Default config file.  This is a YAML syntax file, and contains
 # the database connection info, as well as application info such
 # as the currently installed version of the app.
 $config = "/etc/viblio.yml";
 $force = 0;
+$check = 0;
+$quiet = 0;
 
 # Parse the args
 my $command_line = join( ' ', @ARGV );
@@ -42,13 +51,24 @@ while( my $arg = shift( @ARGV ) ) {
     if ( $arg eq '-force' ) {
 	$force = 1; next;
     }
+    if ( $arg eq '-check' ) {
+	$check = 1; next;
+    }
+    if ( $arg eq '-quiet' ) {
+	$quiet = 1; next;
+    }
 }
 
 unless( $dbname && $app && $config ) {
     error( "Bad command line: $command_line" );
     print $Usage,"\n";
-    exit 2;
+    exit 0;
 }
+
+# Pre-append the $app to all messages
+logger_prefix( $app );
+# Make sure after our twidling that the stack gets reported correctly
+undef $ENV{'MOD_PERL'};
 
 # Read the config
 my $cfg;
@@ -56,8 +76,8 @@ try {
     $cfg = YAML::LoadFile( $config );
 } catch {
     error( $_ );
-    print $_,"\n";
-    exit 2;
+    print $_,"\n" unless( $quiet );
+    exit 0;
 };
 
 # If we're forcing an install ...
@@ -66,8 +86,8 @@ $cfg->{$app}->{version} = 'forced';
 # Open the database
 unless( $cfg && $cfg->{db} && $cfg->{db}->{$dbname} ) {
     error( "Cannot find database connection info for '$dbname'" );
-    print "Cannot find database connection info for '$dbname'", "\n";
-    exit 2;
+    print "Cannot find database connection info for '$dbname'", "\n" unless( $quiet );
+    exit 0;
 }
 
 my $db = DBI->connect( 'DBI:mysql:database=' . 
@@ -77,8 +97,8 @@ my $db = DBI->connect( 'DBI:mysql:database=' .
 		       $cfg->{db}->{$dbname}->{password} );
 unless( $db ) {
     error( "Could not connect to $dbname" );
-    print "Could not connect to $dbname\n";
-    exit 2;
+    print "Could not connect to $dbname\n" unless( $quiet );
+    exit 0;
 }
 
 # Obtain information about the app
@@ -92,8 +112,8 @@ try {
 } catch {
     my $err = $_;
     error( "Failed to obtain version_string and config for $app" );
-    print $err, "\n";
-    exit 2;
+    print $err, "\n" unless( $quiet );
+    exit 0;
 };
 
 # Compare the version from the database against the version
@@ -106,12 +126,17 @@ if ( $cfg->{$app} && $cfg->{$app}->{version} &&
     $install = 0;
 }
 unless( $install ) {
-    print "Nothing to install: $app local version $version is same as released version $cfg->{$app}->{version}\n";
+    print "Nothing to install: $app local version $version is same as released version $cfg->{$app}->{version}\n" unless( $quiet );
     exit 0;
 }
 
+# If we are just checking ...
+if ( $check ) {
+    exit 1;
+}
+
 info( "Installing new $app because local version $version does not match released version " . ( $cfg->{$app}->{version} || 'unknown' ) );
-print "Installing new $app because local version $version does not match released version " . ( $cfg->{$app}->{version} || 'unknown' ), "\n";
+print "Installing new $app because local version $version does not match released version " . ( $cfg->{$app}->{version} || 'unknown' ), "\n" unless( $quiet );
 
 # Ok, we are installing.  Parse the app config (json).
 my $hash = from_json( $json );
@@ -133,23 +158,23 @@ try {
     my $client = Net::Amazon::S3::Client->new( s3 => $s3 );
     my $bucket = $client->bucket( name => $bucket );
     my $object = $bucket->object( key => $key );
-    print "Downloading $key into $tmpdir/$filename ...\n";
+    print "Downloading $key into $tmpdir/$filename ...\n" unless( $quiet );
     $object->get_filename( "$tmpdir/$filename" );
-    system( "ls -l $tmpdir/$filename" );
+    # system( "ls -l $tmpdir/$filename" );
 } catch {
     error( "$app: Failed to download $key from S3" );
-    print $_, "\n";
-    exit 2;
+    print $_, "\n" unless( $quiet );
+    exit 0;
 };
 
 my $unpack = "unzip";
 if ( $filename =~ /\.tar.gz/ ) {
     $unpack = "tar zxf";
 }
-if ( system( "cd $tmpdir; $unpack $filename" ) ) {
+if ( system( "cd $tmpdir; $unpack $filename >/dev/null 2>&1 " ) ) {
     error( "Failed to unpack image for $app: $_" );
-    print "$_\n";
-    exit 2;
+    print "$_\n" unless( $quiet );
+    exit 0;
 }
 # system( "cd $tmpdir; ls -l" );
 
@@ -157,22 +182,22 @@ if ( system( "cd $tmpdir; $unpack $filename" ) ) {
 if ( -f "$tmpdir/Makefile" ) {
     if ( system( "cd $tmpdir; make LVL=$dbname APP=$app install" ) ) {
 	error( "Failed to run package make for $app: $_" );
-	print "Failed to run package make for $app: $_\n";
-	exit 2;
+	print "Failed to run package make for $app: $_\n" unless( $quiet );
+	exit 0;
     }
 }
 elsif ( -x "$tmpdir/runme" ) {
   # Or if it has an executable 'runme', then run it
     if ( system( "cd $tmpdir; ./runme -lvl $dbname -app $app -install" ) ) {
 	error( "Failed to run package runme for $app: $_" );
-	print "Failed to run package runme for $app: $_\n";
-	exit 2;
+	print "Failed to run package runme for $app: $_\n" unless( $quiet );
+	exit 0;
     }
 }
 else {
     error( "Package does not include a Makefile or a runme for installation" );
-    print "Package does not include a Makefile or a runme for installation\n";
-    exit 2;
+    print "Package does not include a Makefile or a runme for installation\n" unless( $quiet );
+    exit 0;
 }
 
 # If we get here, the installation is finished and is successful.
@@ -184,8 +209,8 @@ try {
     YAML::DumpFile( $config, $cfg );
 } catch {
     error( "Failed to commit $app new version $version into $config" );
-    print "Failed to commit $app new version $version into $config\n";
-    exit 2;
+    print "Failed to commit $app new version $version into $config\n" unless( $quiet );
+    exit 0;
 };
 
 # and we're done.  exit 1 means to the outside world that new
