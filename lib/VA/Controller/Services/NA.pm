@@ -1483,6 +1483,7 @@ sub faces_in_mediafile :Local {
     }
     my @feat = $c->model( 'RDS::MediaAssetFeature' )
 	->search({'me.media_id'=>$m->id,
+		  'contact.id' => { '!=', undef },
 		  'me.feature_type'=>'face'},
 		 {prefetch=>['contact','media_asset'],
 		  group_by=>['contact.id']
