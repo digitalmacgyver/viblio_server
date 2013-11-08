@@ -1,0 +1,14 @@
+---
+TrayAppDL:
+  version: 1.1.6.19
+db:
+  prod:
+    database: video_dev
+    host: videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com
+    password: AVxXwDC9Y%sKaPG@
+    user: web_prod
+  staging:
+    database: video_dev_1
+    host: testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com
+    password: Yn8U!2Y52Pt#5MEK
+    user: web_dev
