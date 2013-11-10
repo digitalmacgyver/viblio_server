@@ -7,7 +7,7 @@ DB=$1
 APP=$2
 
 if [ "$USER" == "root" ]; then
-   echo warp
+   chmod -R oug+rwx `pwd`
    sudo -u ubuntu DB=$DB APP=$APP TDIR=`pwd` -i "`pwd`/runme" && \
    mkdir -p /deploy/$DB/VA-0.01.next && \
    tar zxf VA-0.01.tar.gz -C /deploy/$DB/VA-0.01.next && \
