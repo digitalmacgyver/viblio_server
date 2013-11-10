@@ -18,3 +18,4 @@ db.alter
 node_modules
 /ffmpeg
 /nginx-src/nginx-1.2.6/
+package.tar.gz

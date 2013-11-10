@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# This script is run my the check-and-install-software.pl script
+# to install a new version of viblio-server
+#
+DB=$1
+APP=$2
+
+if [ "$USER" == "root" ]; then
+   echo warp
+   sudo -u ubuntu DB=$DB APP=$APP TDIR=`pwd` -i "`pwd`/runme" && \
+   mkdir -p /deploy/$DB/VA-0.01.next && \
+   tar zxf VA-0.01.tar.gz -C /deploy/$DB/VA-0.01.next && \
+   ( cd /deploy/$DB/VA-0.01.next/VA-0.01 && ./script/node-install.sh ) && \
+   rm -rf /deploy/$DB/VA-0.01.pre && \
+   mv -f /deploy/$DB/VA-0.01 /deploy/$DB/VA-0.01.pre && \
+   mv /deploy/$DB/VA-0.01.next/VA-0.01 /deploy/$DB/VA-0.01 && \
+   rm -rf /deploy/$DB/VA-0.01.next && \
+   chown -R www-data:www-data /deploy/$DB/VA-0.01
+   exit $?
+fi
+
+source /home/peebles/perl5/perlbrew/etc/bashrc
+export PATH=$PERLBREW_ROOT/perls/perl-5.16.0/bin:/usr/local/bin:$PATH
+
+rm -rf dist
+mkdir dist
+cd dist
+tar zxf $TDIR/VA-0.01.tar.gz
+cd VA-0.01
+perl Makefile.PL --defaultdeps
+PERL_MM_USE_DEFAULT=1 make installdeps_notest
