@@ -20,7 +20,7 @@ if [ "$USER" == "root" ]; then
    exit $?
 fi
 
-source /home/peebles/perl5/perlbrew/etc/bashrc
+source /home/ubuntu/perl5/perlbrew/etc/bashrc
 export PATH=$PERLBREW_ROOT/perls/perl-5.16.0/bin:/usr/local/bin:$PATH
 
 rm -rf dist
