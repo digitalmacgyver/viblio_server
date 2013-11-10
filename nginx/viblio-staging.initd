@@ -54,6 +54,38 @@ if [ -n "$LOCALLIB" ] ; then
     eval `perl -I"$LOCALLIB/lib/perl5" -Mlocal::lib="$LOCALLIB"`
 fi
 
+## S O F T W A R E  U P G R A D E ##
+
+INSTALLER=/usr/local/bin/check-and-install-software.pl
+
+_check_viblio() {
+    if [ -x $INSTALLER ]; then
+	$INSTALLER -db $VA_CONFIG_LOCAL_SUFFIX -app viblio-server $*
+    else
+	return 0
+    fi
+}
+
+_check_webgui() {
+    if [ -x $INSTALLER ]; then
+	$INSTALLER -db $VA_CONFIG_LOCAL_SUFFIX -app webgui $*
+    else
+	return 0
+    fi
+}
+
+check_and_install() {
+    _check_viblio -check -quiet || ( _stop && _start && /etc/init.d/mq-$VA_CONFIG_LOCAL_SUFFIX restart)
+    _check_webgui -check -quiet || /etc/init.d/nginx restart
+}
+
+check_sw() {
+    _check_viblio -check $*
+    _check_webgui -check $*
+}
+
+####################################
+
 check_running() {
     [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE) >/dev/null 2>&1
 }
@@ -63,6 +95,8 @@ check_compile() {
 }
 
 _start() {
+    _check_viblio -quiet
+    _check_webgui -quiet
     start-stop-daemon --start --pidfile $PIDFILE --chdir $APPDIR \
     ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP --background \
     --startas $APPDIR/script/${UNIXNAME}_fastcgi.pl -- \
@@ -125,11 +159,20 @@ case "$1" in
     restart|force-reload)
         restart
         ;;
-    check|check-compile)
+    check-compile)
         check_compile
         ;;
+    check)
+        check_sw
+        ;;
+    check_quiet)
+        check_sw -quiet
+        ;;
+    check_and_install)
+        check_and_install
+        ;;
     *)
-        echo $"Usage: $0 {start|stop|restart|check}"
+        echo $"Usage: $0 {start|stop|restart|check|check_quiet|check_and_install}"
         exit 1
 esac
 exit $?
