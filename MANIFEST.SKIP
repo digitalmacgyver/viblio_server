@@ -24,13 +24,18 @@ cookie-jar.txt
 VA-0.01.tar.gz
 
 # Node servers get their own dist
-^node/fd/node_modules
-^node/fu/node_modules
+^node/fd/
+^node/fu/
 ^node/mq/node_modules
-^node/fs/node_modules
+^node/fs/
+^node/faces/
+
+^node-v0.8.19.tar.gz
+^node.tar.gz
+^node/node-v0.8.19.tar.gz
 
 ^ffmpeg/
-^nginx-src/nginx-1.2.6/
+^nginx-src/
 
 ^ssl/
 ^notes/
