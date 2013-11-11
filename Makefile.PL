@@ -87,4 +87,14 @@ catalyst;
 
 install_script glob('script/*.pl');
 auto_install;
+
+Makefile->postamble(qq{
+LVL?=staging
+package:
+	tar zcf package.tar.gz VA-0.01.tar.gz runme
+
+bump:
+	upgrade.pl -db \$(LVL) -app viblio-server -bump -f package.tar.gz
+});
+
 WriteAll;

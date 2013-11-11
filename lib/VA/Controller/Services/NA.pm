@@ -943,6 +943,7 @@ sub workorder_done :Private {
 	# We'd like to distinguish between iOS clients and web clients so
 	# we only deliver the message once.  How?
 	my $res = $c->model( 'MQ' )->post( '/enqueue', { uid => $uuid,
+							 type => 'new_wo',
 							 wo  => $wo } );
 	if ( $res->code != 200 ) {
 	    $c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
@@ -993,7 +994,11 @@ sub mediafile_create :Local {
 
     ### FOR NOW, LIMIT ANY EMAILS TO THE FIRST FEW VIDEOS UPLOADED
     ### TO THE ACCOUNT
-    if ( $user->media->count < 4 ) {
+    my $rs = $user->media->search({
+	-or => [ status => 'TranscodeComplete',
+		 status => 'FaceDetectComplete',
+		 status => 'FaceRecognizeComplete' ] });
+    if ( $rs->count < 4 ) {
 
 	if ( $user->profile->setting( 'email_notifications' ) &&
 	     $user->profile->setting( 'email_upload' ) ) {
@@ -1037,6 +1042,7 @@ sub mediafile_create :Local {
     # Send message queue notification
     #
     my $res = $c->model( 'MQ' )->post( '/enqueue', { uid => $uid,
+						     type => 'new_video',
 						     media  => $mf } );
     if ( $res->code != 200 ) {
 	$c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
@@ -1164,6 +1170,7 @@ been shared.
 sub media_shared :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
+    my $preview = $c->req->param( 'preview' );
 
     # Is caller logged in?
     my $user = $c->user;
@@ -1176,6 +1183,7 @@ sub media_shared :Local {
     # If the user is logged in and its their video, show it
     if ( $user && $mediafile->user_id == $user->id ) {
 	# They own it
+	$c->log->debug( "SHARE: OWNED BY USER" );
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
 	$self->status_ok( $c, { share_type => "owned_by_user", 
 				media => $mf } );
@@ -1196,29 +1204,48 @@ sub media_shared :Local {
     # possible values: private, hidden, public
     my $OK = 0;
 
-    if ( $is->{public} || $is->{hidden} ) {
+    # A media file can have multiple shares.  If it has both hidden/public
+    # and private, the hidden/public view will take precidence.  But if the
+    # use is logged in, we can look a bit closer to see if this is a private
+    # share specifically targetted to him, and show a private view.
+    if ( $is->{private} && $user ) {
+	my $share = $mediafile->media_shares->find({ 
+	    share_type => 'private', 
+	    user_id => $user->id });
+	if ( $share ) {
+	    $share->view_count( $share->view_count + 1 ) unless( $preview );
+	    $share->update;
+	    $share_type = "private";
+	    $OK = 1;
+	    $c->log->debug( "SHARE: PRIVATE AND USER LOGGED IN" );
+	}
+    }
+
+    if ( $OK == 0 && ($is->{public} || $is->{hidden}) ) {
 	my $found = 'public';
 	if ( $is->{hidden} ) {
 	    $found = 'hidden';
 	}
+	$c->log->debug( "SHARE: $found" ); 
 	# In this case, we do not know how they got here.  If it has a hidden
 	# share, then we care more about this method for tracking.  
 	my $share = $mediafile->media_shares->find({ share_type => $found });
 	if ( $share ) {
-	    $share->view_count( $share->view_count + 1 );
+	    $share->view_count( $share->view_count + 1 ) unless( $preview );
 	    $share->update;
 	}
 	$share_type = $found;
 	$OK = 1;
     }
-    elsif ( $is->{private} ) {
+    elsif ( $OK == 0 && $is->{private} ) {
 	$share_type = "private";
+	$c->log->debug( "SHARE: $share_type" ); 
 	if ( $user ) {
 	    my $share = $mediafile->media_shares->find({ 
 		share_type => 'private', 
 		user_id => $user->id });
 	    if ( $share ) {
-		$share->view_count( $share->view_count + 1 );
+		$share->view_count( $share->view_count + 1 ) unless( $preview );
 		$share->update;
 		$OK = 1;
 	    }
@@ -1233,7 +1260,7 @@ sub media_shared :Local {
 
     if ( $OK ) {
 	# increment the view count
-	$mediafile->view_count( $mediafile->view_count + 1 );
+	$mediafile->view_count( $mediafile->view_count + 1 ) unless( $preview );
 	$mediafile->update;
 
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
@@ -1271,6 +1298,8 @@ sub valid_email :Local {
 sub find_share_info_for_pending :Local {
     my( $self, $c ) = @_;
     my $email = $c->req->param( 'email' );
+    my $test  = $c->req->param( 'test' );
+
     # find pending user
     my @pending = $c->model( 'RDS::User' )->search({displayname => $email,
 						    provider_id => 'pending' });
@@ -1289,6 +1318,14 @@ sub find_share_info_for_pending :Local {
 		media => VA::MediaFile->publish( $c, $mediafile ),
 		owner => $owner->TO_JSON });
 	}
+    }
+
+    ## TEST ##
+    if ( $test ) {
+	$self->status_ok( $c, {
+	    owner => $c->model( 'RDS::User' )->find({ email => 'aqpeeb@gmail.com' })->TO_JSON,
+	    media => VA::MediaFile->publish( $c, $c->model( 'RDS::User' )->find({ email => 'aqpeeb@gmail.com' })->media->first ),
+	});
     }
 
     $self->status_ok( $c, {} );
@@ -1353,6 +1390,130 @@ sub download_trayapp :Local {
 	$c->res->body( 'Not found' );
 	$c->detach;
     }
+}
+
+# Uses View::Thumbnail to return profile photos.
+#
+sub avatar :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+	( $c,
+	  [ uid  => undef,
+	    zoom => undef,
+	    'x'  => '-',
+	    'y'  => 90  ],
+	  @_ );
+  
+    my $uid  = $args->{uid};
+    my $zoom = $args->{zoom};
+    my $x    = $args->{x};
+    my $y    = $args->{y};
+
+    if ( $x && $x eq '-' ) {
+	undef $x;
+    }
+
+    my $user;
+    if ( $uid && $uid eq '-' && $c->user ) {
+	$user = $c->user->obj;
+    }
+    elsif ( $uid ) {
+	$user = $c->model( 'RDS::User' )->find({ uuid => $uid });
+    }
+
+    my $photo;
+    if ( $user ) {
+	$photo = $user->profile->image;
+    }
+
+    if ( $photo ) {
+	$c->stash->{image} = $photo;
+	$c->stash->{zoom} = $zoom if ( $zoom );
+    }
+    else {
+	my @colors = ('red', 'green', 'yellow', 'purple' );
+	my $color  = $colors[ int( rand( 3 ) ) ];
+	$c->stash->{image} = $c->model( 'File' )->slurp( "nopic-" . $color . "-90.png" );
+    }
+
+    $c->stash->{y} = $y if ( $y );
+    $c->stash->{x} = $x if ( $x );
+    $c->stash->{current_view} = 'Thumbnail';
+}
+
+=head2 /services/na/media_comments
+
+Unauthenticated endpoint to get comments associated with the media file
+passed in as mid.  Needed for the web_player page.
+
+=cut
+
+sub media_comments :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    unless( $mid ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
+    }
+    my $mf = $c->model( 'RDS::Media' )->find({uuid=>$mid});
+    unless( $mf ) {
+	$self->status_bad_request
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+    }
+    my @comments = $mf->comments->search({},{prefetch=>'user', order_by=>'me.created_date desc'});
+    my @data = ();
+    foreach my $comment ( @comments ) {
+	my $hash = $comment->TO_JSON;
+	if ( $comment->user_id ) {
+	    $hash->{who} = $comment->user->displayname;
+	}
+	push( @data, $hash );
+    }
+    $self->status_ok( $c, { comments => \@data } );
+}
+
+sub faces_in_mediafile :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $m = $c->model( 'RDS::Media' )->find({uuid=>$mid});
+    unless( $m ) {
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc( 'Unable to find mediafile for [_1]', $mid ) );
+    }
+    my @feat = $c->model( 'RDS::MediaAssetFeature' )
+	->search({'me.media_id'=>$m->id,
+		  'contact.id' => { '!=', undef },
+		  'me.feature_type'=>'face'},
+		 {prefetch=>['contact','media_asset'],
+		  group_by=>['contact.id']
+		 });
+    my @data = ();
+    foreach my $feat ( @feat ) {
+	my $klass = $c->config->{mediafile}->{$feat->media_asset->location};
+	my $fp = new $klass;
+	my $url = $fp->uri2url( $c, $feat->media_asset->uri );
+	my $hash = {
+	  url => $url,
+	  appears_in => 1,
+	};
+	if ( $feat->contact_id ) {
+	    $hash->{contact} = $feat->contact->TO_JSON;
+	}
+	push( @data, $hash );
+    }
+    $self->status_ok( $c, { faces => \@data } );
+}
+
+sub geo_loc :Local {
+    my( $self, $c ) = @_;
+    my $lat = $c->req->param( 'lat' );
+    my $lng = $c->req->param( 'lng' );
+
+    my $latlng = "$lat,$lng";
+    my $res = $c->model( 'GoogleMap' )->get( "/maps/api/geocode/json?latlng=$latlng&sensor=true" );
+
+    $self->status_ok( $c, $res->data->{results} );
 }
 
 __PACKAGE__->meta->make_immutable;

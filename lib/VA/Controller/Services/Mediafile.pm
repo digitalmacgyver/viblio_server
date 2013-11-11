@@ -272,15 +272,15 @@ sub list :Local {
       ( $c,
         [ page => undef,
           rows => 10,
-	  type => undef,
 	  include_contact_info => 0,
         ],
         @_ );
 
-    my $where = undef;
-    if ( $args->{type} ) {
-	$where = { type => $args->{type} };
-    }
+    my $where = {
+	-or => [ status => 'TranscodeComplete',
+		 status => 'FaceDetectComplete',
+		 status => 'FaceRecognizeComplete' ]
+    };
 
     if ( $args->{page} ) {
 	my $rs = $c->user->media
@@ -382,26 +382,7 @@ sub set_title_description :Local {
 
 sub comments :Local {
     my( $self, $c ) = @_;
-    my $mid = $c->req->param( 'mid' );
-    unless( $mid ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
-    }
-    my $mf = $c->model( 'RDS::Media' )->find({uuid=>$mid});
-    unless( $mf ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
-    }
-    my @comments = $mf->comments->search({},{prefetch=>'user', order_by=>'me.created_date desc'});
-    my @data = ();
-    foreach my $comment ( @comments ) {
-	my $hash = $comment->TO_JSON;
-	if ( $comment->user_id ) {
-	    $hash->{who} = $comment->user->displayname;
-	}
-	push( @data, $hash );
-    }
-    $self->status_ok( $c, { comments => \@data } );
+    $c->forward( '/services/na/media_comments' );
 }
 
 sub sanitize :Private {
@@ -458,6 +439,16 @@ sub add_comment :Local {
 
     my $hash = $comment->TO_JSON;
     $hash->{who} = $comment->user->displayname;
+
+    # Send emails and notifications (but not to myself!)
+    if ( $c->user->id != $mf->user->id ) {
+	my $published_mf = VA::MediaFile->new->publish( $c, $mf );
+	my $res = $c->model( 'MQ' )->post( '/enqueue', 
+					   { uid => $mf->user->uuid,
+					     type => 'new_comment',
+					     user => $c->user->obj->TO_JSON,
+					     media  => $published_mf } );
+    }
 
     $self->status_ok( $c, { comment => $hash } );
 }
@@ -640,14 +631,23 @@ sub count :Local {
     my( $self, $c ) = @_;
     my $uid = $c->req->param( 'uid' );
     my $count = 0;
+
+    my $where = {
+	-or => [ status => 'TranscodeComplete',
+		 status => 'FaceDetectComplete',
+		 status => 'FaceRecognizeComplete' ]
+    };
+
     if ( $uid ) {
 	my $user = $c->model( 'RDS::User' )->find({uuid => $uid });
 	if ( $user ) {
-	    $count = $user->media->count;
+	    my $rs = $user->media->search($where);
+	    $count = $rs->count;
 	}
     }
     else {
-	$count = $c->user->media->count;
+	my $rs = $c->user->media->search($where);
+	$count = $rs->count;
     }
     $self->status_ok( $c, { count => $count } );
 }

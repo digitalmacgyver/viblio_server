@@ -1,0 +1,72 @@
+vpc-71633119 - Production VPC
+gateway: igw-7563311d
+route tables:
+  default: 10.0.0.0/24 - 10.0.0.0/16 (local) 0.0.0.0/0 (igw)
+           10.0.1.0/24 - 10.0.0.0/16 (local) 0.0.0.0/0 (igw)
+	   10.0.2.0/24 - 10.0.0.0/16 (local) 0.0.0.0/0 (igw)
+
+	   10.0.3.0/24 - 10.0.0.0/16 (local) 0.0.0.0/0 (nat)
+	   10.0.4.0/24 - 10.0.0.0/16 (local) 0.0.0.0/0 (nat) 
+	   10.0.5.0/24 - 10.0.0.0/16 (local) 0.0.0.0/0 (nat)
+subnets:
+  10.0.0.0/24 public  us-west-2a
+  10.0.1.0/24 public  us-west-2b
+  10.0.2.0/24 public  us-west-2c
+
+  10.0.3.0/24 private us-west-2a
+  10.0.4.0/24 private us-west-2b
+  10.0.5.0/24 private us-west-2c
+
+security groups:
+  uploader-elb-sg  sg-af2f25cd
+  frontend-sg      sg-8e2f25ec
+  NAT-sg           sg-c82e24aa
+  video-db         sg-7626c419
+  *upload          sg-6210f30d 
+  *cat-server      sg-1f12fe70 
+  vpc-internal-ssh sg-2e000b4c
+
+NAT for machines on private subnets: vpc-nat (NAT-sg)
+Uploader - ELB for upload servers; uploader.viblio.com (Uploader-473687461.us-west-2.elb.amazonaws.com)
+
+---------------------------------------------------------------------------
+For auto-scaling upload servers:
+
+(a) Create launch config
+    - use uploader ami template
+    - medium size machines
+    - security group webserver-sg
+  $ aws autoscaling create-launch-configuration \
+    	--launch-configuration-name uploader-lc \
+	--image-id ami-e8ad35d8 --instance-type m1.medium \
+	--associate-public-ip-address \
+	--security-groups sg-8e2f25ec
+
+(b) Create autoscaling group (THE LOAD BALANCER MUST ALREADY EXIST)
+    - in the public subnet, in the west-2a region
+  $ aws autoscaling create-auto-scaling-group \
+    	--auto-scaling-group-name uploader-grp \
+	--launch-configuration-name uploader-lc \
+	--min-size 0 --max-size 6 --desired-capacity 2 \
+	--vpc-zone-identifier "subnet-7663311e,subnet-4356772b,subnet-f0b5e0b6" \
+	--load-balancer-names Uploader
+
+(c) aws autoscaling describe-auto-scaling-groups
+    aws autoscaling describe-auto-scaling-instances
+
+
+(deleting)
+
+aws autoscaling describe-auto-scaling-groups
+===
+aws autoscaling terminate-instance-in-auto-scaling-group \
+    --should-decrement-desired-capacity \
+    --instance-id xxx
+or
+aws --output table autoscaling update-auto-scaling-group \
+    --auto-scaling-group-name uploader-grp --min-size 0 --max-size 0
+===
+aws --output table autoscaling delete-auto-scaling-group \
+    --auto-scaling-group-name uploader-grp
+aws --output table autoscaling  delete-launch-configuration \
+    --launch-configuration-name uploader-lc
