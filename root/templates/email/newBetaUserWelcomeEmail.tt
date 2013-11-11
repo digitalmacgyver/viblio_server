@@ -3,13 +3,14 @@
 %]
 
     <div class='bottomBorder-Thin paddedDiv regSize darkText'>
+        <img align="none" alt="ViblioShare" height="291" src="[% c.server %]/css/images/viblioEmail/share.png" style="width: 490px; height: 291px;" width="490" /><br />
         <span class="largeText">Hi [% model.user.displayname %],</span>
         <br />
         <br />
         <span>My name is Mona Sabet and I'm a co-founder of Viblio.  I want to personally thank you for agreeing to try out Viblio's beta service.  The Viblio team is committed to delivering an awesome personal video platform to you and we look forward to hearing your thoughts on our beta product.</span>
         <br />
         <br />
-        <span>Viblio's private beta will launch in November, 2013.  To make sure each of our users gets the best experience, we are limiting the number of new users we add to our platform at a time.  You'll receive a follow on email when your reserved spot hits the top of the registration list.</span>
+        <span>Viblio's private beta launches on November 18, 2013.  To make sure each of our users gets the best experience, we are limiting the number of new users we add to our platform at a time.  You'll receive a follow on email when your reserved spot hits the top of the registration list.</span>
         <br />
         <br />
         <span>Once you get the launch invitation, you'll be able to start <strong>uploading</strong> your videos.  We'll keep them in a <strong>secure</strong> cloud location where you'll be able to easily <strong>browse</strong> through your videos using our automated tagging and organizing features.  And you can <strong>share</strong> any video you upload with specific people in your family or community.</span>
