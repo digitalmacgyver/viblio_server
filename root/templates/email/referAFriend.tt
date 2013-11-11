@@ -1,0 +1,33 @@
+[% INCLUDE email/top.tt 
+    previewText = "Your friend wants you to try Viblio"
+%]
+    <div class="regSize darkText">
+        [%- META no_wrapper = 1 -%]
+        <span>Congratulations!</span>
+        <span>Your friend [% from.displayname %] wants to help you collect, organize and share your videos easily from one private location. 
+        With Viblio, by creating your own Viblio account, you’ll be able to do that, AND you and [% from.displayname %] will be able to share
+         the videos you want to share with each other privately through Viblio.
+        </span>
+        <br />
+        <br />
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+            <tbody>
+                <tr>
+                    <td width="500" style="width:500px;">
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                            <tbody>
+                                <tr>
+                                    <td class="button" width="164" height="33" align="center" style="width:164px;">
+                                        <a class="noUnderline" href="[% url %]"><b><span class="buttonSpan">Sign Up for Viblio now &raquo;</span></b></a>
+                                    </td>
+                                    <td width="350" style="width:350px;"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+[% INCLUDE email/bottom.tt %]                                                        
