@@ -1,13 +1,15 @@
 [% INCLUDE email/top.tt 
     previewText = "Your friend wants you to try Viblio"
 %]
-    <div class="regSize darkText">
+    <div class="regSize darkText" style="text-align: left;">
         [%- META no_wrapper = 1 -%]
         <span class="largeText">Congratulations!</span>
         <br />
         <br />
-        <span>Your friend [% from.displayname %] wants to help you collect, organize and share your videos easily from one private location. 
-        With Viblio, by creating your own Viblio account, you'll be able to do that, AND you and [% from.displayname %] will be able to share
+        <span>Your friend [% from.displayname %] wants to help you collect, organize and share your videos easily from one private location.</span>
+        <br />
+        <br /> 
+        <span>By creating your own Viblio account, you'll be able to do that, AND you and [% from.displayname %] will be able to share
          the videos you want to share with each other privately through Viblio.
         </span>
         <br />
