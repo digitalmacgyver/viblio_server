@@ -562,7 +562,7 @@ sub new_user :Local {
 	    inline_css => 1,
 	};
 	$c->stash->{no_wrapper} = 1;
-	$c->stash->{url} = $c->server . 'services/na/account_confirm?uuid=' . $user->uuid;
+	$c->stash->{url} = $c->server . '#confirmed?uuid=' . $user->uuid;
 
 	$headers->{html} = $c->view( 'HTML' )->render( $c, 'email/newUserConfirmEmail.tt' );
 	my $res = $c->model( 'Mandrill' )->send( $headers );
