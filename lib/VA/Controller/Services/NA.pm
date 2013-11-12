@@ -631,7 +631,7 @@ sub account_confirm :Local {
 	$c->logdump( $headers );
     }
 
-    $self->status_ok( $c, { user => $c->user->obj } );
+    $self->status_ok( $c, { user => $user } );
 }
 
 =head2 /services/na/forgot_password_request
