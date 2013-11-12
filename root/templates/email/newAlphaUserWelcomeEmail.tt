@@ -2,7 +2,7 @@
     previewText = "Thank you for registering for Viblio's beta launch."
 %]
 
-    <div class='bottomBorder-Thin paddedDiv regSize darkText'>
+    <div class='bottomBorder-Thin paddedDiv regSize darkText' style="text-align: left;">
         <span class="largeText">Hi [% model.user.displayname %],</span>
         <br />
         <br />
