@@ -29,7 +29,7 @@
         <br />
         <span>Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.</span>
     </div>
-    <div class='signatureDiv regSize darkText'>
+    <div class='signatureDiv regSize darkText' style="text-align: left;">
         <span>Thanks for being part of the Viblio community!</span>
         <br />
         <br />
