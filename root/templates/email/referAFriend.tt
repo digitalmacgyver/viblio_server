@@ -3,9 +3,11 @@
 %]
     <div class="regSize darkText">
         [%- META no_wrapper = 1 -%]
-        <span>Congratulations!</span>
+        <span class="largeText">Congratulations!</span>
+        <br />
+        <br />
         <span>Your friend [% from.displayname %] wants to help you collect, organize and share your videos easily from one private location. 
-        With Viblio, by creating your own Viblio account, you’ll be able to do that, AND you and [% from.displayname %] will be able to share
+        With Viblio, by creating your own Viblio account, you'll be able to do that, AND you and [% from.displayname %] will be able to share
          the videos you want to share with each other privately through Viblio.
         </span>
         <br />
@@ -17,10 +19,10 @@
                         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
                             <tbody>
                                 <tr>
-                                    <td class="button" width="164" height="33" align="center" style="width:164px;">
+                                    <td class="button" width="255" height="33" align="center" style="width:255px;">
                                         <a class="noUnderline" href="[% url %]"><b><span class="buttonSpan">Sign Up for Viblio now &raquo;</span></b></a>
                                     </td>
-                                    <td width="350" style="width:350px;"></td>
+                                    <td width="245" style="width:245px;"></td>
                                 </tr>
                             </tbody>
                         </table>
