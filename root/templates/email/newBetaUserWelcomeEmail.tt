@@ -2,7 +2,7 @@
     previewText = "Thank you for registering for Viblio's beta launch."
 %]
 
-    <div class='bottomBorder-Thin paddedDiv regSize darkText'>
+    <div class='bottomBorder-Thin paddedDiv regSize darkText' style="text-align: left;">
         <img align="none" alt="ViblioShare" height="291" src="[% c.server %]/css/images/viblioEmail/share.png" style="width: 490px; height: 291px;" width="490" /><br />
         <span class="largeText">Hi [% model.user.displayname %],</span>
         <br />
@@ -21,7 +21,7 @@
         <br />
         <span>Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.</span>
     </div>
-    <div class='signatureDiv regSize darkText'>
+    <div class='signatureDiv regSize darkText' style="text-align: left;">
         <span>Welcome to the Viblio community!</span>
         <br />
         <br />
