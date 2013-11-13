@@ -13,7 +13,7 @@
 
 . /lib/lsb/init-functions
 
-PATH=/usr/bin:/bin:/sbin
+PATH=$PATH:/sbin
 
 APPNAME=VA
 APPDIR=/deploy/prod/viblio-server
