@@ -92,17 +92,17 @@ and account link information.
 
 sub profile :Local {
     my( $self, $c ) = @_;
-    my @fields = $c->user->profile->fields;
-    my @links = $c->user->links;
+    my @fields = $c->user->obj->profile->fields;
+    my @links = $c->user->obj->links;
     my @link_data = ();
     foreach my $link ( @links ) {
 	push( @link_data, { provider => $link->provider,
 			    link => $link->data->{link} } );
     }
     my $data = {
-	uid => $c->user->uuid,
-	email => $c->user->email,
-	displayname => $c->user->displayname,
+	uid => $c->user->obj->uuid,
+	email => $c->user->obj->email,
+	displayname => $c->user->obj->displayname,
 	fields => \@fields,
 	links => \@link_data,
     };
@@ -111,9 +111,9 @@ sub profile :Local {
 
 sub change_profile :Local {
     my( $self, $c ) = @_;
-    my $profile = $c->user->profile;
+    my $profile = $c->user->obj->profile;
     unless( $profile ) {
-	$c->log->error( "change_profile(): Unable to obtain a profile for user: " . $c->user->uuid );
+	$c->log->error( "change_profile(): Unable to obtain a profile for user: " . $c->user->obj->uuid );
 	$self->status_bad_request
 	    ( $c, 
 	      $c->loc( "Unable to obtain your profile!" ) );
@@ -188,11 +188,11 @@ sub link_facebook_account :Local {
 	    ( $c, 
 	      $c->loc("Unable to establish a link to Facebook at this time.") );
     }
-    $c->user->update_or_create_related
+    $c->user->obj->update_or_create_related
 	( 'links', {
 	    provider => 'facebook',
 	  });
-    my $link = $c->user->links->find({provider => 'facebook'});
+    my $link = $c->user->obj->links->find({provider => 'facebook'});
     $link->data({
 	link => $fb_user->{link},
 	access_token => $token,
@@ -232,7 +232,7 @@ sub link_facebook_account :Local {
 
 sub unlink_facebook_account :Local {
     my( $self, $c ) = @_;
-    my $link = $c->user->links->find({provider => 'facebook'});
+    my $link = $c->user->obj->links->find({provider => 'facebook'});
     if ( $link ) {
 	if ( $c->session->{fb_token} ) {
 	    delete $c->session->{fb_token};
@@ -240,7 +240,7 @@ sub unlink_facebook_account :Local {
 
 	# Call popeye with access_token, so popeye can fetch facebook data
 	my $res = $c->model( 'Popeye' )->get( '/processor/unfacebook',
-					      { uid => $c->user->uuid,
+					      { uid => $c->user->obj->uuid,
 						id => $link->data->{id},
 						access_token => $link->data->{access_token} } );
 	if ( $res->code != 200 ) {
@@ -250,7 +250,7 @@ sub unlink_facebook_account :Local {
 	    $c->log->error( "Popeye post returned error: " . $res->data->message );
 	}
 
-	$c->user->delete_related
+	$c->user->obj->delete_related
 	    ( 'links', {
 		provider => 'facebook',
 	      });
@@ -441,14 +441,14 @@ sub add_or_replace_profile_photo :Local {
 #
 sub original :Local {
     my( $self, $c ) = @_;
-    my $photo = $c->user->profile->image;
+    my $photo = $c->user->obj->profile->image;
 
     unless( $photo ) {
 	$self->status_bad_request( $c, $c->loc("no photo available") );
     }
 
-    my $type = $c->user->profile->image_mimetype;
-    my $len  = $c->user->profile->image_size;
+    my $type = $c->user->obj->profile->image_mimetype;
+    my $len  = $c->user->obj->profile->image_size;
 
     $c->res->body( "Content-type: $type\015\012\015\012" );
 
@@ -521,8 +521,8 @@ the terms of use document.
 sub accept_terms :Local {
     my( $self, $c ) = @_;
 
-    $c->user->accepted_terms( 1 );
-    $c->user->update;
+    $c->user->obj->accepted_terms( 1 );
+    $c->user->obj->update;
     $self->status_ok( $c, {} );
 }
 
@@ -580,7 +580,7 @@ sub change_password :Local {
     $c->user->obj->password( $password ); 
     $c->user->obj->update;
 
-    if ($c->authenticate({ email    => $c->user->email,
+    if ($c->authenticate({ email    => $c->user->obj->email,
 			   password => $password }, 'db' )) {
 	$self->status_ok( $c, { user => $c->user->obj } );
     }
@@ -612,8 +612,8 @@ sub tell_a_friend :Local {
 	$c->stash->{url} = $c->server;
 	$c->stash->{email} =
 	{ subject    => $c->loc( "Invitation to join Viblio" ),
-	  from_email => $c->user->email,
-	  from_name  => $c->user->displayname,
+	  from_email => $c->user->obj->email,
+	  from_name  => $c->user->obj->displayname,
 	  to => [{
 	      email => $recip}],
 	  headers => {
