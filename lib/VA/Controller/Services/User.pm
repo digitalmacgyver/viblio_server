@@ -200,20 +200,6 @@ sub link_facebook_account :Local {
     $link->update; 
     $c->session->{fb_token} = $token;
     
-    # Call popeye with access_token, so popeye can fetch facebook data
-=perl
-    my $res = $c->model( 'Popeye' )->get( '/processor/facebook',
-					  { uid => $c->user->uuid,
-					    id => $fb_user->{id},
-					    access_token => $token } );
-    if ( $res->code != 200 ) {
-	$c->log->error( "Popeye post returned error code: " . $res->code );
-    }
-    if ( $res->data->{error} ) {
-	$c->log->error( "Popeye post returned error: " . $res->data->message );
-    }
-=cut
-
     # Send a facebook link message to the Amazon SQS queue
     try {
 	my $sqs_response = $c->model( 'SQS', $c->config->{sqs}->{facebook_link} )
@@ -234,30 +220,15 @@ sub unlink_facebook_account :Local {
     my( $self, $c ) = @_;
     my $link = $c->user->obj->links->find({provider => 'facebook'});
     if ( $link ) {
+	# DO SQS CALL !??!?!?!?!
 	if ( $c->session->{fb_token} ) {
 	    delete $c->session->{fb_token};
 	}
-
-	# Call popeye with access_token, so popeye can fetch facebook data
-	my $res = $c->model( 'Popeye' )->get( '/processor/unfacebook',
-					      { uid => $c->user->obj->uuid,
-						id => $link->data->{id},
-						access_token => $link->data->{access_token} } );
-	if ( $res->code != 200 ) {
-	    $c->log->error( "Popeye post returned error code: " . $res->code );
-	}
-	if ( $res->data->{error} ) {
-	    $c->log->error( "Popeye post returned error: " . $res->data->message );
-	}
-
 	$c->user->obj->delete_related
 	    ( 'links', {
 		provider => 'facebook',
 	      });
     }
-
-    # Call popeye, let him know the facebook link is terminated
-
     $self->status_ok( $c, {} );
 }
 
