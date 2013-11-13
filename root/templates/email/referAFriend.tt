@@ -6,7 +6,12 @@
         <span class="largeText">Congratulations!</span>
         <br />
         <br />
-        <span>Your friend [% from.displayname %] wants to help you collect, organize and share your videos easily from one private location.</span>
+        <span>Your friend [% from.displayname %] wants to help you collect, organize and share your videos easily from one private location. See their private message below:</span>
+        <br />
+        <br />
+        <span>
+            "[% message %]"
+        </span>
         <br />
         <br /> 
         <span>By creating your own Viblio account, you'll be able to do that, AND you and [% from.displayname %] will be able to share
