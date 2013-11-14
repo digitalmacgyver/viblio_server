@@ -593,7 +593,7 @@ sub tell_a_friend :Local {
 	  inline_css => 1,
 	};
 	$c->stash->{user} = $user;
-	$c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/tellAFriend.tt' );
+	$c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/referAFriend.tt' );
 
 	my $res = $c->model( 'Mandrill' )->send( $c->stash->{email} );
 	if ( $res && $res->{status} && $res->{status} eq 'error' ) {

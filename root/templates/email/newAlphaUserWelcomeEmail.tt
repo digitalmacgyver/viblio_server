@@ -21,7 +21,7 @@
                 <img style="width: 50%; display: block" src="[% c.server %]/css/images/viblioEmail/dropdown.png" alt="Dropdown menu feedback"></img>
             </li>
         </ol>
-        <span>START BY <a href="[% c.server %]#getApp" class="tomato"><strong><span class="tomato">DOWNLOADING THE VIBLIO APP HERE</span></strong></a>.</span>
+        <span>START BY <a href="[% c.server %]#getApp?from=new_alpha_user_email" class="tomato"><strong><span class="tomato">DOWNLOADING THE VIBLIO APP HERE</span></strong></a>.</span>
         <br />
         <br />
         <span>The Viblio team is committed to delivering an awesome personal video platform to you and we look forward to hearing your thoughts on this alpha.</span>

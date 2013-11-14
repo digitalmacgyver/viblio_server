@@ -28,7 +28,7 @@
         <span>To maintain the privacy of this video, <a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> </span>
         <br />
         <br />
-        <span>If you don't already have an account, create your own password at the page from the link above, or better yet, <a class="tomato" href="[% c.server %]#getApp"><span class="tomato">DOWNLOAD</span></a> YOUR OWN VIBLIO FINDER SO THAT YOU CAN CREATE YOUR OWN VIBLIO LIBRARY.</span>
+        <span>If you don't already have an account, create your own password at the page from the link above, or better yet, <a class="tomato" href="[% c.server %]#getApp?from=share_email"><span class="tomato">DOWNLOAD</span></a> YOUR OWN VIBLIO FINDER SO THAT YOU CAN CREATE YOUR OWN VIBLIO LIBRARY.</span>
         <br />
         <br 
         <span>Either way, you'll then be able to access and watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span>
