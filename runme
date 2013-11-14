@@ -12,7 +12,7 @@ if [ "$UNAME" == "root" ]; then
    sudo -u ubuntu APP=$APP DB=$DB TDIR=`pwd` -i "`pwd`/runme" && \
    mkdir -p /deploy/$DB/VA-0.01.next && \
    tar zxf VA-0.01.tar.gz -C /deploy/$DB/VA-0.01.next && \
-   ( cd /deploy/$DB/VA-0.01.next/VA-0.01 && ./script/node-install.sh ) && \
+   ( cd /deploy/$DB/VA-0.01.next/VA-0.01 && ./script/node-install.sh /deploy/$DB/VA-0.01/node/mq) && \
    rm -rf /deploy/$DB/VA-0.01.pre && \
    mv -f /deploy/$DB/VA-0.01 /deploy/$DB/VA-0.01.pre && \
    mv /deploy/$DB/VA-0.01.next/VA-0.01 /deploy/$DB/VA-0.01 && \
