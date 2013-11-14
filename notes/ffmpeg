@@ -1,0 +1,27 @@
+Building
+
+These instructions are based on the article found here.
+First, edit /etc/apt/sources.list and uncomment the "multiverse" repos. You should have:
+ deb http://us-west-2.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+ deb-src http://us-west-2.ec2.archive.ubuntu.com/ubuntu/ precise multiverse
+ deb http://us-west-2.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+ deb-src http://us-west-2.ec2.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+There is a "ffmpeg" subdir under the viblio-server root.
+sudo apt-get update
+sudo apt-get remove ffmpeg x264 libav-tools libvpx-dev libx264-dev yasm
+sudo apt-get -y install autoconf automake build-essential checkinstall git \
+   libass-dev libfaac-dev libgpac-dev libmp3lame-dev libopencore-amrnb-dev \
+   libopencore-amrwb-dev librtmp-dev libspeex-dev \
+   libtheora-dev libtool libvorbis-dev pkg-config texi2html zlib1g-dev
+sudo sh ./build.sh
+[edit]Generating Images from Video
+
+See this article.
+Example:
+ ffmpeg -i test-video.mov -s qvga -f image2 -vf fps=1 o/o%03d.png
+This produces dramtically smaller image sizes:
+ ffmpeg -i test-video.mov -s qvga -qscale:v 5 -f image2 -vf fps=1 o/o%03d.jpeg
+The "-s qvga" generates 320x240 sized output images. See this article for possible sizes to use.
+[edit]Optimizing for Web Playback
+
+qt-faststart: This is a useful tool if you're showing your H.264 in MP4 videos on the web. It relocates some data in the video to allow playback to begin before the file is completely downloaded. Usage: qt-faststart input.mp4 output.mp4. When converting files with ffmpeg you can add -movflags faststart to have the same effect.

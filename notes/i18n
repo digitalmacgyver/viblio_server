@@ -1,0 +1,13 @@
+System Dependency:
+ apt-get install gettext
+Generating .pot and .po from source:
+ /usr/local/bin/xgettext.pl --output=lib/VA/I18N/en.pot --directory=lib/
+ msginit --input=lib/VA/I18N/en.pot --output=lib/VA/I18N/en.po --locale=en
+ msginit --input=lib/VA/I18N/en.pot --output=lib/VA/I18N/sv.po --locale=sv
+Lots of help:
+ http://search.cpan.org/~bobtfish/Catalyst-Plugin-I18N-0.10/lib/Catalyst/Plugin/I18N/Manual.pod
+
+
+   # Language.  If passed as a param (locale=en), use it and store it in the
+   # session.  Else if in the session, use it.  Else use c->get_locale
+   # to guess it.
