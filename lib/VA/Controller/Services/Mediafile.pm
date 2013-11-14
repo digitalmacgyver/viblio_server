@@ -441,13 +441,63 @@ sub add_comment :Local {
     $hash->{who} = $comment->user->displayname;
 
     # Send emails and notifications (but not to myself!)
+
+    # Who should get email/notofications?  The owner of the video being commented on,
+    # and everybody who has been shared this video.  The logged in user
+    # making the comment should never get an email.
+
+    my $published_mf = VA::MediaFile->new->publish( $c, $mf );
+    $DB::single = 1;
     if ( $c->user->id != $mf->user->id ) {
-	my $published_mf = VA::MediaFile->new->publish( $c, $mf );
 	my $res = $c->model( 'MQ' )->post( '/enqueue', 
 					   { uid => $mf->user->uuid,
 					     type => 'new_comment',
 					     user => $c->user->obj->TO_JSON,
 					     media  => $published_mf } );
+
+	if ( $mf->user->profile->setting( 'email_notifications' ) &&
+	     $mf->user->profile->setting( 'email_comment' ) ) {
+	    $self->send_email( $c, {
+		subject => $c->loc( 'Someone has commented on one of your videos.' ),
+		to => [{ email => $mf->user->email,
+			 name  => $mf->user->displayname }],
+		template => 'email/commentsOnYourVid.tt',
+		stash => {
+		    from => $c->user->obj,
+		    commentText => $comment->comment,
+		    model => {
+			media => $published_mf 
+		    }
+		} });
+	}
+    }
+
+    # Now see if the mediafile has private shares, and send email to those
+    # people
+    #
+    my @shares = $mf->media_shares->search({ share_type => 'private', user_id => { '!=', undef }});
+    foreach my $share ( @shares ) {
+	next if ( $share->user->id == $c->user->id );
+	my $res = $c->model( 'MQ' )->post( '/enqueue', 
+					   { uid => $share->user->uuid,
+					     type => 'new_comment',
+					     user => $c->user->obj->TO_JSON,
+					     media  => $published_mf } );
+	if ( $share->user->profile->setting( 'email_notifications' ) &&
+	     $share->user->profile->setting( 'email_comment' ) ) {
+	    $self->send_email( $c, {
+		subject => $c->loc( 'Someone has commented on a video shared with you.' ),
+		to => [{ email => $share->user->email,
+			 name  => $share->user->displayname }],
+		template => 'email/commentsOnVidSharedWYou.tt',
+		stash => {
+		    from => $c->user->obj,
+		    commentText => $comment->comment,
+		    model => {
+			media => $published_mf 
+		    }
+		} });
+	}
     }
 
     $self->status_ok( $c, { comment => $hash } );
