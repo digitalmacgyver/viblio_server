@@ -7,7 +7,7 @@
         <br />
         <br />
         <span>
-            "[% body %]"
+            "[% message %]"
         </span>
         <br />
         <br />

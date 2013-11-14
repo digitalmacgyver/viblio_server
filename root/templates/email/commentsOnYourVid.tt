@@ -1,0 +1,26 @@
+[% INCLUDE email/top.tt 
+    previewText = "Someone has commented on your video!"
+%]
+    <div class="regSize darkText" style="text-align: left;">
+        <span>[% from.displayname %] commented on your video.</span>
+        
+        <div class="line centered"></div>
+
+        <span>[% model.media.0.title %]</span>
+        <br />
+        <br />
+        <a class="noUnderline" href='[% c.server %]#new_player?mid=[% model.media.0.uuid %]'>
+            <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+        </a>
+
+        <div class="line centered"></div>
+
+        <span>Comment:</span>
+        <br />
+        <span style="text-align: center;"><em>[% commentText %]</em></span>
+        <br />
+        <br />
+        <span><a class="tomato" href='[% c.server %]#new_player?mid=[% model.media.0.uuid %]'><span class="tomato">See the comment</span></a> in your Viblio library and comment back.
+    </div>
+    
+[% INCLUDE email/bottom.tt %]                                                        
