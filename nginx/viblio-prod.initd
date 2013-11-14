@@ -77,13 +77,13 @@ _check_webgui() {
 }
 
 check_and_install() {
-    _check_viblio -check -quiet || ( _stop && _start && /etc/init.d/mq-$VA_CONFIG_LOCAL_SUFFIX restart)
-    _check_webgui -check -quiet || /etc/init.d/nginx restart
+    _check_viblio -quiet || ( _stop && _start && /etc/init.d/mq-$VA_CONFIG_LOCAL_SUFFIX restart)
+    _check_webgui -quiet || /etc/init.d/nginx restart
 }
 
 check_sw() {
-    _check_viblio -check $*
-    _check_webgui -check $*
+    _check_viblio $*
+    _check_webgui $*
 }
 
 ####################################
@@ -165,10 +165,10 @@ case "$1" in
         check_compile
         ;;
     check)
-        check_sw
+        check_sw -check
         ;;
     check_quiet)
-        check_sw -quiet
+        check_sw -check -quiet
         ;;
     check_and_install)
         check_and_install

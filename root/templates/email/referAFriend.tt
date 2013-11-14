@@ -27,7 +27,7 @@
                             <tbody>
                                 <tr>
                                     <td class="button" width="255" height="33" align="center" style="width:255px;">
-                                        <a class="noUnderline" href="[% url %]"><b><span class="buttonSpan">Sign Up for Viblio now &raquo;</span></b></a>
+                                        <a class="noUnderline" href="[% c.server %]signup?from=referral"><b><span class="buttonSpan">Sign Up for Viblio now &raquo;</span></b></a>
                                     </td>
                                     <td width="245" style="width:245px;"></td>
                                 </tr>

@@ -327,6 +327,48 @@ sub endpoints :Local {
     $self->status_ok( $c, { endpoints => \@methods } );
 }
 
+# Common way to send Mandril emails
+# Example:
+#
+#  $self->send_email( $c, {
+#    subject => $c->loc( 'Someone has commented on one of your videos.' ),
+#    to => [{ email => $mf->user->email,
+#	      name  => $mf->user->displayname }],
+#    template => 'email/commentsOnYourVid.tt',
+#    stash => {
+#	from => $c->user->obj,
+#	commentText => $comment->comment,
+#	model => {
+#	    media => $published_mf 
+#	}
+#    } });
+#
+sub send_email :Local {
+    my( $self, $c, $opts ) = @_;
+    my $headers = {
+	subject => $opts->{subject} || 'No Subject',
+	from_email => 'reply@' . $c->config->{viblio_return_email_domain},
+	from_name => 'Viblio',
+	to => $opts->{to},
+	headers => {
+	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+	},
+	inline_css => 1,
+    };
+    $c->stash->{no_wrapper} = 1;
+    foreach my $key ( keys( %{$opts->{stash}} ) ) {
+	$c->stash->{$key} = $opts->{stash}->{$key};
+    }
+    $headers->{html} = $c->view( 'HTML' )->render( $c, $opts->{template} );
+    my $res = $c->model( 'Mandrill' )->send( $headers );
+    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+	$c->log->error( "Error using Mailchimp to send" );
+	$c->logdump( $res );
+	$c->logdump( $headers );
+    }
+    return ( $res && $res->{status} && $res->{status} eq 'error' );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

@@ -1,6 +1,0 @@
-[%- META no_wrapper = 1 -%]
-[% from %] says,
-<p>
-  [% message %]
-</p>
-<a href="[% url %]">Go to Viblio</a>

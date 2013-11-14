@@ -48,7 +48,7 @@
             </tbody>
         </table>
         <br />
-        If you haven't downloaded our Viblio Video Finder yet, <a class="tomato" href="[% c.server %]#getApp" ><span class="tomato">let's get you started!</span></a>
+        If you haven't downloaded our Viblio Video Finder yet, <a class="tomato" href="[% c.server %]#getApp?from=account_creation_email" ><span class="tomato">let's get you started!</span></a>
         <br />
         <br />
     </div>
