@@ -47,7 +47,7 @@ For auto-scaling upload servers:
   $ aws autoscaling create-auto-scaling-group \
     	--auto-scaling-group-name uploader-grp \
 	--launch-configuration-name uploader-lc \
-	--min-size 0 --max-size 6 --desired-capacity 2 \
+	--min-size 2 --max-size 6 --desired-capacity 2 \
 	--vpc-zone-identifier "subnet-7663311e,subnet-4356772b,subnet-f0b5e0b6" \
 	--load-balancer-names Uploader
 
