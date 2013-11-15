@@ -70,3 +70,64 @@ aws --output table autoscaling delete-auto-scaling-group \
     --auto-scaling-group-name uploader-grp
 aws --output table autoscaling  delete-launch-configuration \
     --launch-configuration-name uploader-lc
+-----------------------------------------------------------------------------
+Dynamic Scaling
+
+Add a policy, get an "arn".  Add a cloudwatch alarm using the arn.
+
+* Scaling Up
+(http://docs.aws.amazon.com/AutoScaling/latest/DeveloperGuide/as-scale-based-on-demand.html)
+
+aws autoscaling put-scaling-policy --policy-name uploader-sp-up \
+	--auto-scaling-group-name uploader-grp \
+	--adjustment-type ChangeInCapacity \
+	--scaling-adjustment 1
+{
+    "PolicyARN": "arn:aws:autoscaling:us-west-2:442359467480:scalingPolicy:a001e3ea-a021-4408-b9c2-cc2edcde1f4c:autoScalingGroupName/uploader-grp:policyName/uploader-sp-up"
+}
+
+* Scaling Down
+aws autoscaling put-scaling-policy --policy-name uploader-sp-down \
+	--auto-scaling-group-name uploader-grp \
+	--adjustment-type ChangeInCapacity \
+	--scaling-adjustment -1
+{
+    "PolicyARN": "arn:aws:autoscaling:us-west-2:442359467480:scalingPolicy:aafcff06-1f95-46c2-b9bc-a828034946f9:autoScalingGroupName/uploader-grp:policyName/uploader-sp-down"
+}
+
+The cloudwatch alarms
+---------------------
+Example: if cpu goes above 80%, or network in above 800Mbs, scale up.
+    	 if cpu goes below 60%, or network in below 200Mbs, scale down.
+
+Possible metrics available: 
+aws --output text cloudwatch list-metrics \
+	--no-paginate --namespace AWS/EC2|grep ^MET | awk '{print $2}'|sort|uniq
+
+Need to gather (example)
+Alarm name 			= AddCapacity
+Metric name 		= CPUUtilization
+Namespace 			= "AWS/EC2"
+Statistic 			= Average
+Period 				= 120
+Threshold 			= 80
+Comparison operator = GreaterThanOrEqualToThreshold
+Dimensions 			= "AutoScalingGroupName=my-test-asg"
+Evaluation periods 	= 2
+Alarm action 		= arn:aws:autoscaling:us-east-1:123456789012:scalingPolicy:ac542982-cbeb-4294-891c-a5a941dfa787:autoScalingGroupName/ my-test-asg:policyName/my-scaleout-policy
+
+aws cloudwatch put-metric-alarm --alarm-name AddUploadCapacity \
+	--metric-name CPUUtilization --namespace AWS/EC2 \
+	--statistic Average --period 120 --threshold 80 \
+	--comparison-operator GreaterThanOrEqualToThreshold \
+	--evaluation-periods 2 \
+	--alarm-actions "arn:aws:autoscaling:us-west-2:442359467480:scalingPolicy:a001e3ea-a021-4408-b9c2-cc2edcde1f4c:autoScalingGroupName/uploader-grp:policyName/uploader-sp-up"
+
+aws cloudwatch put-metric-alarm --alarm-name RemoveUploadCapacity \
+	--metric-name CPUUtilization --namespace AWS/EC2 \
+	--statistic Average --period 120 --threshold 60 \
+	--comparison-operator LessThanOrEqualToThreshold \
+	--evaluation-periods 2 \
+	--alarm-actions "arn:aws:autoscaling:us-west-2:442359467480:scalingPolicy:aafcff06-1f95-46c2-b9bc-a828034946f9:autoScalingGroupName/uploader-grp:policyName/uploader-sp-down"
+
+                    
