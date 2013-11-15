@@ -118,6 +118,7 @@ Alarm action 		= arn:aws:autoscaling:us-east-1:123456789012:scalingPolicy:ac5429
 
 aws cloudwatch put-metric-alarm --alarm-name AddUploadCapacity \
 	--metric-name CPUUtilization --namespace AWS/EC2 \
+	--dimensions Name=AutoScalingGroupName,Value=uploader-grp \
 	--statistic Average --period 120 --threshold 80 \
 	--comparison-operator GreaterThanOrEqualToThreshold \
 	--evaluation-periods 2 \
@@ -125,6 +126,7 @@ aws cloudwatch put-metric-alarm --alarm-name AddUploadCapacity \
 
 aws cloudwatch put-metric-alarm --alarm-name RemoveUploadCapacity \
 	--metric-name CPUUtilization --namespace AWS/EC2 \
+	--dimensions Name=AutoScalingGroupName,Value=uploader-grp \
 	--statistic Average --period 120 --threshold 60 \
 	--comparison-operator LessThanOrEqualToThreshold \
 	--evaluation-periods 2 \
