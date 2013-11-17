@@ -90,6 +90,10 @@ my $where = {
 	] };
 
 foreach my $user ( @users ) {
+    unless ( $user->profile->setting( 'email_notifications' ) && $user->profile->setting( 'email_upload' ) ) {
+	print sprintf( "%-30s %s\n", $user->email, "does not want email" ) if ( $report );
+	next;
+    }
     my $total = $user->media->count({
 	-or => [ status => 'TranscodeComplete',
 		 status => 'FaceDetectComplete',
