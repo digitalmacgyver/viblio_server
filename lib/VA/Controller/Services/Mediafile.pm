@@ -447,7 +447,6 @@ sub add_comment :Local {
     # making the comment should never get an email.
 
     my $published_mf = VA::MediaFile->new->publish( $c, $mf );
-    $DB::single = 1;
     if ( $c->user->id != $mf->user->id ) {
 	my $res = $c->model( 'MQ' )->post( '/enqueue', 
 					   { uid => $mf->user->uuid,

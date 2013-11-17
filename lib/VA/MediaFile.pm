@@ -117,7 +117,11 @@ sub publish {
 	    $fp->uri2url( $c, $view_json, $params );
 
 	# If this is a video, also generate a cloudfront url
-	my $mimetype = MIME::Types->new()->mimeTypeOf( $view_json->{uri} );
+	my $mimetype = MIME::Types->new()->mimeTypeOf( $view_json->{uri} ) || $view_json->{mimetype};
+	unless( $mimetype ) {
+	    $mimetype="unknown";
+	    $c->log->error( "Could not determine mimetype for $view_json->{uuid}" );
+	}
 	if ( $mimetype =~ /^video/ ) {
 	    $view_json->{cf_url} = $c->cf_sign( $view_json->{uri}, {
 		stream => 1,

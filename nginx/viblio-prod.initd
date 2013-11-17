@@ -88,6 +88,10 @@ check_sw() {
 
 ####################################
 
+_upload_activity_report() {
+    ( cd $APPDIR; ./script/video-uploaded-emails.pl $* )
+}
+
 check_running() {
     [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE) >/dev/null 2>&1
 }
@@ -173,6 +177,18 @@ case "$1" in
     check_and_install)
         check_and_install
         ;;
+    send_daily_upload_emails)
+	_upload_activity_report --days-ago 1
+	;;
+    send_weekly_upload_emails)
+	_upload_activity_report --days-ago 7
+	;;
+    report_daily_upload_emails)
+	_upload_activity_report --days-ago 1 --report
+	;;
+    report_weekly_upload_emails)
+	_upload_activity_report --days-ago 7 --report
+	;;
     *)
         echo $"Usage: $0 {start|stop|restart|check|check_quiet|check_and_install}"
         exit 1
