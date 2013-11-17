@@ -9,6 +9,7 @@ Model::Mandrill:
 # amazon sqs queues
 sqs:
   facebook_link: arn:aws:sqs:us-west-2:442359467480:user_fb_link
+  new_account_creation: arn:aws:sqs:us-west-2:442359467480:new_account_creation_staging
 
 authentication:
   default_realm: facebook

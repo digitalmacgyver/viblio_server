@@ -546,6 +546,16 @@ sub new_user :Local {
 	    $pending_user->delete;
 	    $pending_user->update;
 	}
+	# Send a SQS message for this new account creation
+	try {
+	    $c->log->debug( 'Sending SQS message for new account' );
+	    my $sqs = $c->model( 'SQS', $c->config->{sqs}->{new_account_creation} )
+		->SendMessage( to_json({
+		    user_uuid => $user->uuid,
+		    action => 'welcome_video' }) );
+	} catch {
+	    $c->log->error( "Failed to send welcome_video SQS message: $_" );
+	};
 
 	# And finally, send them a nice welcome email
 	#
