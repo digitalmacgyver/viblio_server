@@ -701,6 +701,68 @@ sub count :Local {
     $self->status_ok( $c, { count => $count } );
 }
 
+=head2 /services/mediafile/all_shared
+
+Return a struct that contains all media shared to this user.  
+
+=cut
+
+sub all_shared :Local {
+    my( $self, $c ) = @_;
+    my $user = $c->user->obj;
+
+    my @shares = $user->media_shares->search( {},{prefetch=>{ media => 'user'}} );
+    
+    # partition this into an array of users, each with an array of videos they've
+    # shared with you.
+
+    my $users = {};
+    foreach my $share ( @shares ) {
+	my $owner = $share->media->user->displayname;
+	if ( ! defined( $users->{ $owner } ) ) {
+	    $users->{ $owner } = [];
+	}
+	push( @{$users->{ $owner }}, $share->media );
+    }
+    my @sorted_user_keys = sort{ lc( $a ) cmp lc( $b ) } keys( %$users );
+    my @data = ();
+    foreach my $key ( @sorted_user_keys ) {
+	my @media = map { VA::MediaFile->publish( $c, $_ ) } sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }};
+	push( @data, {
+	    owner => $users->{ $key }[0]->user->TO_JSON,
+	    media => \@media
+	      });
+    }
+    
+    $self->status_ok( $c, { shared => \@data } );
+}
+
+=head2 /services/mediafile/delete_share
+
+Delete a private share
+
+=cut
+
+sub delete_share :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    unless( $mid ) {
+	$self->status_bad_request( $c, $c->loc( 'Missing param [_1]', 'mid' ) );
+    }
+    my $user = $c->user->obj;
+    my $media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
+    unless( $media ) {
+	$self->status_ok( $c, { deleted => [] } );
+    }
+    my @shares = $media->media_shares->search({ user_id => $user->id });
+    my @deleted = ();
+    foreach my $share ( @shares ) {
+	push( @deleted, $share->media->uuid );
+	$share->delete; $share->update;
+    }
+    $self->status_ok( $c, { deleted => \@deleted } );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
