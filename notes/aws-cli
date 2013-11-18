@@ -1,0 +1,27 @@
+1 Setup
+http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-set-up.html
+
+$ sudo easy_install pip
+  or
+$ sudo apt-get install python-pip
+  or
+$ sudo yum install python-pip
+  then
+$sudo pip install awscli
+
+2. Configure
+http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
+
+$ cat ~/.aws/config
+[default]
+aws_access_key_id = AKIAJBIQPTWOULGJSABQ
+aws_secret_access_key = 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
+region = us-west-2
+
+To enable tab completion for bash, use the built-in command complete:
+
+$ complete -C aws_completer aws
+(need to put in .bashrc if you dont want to do this every session!)
+
+3. Command Referenc:
+http://docs.aws.amazon.com/cli/latest/reference/

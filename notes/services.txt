@@ -1,6 +1,6 @@
 Mixpanel:    admin@viblio.com / @5YP3028SP7nzN6l
-Mandrill:    admin@viblio.com / fgXrBHAMdi2Rqr6CUse
-CloudSponge: admin@viblio.com / fgXrBHAMdi2Rqr6CUse
+Mandrill:    admin@viblio.com / MuDReV3wena2
+CloudSponge: admin@viblio.com / THezeCru5hEcufEb
 Rekognition: admin@viblio.com / 4F16400P1711
 Loggly:      viblio / 578M2cAVyaN&UVRl
 Google GA:   (andrew's google creds) https://www.google.com/analytics/web

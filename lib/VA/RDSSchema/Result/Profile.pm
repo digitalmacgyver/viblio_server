@@ -185,7 +185,7 @@ __PACKAGE__->has_many(
 
 sub setting {
     my( $self, $name ) = @_;
-    my $field = $self->find_related( 'fields', { name => $name } );
+    my $field = $self->fields->find({ name => $name });
     return undef unless( $field );
     my $value = $field->value;
     return 1 if ( $value && ( $value eq 'true' || $value eq 'True' || $value eq '1' ) );
