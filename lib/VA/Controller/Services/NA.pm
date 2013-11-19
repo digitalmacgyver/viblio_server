@@ -1227,7 +1227,6 @@ sub media_shared :Local {
 	    $share->update;
 	    $share_type = "private";
 	    $OK = 1;
-	    $c->log->debug( "SHARE: PRIVATE AND USER LOGGED IN" );
 	}
     }
 
@@ -1236,7 +1235,6 @@ sub media_shared :Local {
 	if ( $is->{hidden} ) {
 	    $found = 'hidden';
 	}
-	$c->log->debug( "SHARE: $found" ); 
 	# In this case, we do not know how they got here.  If it has a hidden
 	# share, then we care more about this method for tracking.  
 	my $share = $mediafile->media_shares->find({ share_type => $found });
@@ -1244,12 +1242,22 @@ sub media_shared :Local {
 	    $share->view_count( $share->view_count + 1 ) unless( $preview );
 	    $share->update;
 	}
+
+	# NEW CODE.  So that public/hidden shares visited by a logged in viblio
+	# user will be remembered and shown on the user's SHARE page, add a hidden
+	# share with this user's id
+	if ( $user ) {
+	    $mediafile->find_or_create_related( 'media_shares', { 
+		user_id => $user->id,
+		share_type => 'hidden',
+		view_count => 0 });
+	}
+
 	$share_type = $found;
 	$OK = 1;
     }
     elsif ( $OK == 0 && $is->{private} ) {
 	$share_type = "private";
-	$c->log->debug( "SHARE: $share_type" ); 
 	if ( $user ) {
 	    my $share = $mediafile->media_shares->find({ 
 		share_type => 'private', 

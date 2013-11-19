@@ -577,30 +577,15 @@ sub tell_a_friend :Local {
     my @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
 
     foreach my $recip ( @clean ) {
-	$c->stash->{no_wrapper} = 1;
-	$c->stash->{message} = $message;
-	$c->stash->{from} = $user->displayname;
-	$c->stash->{url} = $c->server;
-	$c->stash->{email} =
-	{ subject    => $c->loc( "Invitation to join Viblio" ),
-	  from_email => $c->user->obj->email,
-	  from_name  => $c->user->obj->displayname,
-	  to => [{
-	      email => $recip}],
-	  headers => {
-	      'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-	  },
-	  inline_css => 1,
-	};
-	$c->stash->{user} = $user;
-	$c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/referAFriend.tt' );
-
-	my $res = $c->model( 'Mandrill' )->send( $c->stash->{email} );
-	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	    $c->log->error( "Error using Mailchimp to send" );
-	    $c->logdump( $res );
-	    $c->logdump( $c->stash->{email} );
-	}
+	$self->send_email( $c, {
+	    subject    => $c->loc( "Invitation to join Viblio" ),
+	    to => [{
+		email => $recip}],
+	    template => 'email/referAFriend.tt',
+	    stash => {
+		from => $user,
+		message => $message,
+	    } });
     }
 
     $self->status_ok( $c, {} );
