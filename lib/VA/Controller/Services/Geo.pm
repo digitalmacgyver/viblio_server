@@ -25,6 +25,7 @@ sub all :Local {
 	    lng => $lng,
 	    uuid => $asset->media->uuid,
 	    title => $asset->media->title,
+	    view_count => $asset->media->view_count
 	};
 	my $klass = $c->config->{mediafile}->{$asset->location};
 	my $fp = new $klass;
