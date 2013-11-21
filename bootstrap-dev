@@ -2,7 +2,7 @@
 # sh bootstrap-server
 sudo apt-get install build-essential
 sudo apt-get install \
-  mysql-server \
+  pkg-config \
   mysql-client \
   git \
   curl \
@@ -22,7 +22,7 @@ curl -L http://xrl.us/installperlnix | bash
 
 # Catalyst
 source ~/.bashrc
-cpanm Catalyst::Devel
+cpanm Catalyst::Devel --notest
 
 # Perl debugger command line editting
 cpanm Term::ReadLine::Gnu
