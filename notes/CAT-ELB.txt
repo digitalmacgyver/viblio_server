@@ -1,0 +1,30 @@
+aws autoscaling create-launch-configuration \
+    	--launch-configuration-name cat-lc \
+	--image-id ami-eef862de --instance-type m1.medium \
+	--associate-public-ip-address \
+	--security-groups sg-b0c4d2d2
+
+aws autoscaling create-auto-scaling-group \
+    	--auto-scaling-group-name cat-grp \
+	--launch-configuration-name cat-lc \
+	--min-size 2 --max-size 6 --desired-capacity 2 \
+	--vpc-zone-identifier "subnet-7663311e,subnet-4356772b,subnet-f0b5e0b6" \
+	--load-balancer-names CAT
+
+SECURITY GROUPS
+
+video-db:	  sg-7626c419 
+frontend-sg: 	  sg-8e2f25ec *
+default: 	  sg-8311f2ec 
+cat-server: 	  sg-1f12fe70 *
+uploader-elb-sg:  sg-af2f25cd 
+NAT-sg: 	  sg-c82e24aa 
+vpc-internal-ssh: sg-2e000b4c *
+upload: 	  sg-6210f30d *
+cat-elb-sg: 	  sg-c2c4d2a0
+cat-sg: 	  sg-b0c4d2d2 *
+redis-sg: 	  sg-61dbcd03
+
+(*) can send mysql to database
+
+redis port: 6379
