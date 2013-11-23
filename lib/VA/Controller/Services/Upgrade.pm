@@ -44,7 +44,7 @@ sub check :Local {
 	    my $key = join( '/', @parts );
 
 	    $hash->{url} = 
-		new VA::MediaFile::US()->uri2url( $c, $key, { bucket => $bucket } );
+		new VA::MediaFile::US()->uri2url( $c, $key, { bucket => $bucket , use_s3 => 1 } );
 	}
 
 	$self->status_ok( $c, $hash );
