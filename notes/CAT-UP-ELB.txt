@@ -1,0 +1,73 @@
+Catalyst ELB
+---------------------------------------------------------------
+
+AMI: "cat-lb"
+SG:  cat-sg
+
+aws autoscaling create-launch-configuration \
+    --launch-configuration-name cat-lc \
+    --image-id ami-eef862de \
+    --instance-type m1.medium  \
+    --associate-public-ip-address \
+    --security-groups sg-b0c4d2d2
+
+aws autoscaling create-auto-scaling-group \
+        --auto-scaling-group-name cat-grp \
+        --launch-configuration-name cat-lc \
+        --min-size 2 --max-size 6 --desired-capacity 2 \
+        --vpc-zone-identifier "subnet-7663311e,subnet-4356772b,subnet-f0b5e0b6" \
+        --load-balancer-names CAT
+
+mq-redis servers run locally, access redis on "redis server".
+
+Upload ELB
+-------------------------------------------------------------
+
+AMI: "uploader3"
+SG:  up-sg
+
+aws autoscaling create-launch-configuration \
+    --launch-configuration-name up-lc \
+    --image-id ami-42af3472 --instance-type m1.medium  \
+    --associate-public-ip-address \
+    --security-groups sg-48e9ff2a
+
+aws autoscaling create-auto-scaling-group \
+        --auto-scaling-group-name up-grp \
+        --launch-configuration-name up-lc \
+        --min-size 2 --max-size 6 --desired-capacity 2 \
+        --vpc-zone-identifier "subnet-7663311e,subnet-4356772b,subnet-f0b5e0b6" \
+        --load-balancer-names UP
+
+** auto-scaling **
+
+aws autoscaling put-scaling-policy --policy-name up-sp-up \
+        --auto-scaling-group-name up-grp \
+        --adjustment-type ChangeInCapacity \
+        --scaling-adjustment 1
+( arn = )
+
+aws autoscaling put-scaling-policy --policy-name up-sp-down \
+        --auto-scaling-group-name up-grp \
+        --adjustment-type ChangeInCapacity \
+        --scaling-adjustment -1
+
+( arn = )
+
+aws cloudwatch put-metric-alarm --alarm-name AddUploadCapacity \
+        --metric-name CPUUtilization --namespace AWS/EC2 \
+        --dimensions Name=AutoScalingGroupName,Value=up-grp \
+        --statistic Average --period 120 --threshold 80 \
+        --comparison-operator GreaterThanOrEqualToThreshold \
+        --evaluation-periods 2 \
+        --alarm-actions "$UP_ARN"
+
+aws cloudwatch put-metric-alarm --alarm-name RemoveUploadCapacity \
+        --metric-name CPUUtilization --namespace AWS/EC2 \
+        --dimensions Name=AutoScalingGroupName,Value=up-grp \
+        --statistic Average --period 120 --threshold 60 \
+        --comparison-operator LessThanOrEqualToThreshold \
+        --evaluation-periods 2 \
+        --alarm-actions "$DOWN_ARN"
+
+

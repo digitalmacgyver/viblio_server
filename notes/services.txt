@@ -4,3 +4,4 @@ CloudSponge: admin@viblio.com / THezeCru5hEcufEb
 Rekognition: admin@viblio.com / 4F16400P1711
 Loggly:      viblio / 578M2cAVyaN&UVRl
 Google GA:   (andrew's google creds) https://www.google.com/analytics/web
+mapbox:      admin@viblio.com / j3TtvjIYjrN5Ro
