@@ -56,6 +56,43 @@ sub years :Local {
     $self->status_ok( $c, { years => \@data } );
 }
 
+# Return an array of months, from most to least recent, in which
+# there are recorded videos.
+#
+sub months :Local {
+    my( $self, $c ) = @_;
+    my $cid = $c->req->param( 'cid' );
+    my @dates = ();
+    if ( $cid ) {
+	my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
+	unless( $contact ) {
+	    $contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
+	}
+	if ( $contact ) {
+	    @dates = $self->dates_for_contact( $c, $contact->id );
+	}
+    }
+    else {
+	@dates = $self->dates_for_user($c);
+    }
+#    my $years = {};
+#    $years->{$_->recording_date->year} = 1 foreach( @dates );
+#    my @data = sort {$b <=> $a} keys( %$years );
+#    $self->status_ok( $c, { years => \@data } );
+
+    my @sorted = sort{ $b->recording_date->epoch <=> $a->recording_date->epoch } @dates;
+    my $bin = {};
+    my @uniq = ();
+    foreach my $mf ( @sorted ) {
+	my $label = $mf->recording_date->month_name . ' ' . $mf->recording_date->year;
+	if ( ! defined( $bin->{$label} ) ) {
+	    $bin->{$label} = 1;
+	    push( @uniq, $label );
+	}
+    }
+    $self->status_ok( $c, { months => \@uniq } );
+}
+
 sub posters_for_user :Private {
     my( $self, $c, $dtf, $from, $to ) = @_;
     # Do the query
@@ -168,6 +205,86 @@ sub videos_for_year :Local {
 	}
     }
     
+    $self->status_ok( $c, { media => \@data } );
+}
+
+# Return the list of videos taken in a particular month/year,
+# from most recent to least.
+#
+sub videos_for_month :Local {
+    my( $self, $c ) = @_;
+    my $month = $c->req->param( 'month' );
+    my $year  = $c->req->param( 'year' );
+    unless( $month ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Missing month parameter' ) );
+    }
+
+    unless( $year ) {
+	if ( $month =~ /(\S+)\s+(\d+)/ ) {
+	    $month = $1; $year = $2;
+	}
+    }
+    unless ( $year ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Missing year parameter' ) );
+    }
+
+    my @month_names = ( 'NA',
+			'January', 'Feburary', 'March',
+			'April', 'May', 'June',
+			'July', 'August', 'September',
+			'October', 'November', 'December' );
+
+    my $mo = 0;
+    for( $mo = 0; $mo <= $#month_names; $mo++ ) {
+	last if ( $month_names[$mo] eq $month );
+    }
+
+    # Create a from and to date to include all videos
+    # created during this period
+    #
+    my $from = DateTime->new(
+	year => $year,
+	month => $mo, day => 1, 
+	hour => 0, minute => 0 );
+
+    my $to = $from->clone;
+    $to->add( months => 1 )->subtract( days => 1 );
+
+    # This thing is a date formatter which will format DateTime
+    # dates properly for our database model.
+    my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+
+    my $cid = $c->req->param( 'cid' );
+    my @posters = ();
+    if ( $cid ) {
+	my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
+	unless( $contact ) {
+	    $contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
+	}
+	if ( $contact ) {
+	    @posters = $self->posters_for_contact( $c, $contact->id, $dtf, $from, $to );
+	}
+    }
+    else {
+	@posters = $self->posters_for_user( $c, $dtf, $from, $to );
+    }
+
+    # This creates a hash who's keys are month names and
+    # values are array of mediafiles created during this
+    # month.
+    #
+    my @data = ();
+    foreach my $poster ( @posters ) {
+	my $hash = $poster->media->TO_JSON;
+	my $klass = $c->config->{mediafile}->{$poster->location};
+	my $fp = new $klass;
+	my $url = $fp->uri2url( $c, $poster->uri );
+	$hash->{views}->{poster}->{url} = $url;
+	push( @data, $hash );
+    }
+
     $self->status_ok( $c, { media => \@data } );
 }
 
