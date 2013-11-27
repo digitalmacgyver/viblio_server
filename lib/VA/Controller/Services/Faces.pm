@@ -442,8 +442,12 @@ sub change_contact :Local {
 	$self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ));
     }
 
-    $contact->contact_name( $args->{contact_name} );
-    $contact->contact_email( $args->{contact_email} );
+    if ( $args->{contact_name} ) {
+	$contact->contact_name( $args->{contact_name} );
+    }
+    if ( $args->{contact_email} ) {
+	$contact->contact_email( $args->{contact_email} );
+    }
     if ( $args->{new_uri} ) {
 	$contact->picture_uri( $args->{new_uri} );
     }
