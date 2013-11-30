@@ -10,6 +10,9 @@ use namespace::autoclean;
 
 BEGIN { extends 'VA::Controller::Services' }
 
+# Short cut for notifying the backend recognition system of face
+# recognition events.
+#
 sub notify_recognition :Private {
     my( $self, $c, $message ) = @_;
     try {
@@ -581,7 +584,7 @@ sub delete_contact :Local {
     my @feats = $c->model( 'RDS::MediaAssetFeature' )->search({ contact_id => $contact->id });
     my @fids  = map { $_->id } @feats;
 
-    $self->notify_recognition({
+    $self->notify_recognition( $c, {
 	action => 'delete_contact',
 	user_id => $c->user->obj->id,
 	contact_id => $contact->id,
@@ -589,13 +592,17 @@ sub delete_contact :Local {
 
     if ( $contact->contact_name ) {
 	# This is a known contact
+	$contact->picture_uri( undef ); $contact->update;
+	foreach my $feat ( @feats ) {
+	    $feat->delete; $feat->update;
+	}
     }
     else {
 	# This is an unknown contact
 	$contact->delete; $contact->update;
     }
 
-    $c->status_ok( $c, {} );
+    $self->status_ok( $c, {} );
 }
 
 sub remove_false_positives :Local {
