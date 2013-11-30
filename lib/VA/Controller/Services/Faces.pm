@@ -619,6 +619,14 @@ sub remove_false_positives :Local {
 	my $asset = $feature->media_asset;
 	my $contact = $c->user->obj->create_related( 'contacts', {
 	    picture_uri => $asset->uri });
+
+	$self->notify_recognition( $c, {
+	    action => 'move_faces',
+	    user_id => $c->user->obj->id,
+	    old_contact => $feature->contact_id,
+	    new_contact => $contact->id,
+	    media_asset_feature_ids => [ $feature->id ] });
+
 	$feature->contact_id( $contact->id ); $feature->update();
     }
 
