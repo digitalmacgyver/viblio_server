@@ -574,6 +574,31 @@ sub avatar_for_name :Local {
     }
 }
 
+sub contact_for_name :Local {
+    my( $self, $c ) = @_;
+    my $contact_name = $c->req->param( 'contact_name' );
+    my @contacts = $c->user->contacts->search({ contact_name => $contact_name });
+    if ( $#contacts >= 0 ) {
+	my $contact = $contacts[0];
+
+	my $url;
+	if ( $contact->picture_uri ) {
+	    my $klass = $c->config->{mediafile}->{'us'};
+	    my $fp = new $klass;
+	    $url = $fp->uri2url( $c, $contact->picture_uri );
+	}
+	else {
+	    $url = '/css/images/nopic-green-36.png';
+	}
+	my $data = $contact->TO_JSON;
+	$data->{url} = $url;
+	$self->status_ok( $c, { contact => $data } );
+    }
+    else {
+	$self->status_ok( $c, {} );
+    }
+}
+
 sub delete_contact :Local {
     my( $self, $c ) = @_;
     my $cid = $c->req->param( 'cid' );
@@ -607,11 +632,17 @@ sub delete_contact :Local {
 
 sub remove_false_positives :Local {
     my( $self, $c ) = @_;
-    $DB::single = 1;
+
     my @ids = $c->req->param( 'ids[]' );
+    my $feature;
+
+    my $new_pic_uri;
+    my $main_contact;
+
+    my @ret = ();
 
     foreach my $id ( @ids ) {
-	my $feature = $c->model( 'RDS::MediaAssetFeature' )->find({id => $id, user_id => $c->user->obj->id});
+	$feature = $c->model( 'RDS::MediaAssetFeature' )->find({id => $id, user_id => $c->user->obj->id});
 	unless( $feature ) {
 	    $c->log->error( 'remove false positives: cannot find ' + $id + ' in media asset features' );
 	    next;
@@ -620,6 +651,11 @@ sub remove_false_positives :Local {
 	my $contact = $c->user->obj->create_related( 'contacts', {
 	    picture_uri => $asset->uri });
 
+	push( @ret, {
+	    id     => $id,
+	    c_id   => $contact->id,
+	    c_uuid => $contact->uuid } );
+
 	$self->notify_recognition( $c, {
 	    action => 'move_faces',
 	    user_id => $c->user->obj->id,
@@ -627,10 +663,45 @@ sub remove_false_positives :Local {
 	    new_contact => $contact->id,
 	    media_asset_feature_ids => [ $feature->id ] });
 
+	# If the picture of the face being removed is the one being used by
+	# this contact, then we have to change the contact picture if possible.
+	if ( $feature->contact->picture_uri eq $asset->uri ) {
+	    $main_contact = $feature->contact;
+	    my @features = $c->model( 'RDS::MediaAssetFeature' )->
+		search({ contact_id => $main_contact->id,
+			 feature_type => 'face',
+			 'me.user_id' => $c->user->id },
+		       { prefetch => 'media_asset' });
+	    my $found = 0;
+	    foreach my $f ( @features ) {
+		if ( $f->media_asset->uri ne $asset->uri ) {
+		    $main_contact->picture_uri( $f->media_asset->uri ); $main_contact->update;
+		    $new_pic_uri = $f->media_asset->uri;
+		    $found = 1;
+		    last;
+		}
+	    }
+	    unless( $found ) {
+		$main_contact->picture_uri( undef ); $main_contact->update;
+	    }
+	}
 	$feature->contact_id( $contact->id ); $feature->update();
     }
 
-    $self->status_ok( $c, {} );
+    my $url;
+    if ( $new_pic_uri ) {
+	my $klass = $c->config->{mediafile}->{'us'};
+	my $fp = new $klass;
+	$url = $fp->uri2url( $c, $new_pic_uri );
+    }
+    if ( $main_contact ) {
+	my $data = $main_contact->TO_JSON;
+	$data->{url} = $url;
+	$self->status_ok( $c, { contact => $data, newids => \@ret } );
+    }
+    else {
+	$self->status_ok( $c, { newids => \@ret } );
+    }
 }
 
 =head2 /services/faces/remove_from_video
