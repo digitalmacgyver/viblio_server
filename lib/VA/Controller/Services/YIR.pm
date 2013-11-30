@@ -75,10 +75,6 @@ sub months :Local {
     else {
 	@dates = $self->dates_for_user($c);
     }
-#    my $years = {};
-#    $years->{$_->recording_date->year} = 1 foreach( @dates );
-#    my @data = sort {$b <=> $a} keys( %$years );
-#    $self->status_ok( $c, { years => \@data } );
 
     my @sorted = sort{ $b->recording_date->epoch <=> $a->recording_date->epoch } @dates;
     my $bin = {};
@@ -94,39 +90,102 @@ sub months :Local {
 }
 
 sub posters_for_user :Private {
-    my( $self, $c, $dtf, $from, $to ) = @_;
+    my( $self, $c, $dtf, $from, $to, $page, $rows, $pager ) = @_;
     # Do the query
-    my @posters = $c->model( 'RDS::MediaAsset' )->
-	search({ 'me.asset_type' => 'poster',
-		 'me.user_id' => $c->user->id,
-		 'media.recording_date' => {
-		     -between => [
-			  $dtf->format_datetime( $from ),
-			  $dtf->format_datetime( $to )
-			 ]}},
-	       { prefetch => 'media',
-		 group_by => ['media.id'],
-		 order_by => 'media.recording_date desc' });
+    my @posters;
+    if ( ! defined( $page ) ) {
+	@posters = $c->model( 'RDS::MediaAsset' )->
+	    search({ 'me.asset_type' => 'poster',
+		     'me.user_id' => $c->user->id,
+		     'media.recording_date' => {
+			 -between => [
+			      $dtf->format_datetime( $from ),
+			      $dtf->format_datetime( $to )
+			     ]}},
+		   { prefetch => 'media',
+		     group_by => ['media.id'],
+		     order_by => 'media.recording_date desc' });
+    }
+    else {
+	my $rs = $c->model( 'RDS::MediaAsset' )->
+	    search({ 'me.asset_type' => 'poster',
+		     'me.user_id' => $c->user->id,
+		     'media.recording_date' => {
+			 -between => [
+			      $dtf->format_datetime( $from ),
+			      $dtf->format_datetime( $to )
+			     ]}},
+		   { prefetch => 'media',
+		     group_by => ['media.id'],
+		     order_by => 'media.recording_date desc',
+		     page => $page, rows => $rows });
+	@posters = $rs->all;
+	$$pager = {
+	    total_entries => $rs->pager->total_entries,
+	    entries_per_page => $rs->pager->entries_per_page,
+	    current_page => $rs->pager->current_page,
+	    entries_on_this_page => $rs->pager->entries_on_this_page,
+	    first_page => $rs->pager->first_page,
+	    last_page => $rs->pager->last_page,
+	    first => $rs->pager->first,
+	    'last' => $rs->pager->last,
+	    previous_page => $rs->pager->previous_page,
+	    next_page => $rs->pager->next_page,
+	};
+    }
 
     return @posters;
 }
 
 sub posters_for_contact :Private {
-    my( $self, $c, $cid, $dtf, $from, $to ) = @_;
-    my @features = $c->model( 'RDS::MediaAssetFeature' )
-	->search(
-	{ contact_id => $cid,
-	  'media.recording_date' => {
-	      -between => [
-		   $dtf->format_datetime( $from ),
-		   $dtf->format_datetime( $to )
+    my( $self, $c, $cid, $dtf, $from, $to, $page, $rows, $pager ) = @_;
+    my @features;
+    if ( ! defined( $page ) ) {
+	@features = $c->model( 'RDS::MediaAssetFeature' )
+	    ->search(
+	    { contact_id => $cid,
+	      'media.recording_date' => {
+		  -between => [
+		       $dtf->format_datetime( $from ),
+		       $dtf->format_datetime( $to )
 		  ]},
-	},
-	{ prefetch => { 'media_asset' => 'media' },
-	  group_by => ['media.id'],
-	  order_by => 'media.recording_date desc',
-	} );
+	    },
+	    { prefetch => { 'media_asset' => 'media' },
+	      group_by => ['media.id'],
+	      order_by => 'media.recording_date desc',
+	    } );
+    }
+    else {
+	my $rs = $c->model( 'RDS::MediaAssetFeature' )
+	    ->search(
+	    { contact_id => $cid,
+	      'media.recording_date' => {
+		  -between => [
+		       $dtf->format_datetime( $from ),
+		       $dtf->format_datetime( $to )
+		  ]},
+	    },
+	    { prefetch => { 'media_asset' => 'media' },
+	      group_by => ['media.id'],
+	      order_by => 'media.recording_date desc',
+	      page => $page, rows => $rows,
+	    } );
+	@features = $rs->all;
+	$$pager = {
+	    total_entries => $rs->pager->total_entries,
+	    entries_per_page => $rs->pager->entries_per_page,
+	    current_page => $rs->pager->current_page,
+	    entries_on_this_page => $rs->pager->entries_on_this_page,
+	    first_page => $rs->pager->first_page,
+	    last_page => $rs->pager->last_page,
+	    first => $rs->pager->first,
+	    'last' => $rs->pager->last,
+	    previous_page => $rs->pager->previous_page,
+	    next_page => $rs->pager->next_page,
+	};
+    }
     my @posters = map { $_->media_asset->media->assets->find({ asset_type => 'poster' }) } @features;
+    return @posters;
 }
 
 # Return the list of videos taken in a particular year,
@@ -215,6 +274,10 @@ sub videos_for_month :Local {
     my( $self, $c ) = @_;
     my $month = $c->req->param( 'month' );
     my $year  = $c->req->param( 'year' );
+
+    my $page  = $c->req->param( 'page' );
+    my $rows  = $c->req->param( 'rows' );
+
     unless( $month ) {
 	$self->status_bad_request(
 	    $c, $c->loc( 'Missing month parameter' ) );
@@ -258,17 +321,18 @@ sub videos_for_month :Local {
 
     my $cid = $c->req->param( 'cid' );
     my @posters = ();
+    my $pager = {};
     if ( $cid ) {
 	my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
 	unless( $contact ) {
 	    $contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
 	}
 	if ( $contact ) {
-	    @posters = $self->posters_for_contact( $c, $contact->id, $dtf, $from, $to );
+	    @posters = $self->posters_for_contact( $c, $contact->id, $dtf, $from, $to, $page, $rows, \$pager );
 	}
     }
     else {
-	@posters = $self->posters_for_user( $c, $dtf, $from, $to );
+	@posters = $self->posters_for_user( $c, $dtf, $from, $to, $page, $rows, \$pager );
     }
 
     # This creates a hash who's keys are month names and
@@ -285,7 +349,7 @@ sub videos_for_month :Local {
 	push( @data, $hash );
     }
 
-    $self->status_ok( $c, { media => \@data } );
+    $self->status_ok( $c, { media => \@data }, pager => $pager );
 }
 
 __PACKAGE__->meta->make_immutable;
