@@ -633,5 +633,78 @@ sub remove_false_positives :Local {
     $self->status_ok( $c, {} );
 }
 
+=head2 /services/faces/remove_from_video
+
+Remove a face from a single video.
+
+=cut
+
+sub remove_from_video :Local {
+    my( $self, $c ) = @_;
+    my $cid = $c->req->param( 'cid' );
+    my $mid = $c->req->param( 'mid' );
+    my $contact = $c->user->contacts->find({ uuid => $cid });
+    unless( $contact ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find contact for [_1]', $cid ) );
+    }
+    my $mediafile = $c->user->media->find({ uuid => $mid });
+    unless( $mediafile ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find media file for [_1]', $mid ) );
+    }
+
+    # Is this person in one video or multiple videos?
+    my @feats = $c->model( 'RDS::MediaAssetFeature' )
+	->search(
+	{ contact_id => $contact->id, 'me.user_id' => $c->user->obj->id},
+	{ prefetch => { 'media_asset' => 'media' } } );
+    my @fids  = map { $_->id } @feats;
+    my @mfeats = ();
+    my @others = ();
+    foreach my $feat ( @feats ) {
+	if ( $feat->media_asset->media->id != $mediafile->id ) {
+	    push( @others, $feat->media_asset->media );
+	}
+	else {
+	    push( @mfeats, $feat );
+	}
+    }
+
+    if ( $#others >= 0 ) {
+	# Face is in other videos besides this one
+	my @mfids = map { $_->id } @mfeats;
+	$self->notify_recognition( $c, {
+	    action => 'delete_faces_for_contact',
+	    user_id => $c->user->obj->id,
+	    contact_id => $contact->id,
+	    media_asset_feature_ids => \@mfids });
+	foreach my $feat ( @mfeats ) {
+	    $feat->delete; $feat->update;
+	}
+	# Change the contact picture to another in a different video
+	$contact->picture_uri( $others[0]->media_assets->first({ asset_type => 'face' })->uri );
+    }
+    else {
+	# Face is only in this video
+	$self->notify_recognition( $c, {
+	    action => 'delete_contact',
+	    user_id => $c->user->obj->id,
+	    contact_id => $contact->id,
+	    media_asset_feature_ids => \@fids });
+	
+	if ( $contact->contact_name ) {
+	    # This is a known contact
+	    $contact->picture_uri( undef ); $contact->update;
+	    foreach my $feat ( @feats ) {
+		$feat->delete; $feat->update;
+	    }
+	}
+	else {
+	    # This is an unknown contact
+	    $contact->delete; $contact->update;
+	}
+    }
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
