@@ -5,11 +5,11 @@ AMI: "cat-lb"
 SG:  cat-sg
 
 aws autoscaling create-launch-configuration \
-    --launch-configuration-name cat-lc \
-    --image-id ami-eef862de \
     --instance-type m1.medium  \
     --associate-public-ip-address \
-    --security-groups sg-b0c4d2d2
+    --security-groups sg-b0c4d2d2 \
+    --launch-configuration-name cat-lc \
+    --image-id ami-eef862de \
 
 aws autoscaling create-auto-scaling-group \
         --auto-scaling-group-name cat-grp \
@@ -70,4 +70,47 @@ aws cloudwatch put-metric-alarm --alarm-name RemoveUploadCapacity \
         --evaluation-periods 2 \
         --alarm-actions "$DOWN_ARN"
 
+--- MAINTENANCE --------------------------
+
+Change AMI instance used to launch:
+
+1. Terminate existing instances
+aws autoscaling update-auto-scaling-group --min-size 0 --desired-capacity 0 \
+    --auto-scaling-group-name cat-grp
+
+2. Create temporary lc
+aws autoscaling create-launch-configuration     \
+    --instance-type m1.medium      \
+    --associate-public-ip-address     \
+    --security-groups sg-b0c4d2d2     \
+    --launch-configuration-name cat-lc2 \
+    --image-id ami-c636acf6
+
+3. Switch group to use temp lc
+aws autoscaling update-auto-scaling-group \
+    --auto-scaling-group-name cat-grp \
+    --launch-configuration-name cat-lc2
+
+4. Delete old lc
+aws autoscaling delete-launch-configuration --launch-configuration-name cat-lc
+
+5. Create new lc (copy of #2, new name)
+aws autoscaling create-launch-configuration     \
+    --instance-type m1.medium      \
+    --associate-public-ip-address     \
+    --security-groups sg-b0c4d2d2     \
+    --launch-configuration-name cat-lc \
+    --image-id ami-c636acf6
+
+6. Switch group to use new lc
+aws autoscaling update-auto-scaling-group \
+    --auto-scaling-group-name cat-grp \
+    --launch-configuration-name cat-lc
+
+7. Delete temporary lc
+aws autoscaling delete-launch-configuration --launch-configuration-name cat-lc2
+
+8. Start new instances
+aws autoscaling update-auto-scaling-group --min-size 2 --desired-capacity 2 \
+    --auto-scaling-group-name cat-grp
 
