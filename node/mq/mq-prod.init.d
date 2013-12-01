@@ -10,6 +10,7 @@
 . /lib/lsb/init-functions
 
 SERVICE_TYPE=prod
+export NODE_ENV=$SERVICE_TYPE
 
 APPNAME=mq-redis
 APPDIR=/deploy/$SERVICE_TYPE/viblio-server/node/mq
