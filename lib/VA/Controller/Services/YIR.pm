@@ -349,7 +349,7 @@ sub videos_for_month :Local {
 	push( @data, $hash );
     }
 
-    $self->status_ok( $c, { media => \@data }, pager => $pager );
+    $self->status_ok( $c, { media => \@data, pager => $pager } );
 }
 
 __PACKAGE__->meta->make_immutable;
