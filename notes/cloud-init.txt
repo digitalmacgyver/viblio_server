@@ -1,0 +1,103 @@
+The Problem
+-----------
+
+When you use a launch configuration and an autoscaling group to fire instances behind a load
+balancer, you specify an AMI instance to use as the base machine.  You can load this up with all
+the base software needed on an instance in this group, but that AMI "template" will get old and
+the base software will become out of date.  You really need to "boostrap" this template at boot time
+to re-install all of the latest software needed before it makes it into service.
+
+Cloud-init
+----------
+
+Ubuntu AMI instances come with a tool called "cloud-init" pre-installed.  This can be used with
+Amazon's per-instance "user-data" facility to communicate information to the newly launched
+instance.  There are many ways to use this facility.  Here is one:
+
+1. Create a file on your local machine.  Call it bootstrap.cfg for example.  For a Cat server,
+I need the latest "webgui" and "viblio-server" packages.  I should get the latest "tools" as
+well.  But at least some version of the "tools" better be on the machine already!
+
+#cloud-config
+bootcmd:
+ - /usr/local/bin/check-and-install-software.pl -db staging -app tools         -quiet
+ - /usr/local/bin/check-and-install-software.pl -db staging -app viblio-server -quiet
+ - /usr/local/bin/check-and-install-software.pl -db staging -app webgui        -quiet
+
+2. When I create the launch group, I point to this file with one of the options:
+
+   aws autoscaling create-launch-configuration \
+       (...) \
+       --user-data file://bootstrap.cfg \
+       (...)
+
+When instances are launched, the contents of the bootstrap.cfg file are passed to and interpretted
+by cloud-init.  In this example, we are specifying configuration commands; "bootcmd" in particular,
+which runs the array of commands specified very early in the boot sequence; before the /etc/init.d
+scripts.
+
+There are a variety of other formats that user-data can take, not just cloud-init config commands.
+If user-data begins with #!, then its interpreted as a script and executed.  If it looks like:
+
+#include
+http://server/resource1
+http://server/resource2
+(..)
+
+Then each resource is fetched by cloud-init and recursively interpretted as a data source (so if
+it beings with #! its a script and is executed, or if it is #cloud-config, its added to the 
+cloud-init configuration commands, etc).
+
+(see http://brandon.fuller.name/archives/2011/05/02/06.40.57/ for a nice example)
+
+******************************************************************************
+* A script will only ever be run exactly once, when the instance
+* boots for the very first time.  This might be useful for initializing
+* class: and group: in /usr/local/etc/viblio.yml.  "bootcmd" however
+* will be run after every reboot.  I am actually thinking, to avoid any
+* race conditions between init.d scripts and any other machine config, that
+* the viblio init.d script be disabled so they don't run during init.d, and
+* instead have a cloud-init script that does what it needs to do in order; for
+* example:
+*
+
+#!/bin/sh
+# CHANGE TO GROUP 1, to fetch different versions of SW
+perl -MYAML -e '$c=YAML::LoadFile("/usr/local/etc/viblio.yml"); $c->{group} = 1; YAML::DumpFile( "/usr/local/etc/viblio.yml", $c);'
+# GET LATEST TOOLS
+/usr/local/bin/check-and-install-software.pl -db prod -app tools -quiet
+# LAUNCH viblio manually, which will then fetch software
+/etc/init.d/viblio-prod start
+
+*
+*****************************************************************************
+
+You don't need to use cloud-init.  Cloud init relies on an even more basic facility to obtain
+the metadata and any user-data for an instance when it is launched.  To get the meta-data for
+an instance:
+
+  curl http://169.254.169.254/latest/meta-data/
+
+lists the available meta-data keys.  You can obtain the value for a key by adding the key to the
+url above:
+
+  curl http://169.254.169.254/latest/meta-data/mac
+
+And to get the user-data:
+
+  curl http://169.254.169.254/latest/user-data/
+
+So you could write a /etc/init.d script that does something like:
+
+  curl http://169.254.169.254/latest/user-data/ > /tmp/doit.sh
+  sh /tmp/doit.sh
+
+External References:
+===================
+
+http://www.scalehorizontally.com/2013/02/24/introduction-to-cloud-init/
+http://brandon.fuller.name/archives/2011/05/02/06.40.57/
+http://cloudinit.readthedocs.org/en/latest/
+http://docs.aws.amazon.com/cli/latest/reference/autoscaling/create-launch-configuration.html
+https://github.com/aws/aws-cli (a hidden gem!  describes command line input option types!)
+https://help.ubuntu.com/community/CloudInit (user-data input formats. like #include and #!)
