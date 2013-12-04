@@ -9,7 +9,7 @@
         <span>[% model.media.title %]</span>
         <br />
         <br />
-        <a class="noUnderline" href='[% c.server %]#new_player?mid=[% model.media.uuid %]'>
+        <a class="noUnderline" href='[% c.server %]#web_player?mid=[% model.media.uuid %]'>
             <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.views.poster.uri %]" />
         </a>
 
@@ -20,7 +20,7 @@
         <span style="text-align: center;"><em>[% commentText %]</em></span>
         <br />
         <br />
-        <span><a class="tomato" href='[% c.server %]#new_player?mid=[% model.media.uuid %]'><span class="tomato">See the comment</span></a> in your Viblio library and comment back.
+        <span><a class="tomato" href='[% c.server %]#web_player?mid=[% model.media.uuid %]'><span class="tomato">See the comment</span></a> in your Viblio library and comment back.
     </div>
     
 [% INCLUDE email/bottom.tt %]                                                        
