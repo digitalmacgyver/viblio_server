@@ -8,6 +8,7 @@ sudo apt-get update
 
 # Server, no Catalyst
 sudo apt-get install build-essential \
+  pkg-config \
   git \
   curl \
   ssh \

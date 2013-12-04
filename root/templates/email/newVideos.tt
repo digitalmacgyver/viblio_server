@@ -43,7 +43,7 @@
             <br />
         [% END %]
         
-        [% IF numFaces.size == 0 %]
+        [% IF model.faces.size == 0 %]
             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
                 <tbody>
                     <tr>
@@ -65,26 +65,19 @@
             </table>
         [% END %]
 
-        [% numFaces = [] %]
-        [% FOREACH media IN model.media -%]
-            [% FOREACH face IN media.views.face -%]
-                [% numFaces.push(face) %]
-            [% END %]
-        [% END %]
-
-        [% IF numFaces.size > 0 %]
+        [% IF model.faces.size > 0 %]
             <div class="line"></div>
             <span>Viblio discovers faces of your friends and loved ones and makes sharing (and privacy!) easy.</span>
             <br />
             <br />
-            [% IF numFaces.size == 1 %]
+            [% IF model.faces.size == 1 %]
                 <span><strong>We found this new face in your videos:</strong><span><br /><br />
             [% ELSE %]
                 <span><strong>We found these new faces in your videos:</strong><span><br /><br />
             [% END %]
             <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
                 <tbody>
-                    [% FOREACH face IN numFaces -%]
+                    [% FOREACH face IN model.faces -%]
                         [% LAST IF loop.count > 8 %]
                         [%- "<tr>\n" IF loop.first || loop.count == 5 || loop.count == 9 %]
                             <td class="face" valign="top">
@@ -104,6 +97,9 @@
                     [% END %]
                 </tbody>
             </table>
+	    [% IF model.faces.size > 8 %]
+	      <span><strong>... and [% model.faces.size - 8 %] more!</strong></span><br />
+	    [% END %]
             Connect with friends or family by sharing one of these videos.
             <br />
             <br />

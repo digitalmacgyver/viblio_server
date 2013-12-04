@@ -84,13 +84,7 @@
                             </tr>
                             <tr>
                                 <td valign='bottom'>
-                                    [% numFaces = [] %]
-                                    [% FOREACH media IN model.media -%]
-                                        [% FOREACH face IN media.views.face -%]
-                                            [% numFaces.push(face) %]
-                                        [% END %]
-                                    [% END %]
-                                    <span><strong>[% numFaces.size %]</strong></span>
+                                    <span><strong>[% model.faces.size %]</strong></span>
                                 </td>
                             </tr>
                         </tbody>

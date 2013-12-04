@@ -477,6 +477,7 @@ sub add_comment :Local {
     my @shares = $mf->media_shares->search({ share_type => 'private', user_id => { '!=', undef }});
     foreach my $share ( @shares ) {
 	next if ( $share->user->id == $c->user->id );
+	next unless( $share->user->email );
 	my $res = $c->model( 'MQ' )->post( '/enqueue', 
 					   { uid => $share->user->uuid,
 					     type => 'new_comment',

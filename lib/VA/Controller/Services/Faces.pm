@@ -3,10 +3,25 @@ use Moose;
 
 use VA::MediaFile;
 use Data::Page;
+use JSON;
+use Try::Tiny;
 
 use namespace::autoclean;
 
 BEGIN { extends 'VA::Controller::Services' }
+
+# Short cut for notifying the backend recognition system of face
+# recognition events.
+#
+sub notify_recognition :Private {
+    my( $self, $c, $message ) = @_;
+    try {
+	my $response = $c->model( 'SQS', $c->config->{sqs}->{recognition} )
+	    ->SendMessage( to_json( $message ) );
+    } catch {
+	$c->log->error( 'Failed to send RECOGNITION message: ' + to_json( $message ) + ': ' + $_ );
+    };
+}
 
 =head1 /services/faces/*
 
@@ -327,14 +342,18 @@ in as 'term'.
 =cut
 
 sub all_contacts :Local {
-    my( $self, $c) = @_;
+    my( $self, $c ) = @_;
     my $q = $c->req->param( 'term' );
+    my $editable = $c->req->param( 'editable' );
 
     ## $self->fix_uploads( $c );  ## REMOVE ME WHEN POPEYE IS FIXED
 
     my $where = {};
     if ( $q ) {
 	$where = { contact_name => { '!=', undef }, 'LOWER(contact_name)' => { 'like', '%'.lc($q).'%' } };
+    }
+    elsif ( $editable ) {
+	$where = { contact_name => { '!=', undef } };
     }
 
     my @contacts = $c->user->contacts->search($where,{order_by => 'contact_name'});
@@ -355,9 +374,15 @@ sub all_contacts :Local {
 
     if ( $q ) {
 	my @ret = ();
+	my $i=1;
 	foreach my $con ( @data ) {
-	    push( @ret, { label => $con->{contact_name}, cid => $con->{uuid}, url => $con->{url} });
+	    push( @ret, { value => $i++, text => $con->{contact_name}, 
+			  label => $con->{contact_name}, cid => $con->{uuid}, url => $con->{url} });
 	}
+	$self->status_ok( $c, \@ret );
+    }
+    elsif ( $editable ) {
+	my @ret = map { $_->{contact_name} } @data;
 	$self->status_ok( $c, \@ret );
     }
     else {
@@ -442,8 +467,12 @@ sub change_contact :Local {
 	$self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ));
     }
 
-    $contact->contact_name( $args->{contact_name} );
-    $contact->contact_email( $args->{contact_email} );
+    if ( $args->{contact_name} ) {
+	$contact->contact_name( $args->{contact_name} );
+    }
+    if ( $args->{contact_email} ) {
+	$contact->contact_email( $args->{contact_email} );
+    }
     if ( $args->{new_uri} ) {
 	$contact->picture_uri( $args->{new_uri} );
     }
@@ -451,6 +480,12 @@ sub change_contact :Local {
 
     $self->status_ok( $c, { contact => $contact->TO_JSON } );
 }
+
+=head2 /services/faces/tag
+
+Tag a contact
+
+=cut
 
 sub tag :Local {
     my $self = shift; my $c = shift;
@@ -493,16 +528,253 @@ sub tag :Local {
 	    $self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{cid} ));
 	}
 
+	my @fids = ();
 	foreach my $feat ( $c->model( 'RDS::MediaAssetFeature' )->search({ contact_id => $contact->id }) ) {
+	    push( @fids, $feat->id );
 	    $feat->contact_id( $identified->id );
 	    $feat->update;
 	}
+
+	# Send the information to the recognition system
+	$self->notify_recognition( $c, {
+	  action => 'move_faces',
+	  user_id => $c->user->obj->id,
+	  old_contact => $contact->id,
+	  new_contact => $identified->id,
+	  delete_old_contact => 1,
+	  media_asset_feature_ids => \@fids });
 
 	# Then delete the unknown contact
 	$contact->delete; $contact->update;
 
 	$self->status_ok( $c, { contact => $identified->TO_JSON } );
     }
+}
+
+sub avatar_for_name :Local {
+    my( $self, $c ) = @_;
+    my $contact_name = $c->req->param( 'contact_name' );
+    my @contacts = $c->user->contacts->search({ contact_name => $contact_name });
+    if ( $#contacts >= 0 ) {
+	my $contact = $contacts[0];
+
+	my $url;
+	if ( $contact->picture_uri ) {
+	    my $klass = $c->config->{mediafile}->{'us'};
+	    my $fp = new $klass;
+	    $url = $fp->uri2url( $c, $contact->picture_uri );
+	}
+	else {
+	    $url = '/css/images/nopic-green-36.png';
+	}
+	$self->status_ok( $c, { url => $url } );
+    }
+    else {
+	$self->status_ok( $c, {} );
+    }
+}
+
+sub contact_for_name :Local {
+    my( $self, $c ) = @_;
+    my $contact_name = $c->req->param( 'contact_name' );
+    my @contacts = $c->user->contacts->search({ contact_name => $contact_name });
+    if ( $#contacts >= 0 ) {
+	my $contact = $contacts[0];
+
+	my $url;
+	if ( $contact->picture_uri ) {
+	    my $klass = $c->config->{mediafile}->{'us'};
+	    my $fp = new $klass;
+	    $url = $fp->uri2url( $c, $contact->picture_uri );
+	}
+	else {
+	    $url = '/css/images/nopic-green-36.png';
+	}
+	my $data = $contact->TO_JSON;
+	$data->{url} = $url;
+	$self->status_ok( $c, { contact => $data } );
+    }
+    else {
+	$self->status_ok( $c, {} );
+    }
+}
+
+sub delete_contact :Local {
+    my( $self, $c ) = @_;
+    my $cid = $c->req->param( 'cid' );
+    my $contact = $c->user->contacts->find({ uuid => $cid });
+    unless( $contact ) {
+	$self->status_bad_request($c, $c->loc('Unable to find contact for [_1]', $cid ) );
+    }
+    my @feats = $c->model( 'RDS::MediaAssetFeature' )->search({ contact_id => $contact->id });
+    my @fids  = map { $_->id } @feats;
+
+    $self->notify_recognition( $c, {
+	action => 'delete_contact',
+	user_id => $c->user->obj->id,
+	contact_id => $contact->id,
+	media_asset_feature_ids => \@fids });
+
+    if ( $contact->contact_name ) {
+	# This is a known contact
+	$contact->picture_uri( undef ); $contact->update;
+	foreach my $feat ( @feats ) {
+	    $feat->delete; $feat->update;
+	}
+    }
+    else {
+	# This is an unknown contact
+	$contact->delete; $contact->update;
+    }
+
+    $self->status_ok( $c, {} );
+}
+
+sub remove_false_positives :Local {
+    my( $self, $c ) = @_;
+
+    my @ids = $c->req->param( 'ids[]' );
+    my $feature;
+
+    my $new_pic_uri;
+    my $main_contact;
+
+    my @ret = ();
+
+    foreach my $id ( @ids ) {
+	$feature = $c->model( 'RDS::MediaAssetFeature' )->find({id => $id, user_id => $c->user->obj->id});
+	unless( $feature ) {
+	    $c->log->error( 'remove false positives: cannot find ' + $id + ' in media asset features' );
+	    next;
+	}
+	my $asset = $feature->media_asset;
+	my $contact = $c->user->obj->create_related( 'contacts', {
+	    picture_uri => $asset->uri });
+
+	push( @ret, {
+	    id     => $id,
+	    c_id   => $contact->id,
+	    c_uuid => $contact->uuid } );
+
+	$self->notify_recognition( $c, {
+	    action => 'move_faces',
+	    user_id => $c->user->obj->id,
+	    old_contact => $feature->contact_id,
+	    new_contact => $contact->id,
+	    media_asset_feature_ids => [ $feature->id ] });
+
+	# If the picture of the face being removed is the one being used by
+	# this contact, then we have to change the contact picture if possible.
+	if ( $feature->contact->picture_uri eq $asset->uri ) {
+	    $main_contact = $feature->contact;
+	    my @features = $c->model( 'RDS::MediaAssetFeature' )->
+		search({ contact_id => $main_contact->id,
+			 feature_type => 'face',
+			 'me.user_id' => $c->user->id },
+		       { prefetch => 'media_asset' });
+	    my $found = 0;
+	    foreach my $f ( @features ) {
+		if ( $f->media_asset->uri ne $asset->uri ) {
+		    $main_contact->picture_uri( $f->media_asset->uri ); $main_contact->update;
+		    $new_pic_uri = $f->media_asset->uri;
+		    $found = 1;
+		    last;
+		}
+	    }
+	    unless( $found ) {
+		$main_contact->picture_uri( undef ); $main_contact->update;
+	    }
+	}
+	$feature->contact_id( $contact->id ); $feature->update();
+    }
+
+    my $url;
+    if ( $new_pic_uri ) {
+	my $klass = $c->config->{mediafile}->{'us'};
+	my $fp = new $klass;
+	$url = $fp->uri2url( $c, $new_pic_uri );
+    }
+    if ( $main_contact ) {
+	my $data = $main_contact->TO_JSON;
+	$data->{url} = $url;
+	$self->status_ok( $c, { contact => $data, newids => \@ret } );
+    }
+    else {
+	$self->status_ok( $c, { newids => \@ret } );
+    }
+}
+
+=head2 /services/faces/remove_from_video
+
+Remove a face from a single video.
+
+=cut
+
+sub remove_from_video :Local {
+    my( $self, $c ) = @_;
+    my $cid = $c->req->param( 'cid' );
+    my $mid = $c->req->param( 'mid' );
+    my $contact = $c->user->contacts->find({ uuid => $cid });
+    unless( $contact ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find contact for [_1]', $cid ) );
+    }
+    my $mediafile = $c->user->media->find({ uuid => $mid });
+    unless( $mediafile ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find media file for [_1]', $mid ) );
+    }
+
+    # Is this person in one video or multiple videos?
+    my @feats = $c->model( 'RDS::MediaAssetFeature' )
+	->search(
+	{ contact_id => $contact->id, 'me.user_id' => $c->user->obj->id},
+	{ prefetch => { 'media_asset' => 'media' } } );
+    my @fids  = map { $_->id } @feats;
+    my @mfeats = ();
+    my @others = ();
+    foreach my $feat ( @feats ) {
+	if ( $feat->media_asset->media->id != $mediafile->id ) {
+	    push( @others, $feat->media_asset->media );
+	}
+	else {
+	    push( @mfeats, $feat );
+	}
+    }
+
+    if ( $#others >= 0 ) {
+	# Face is in other videos besides this one
+	my @mfids = map { $_->id } @mfeats;
+	$self->notify_recognition( $c, {
+	    action => 'delete_faces_for_contact',
+	    user_id => $c->user->obj->id,
+	    contact_id => $contact->id,
+	    media_asset_feature_ids => \@mfids });
+	foreach my $feat ( @mfeats ) {
+	    $feat->delete; $feat->update;
+	}
+	# Change the contact picture to another in a different video
+	$contact->picture_uri( $others[0]->media_assets->first({ asset_type => 'face' })->uri );
+    }
+    else {
+	# Face is only in this video
+	$self->notify_recognition( $c, {
+	    action => 'delete_contact',
+	    user_id => $c->user->obj->id,
+	    contact_id => $contact->id,
+	    media_asset_feature_ids => \@fids });
+	
+	if ( $contact->contact_name ) {
+	    # This is a known contact
+	    $contact->picture_uri( undef ); $contact->update;
+	    foreach my $feat ( @feats ) {
+		$feat->delete; $feat->update;
+	    }
+	}
+	else {
+	    # This is an unknown contact
+	    $contact->delete; $contact->update;
+	}
+    }
+    $self->status_ok( $c, {} );
 }
 
 __PACKAGE__->meta->make_immutable;

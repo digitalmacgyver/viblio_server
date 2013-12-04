@@ -13,11 +13,11 @@ use Data::Dumper;
 use DateTime;
 use VA;
 
-my $Usage = "VA_CONFIG_LOCAL_SUFFIX=staging|prod|local $0 --days-ago N [--page N --rows M] [--report]";
+my $Usage = "VA_CONFIG_LOCAL_SUFFIX=staging|prod|local $0 --days-ago N [--page N --rows M] [--report] [--user test-email] [--force-one-day]";
 
 # Parse the args
 #
-my( $days_ago, $report, $page, $rows ) = ( 1, 0, undef, 100 );
+my( $days_ago, $report, $page, $rows, $email_addr, $force1 ) = ( 1, 0, undef, 100, undef, 0 );
 while( my $arg = shift( @ARGV ) ) {
     if ( $arg eq '--days-ago' ) {
 	$days_ago = shift( @ARGV ); next;
@@ -25,11 +25,17 @@ while( my $arg = shift( @ARGV ) ) {
     if ( $arg eq '--report' ) {
 	$report = 1; next;
     }
+    if ( $arg eq '--force-one-day' ) {
+	$force1 = 1; next;
+    }
     if ( $arg eq '--page' ) {
 	$page = shift( @ARGV ); next;
     }
     if ( $arg eq '--rows' ) {
 	$rows = shift( @ARGV ); next;
+    }
+    if ( $arg eq '--user' ) {
+	$email_addr = shift( @ARGV ); next;
     }
 }
 
@@ -37,9 +43,11 @@ while( my $arg = shift( @ARGV ) ) {
 #
 my $email_template = 'email/newVideos.tt';
 my $subject        = 'Videos uploaded today';
-if ( $days_ago > 1 ) {
-    $email_template = 'email/weeklyDigest.tt';
-    $subject        = 'Videos uploaded last week';
+unless( $force1 ) {
+    if ( $days_ago > 1 ) {
+	$email_template = 'email/weeklyDigest.tt';
+	$subject        = 'Videos uploaded last week';
+    }
 }
 
 # The value of $c->server, used in email templates, has to be
@@ -64,10 +72,6 @@ my $NOW    = DateTime->now;
 my $TARGET = DateTime->from_epoch( epoch => ($NOW->epoch - 60*60*24*$days_ago) );
 my $dtf    = $c->model( 'RDS' )->schema->storage->datetime_parser;
 
-#my @users;
-#my $u = $c->model( 'RDS::User' )->find({ email => 'aqpeeb@gmail.com' });
-#push( @users, $u );
-
 my $pager;
 if ( defined( $page ) ) {
     $pager = {
@@ -75,7 +79,18 @@ if ( defined( $page ) ) {
 	rows => $rows
     };
 }
-my @users = $c->model( 'RDS::User' )->search({ email => { '!=', undef } }, $pager );
+
+my @users;
+if ( $email_addr ) {
+    my $u = $c->model( 'RDS::User' )->find({ email => $email_addr });
+    unless( $u ) {
+	die "Cannot find $email_addr in users in db";
+    }
+    push( @users, $u );
+}
+else {
+    @users = $c->model( 'RDS::User' )->search({ email => { '!=', undef } }, $pager );
+}
 
 if ( $report ) {
     print sprintf( "%-30s %-7s %-7s %-7s\n", "User", "Total", "Found", "Viewed" );
@@ -107,6 +122,20 @@ foreach my $user ( @users ) {
 	    ] }, {
 		prefetch => 'assets' } );
 
+    my @ids = map{ $_->id } @media;
+    my @feat = $c->model( 'RDS::MediaAssetFeature' )
+	->search({'me.media_id' => { -in => \@ids }, 
+		  'contact.id' => { '!=', undef }, 
+		  'me.feature_type'=>'face'}, 
+		 {prefetch=>['contact','media_asset'], 
+		  group_by=>['media_asset.media_id','contact.id'] });
+    my @faces = ();
+    foreach my $feat ( @feat ) {
+	push( @faces, { uri => $feat->media_asset->uri,
+			name => $feat->contact->contact_name
+	      });
+    }
+
     my @published = ();
     my $view_count = 0;
     foreach my $m ( @media ) {
@@ -125,7 +154,7 @@ foreach my $user ( @users ) {
     }
     else {
 	# Send the email
-	if ( send_mail( $c, $user, $total, ($#published + 1), $view_count, \@published ) ) {
+	if ( send_mail( $c, $user, $total, ($#published + 1), $view_count, \@published, \@faces ) ) {
 	    $c->log->error( "Failed to send ($days_ago) email to " . $user->email );
 	}
     }
@@ -134,7 +163,7 @@ foreach my $user ( @users ) {
 exit 0;
 
 sub send_mail {
-    my( $c, $user, $total, $found, $view_count, $media ) = @_;
+    my( $c, $user, $total, $found, $view_count, $media, $faces ) = @_;
 
     my $res  = VA::Controller::Services->send_email( $c, {
 	subject => $c->loc( $subject ),
@@ -145,6 +174,7 @@ sub send_mail {
 	    model => {
 		user => $user,
 		media => $media,
+		faces => $faces,
 		vars => {
 		    totalVideosInAccount => $total,
 		    numVideosUploadedLastWeek => $found,
