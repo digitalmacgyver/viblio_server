@@ -104,7 +104,7 @@ sub uri2url {
 
     my $s3key = ( ref $view eq 'HASH' ? $view->{uri} : $view );
 
-    if ( ! $params->{use_s3} ) {
+    if ( $params->{use_cf} ) {
 	return $c->cf_sign( $s3key, {
 	    stream => 0,
 	    expires => ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ),

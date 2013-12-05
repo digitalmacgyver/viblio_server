@@ -691,13 +691,11 @@ sub count :Local {
     if ( $uid ) {
 	my $user = $c->model( 'RDS::User' )->find({uuid => $uid });
 	if ( $user ) {
-	    my $rs = $user->media->search($where);
-	    $count = $rs->count;
+	    $count = $user->media->count($where);
 	}
     }
     else {
-	my $rs = $c->user->media->search($where);
-	$count = $rs->count;
+	$count = $c->user->media->count($where);
     }
     $self->status_ok( $c, { count => $count } );
 }
