@@ -119,6 +119,7 @@ sub change_profile :Local {
 	      $c->loc( "Unable to obtain your profile!" ) );
     }
     foreach my $name ( keys( $c->req->params ) ) {
+	next if ( $name eq '_' );
 	my $field = $profile->fields->find({ name => $name });
 	if ( $field ) {
 	    $field->value( $c->req->param( $name ) );
