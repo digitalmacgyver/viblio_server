@@ -15,7 +15,7 @@ sub all :Local {
     my( $self, $c ) = @_;
     my $user = $c->user->obj;
     my @thumbnails = $c->model( 'RDS::MediaAsset' )
-	->search({'me.user_id'=>$user->id, asset_type=>'poster'},
+	->search({'me.user_id'=>$user->id, asset_type=>'poster', 'media.lat' => { '!=', undef }},
 		 {prefetch=>'media'});
     my @data = ();
     foreach my $asset ( @thumbnails ) {
