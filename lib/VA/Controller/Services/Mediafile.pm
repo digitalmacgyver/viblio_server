@@ -5,6 +5,8 @@ use namespace::autoclean;
 use JSON;
 use URI::Escape;
 
+use Geo::Distance;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 =head1 Mediafile
@@ -760,6 +762,234 @@ sub delete_share :Local {
 	$share->delete; $share->update;
     }
     $self->status_ok( $c, { deleted => \@deleted } );
+}
+
+=head2 /services/mediafile/related
+
+Return list of mediafiles related to the passed in mediafile.  You can specify
+one or more of:
+
+  by_date=1    : All videos taken on same day followed by all videos 
+                 taken in same month as this video
+  by_faces=1   : All videos that contain at least one of the faces contained
+                 in this video
+  by_geo=1     : All videos taken "near" this video (see below)
+
+If more than one by_ is specified, the array returned is in the order shown
+above (date, faces, geo).
+
+If by_geo is specified, geo_unit=meter, geo_distance=100 are the defaults used
+to determine "near" and the results are returned sorted from closest to furthest.
+Legal values for geo_unit are: kilometer, kilometre, meter, metre, centimeter, 
+centimetre, millimeter, millimetre, yard, foot, inch, light second, mile, nautical mile, 
+poppy seed, barleycorn, rod, pole, perch, chain, furlong, league, fathom.
+
+=cut
+
+sub related :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+
+    my $page = $c->req->param( 'page' );
+    my $rows = $c->req->param( 'rows' ) || 10;
+
+    my $by_date  = $self->boolean( $c->req->param( 'by_date'  ), 1 );
+    my $by_faces = $self->boolean( $c->req->param( 'by_faces' ), 1 );
+    my $by_geo   = $self->boolean( $c->req->param( 'by_geo'   ), 1 );
+
+    my $geo_unit = $c->req->param( 'geo_unit' ) || 'meter';
+    my $geo_distance = $c->req->param( 'geo_distance' ) || '100';
+
+    unless( $mid ) {
+	$self->status_bad_request( $c, $c->loc( 'Missing param [_1]', 'mid' ) );
+    }
+    my $user = $c->user->obj;
+
+    # The passed in uuid might be from a shared video
+    #
+    my $media = $c->model( 'RDS::Media' )->find({ 
+	'me.uuid' => $mid,
+	-and => [ -or => ['me.user_id' => $user->id, 
+			  'media_shares.user_id' => $user->id], 
+		  -or => [status => 'TranscodeComplete',
+			  status => 'FaceDetectComplete',
+			  status => 'FaceRecognizeComplete' ]
+	    ]}, {prefetch=>'media_shares'});
+    unless( $media ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find mediafile for [_1]', $mid ) );
+    }
+
+    # Array of mediafile objects to return
+    my @results = ();
+    # Hash of media uuid's already added to results (to prevent dups in results)
+    my $seen = {};
+    $seen->{ $media->uuid } = $media; # DO NOT SHOW MYSELF IN RELATED
+
+    # First get a mediafile resultset that contains all media belonging to
+    # the user or shared to the user.
+    #
+    # Fetch by MediaAsset of poster, because all related videos needs
+    # is the mediafile and its poster.  Prefetch media and media_shares;
+    # media_shares so we get user's media plus all media shared with them,
+    # media so publish is fast.  Group by media.id so we get only only
+    # unique mediafiles in case there are multiple posters per mediafile.
+    #
+    # This prefetch into a resultset makes subsequent search queries
+    # easier.
+    #
+    my $rs = $c->model( 'RDS::MediaAsset' )->search({ 
+	'me.asset_type' => 'poster',
+	-and => [ -or => ['media.user_id' => $user->id, 
+			  'media_shares.user_id' => $user->id], 
+		  -or => ['media.status' => 'TranscodeComplete',
+			  'media.status' => 'FaceDetectComplete',
+			  'media.status' => 'FaceRecognizeComplete' ]
+	    ]}, {prefetch=>{'media' => 'media_shares'}, group_by=>['media.id']});
+
+    # Return:
+    #
+    # 1. All other videos taken on same date as this video (within 24 hours)
+    # 2. All other videos taken in same month as this video
+    # 3. All other videos that contain at least one of the known faces in this video taken this year
+    # 3. All other videos that contain at least one of the known faces in this video ever taken
+    # 4. All other videos taken "at same location as" this video
+    #
+    if ( $by_date ) {
+	my $taken_on = $media->recording_date || $media->created_date;
+	my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+
+	# Taken on same day
+	my $from = DateTime->new( year => $taken_on->year,
+				  month => $taken_on->month,
+				  day => $taken_on->day,
+				  hour => 0, minute => 0 );
+	my $to   = DateTime->new( year => $taken_on->year,
+				  month => $taken_on->month,
+				  day => $taken_on->day,
+				  hour => 23, minute => 59 );
+
+	my @taken_on_same_day = $rs->search({
+	    'media.recording_date' => {
+		-between => [
+		     $dtf->format_datetime( $from ),
+		     $dtf->format_datetime( $to )
+		    ]} }, { order_by => 'media.recording_date desc' } );
+	foreach my $a ( @taken_on_same_day ) {
+	    push( @results, $a ) unless( $seen->{ $a->media->uuid } );
+	    $seen->{ $a->media->uuid } = $a;
+	}
+
+	# Taken in same month
+	$from = DateTime->new( year => $taken_on->year,
+			       month => $taken_on->month,
+			       day => 1, hour => 0, minute => 0 );
+	$to = $from->clone;
+	$to->add( months => 1 )->subtract( days => 1 )->add( hours => 23 )->add( minutes => 59 );
+
+	my @taken_in_same_month = $rs->search({
+	    'media.recording_date' => {
+		-between => [
+		     $dtf->format_datetime( $from ),
+		     $dtf->format_datetime( $to )
+		    ]} }, { order_by => 'media.recording_date desc' } );
+	foreach my $a ( @taken_in_same_month ) {
+	    push( @results, $a ) unless( $seen->{ $a->media->uuid } );
+	    $seen->{ $a->media->uuid } = $a;
+	}
+    }
+
+    if ( $by_faces ) {
+	# FACES...
+	#
+	# First of all, find all known faces in the passed in mediafile
+	#
+	my @face_features = $c->model( 'RDS::MediaAssetFeature' )
+	    ->search({ 'me.media_id' => $media->id,
+		       'me.feature_type' => 'face',
+		       'contact.contact_name' => { '!=', undef } },
+		     { prefetch=>['contact','media_asset'], group_by=>['contact.id'] });
+
+	if ( $#face_features >= 0 ) {
+	    # There are faces.  Lets find all other videos in our list that contain at
+	    # least on of these faces, ordered by most recently recorded.
+	    #
+	    my @contact_ids = map { $_->contact->id } @face_features;
+	    my @media_ids   = map { $_->media->id } $rs->all;
+
+	    # $c->log->error( $_->contact->contact_name, "\n" ) foreach @face_features;
+
+	    my @feats = $c->model( 'RDS::MediaAssetFeature' )
+		->search({ 'contact.id' => { -in => \@contact_ids },
+			   'me.feature_type' => 'face',
+			   'me.media_id' => { -in => \@media_ids },
+			 },
+			 { prefetch => [ 'contact', { 'media_asset' => 'media' } ], group_by => ['media.id'] });
+
+	    # Unfortunately we are storing poster assets in the results array, so we have to do
+	    # poster fetches
+	    foreach my $feat ( @feats ) {
+		unless( $seen->{ $feat->media_asset->media->uuid } ) {
+		    # $c->log->error( $feat->media_asset->media->title );
+		    push( @results, $feat->media_asset->media->assets->find({ asset_type => 'poster' }) );
+		    $seen->{ $feat->media_asset->media->uuid } = $feat->media_asset->media;
+		}
+	    }
+	}
+    }
+
+    if ( $by_geo && defined( $media->lat ) && defined( $media->lng ) ) {
+
+	my $geo = new Geo::Distance;
+	$geo->formula('hsin');
+
+	my @geodata = ();
+	foreach my $asset ( $rs->search({ 'media.lat' => {'!=' => undef}, 'media.lng' => { '!=' => undef } }) ) {
+	    next if ( $asset->media->id == $media->id );
+	    my $distance = $geo->distance( $geo_unit, $media->lng, $media->lat => $asset->media->lng, $asset->media->lat );
+	    push( @geodata, { distance => $distance, asset => $asset } ) if ( $distance <= $geo_distance );
+	}
+	my @sorted = sort { $a->{distance} <=> $b->{distance} } @geodata;
+	foreach my $sd ( @sorted ) {
+	    push( @results, $sd->{asset} ) unless( defined( $seen->{ $sd->{asset}->media->uuid } ) );
+	    $seen->{ $sd->{asset}->media->uuid } = $sd->{asset}->media;
+	}
+    }
+
+    # Prepare and return results
+    #
+    my @data  = ();
+    my $pager = {};
+    if ( $page ) {
+	my $data_pager = Data::Page->new( $#results + 1, $rows, $page );
+	if ( $#results >= 0 ) {
+	    @data = @results[ $data_pager->first - 1 .. $data_pager->last - 1 ];
+	}
+	$pager = {
+	    total_entries => $data_pager->total_entries,
+	    entries_per_page => $data_pager->entries_per_page,
+	    current_page => $data_pager->current_page,
+	    entries_on_this_page => $data_pager->entries_on_this_page,
+	    first_page => $data_pager->first_page,
+	    last_page => $data_pager->last_page,
+	    first => $data_pager->first,
+	    'last' => $data_pager->last,
+	    previous_page => $data_pager->previous_page,
+	    next_page => $data_pager->next_page,
+	}; 
+    }
+    else {
+	@data = @results;
+    }
+
+    my @media = ();
+    #
+    # This form of publish, where we pass the mediafile and assets in an array is
+    # much faster, since the assets do not need to be fetched.  We can do this if
+    # we know the assets already, and are sure we know how the media file will be
+    # consumed on the client.
+    #
+    push( @media, VA::MediaFile->new->publish( $c, $_->media, {}, [$_, $_->media->assets->find({ asset_type=>'main'})] ) ) foreach( @data );
+    $self->status_ok( $c, { media => \@media, pager => $pager } );
 }
 
 __PACKAGE__->meta->make_immutable;

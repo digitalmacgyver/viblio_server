@@ -81,6 +81,7 @@ requires 'Crypt::OpenSSL::Random';
 requires 'Crypt::OpenSSL::RSA';
 requires 'Net::GitHub::V3';
 requires 'Amazon::SQS::Simple';
+requires 'Geo::Distance::XS';
 
 test_requires 'Test::More' => '0.88';
 catalyst;

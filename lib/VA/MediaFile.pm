@@ -94,10 +94,16 @@ sub metadata {
 # This also transforms URIs to URLs in a view 
 # location -specific way
 sub publish {
-    my( $self, $c, $mediafile, $params ) = @_;
+    my( $self, $c, $mediafile, $params, $assets ) = @_;
     my $mf_json = $mediafile->TO_JSON;
     $mf_json->{'views'} = {}; 
-    my @views = $mediafile->assets; #->search({},{prefetch=>'media_asset_features'}); (SEEMS WORSE)
+    my @views;
+    if ( $assets ) {
+	@views = @$assets;
+    }
+    else {
+	@views = $mediafile->assets; #->search({},{prefetch=>'media_asset_features'}); (SEEMS WORSE)
+    }
     foreach my $view ( @views ) {
 	my $type = $view->{_column_data}->{asset_type};
 	my $view_json = $view->TO_JSON;
@@ -108,13 +114,6 @@ sub publish {
 		$view_json->{contact} = $contact->TO_JSON;
 	    }
 	}
-
-	# Generate the URL from the URI
-	my $location = $view_json->{location};
-	my $klass = $c->config->{mediafile}->{$location};
-	my $fp = new $klass;
-	$view_json->{url} = 
-	    $fp->uri2url( $c, $view_json, $params );
 
 	# If this is a video, also generate a cloudfront url
 	my $mimetype = MIME::Types->new()->mimeTypeOf( $view_json->{uri} ) || $view_json->{mimetype};
@@ -127,6 +126,15 @@ sub publish {
 		stream => 1,
 		expires => ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ),
 	    });
+	    $view_json->{url} = $view_json->{cf_url};  # in case its being accessed via url
+	}
+	else {
+	    # Generate the URL from the URI
+	    my $location = $view_json->{location};
+	    my $klass = $c->config->{mediafile}->{$location};
+	    my $fp = new $klass;
+	    $view_json->{url} = 
+		$fp->uri2url( $c, $view_json, $params );
 	}
 
 	if ( defined( $mf_json->{'views'}->{$type} ) ) {
