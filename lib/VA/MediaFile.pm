@@ -115,7 +115,18 @@ sub publish {
 	    }
 	}
 
+	# Generate the URL from the URI
+	# THIS IS DONE EVEN FOR VIDEOS WITH A CLOUDFRONT URL because the iPad needs
+	# the original .mp4 file from S3!!
+	#
+	my $location = $view_json->{location};
+	my $klass = $c->config->{mediafile}->{$location};
+	my $fp = new $klass;
+	$view_json->{url} = 
+	    $fp->uri2url( $c, $view_json, $params );
+
 	# If this is a video, also generate a cloudfront url
+	#
 	my $mimetype = MIME::Types->new()->mimeTypeOf( $view_json->{uri} ) || $view_json->{mimetype};
 	unless( $mimetype ) {
 	    $mimetype="unknown";
@@ -126,15 +137,6 @@ sub publish {
 		stream => 1,
 		expires => ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ),
 	    });
-	    $view_json->{url} = $view_json->{cf_url};  # in case its being accessed via url
-	}
-	else {
-	    # Generate the URL from the URI
-	    my $location = $view_json->{location};
-	    my $klass = $c->config->{mediafile}->{$location};
-	    my $fp = new $klass;
-	    $view_json->{url} = 
-		$fp->uri2url( $c, $view_json, $params );
 	}
 
 	if ( defined( $mf_json->{'views'}->{$type} ) ) {
