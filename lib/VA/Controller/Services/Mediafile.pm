@@ -764,6 +764,28 @@ sub delete_share :Local {
     $self->status_ok( $c, { deleted => \@deleted } );
 }
 
+=head2 /services/mediafile/cf
+
+Return the S3 and cloudfront urls for a video
+
+=cut
+
+sub cf :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $asset = $c->model( 'RDS::MediaAsset' )->find({ 'media.uuid' => $mid,
+						       'me.asset_type' => 'main',
+						       'media.user_id' => $c->user->id },
+						     { prefetch => 'media' });
+    unless( $asset ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find main asset for media [_1]', $mid ) );
+    }
+    $self->status_ok( $c, { 
+	url    => VA::MediaFile::US->new->uri2url( $c, $asset->uri ),
+	cf_url => $c->cf_sign( $asset->uri, {stream=>1} ) } );
+}
+    
+
 =head2 /services/mediafile/related
 
 Return list of mediafiles related to the passed in mediafile.  You can specify
@@ -987,8 +1009,8 @@ sub related :Local {
     # much faster, since the assets do not need to be fetched.  We can do this if
     # we know the assets already, and are sure we know how the media file will be
     # consumed on the client.
-    #
-    push( @media, VA::MediaFile->new->publish( $c, $_->media, {}, [$_, $_->media->assets->find({ asset_type=>'main'})] ) ) foreach( @data );
+    # $_->media->assets->find({ asset_type=>'main'})
+    push( @media, VA::MediaFile->new->publish( $c, $_->media, {}, [$_] ) ) foreach( @data );
     $self->status_ok( $c, { media => \@media, pager => $pager } );
 }
 
