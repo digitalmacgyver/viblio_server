@@ -36,7 +36,7 @@
         </ul>
     </div>
     <div class='signatureDiv regSize darkText leftAligned'>
-        <span>Thanks for choosing to be [art of the Viblio community.</span>
+        <span>Thanks for choosing to be part of the Viblio community.</span>
         <br />
         <br />
         <strong>Mona</strong>
@@ -45,6 +45,6 @@
     </div>
     <br>
     <br>
-    <span><em>If you didn't create an account with us, please let us know by forwarding this email to <a href="mailto:notifications@viblio.com">notifications@viblio.com</a></em></span>
+    <span class="leftAligned"><em>If you didn't create an account with us, please let us know by forwarding this email to <a href="mailto:notifications@viblio.com">notifications@viblio.com</a></em></span>
 
 [% INCLUDE email/bottom.tt %]                                                            
