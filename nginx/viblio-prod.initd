@@ -78,8 +78,8 @@ _check_webgui() {
 }
 
 check_and_install() {
-    _check_viblio -quiet || ( _stop && _start && /etc/init.d/mq-$VA_CONFIG_LOCAL_SUFFIX restart)
     _check_webgui -quiet || /etc/init.d/nginx restart
+    _check_viblio -quiet || ( _stop && _start_nocheck && /etc/init.d/mq-$VA_CONFIG_LOCAL_SUFFIX restart)
 }
 
 check_sw() {
@@ -101,9 +101,24 @@ check_compile() {
     return 1
 }
 
+_start_nocheck() {
+    start-stop-daemon --start --pidfile $PIDFILE --chdir $APPDIR \
+    ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP --background \
+    --startas $APPDIR/script/${UNIXNAME}_fastcgi.pl -- \
+    -n $PROCS -l $SOCKET -p $PIDFILE
+
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        sleep 1
+        if check_running ; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 _start() {
     _check_viblio -quiet || /etc/init.d/mq-$VA_CONFIG_LOCAL_SUFFIX restart
-    _check_webgui -quiet
+    _check_webgui -quiet || /etc/init.d/nginx restart
     start-stop-daemon --start --pidfile $PIDFILE --chdir $APPDIR \
     ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP --background \
     --startas $APPDIR/script/${UNIXNAME}_fastcgi.pl -- \

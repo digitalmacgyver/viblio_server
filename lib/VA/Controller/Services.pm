@@ -35,6 +35,19 @@ sub is_email_valid :Private {
     return $addresses[0];
 }
 
+# Convert a req->param into a boolean
+#
+sub boolean :Private {
+    my( $self, $value, $default ) = @_;
+    $value = $default unless( $value );
+    return 0 unless( $value );
+    return 1 if ( $value eq '1' );
+    return 0 if ( $value eq '0' );
+    return 1 if ( $value =~ /[Tt]rue/ );
+    return 0 if ( $value =~ /[Ff]alse/ );
+    return 1;
+}
+
 # Create a username from email
 #
 sub displayname_from_email :Private {

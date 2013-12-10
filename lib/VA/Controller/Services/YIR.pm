@@ -232,7 +232,7 @@ sub videos_for_year :Local {
 
     # Now bin them by month, reverse order
     my @month_names = ( 'NA',
-			'January', 'Feburary', 'March',
+			'January', 'February', 'March',
 			'April', 'May', 'June',
 			'July', 'August', 'September',
 			'October', 'November', 'December' );
@@ -294,7 +294,7 @@ sub videos_for_month :Local {
     }
 
     my @month_names = ( 'NA',
-			'January', 'Feburary', 'March',
+			'January', 'February', 'March',
 			'April', 'May', 'June',
 			'July', 'August', 'September',
 			'October', 'November', 'December' );

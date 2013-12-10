@@ -94,10 +94,16 @@ sub metadata {
 # This also transforms URIs to URLs in a view 
 # location -specific way
 sub publish {
-    my( $self, $c, $mediafile, $params ) = @_;
+    my( $self, $c, $mediafile, $params, $assets ) = @_;
     my $mf_json = $mediafile->TO_JSON;
     $mf_json->{'views'} = {}; 
-    my @views = $mediafile->assets; #->search({},{prefetch=>'media_asset_features'}); (SEEMS WORSE)
+    my @views;
+    if ( $assets ) {
+	@views = @$assets;
+    }
+    else {
+	@views = $mediafile->assets; #->search({},{prefetch=>'media_asset_features'}); (SEEMS WORSE)
+    }
     foreach my $view ( @views ) {
 	my $type = $view->{_column_data}->{asset_type};
 	my $view_json = $view->TO_JSON;
@@ -110,6 +116,9 @@ sub publish {
 	}
 
 	# Generate the URL from the URI
+	# THIS IS DONE EVEN FOR VIDEOS WITH A CLOUDFRONT URL because the iPad needs
+	# the original .mp4 file from S3!!
+	#
 	my $location = $view_json->{location};
 	my $klass = $c->config->{mediafile}->{$location};
 	my $fp = new $klass;
@@ -117,6 +126,7 @@ sub publish {
 	    $fp->uri2url( $c, $view_json, $params );
 
 	# If this is a video, also generate a cloudfront url
+	#
 	my $mimetype = MIME::Types->new()->mimeTypeOf( $view_json->{uri} ) || $view_json->{mimetype};
 	unless( $mimetype ) {
 	    $mimetype="unknown";

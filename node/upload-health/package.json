@@ -1,0 +1,22 @@
+{
+    "name": "uh",
+    "title": "Uploader Health Monitor",
+    "description": "Ping the upload service and report to CloudWatch",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+    	"request": "latest",
+	"node-cloudwatch": "latest",
+	"winston": "latest"
+    },
+    "monitor_endpoint": "https://viblio.com/files",
+    "monitor_method": "OPTIONS",
+    "cloudwatch_namespace": "Viblio/Uploader",
+    "cloudwatch_metricname": "ping",
+    "cloudwatch_unit": "Count",
+    "dimension_name": "Server",
+    "dimension_value": "prod",
+    "ping_interval": 30,
+    "ping_timeout": 5,
+    "reporting_interval": 60
+}
