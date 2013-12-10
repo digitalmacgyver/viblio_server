@@ -34,6 +34,9 @@ var util = require( "util" );
 
 var config = require( "./package.json" );
 
+var log = require( "winston" );
+log.add( log.transports.File, { filename: '/tmp/uh.log', json: false } );
+
 var REST = require('node-cloudwatch');
 var cw   = new REST.AmazonCloudwatchClient();
 
@@ -41,7 +44,12 @@ var failure_count = 0;
 
 if ( ! process.env[ 'AWS_ACCESS_KEY_ID' ] ||
      ! process.env[ 'AWS_SECRET_ACCESS_KEY' ] ) {
-    console.log( 'AWS_ACCESS_KEY_ID and/or AWS_SECRET_ACCESS_KEY are missing from the environment.' );
+    log.error( 'AWS_ACCESS_KEY_ID and/or AWS_SECRET_ACCESS_KEY are missing from the environment.' );
+    process.exit(1);
+}
+
+if ( ! process.env[ 'AWS_CLOUDWATCH_HOST' ] ) {
+    log.error( 'AWS_CLOUDWATCH_HOST is not set in the environment!' );
     process.exit(1);
 }
 
@@ -54,17 +62,19 @@ function ping() {
 	followRedirect: false
     }, function(error, response, body) {
 	if ( error && error.code == 'ETIMEDOUT' ) {
-	    console.log( 'timeout' );
+	    log.error( 'timeout' );
 	    failure_count += 1;
 	}
 	else {
-	    console.log( response.statusCode );
+	    log.info( response.statusCode );
 	    if ( response.statusCode != 200 )
 		failure_count += 1;
 	}
 	tmr = setTimeout( ping, config.ping_interval * 1000 );
     });
 }
+
+log.info( 'Starting...' );
 
 tmr = setTimeout( ping, config.ping_interval * 1000 );
 setInterval( function() {
@@ -75,9 +85,9 @@ setInterval( function() {
     params['MetricData.member.1.Value'] =  failure_count.toString();
     params['MetricData.member.1.Dimensions.member.1.Name'] =  config.dimension_name;
     params['MetricData.member.1.Dimensions.member.1.Value'] =  config.dimension_value;
-    console.log( util.inspect( params ) );
+    log.info( util.inspect( params ) );
     cw.request('PutMetricData', params, function (response) {
-	console.log(failure_count, JSON.stringify(response));
+	log.info(failure_count, JSON.stringify(response));
 	failure_count = 0; // reset for the next interval
     });
 }, config.reporting_interval * 1000 );
