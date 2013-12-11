@@ -24,7 +24,7 @@
         <span class="smallText">Video: [% model.media.0.title %]</span>
         <br />
         <br />
-        <span><a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span>
+        <span><a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> to watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span>
         <br />
         <br />
         <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
