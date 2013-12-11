@@ -8,10 +8,9 @@
         <br />
         <span>[% from.displayname %]'s message:</span><br />
         <span>"[% body %]"</span>
-        
-        <div class="line"></div>
-
-        <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">   
+        <br />
+        <br />
+        <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
                 <td cellspacing="0" cellpadding="0">
@@ -23,9 +22,8 @@
             </tr>
         </table>
         <span class="smallText">Video: [% model.media.0.title %]</span>
-
-        <div class="line"></div>
-
+        <br />
+        <br />
         <span><a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span>
         <br />
         <br />
