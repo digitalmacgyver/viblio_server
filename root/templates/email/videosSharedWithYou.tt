@@ -6,35 +6,29 @@
         <span class="largeText">[% from.displayname %] has shared a video with you through Viblio!</span>
         <br />
         <br />
-        <span>They say:</span><br />
+        <span>[% from.displayname %]'s message:</span><br />
         <span>"[% body %]"</span>
         
         <div class="line"></div>
 
-        <span>Video: [% model.media.0.title %]</span>
         <br />
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+                <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
                 <td cellspacing="0" cellpadding="0">
                     <a href='[% url %]'>
                         <img class='videoThumb-Lrg' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
                     </a>
                 </td>
+                <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
             </tr>
         </table>
+        <span>Video: [% model.media.0.title %]</span>
 
         <div class="line"></div>
 
-        <span>To maintain the privacy of this video, <a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> </span>
-        <br />
-        <br />
-        <span>If you don't already have an account, create your own password at the page from the link above, or better yet, <a class="tomato" href="[% c.server %]#getApp?from=share_email"><span class="tomato">DOWNLOAD</span></a> YOUR OWN VIBLIO FINDER SO THAT YOU CAN CREATE YOUR OWN VIBLIO LIBRARY.</span>
-        <br />
-        <br 
-        <span>Either way, you'll then be able to access and watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span>
-        <br />
-        <br />
-
+        <span><a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span>
+        
         <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
     </div>
 
