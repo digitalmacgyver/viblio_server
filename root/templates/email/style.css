@@ -343,6 +343,10 @@
                             font-weight: bolder;
                         }
                         
+                        .smallText {
+                            font-size: 12px;
+                        }
+                        
                         .video {
                             padding: 0 4px;
                         }
