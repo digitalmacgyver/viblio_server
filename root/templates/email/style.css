@@ -339,8 +339,12 @@
                         }
                         
                         .largeText {
-                            font-size: 34px;
+                            font-size: 24px;
                             font-weight: bolder;
+                        }
+                        
+                        .smallText {
+                            font-size: 12px;
                         }
                         
                         .video {
