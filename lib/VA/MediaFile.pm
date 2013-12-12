@@ -93,27 +93,39 @@ sub metadata {
 #
 # This also transforms URIs to URLs in a view 
 # location -specific way
+#
+# Params:
+# {
+#  assets => [ array-of-prefetched-assets ]       def: fetch all views
+#  views  => [ array-of-view-names-to-include ]   def: include all views
+#  include_contact_info => 0                      def: don't include faces
+#  expires => epoc                                def: $c->config
+#  use_cf => 0                                    def: don't generate cf urls
+# }
+#
 sub publish {
-    my( $self, $c, $mediafile, $params, $assets ) = @_;
+    my( $self, $c, $mediafile, $params ) = @_;
     my $mf_json = $mediafile->TO_JSON;
     $mf_json->{'views'} = {}; 
     my @views;
-    if ( $assets ) {
-	@views = @$assets;
+    if ( $params->{assets} ) {
+	@views = @{$params->{assets}};
     }
     else {
-	@views = $mediafile->assets; #->search({},{prefetch=>'media_asset_features'}); (SEEMS WORSE)
+	# We'll do faces later if requested
+	@views = $mediafile->assets;
+    }
+    my %include;
+    if ( $params->{views} ) {
+	%include = map { $_ => 1 } @{$params->{views}};
     }
     foreach my $view ( @views ) {
 	my $type = $view->{_column_data}->{asset_type};
-	my $view_json = $view->TO_JSON;
+	
+	next if ( $type eq 'face' ); # We will do faces later if requested
+	next if ( $params->{views} && !defined($include{$type}) );
 
-	if ( $params && $params->{include_contact_info} &&  $type eq 'face' ) {
-	    my $contact = $view->face_data;
-	    if ( $contact ) {
-		$view_json->{contact} = $contact->TO_JSON;
-	    }
-	}
+	my $view_json = $view->TO_JSON;
 
 	# Generate the URL from the URI
 	# THIS IS DONE EVEN FOR VIDEOS WITH A CLOUDFRONT URL because the iPad needs
@@ -151,16 +163,40 @@ sub publish {
 	    }
 	}
 	else {
-	    if ( $type eq 'face' ) {
-		$mf_json->{'views'}->{$type} = [];
-		push( @{$mf_json->{'views'}->{$type}}, $view_json );
-	    }
-	    else {
-		$mf_json->{'views'}->{$type} = $view_json;
-	    }
+	    $mf_json->{'views'}->{$type} = $view_json;
 	}
     }
+
+    # If faces were requested ...
+    if ( $params->{include_contact_info} ) {
+	my @feat = $c->model( 'RDS::MediaAssetFeature' )
+	    ->search({'me.media_id'=>$mediafile->id,
+		      'contact.id' => { '!=', undef },
+		      'me.feature_type'=>'face'},
+		     {prefetch=>['contact','media_asset'],
+		      group_by=>['contact.id']
+		     });
+	my @data = ();
+	foreach my $feat ( @feat ) {
+	    my $klass = $c->config->{mediafile}->{$feat->media_asset->location};
+	    my $fp = new $klass;
+	    my $url = $fp->uri2url( $c, $feat->media_asset->uri );
+	    my $hash = $feat->media_asset->TO_JSON;
+	    $hash->{url} = $url;
+	    $hash->{contact} = $feat->contact->TO_JSON;
+	    push( @data, $hash );
+	}
+	$mf_json->{views}->{face} = \@data;
+    }
+
     return $mf_json;
+}
+
+sub publish_minimal {
+    my( $self, $c, $mediafile, $assets ) = @_;
+    return $self->publish( $c, $mediafile, {
+	views => ['poster'],
+	assets => $assets || [] } );
 }
 
 # Log or return error messages

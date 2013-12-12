@@ -1499,28 +1499,8 @@ sub faces_in_mediafile :Local {
 	    ( $c, 
 	      $c->loc( 'Unable to find mediafile for [_1]', $mid ) );
     }
-    my @feat = $c->model( 'RDS::MediaAssetFeature' )
-	->search({'me.media_id'=>$m->id,
-		  'contact.id' => { '!=', undef },
-		  'me.feature_type'=>'face'},
-		 {prefetch=>['contact','media_asset'],
-		  group_by=>['contact.id']
-		 });
-    my @data = ();
-    foreach my $feat ( @feat ) {
-	my $klass = $c->config->{mediafile}->{$feat->media_asset->location};
-	my $fp = new $klass;
-	my $url = $fp->uri2url( $c, $feat->media_asset->uri );
-	my $hash = {
-	  url => $url,
-	  appears_in => 1,
-	};
-	if ( $feat->contact_id ) {
-	    $hash->{contact} = $feat->contact->TO_JSON;
-	}
-	push( @data, $hash );
-    }
-    $self->status_ok( $c, { faces => \@data } );
+    my $mf = VA::MediaFile->new->publish( $c, $m, { assets=>[],include_contact_info=>1} );
+    $self->status_ok( $c, { faces => $mf->{views}->{face} } );
 }
 
 sub geo_loc :Local {

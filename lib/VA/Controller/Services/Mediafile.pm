@@ -275,56 +275,64 @@ sub list :Local {
         [ page => undef,
           rows => 10,
 	  include_contact_info => 0,
+	  'views[]' => undef
         ],
         @_ );
 
-    my $where = {
-	-or => [ status => 'TranscodeComplete',
-		 status => 'FaceDetectComplete',
-		 status => 'FaceRecognizeComplete' ]
+    my $params = {
+	include_contact_info => $args->{include_contact_info},
+	views => $args->{'views[]'}
     };
 
+    my $rs = $c->user->media->search(
+	{ -or => [ status => 'TranscodeComplete',
+		   status => 'FaceDetectComplete',
+		   status => 'FaceRecognizeComplete' ] },
+	{ prefetch => 'assets',
+	  order_by => { -desc => 'me.id' } } );
+
     if ( $args->{page} ) {
-	my $rs = $c->user->media
-	    ->search( $where,
-		      { prefetch => 'assets',
-			order_by => { -desc => 'me.id' },
-			page => $args->{page},
-			rows => $args->{rows} } );
-	my $pager = $rs->pager;
+	my $rss = $rs->search({},{ page => $args->{page}, rows => $args->{rows}});
+	my $pager = $rss->pager;
 	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_, { include_contact_info => $args->{include_contact_info} } ) )
-	    foreach( $rs->all );
+	push( @media, VA::MediaFile->new->publish( $c, $_, $params ) )
+	    foreach( $rss->all );
 	$self->status_ok(
 	    $c,
 	    { media => \@media,
-	      pager => {
-		  total_entries => $pager->total_entries,
-		  entries_per_page => $pager->entries_per_page,
-		  current_page => $pager->current_page,
-		  entries_on_this_page => $pager->entries_on_this_page,
-		  first_page => $pager->first_page,
-		  last_page => $pager->last_page,
-		  first => $pager->first,
-		  'last' => $pager->last,
-		  previous_page => $pager->previous_page,
-		  next_page => $pager->next_page,
-	      }
+	      pager => $self->pagerToJson( $pager ),
 	    } );
     }
     else {
 	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_, { include_contact_info => $args->{include_contact_info} } ) )
-	    foreach( $c->user->media->search( $where, {prefetch=>'assets', order_by => { -desc => 'me.id' }} ) );
+	push( @media, VA::MediaFile->new->publish( $c, $_, $params ) )
+	    foreach( $rs->all );
 	$self->status_ok( $c, { media => \@media } );
     }
 }
+
+=head2 /services/mediafile/get
+
+Get the information for a single mediafile (mid=uuid).  If include_contact_info=1,
+then also return media.views.faces, an array of the contacts present in this
+media file.  If views=aa,bb then include only the views specified in the result.
+Specifying views can cause a significant speedup.
+
+=cut
 
 sub get :Local {
     my( $self, $c, $mid, $include_contact_info ) = @_;
     $mid = $c->req->param( 'mid' ) unless( $mid );
     $include_contact_info = $c->req->param( 'include_contact_info' ) unless( $include_contact_info );
     $include_contact_info = 0 unless( $include_contact_info );
+
+    my $params = {
+	include_contact_info => $include_contact_info,
+    };
+    if ( $c->req->param( 'views[]' ) ) {
+	my @views = $c->req->param( 'views[]' );
+	$params->{views} = \@views;
+    }
 
     my $mf = $c->user->media->find({uuid=>$mid},{prefetch=>'assets'});
 
@@ -333,7 +341,7 @@ sub get :Local {
 	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
     }
 
-    my $view = VA::MediaFile->new->publish( $c, $mf, { include_contact_info => $include_contact_info } );
+    my $view = VA::MediaFile->new->publish( $c, $mf, $params );
     $self->status_ok( $c, { media => $view } );
 }
 
@@ -986,18 +994,7 @@ sub related :Local {
 	if ( $#results >= 0 ) {
 	    @data = @results[ $data_pager->first - 1 .. $data_pager->last - 1 ];
 	}
-	$pager = {
-	    total_entries => $data_pager->total_entries,
-	    entries_per_page => $data_pager->entries_per_page,
-	    current_page => $data_pager->current_page,
-	    entries_on_this_page => $data_pager->entries_on_this_page,
-	    first_page => $data_pager->first_page,
-	    last_page => $data_pager->last_page,
-	    first => $data_pager->first,
-	    'last' => $data_pager->last,
-	    previous_page => $data_pager->previous_page,
-	    next_page => $data_pager->next_page,
-	}; 
+	$pager = $self->pagerToJson( $data_pager );
     }
     else {
 	@data = @results;
@@ -1010,7 +1007,7 @@ sub related :Local {
     # we know the assets already, and are sure we know how the media file will be
     # consumed on the client.
     # $_->media->assets->find({ asset_type=>'main'})
-    push( @media, VA::MediaFile->new->publish( $c, $_->media, {}, [$_] ) ) foreach( @data );
+    push( @media, VA::MediaFile->new->publish( $c, $_->media, { assets => [$_] } ) ) foreach( @data );
     $self->status_ok( $c, { media => \@media, pager => $pager } );
 }
 

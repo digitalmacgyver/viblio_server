@@ -120,7 +120,13 @@ sub parse_args : Private {
 	    $ret->{$key} = $arg;
 	}
 	elsif ( defined( $c->req->param( $key ) ) ) {
-	    $ret->{$key} = $c->req->param( $key );
+	    if ( $key =~ /\[\]$/ ) {
+		my @a = $c->req->param( $key );
+		$ret->{$key} = \@a;
+	    }
+	    else {
+		$ret->{$key} = $c->req->param( $key );
+	    }
 	}
 	elsif ( defined( $c->{data} && defined( $c->{data}->{$key} ) ) ) {
 	    $ret->{$key} = $c->{data}->{$key};
@@ -306,6 +312,24 @@ sub end : Private {
 	    }
 	}
     }
+}
+
+# Convert a Data::Page object into JSON to send over API calls
+#
+sub pagerToJson :Private {
+    my ( $self, $pager ) = @_;
+    return {
+	total_entries => $pager->total_entries,
+	entries_per_page => $pager->entries_per_page,
+	current_page => $pager->current_page,
+	entries_on_this_page => $pager->entries_on_this_page,
+	first_page => $pager->first_page,
+	last_page => $pager->last_page,
+	first => $pager->first,
+	'last' => $pager->last,
+	previous_page => $pager->previous_page,
+	next_page => $pager->next_page,
+    };
 }
 
 # List all available service endpoints by the name you'd use
