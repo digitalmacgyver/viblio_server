@@ -75,9 +75,14 @@ exit 1 unless( $result );
 while (( my $arg = shift @ARGV )) {
     my( $k, $v ) = split( /=/, $arg, 2 );
     if ( $k && $v ) {
+	if ( $k =~ /\[\]$/ ) {
+	    my @v = split(/,/,$v);
+	    $v = \@v;
+	}
 	push( @args, $k => $v );
     }
 }
+
 
 #unless( $user ) {
 #    die "Must specify --username for authentication!";

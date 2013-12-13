@@ -40,7 +40,8 @@ sub media_face_appears_in :Local {
         [ page => undef,
           rows => 10,
 	  asset_id => undef,
-	  contact_uuid => undef
+	  contact_uuid => undef,
+	  'views[]' => undef,
         ],
         @_ );
 
@@ -76,45 +77,34 @@ sub media_face_appears_in :Local {
 	    ( $c, 
 	      $c->loc( 'Unable to find asset for [_1]', $asset_id ) );
 	}
-	my $mediafile = VA::MediaFile->new->publish( $c, $asset->media );
+	my $mediafile = VA::MediaFile->new->publish( $c, $asset->media, { $args->{'views[]'} } );
 	$self->status_ok( $c, { media => [ $mediafile ] } );
     }
     else {
 	# This is an identified face and may appear in multiple media files.
 	my @features = ();
 	my $pager;
+	my $rs = $c->model( 'RDS::MediaAssetFeature' )
+	    ->search(
+	    { contact_id => $contact_id, 'me.user_id' => $user->id },
+	    { prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
+	my $features = ();
 	if ( $args->{page} ) {
-	    my $rs = $c->model( 'RDS::MediaAssetFeature' )
-		->search(
-		{ contact_id => $contact_id, 'me.user_id' => $user->id},
-		{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'], page => $args->{page}, rows => $args->{rows} } );
-	    $pager = $rs->pager;
-	    @features = $rs->all;
+	    my $features = $rs->search({},{page=>$args->{page}, rows=>$args->{rows}});
+	    @features    = $features->all;
+	    $pager       = $features->pager;
 	}
 	else {
-	    @features = $c->model( 'RDS::MediaAssetFeature' )
-		->search(
-		{ contact_id => $contact_id, 'me.user_id' => $user->id },
-		{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
+	    @features = $rs->all
 	}
+
 	my @media = ();
 	foreach my $feature ( @features ) {
-	    push( @media, VA::MediaFile->new->publish( $c, $feature->media_asset->media ) );
+	    push( @media, VA::MediaFile->new->publish( $c, $feature->media_asset->media, { views=>$args->{'views[]'} } ) );
 	}
 	if ( $pager ) {
 	    $self->status_ok( $c, { media => \@media,
-				    pager => {
-				    total_entries => $pager->total_entries,
-				    entries_per_page => $pager->entries_per_page,
-				    current_page => $pager->current_page,
-				    entries_on_this_page => $pager->entries_on_this_page,
-				    first_page => $pager->first_page,
-				    last_page => $pager->last_page,
-				    first => $pager->first,
-				    'last' => $pager->last,
-				    previous_page => $pager->previous_page,
-				    next_page => $pager->next_page,
-				    } } );
+				    pager => $self->pagerToJson( $pager ) } );
 	}
 	else {
 	    $self->status_ok( $c, { media => \@media } );
@@ -194,11 +184,6 @@ sub contacts :Local {
 	$hash->{appears_in} = $c->model( 'RDS::MediaAssetFeature' )->
 	    search({contact_id=>$feat->contact_id},{prefetch => { 'media_asset' => 'media' }, group_by => ['media.id']})->count;
 
-	## REMOVE ME
-	if ( ! defined( $hash->{uuid} ) ) {
-	    $hash->{uuid} = $hash->{id};
-	}
-
 	push( @data, $hash );
     }
 
@@ -219,18 +204,7 @@ sub contacts :Local {
 	}
 	
 	$self->status_ok( $c, { faces => \@slice, 
-				pager => {
-				    total_entries => $pager->total_entries,
-				    entries_per_page => $pager->entries_per_page,
-				    current_page => $pager->current_page,
-				    entries_on_this_page => $pager->entries_on_this_page,
-				    first_page => $pager->first_page,
-				    last_page => $pager->last_page,
-				    first => $pager->first,
-				    'last' => $pager->last,
-				    previous_page => $pager->previous_page,
-				    next_page => $pager->next_page,
-				} } );
+				pager => $self->pagerToJson( $pager ) });
     }
     else {
 	$self->status_ok( $c, { faces => \@sorted } );
@@ -275,6 +249,10 @@ record.  The second face is present but unknown.
 
 sub faces_in_mediafile :Local {
     my( $self, $c ) = @_;
+    #
+    # Delegate to an unauthenticated version of this routine, needed by
+    # the web player page.
+    #
     $c->forward( '/services/na/faces_in_mediafile' );
 }
 

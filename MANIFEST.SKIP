@@ -27,6 +27,7 @@ VA-0.01.tar.gz
 ^node/fd/
 ^node/fu/
 ^node/mq/node_modules
+^node/upload-health/node_modules
 ^node/fs/
 ^node/faces/
 

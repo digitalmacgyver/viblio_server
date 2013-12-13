@@ -211,7 +211,106 @@ sub delete :Local {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to delete this media file from storage." ) );
     }
-    # Delete from database
+    # Deal with faces.  
+    #
+    # foreach face in this video:
+    #   if unidentified 
+    #     if only in this video
+    #       delete the contact
+    #   else if identified
+    #     if only in this video
+    #       unset picture_uri
+    #     else
+    #       set picture_uri to some other video
+    #
+
+    # Leverage the publish routine to obtain faces for
+    # this mediafile.
+    my $mediafile = VA::MediaFile->new->publish( $c, $mf, { assets => [], include_contact_info => 1 } );
+    my @faces = @{$mediafile->{views}->{face}};
+
+    # Generic resultset for finding other mediafiles (other than this one)
+    my $rs = $c->model( 'RDS::MediaAssetFeature' )->search({
+	'media.id' => { '!=', $mf->id } }, {
+	    prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
+
+    foreach my $face ( @faces ) {
+	$c->log->debug( "Face: name: " . $face->{contact}->{contact_name} . ", uuid: " . $face->{contact}->{uuid} );
+	if ( ! $face->{contact}->{contact_name} ) {
+	    # unidentified
+	    $c->log->debug( "  unidentified" );
+	    # Other mediafiles with this contact
+	    my $count = $rs->search({'me.contact_id' => $face->{contact}->{id}})->count;
+	    $c->log->debug( "  -> in $count other videos" );
+	    if ( $count == 0 ) {
+		# No others, so delete the contact
+		my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $face->{contact}->{uuid} });
+		if ( $contact ) {
+		    $c->log->debug( "  -> DELETE " . $face->{contact}->{uuid} );
+		    $contact->delete; $contact->update;
+		}
+	    }
+	}
+	else {
+	    # identified
+	    $c->log->debug( "  identified" );
+	    # Other mediafiles with this contact
+	    my $count = $rs->search({'me.contact_id' => $face->{contact}->{id}})->count;
+	    $c->log->debug( "  -> in $count other videos" );
+	    if ( $count == 0 ) {
+		# In no other videos.  Unset the picture_uri if it points
+		# to this video
+		my $cnt = $c->model( 'RDS::MediaAsset' )->search({
+		    media_id => $mf->id,
+		    uri => $face->{contact}->{picture_uri} })->count;
+		if ( $cnt == 0 ) {
+		    # There is a picture_uri, but it does not point to any
+		    # of this mediafile's assets, so leave it alone.  It
+		    # could be a contact with a pic, but not in any video
+		    # like a FB contact
+		    $c->log->debug( "  -> PRESERVE picture_uri" );
+		}
+		else {
+		    my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $face->{contact}->{uuid} });
+		    if ( $contact ) {
+			# There is a picture_uri, and it points to an asset about to be
+			# deleted, and there are no other videos to which to point to,
+			# so unset the picture_uri.
+			$c->log->debug( "  -> UNSET picture_uri " . $face->{contact}->{uuid} );
+			$contact->picture_uri( undef ); $contact->update;
+		    }
+		}
+	    }
+	    else {
+		# This person is in other videos.  If the picture_uri points to
+		# one of the assets in this video, then must point it to one of
+		# the assets in one of the other videos.
+		my $cnt = $c->model( 'RDS::MediaAsset' )->search({
+		    media_id => $mf->id,
+		    uri => $face->{contact}->{picture_uri} })->count;
+		if ( $cnt == 0 ) {
+		    # There is a picture_uri, but it does not point to any
+		    # of this mediafile's assets, so leave it alone.
+		    $c->log->debug( "  -> PRESERVE picture_uri" );
+		}
+		else {
+		    # The picture_uri needs to be changed.
+		    $c->log->debug( "  -> SWITCH picture_uri" );
+		    my @others = $rs->search({'me.contact_id' => $face->{contact}->{id}});
+		    if ( $#others >= 0 ) {
+			my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $face->{contact}->{uuid} });
+			if ( $contact ) {
+			    $c->log->debug( "  -> commit" );
+			    $contact->picture_uri( $others[0]->media_asset->uri );
+			    $contact->update;
+			}
+		    }
+		}
+	    }
+	}
+    }
+
+    # Finally, delete record from the database
     $mf->delete;
     $self->status_ok( $c, {} );
 }
@@ -275,56 +374,64 @@ sub list :Local {
         [ page => undef,
           rows => 10,
 	  include_contact_info => 0,
+	  'views[]' => undef
         ],
         @_ );
 
-    my $where = {
-	-or => [ status => 'TranscodeComplete',
-		 status => 'FaceDetectComplete',
-		 status => 'FaceRecognizeComplete' ]
+    my $params = {
+	include_contact_info => $args->{include_contact_info},
+	views => $args->{'views[]'}
     };
 
+    my $rs = $c->user->media->search(
+	{ -or => [ status => 'TranscodeComplete',
+		   status => 'FaceDetectComplete',
+		   status => 'FaceRecognizeComplete' ] },
+	{ prefetch => 'assets',
+	  order_by => { -desc => 'me.id' } } );
+
     if ( $args->{page} ) {
-	my $rs = $c->user->media
-	    ->search( $where,
-		      { prefetch => 'assets',
-			order_by => { -desc => 'me.id' },
-			page => $args->{page},
-			rows => $args->{rows} } );
-	my $pager = $rs->pager;
+	my $rss = $rs->search({},{ page => $args->{page}, rows => $args->{rows}});
+	my $pager = $rss->pager;
 	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_, { include_contact_info => $args->{include_contact_info} } ) )
-	    foreach( $rs->all );
+	push( @media, VA::MediaFile->new->publish( $c, $_, $params ) )
+	    foreach( $rss->all );
 	$self->status_ok(
 	    $c,
 	    { media => \@media,
-	      pager => {
-		  total_entries => $pager->total_entries,
-		  entries_per_page => $pager->entries_per_page,
-		  current_page => $pager->current_page,
-		  entries_on_this_page => $pager->entries_on_this_page,
-		  first_page => $pager->first_page,
-		  last_page => $pager->last_page,
-		  first => $pager->first,
-		  'last' => $pager->last,
-		  previous_page => $pager->previous_page,
-		  next_page => $pager->next_page,
-	      }
+	      pager => $self->pagerToJson( $pager ),
 	    } );
     }
     else {
 	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_, { include_contact_info => $args->{include_contact_info} } ) )
-	    foreach( $c->user->media->search( $where, {prefetch=>'assets', order_by => { -desc => 'me.id' }} ) );
+	push( @media, VA::MediaFile->new->publish( $c, $_, $params ) )
+	    foreach( $rs->all );
 	$self->status_ok( $c, { media => \@media } );
     }
 }
+
+=head2 /services/mediafile/get
+
+Get the information for a single mediafile (mid=uuid).  If include_contact_info=1,
+then also return media.views.faces, an array of the contacts present in this
+media file.  If views=aa,bb then include only the views specified in the result.
+Specifying views can cause a significant speedup.
+
+=cut
 
 sub get :Local {
     my( $self, $c, $mid, $include_contact_info ) = @_;
     $mid = $c->req->param( 'mid' ) unless( $mid );
     $include_contact_info = $c->req->param( 'include_contact_info' ) unless( $include_contact_info );
     $include_contact_info = 0 unless( $include_contact_info );
+
+    my $params = {
+	include_contact_info => $include_contact_info,
+    };
+    if ( $c->req->param( 'views[]' ) ) {
+	my @views = $c->req->param( 'views[]' );
+	$params->{views} = \@views;
+    }
 
     my $mf = $c->user->media->find({uuid=>$mid},{prefetch=>'assets'});
 
@@ -333,7 +440,7 @@ sub get :Local {
 	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
     }
 
-    my $view = VA::MediaFile->new->publish( $c, $mf, { include_contact_info => $include_contact_info } );
+    my $view = VA::MediaFile->new->publish( $c, $mf, $params );
     $self->status_ok( $c, { media => $view } );
 }
 
@@ -764,6 +871,28 @@ sub delete_share :Local {
     $self->status_ok( $c, { deleted => \@deleted } );
 }
 
+=head2 /services/mediafile/cf
+
+Return the S3 and cloudfront urls for a video
+
+=cut
+
+sub cf :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $asset = $c->model( 'RDS::MediaAsset' )->find({ 'media.uuid' => $mid,
+						       'me.asset_type' => 'main',
+						       'media.user_id' => $c->user->id },
+						     { prefetch => 'media' });
+    unless( $asset ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find main asset for media [_1]', $mid ) );
+    }
+    $self->status_ok( $c, { 
+	url    => VA::MediaFile::US->new->uri2url( $c, $asset->uri ),
+	cf_url => $c->cf_sign( $asset->uri, {stream=>1} ) } );
+}
+    
+
 =head2 /services/mediafile/related
 
 Return list of mediafiles related to the passed in mediafile.  You can specify
@@ -964,18 +1093,7 @@ sub related :Local {
 	if ( $#results >= 0 ) {
 	    @data = @results[ $data_pager->first - 1 .. $data_pager->last - 1 ];
 	}
-	$pager = {
-	    total_entries => $data_pager->total_entries,
-	    entries_per_page => $data_pager->entries_per_page,
-	    current_page => $data_pager->current_page,
-	    entries_on_this_page => $data_pager->entries_on_this_page,
-	    first_page => $data_pager->first_page,
-	    last_page => $data_pager->last_page,
-	    first => $data_pager->first,
-	    'last' => $data_pager->last,
-	    previous_page => $data_pager->previous_page,
-	    next_page => $data_pager->next_page,
-	}; 
+	$pager = $self->pagerToJson( $data_pager );
     }
     else {
 	@data = @results;
@@ -987,8 +1105,8 @@ sub related :Local {
     # much faster, since the assets do not need to be fetched.  We can do this if
     # we know the assets already, and are sure we know how the media file will be
     # consumed on the client.
-    #
-    push( @media, VA::MediaFile->new->publish( $c, $_->media, {}, [$_, $_->media->assets->find({ asset_type=>'main'})] ) ) foreach( @data );
+    # $_->media->assets->find({ asset_type=>'main'})
+    push( @media, VA::MediaFile->new->publish( $c, $_->media, { assets => [$_] } ) ) foreach( @data );
     $self->status_ok( $c, { media => \@media, pager => $pager } );
 }
 
