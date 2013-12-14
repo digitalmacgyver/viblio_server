@@ -880,10 +880,13 @@ Return the S3 and cloudfront urls for a video
 sub cf :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $asset = $c->model( 'RDS::MediaAsset' )->find({ 'media.uuid' => $mid,
-						       'me.asset_type' => 'main',
-						       'media.user_id' => $c->user->id },
-						     { prefetch => 'media' });
+    my $rs = $c->model( 'RDS::MediaAsset' )->search(
+	{ 'media.uuid' => $mid,
+	  'me.asset_type' => 'main',
+	  -or => [ 'media.user_id' => $c->user->id,
+		   'media_shares.user_id' => $c->user->id ] },
+	{ prefetch => {'media' => 'media_shares' } });
+    my $asset = $rs->first;
     unless( $asset ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find main asset for media [_1]', $mid ) );
     }
