@@ -549,6 +549,12 @@ sub add_comment :Local {
     my $hash = $comment->TO_JSON;
     $hash->{who} = $comment->user->displayname;
 
+    ### MONA WANTS TO TURN THIS OFF BECAUSE SHE IS WORRIED ABOUT SPAMMING
+
+    $self->status_ok( $c, { comment => $hash } );
+
+    #################################################################################
+
     # Send emails and notifications (but not to myself!)
 
     # Who should get email/notofications?  The owner of the video being commented on,
