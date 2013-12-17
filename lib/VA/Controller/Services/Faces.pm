@@ -595,7 +595,10 @@ sub delete_contact :Local {
 
     if ( $contact->contact_name ) {
 	# This is a known contact
-	$contact->picture_uri( undef ); $contact->update;
+	$contact->picture_uri( undef ); 
+	$contact->contact_name( undef ); 
+	$contact->contact_email( undef ); 
+	$contact->update;
 	foreach my $feat ( @feats ) {
 	    $feat->delete; $feat->update;
 	}
