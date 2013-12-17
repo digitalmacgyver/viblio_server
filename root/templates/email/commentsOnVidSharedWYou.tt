@@ -2,9 +2,9 @@
     previewText = "Someone has commented on a video shared with you!"
 %]
     <div class="regSize darkText" style="text-align: left;">
-        <span>[% from.displayname %] has commented on a video shared with you through Viblio.</span>
-        
-        <div class="line centered"></div>
+        <span>[% from.displayname %] has posted the following comment:</span>
+        <br />
+        <span style="text-align: center;"><em>[% commentText %]</em></span>
 
         <span>[% model.media.title %]</span>
         <br />
@@ -12,13 +12,6 @@
         <a class="noUnderline" href='[% c.server %]#web_player?mid=[% model.media.uuid %]'>
             <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.views.poster.uri %]" />
         </a>
-
-        <div class="line centered"></div>
-
-        <span>Comment:</span>
-        <br />
-        <span style="text-align: center;"><em>[% commentText %]</em></span>
-        <br />
         <br />
         <span><a class="tomato" href='[% c.server %]#web_player?mid=[% model.media.uuid %]'><span class="tomato">See the comment</span></a> in your Viblio library and comment back.
     </div>
