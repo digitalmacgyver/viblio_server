@@ -811,31 +811,62 @@ sub count :Local {
 
 =head2 /services/mediafile/all_shared
 
-Return a struct that contains all media shared to this user.  
+Return a struct that contains all media shared to this user.  The return is an
+array of structs that look like:
+
+  { 
+    owner: {
+      * user record, person who shared this media
+    },
+    media: [
+      * array of media files shared by owner
+    ]
+  }
+
+If cid is passed in, it is interpreted as a contact_uuid, and will filter
+the results so that only media containing this contact are returned.
 
 =cut
 
 sub all_shared :Local {
     my( $self, $c ) = @_;
     my $user = $c->user->obj;
+    my $cid  = $c->req->param( 'cid' );
 
-    my @shares = $user->media_shares->search( {},{prefetch=>{ media => 'user'}} );
+    my @media = ();
+    if ( $cid ) {
+	my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $cid });
+	if ( $contact ) {
+	    my @shares = $user->media_shares->search( {},{prefetch=>{ media => 'user'}} );
+	    my @media_ids = map { $_->media->id } @shares;
+	    my @feats = $c->model( 'RDS::MediaAssetFeature' )
+		->search({ 'me.contact_id' => $contact->id,
+			   'me.feature_type' => 'face',
+			   'media.id', { '-in', \@media_ids } },
+			 { prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] });
+	    @media = map { $_->media_asset->media } @feats;
+	}
+    }
+    else {
+	my @shares = $user->media_shares->search( {},{prefetch=>{ media => 'user'}} );
+	@media = map { $_->media } @shares;
+    }
     
     # partition this into an array of users, each with an array of videos they've
     # shared with you.
 
     my $users = {};
-    foreach my $share ( @shares ) {
-	my $owner = $share->media->user->displayname;
+    foreach my $media ( @media ) {
+	my $owner = $media->user->displayname;
 	if ( ! defined( $users->{ $owner } ) ) {
 	    $users->{ $owner } = [];
 	}
-	push( @{$users->{ $owner }}, $share->media );
+	push( @{$users->{ $owner }}, $media );
     }
     my @sorted_user_keys = sort{ lc( $a ) cmp lc( $b ) } keys( %$users );
     my @data = ();
     foreach my $key ( @sorted_user_keys ) {
-	my @media = map { VA::MediaFile->publish( $c, $_ ) } sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }};
+	my @media = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ] } ) } sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }};
 	push( @data, {
 	    owner => $users->{ $key }[0]->user->TO_JSON,
 	    media => \@media
