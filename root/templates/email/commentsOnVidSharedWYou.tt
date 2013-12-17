@@ -5,13 +5,14 @@
         <span>[% from.displayname %] has posted the following comment:</span>
         <br />
         <span style="text-align: center;"><em>[% commentText %]</em></span>
-
-        <span>[% model.media.title %]</span>
         <br />
+        <br />
+        <span>[% model.media.title %]</span>
         <br />
         <a class="noUnderline" href='[% c.server %]#web_player?mid=[% model.media.uuid %]'>
             <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.views.poster.uri %]" />
         </a>
+        <br />
         <br />
         <span><a class="tomato" href='[% c.server %]#web_player?mid=[% model.media.uuid %]'><span class="tomato">See the comment</span></a> in your Viblio library and comment back.
     </div>
