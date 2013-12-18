@@ -130,7 +130,7 @@ sub template_test :Local {
     my @media_array = ( $mf );
     if ( $#media > 0 ) {
 	push( @media_array, VA::MediaFile->new->publish
-	      ( $c, $media[1], { include_contact_info => 1, expires => (60*60*24*365) } ) );
+	      ( $c, $media[1], { views => ['faces'], include_contact_info => 1, expires => (60*60*24*365) } ) );
     }
 
     $c->stash->{no_wrapper} = 1;
@@ -152,10 +152,11 @@ sub template_test :Local {
 		totalVideosInAccount => $c->user->media->count
 	    },
 	},
-	from => $c->user,
-	body => "This was text from textarea.",
-	url => sprintf( "%s#register?email=%s", $c->server,  $c->user->email ),
-	new_password => 'xxxyyyzzzfff',
+		    from => $c->user,
+		    commentText => "This is a new comment",
+		    body => "This was text from textarea.",
+		    url => sprintf( "%s#register?email=%s", $c->server,  $c->user->email ),
+		    new_password => 'xxxyyyzzzfff',
 	      });
 
     my $exception;

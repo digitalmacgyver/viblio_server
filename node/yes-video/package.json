@@ -1,0 +1,21 @@
+{
+    "name": "yes-video",
+    "title": "Yes Video",
+    "description": "Interact with Yes Video web service.",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "express": "3.1.0",
+        "ejs": "0.8.x",
+        "konphyg": "1.2.x",
+	"formidable": "latest",
+	"request": "latest",
+	"winston": "latest",
+	"express-winston": "latest",
+	"async": "latest"
+    },
+    "trace": true,
+    "port": 3000,
+    "client_id": "e5e41c31a104532b869b00e2c1c3502ceafaafa82ba603890d097ce0bdd865c0",
+    "secret": "605c1235ddf37cae041a345578bdccc5ac81b64b02b63cb0e945dd29fd880c81"
+}
