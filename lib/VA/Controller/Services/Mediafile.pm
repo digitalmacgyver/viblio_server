@@ -561,7 +561,7 @@ sub add_comment :Local {
     # and everybody who has been shared this video.  The logged in user
     # making the comment should never get an email.
 
-    my $published_mf = VA::MediaFile->new->publish( $c, $mf );
+    my $published_mf = VA::MediaFile->new->publish( $c, $mf, { views => ['poster'] } );
     if ( $c->user->id != $mf->user->id ) {
 	my $res = $c->model( 'MQ' )->post( '/enqueue', 
 					   { uid => $mf->user->uuid,
@@ -580,7 +580,7 @@ sub add_comment :Local {
 		    from => $c->user->obj,
 		    commentText => $comment->comment,
 		    model => {
-			media => $published_mf 
+			media => [ $published_mf ] 
 		    }
 		} });
 	}
@@ -609,7 +609,7 @@ sub add_comment :Local {
 		    from => $c->user->obj,
 		    commentText => $comment->comment,
 		    model => {
-			media => $published_mf 
+			media => [ $published_mf ] 
 		    }
 		} });
 	}

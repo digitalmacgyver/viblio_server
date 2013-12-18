@@ -124,13 +124,13 @@ sub template_test :Local {
 
     my $mf = VA::MediaFile->new->publish
 	( $c, $media, 
-	  { include_contact_info => 1, 
+	  { views => ['poster'], include_contact_info => 1, 
 	    expires => (60*60*24*365) } );
 
     my @media_array = ( $mf );
     if ( $#media > 0 ) {
 	push( @media_array, VA::MediaFile->new->publish
-	      ( $c, $media[1], { views => ['faces'], include_contact_info => 1, expires => (60*60*24*365) } ) );
+	      ( $c, $media[1], { views => ['poster'], include_contact_info => 1, expires => (60*60*24*365) } ) );
     }
 
     $c->stash->{no_wrapper} = 1;
