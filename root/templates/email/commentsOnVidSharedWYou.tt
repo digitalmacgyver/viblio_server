@@ -7,14 +7,14 @@
         <span style="text-align: center;"><em>[% commentText %]</em></span>
         <br />
         <br />
-        <span>[% model.media.title %]</span>
+        <span>[% model.media.0.title %]</span>
         <br />
         <a class="noUnderline" href='[% c.server %]#web_player?mid=[% model.media.uuid %]'>
-            <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.views.poster.uri %]" />
+            <img class='videoThumb-Lrg boxShadowed' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
         </a>
         <br />
         <br />
-        <span><a class="tomato" href='[% c.server %]#web_player?mid=[% model.media.uuid %]'><span class="tomato">See the comment</span></a> in your Viblio library and comment back.
+        <span><a class="tomato" href='[% c.server %]#web_player?mid=[% model.media.0.uuid %]'><span class="tomato">See the comment</span></a> in your Viblio library and comment back.
     </div>
     
 [% INCLUDE email/bottom.tt %]                                                        
