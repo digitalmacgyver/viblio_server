@@ -81,6 +81,9 @@ sub months :Local {
     my @uniq = ();
     foreach my $mf ( @sorted ) {
 	my $label = $mf->recording_date->month_name . ' ' . $mf->recording_date->year;
+	if ( $mf->recording_date->epoch == 0 ) {
+	    $label = $c->loc( 'Missing dates' );
+	}
 	if ( ! defined( $bin->{$label} ) ) {
 	    $bin->{$label} = 1;
 	    push( @uniq, $label );
@@ -248,42 +251,58 @@ sub videos_for_month :Local {
     my $page  = $c->req->param( 'page' );
     my $rows  = $c->req->param( 'rows' );
 
+    my $missing = 0;
+
     unless( $month ) {
 	$self->status_bad_request(
 	    $c, $c->loc( 'Missing month parameter' ) );
     }
 
-    unless( $year ) {
-	if ( $month =~ /(\S+)\s+(\d+)/ ) {
-	    $month = $1; $year = $2;
+    if ( $month eq $c->loc( 'Missing dates' ) ) {
+	$missing = 1;
+    }
+
+    my $from;
+    my $to;
+    if ( $missing ) {
+	$from = DateTime->from_epoch( epoch => 0 );
+	$to   = $from;
+    }
+    else {
+
+	unless( $year ) {
+	    if ( $month =~ /(\S+)\s+(\d+)/ ) {
+		$month = $1; $year = $2;
+	    }
 	}
+	unless ( $year ) {
+	    $self->status_bad_request(
+		$c, $c->loc( 'Missing year parameter' ) );
+	}
+
+	my @month_names = ( 'NA',
+			    'January', 'February', 'March',
+			    'April', 'May', 'June',
+			    'July', 'August', 'September',
+			    'October', 'November', 'December' );
+
+	my $mo = 0;
+	for( $mo = 0; $mo <= $#month_names; $mo++ ) {
+	    last if ( $month_names[$mo] eq $month );
+	}
+
+	# Create a from and to date to include all videos
+	# created during this period
+	#
+	$from = DateTime->new(
+	    year => $year,
+	    month => $mo, day => 1, 
+	    hour => 0, minute => 0 );
+
+	$to = $from->clone;
+	$to->add( months => 1 )->subtract( days => 1 );
+
     }
-    unless ( $year ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Missing year parameter' ) );
-    }
-
-    my @month_names = ( 'NA',
-			'January', 'February', 'March',
-			'April', 'May', 'June',
-			'July', 'August', 'September',
-			'October', 'November', 'December' );
-
-    my $mo = 0;
-    for( $mo = 0; $mo <= $#month_names; $mo++ ) {
-	last if ( $month_names[$mo] eq $month );
-    }
-
-    # Create a from and to date to include all videos
-    # created during this period
-    #
-    my $from = DateTime->new(
-	year => $year,
-	month => $mo, day => 1, 
-	hour => 0, minute => 0 );
-
-    my $to = $from->clone;
-    $to->add( months => 1 )->subtract( days => 1 );
 
     # This thing is a date formatter which will format DateTime
     # dates properly for our database model.
@@ -305,10 +324,6 @@ sub videos_for_month :Local {
 	@posters = $self->posters_for_user( $c, $dtf, $from, $to, $page, $rows, \$pager );
     }
 
-    # This creates a hash who's keys are month names and
-    # values are array of mediafiles created during this
-    # month.
-    #
     my @data = ();
     foreach my $poster ( @posters ) {
 	my $hash = $poster->media->TO_JSON;
