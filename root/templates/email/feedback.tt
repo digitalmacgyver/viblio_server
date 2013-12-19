@@ -1,0 +1,26 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <!-- Facebook sharing information tags -->
+    <meta property="og:title" content="[% subject %]" />
+        
+    <title>[% subject %]</title>
+    <style>
+      [% INCLUDE email/style.css %]
+    </style>
+  </head>
+  <body>
+    <table border="0">
+      <tr>
+	<td>Location:</td><td>[% feedback_location %]</td>
+      </tr>
+      <tr>
+	<td>User:</td><td>[% feedback_user %]</td>
+      </tr>
+    </table>
+    <hr />
+    [% feedback %]
+  </body>
+</html>
+
