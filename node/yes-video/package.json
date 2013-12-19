@@ -17,6 +17,7 @@
     },
     "trace": true,
     "port": 3000,
+    "tmpdir": "/tmp",
     "client_id": "e5e41c31a104532b869b00e2c1c3502ceafaafa82ba603890d097ce0bdd865c0",
     "secret": "605c1235ddf37cae041a345578bdccc5ac81b64b02b63cb0e945dd29fd880c81"
 }
