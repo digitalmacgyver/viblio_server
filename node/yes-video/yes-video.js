@@ -1,10 +1,12 @@
 var express = require( 'express' );
 var http = require( 'http' );
+var https = require( 'https' );
 var formidable = require( 'formidable' );
 var fs = require( 'fs' );
 var request = require( 'request' );
 var util = require( 'util' );
 var async = require( 'async' );
+var AwsSign = require('aws-sign');
 
 var config = require( './package.json' );
 
@@ -45,6 +47,7 @@ app.configure(function() {
         ]
     }));
 
+    app.use(express.bodyParser({ keepExtensions: true, uploadDir: '/tmp' }));
     app.use(app.router);
     app.use(expressWinston.errorLogger({
         transports: [
@@ -121,6 +124,10 @@ function api( method, endpoint, data, callback ) {
     });
 }
 
+function filenames( filename ) {
+    return( [ filename, filename ] );
+}
+
 // Can use '/' as a health check.  Does not atempt to authenticate with yes video.
 app.get( '/', function( req, res, next ) {
     res.json({ healthy: true });
@@ -179,6 +186,82 @@ app.get( '/build', auth, function( req, res, next ) {
 	}, seconds);
     }, function( err, results ) {
 	log.debug( 'UPLOAD COMPLETE' );
+    });
+});
+
+// curl -v -X POST -H "Content-Type: application/json" -d '{"foo":"bar"}' http://localhost:3000/json
+// curl -v -X POST -H "Content-Type: application/json" --data @/tmp/yes.json http://localhost:3000/json
+//
+app.post( '/json', function( req, res, next ) {
+    // logdump( req.body );
+
+    // S3 information
+    var s3 = req.body.s3;
+
+    // User information
+    var user = req.body.user;
+
+    // The disk type
+    var disk_type = req.body.disk_type;
+
+    // The files array
+    var files = req.body.files;
+
+    // Some validation
+    if ( ! s3 ) 
+	res.json({error: true, error_description: 'Missing S3 data'});
+
+    if ( ! user ) 
+	res.json({error: true, error_description: 'Missing user data'});
+
+    if ( ! disk_type ) 
+	res.json({error: true, error_description: 'Missing disk type data'});
+
+    if ( ! files ) 
+	res.json({error: true, error_description: 'Missing files data'});
+
+    // Everything OK so far, detach early
+    res.json( req.body );
+
+    // Now go to it!
+    //
+    // Create a collection, upload the files, submit the order
+    //
+    async.map( files, function( file, callback ) {
+	var names = filenames( file.filename );  // create local and remote filenames
+	var local = names[0], remote = names[1];
+	var signer = new AwsSign({
+	    accessKeyId: s3.access_key_id, secretAccessKey: s3.secret_access_key });
+	var opts = {
+	    method: 'GET',
+	    host: s3.bucket + '.s3.amazonaws.com',
+	    port: 443,
+	    path: '/' + file.uri
+	};
+	signer.sign( opts );
+	var ws = fs.createWriteStream( local );
+	var x = https.request( opts, function( r ) {
+	    log.debug( r.statusCode );
+	    r.on( 'data', function( chunk ) {
+		log.debug( file.uri + ' data ' + chunk.length );
+		ws.write( chunk );
+	    });
+	    r.on( 'end', function() {
+		log.debug( file.uri + ' finished' );
+		ws.end();
+		callback( null, file );
+	    });
+	    r.on( 'error', function(e) {
+		log.debug( file.uri + ' error' );
+		callback( e, file );
+	    });
+	});
+	x.on( 'error', function(e) {
+	    console.log('problem with request: ' + e.message);
+	});
+	x.end();
+    }, function( err, results ) {
+	log.debug( 'Finished, downloaded ' + results.length + ' files' );
     });
 });
 

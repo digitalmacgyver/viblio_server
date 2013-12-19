@@ -12,7 +12,8 @@
 	"request": "latest",
 	"winston": "latest",
 	"express-winston": "latest",
-	"async": "latest"
+	"async": "latest",
+	"aws-sign": "latest"
     },
     "trace": true,
     "port": 3000,
