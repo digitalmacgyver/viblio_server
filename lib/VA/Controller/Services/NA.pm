@@ -1514,6 +1514,36 @@ sub geo_loc :Local {
     $self->status_ok( $c, $res->data->{results} );
 }
 
+=head2 /services/na/form_feedback
+
+For sending feedback to viblio team.  The UI is responsible for
+setting feedback_email to the correct email address that Mandrill
+uses to route back to us, which we then file in our feedback system.
+
+=cut
+
+sub form_feedback :Local {
+    my( $self, $c ) = @_;
+    my $feedback = $c->req->param( 'feedback' );
+    my $feedback_email = $c->req->param( 'feedback_email' );
+    my $feedback_location = $c->req->param( 'feedback_location' );
+
+    $self->send_email( $c, {
+	subject => 'feedback on ' . $feedback_location,
+	from => {
+	    email => ( $c->user ? $c->user->obj->email : undef ),
+	    name  => ( $c->user ? $c->user->obj->displayname : 'Anonymous' ) },
+	to => [{ email => $feedback_email,
+		 name  => 'Feedback' }],
+	template => 'email/feedback.tt',
+	stash => {
+	    feedback => $feedback,
+	    feedback_user => ( $c->user ? $c->user->obj->email : 'Anonymous' ),
+	    feedback_location => $feedback_location
+	} });
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
