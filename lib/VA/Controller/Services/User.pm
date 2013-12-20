@@ -469,9 +469,10 @@ sub avatar :Local {
 	$c->stash->{zoom} = $zoom if ( $zoom );
     }
     else {
-	my @colors = ('red', 'green', 'yellow', 'purple' );
-	my $color  = $colors[ int( rand( 3 ) ) ];
-	$c->stash->{image} = $c->model( 'File' )->slurp( "nopic-" . $color . "-90.png" );
+	#my @colors = ('red', 'green', 'yellow', 'purple' );
+	#my $color  = $colors[ int( rand( 3 ) ) ];
+	#$c->stash->{image} = $c->model( 'File' )->slurp( "nopic-" . $color . "-90.png" );
+	$c->stash->{image} = $c->model( 'File' )->slurp( "avatar.png" );
     }
 
     $c->stash->{y} = $y if ( $y );
