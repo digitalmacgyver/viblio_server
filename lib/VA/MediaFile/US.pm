@@ -127,8 +127,19 @@ sub uri2url {
     my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
     my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
         $aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
-    $aws_generator->expires_in( ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ) );
-
+    if ( $params && $params->{expires} ) {
+	$aws_generator->expires_in( $params->{expires} );
+    }
+    else {
+	# Have to have an expires, but if we keep it constant then the browser
+	# can cache images.  So, get the current year, add 1 to it and set the
+	# expire to Jan 1 of next year.
+	# 
+	$aws_generator->expires( DateTime->new(
+				     year => (DateTime->now->year + 1),
+				     month => 1, day => 1,
+				     hour => 23, minute => 59 )->epoch );
+    }
     my $url = $aws_generator->get( $aws_bucket_name, $s3key );
     $url =~ s/\/$aws_bucket_name\//\//g;
     return $url;
