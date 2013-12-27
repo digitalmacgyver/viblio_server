@@ -1190,6 +1190,18 @@ sub media_shared :Local {
 	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
     }
 
+    # FOR TESTING
+    if ( $c->req->param( 'share_type' ) && $c->req->param( 'secret' ) ) {
+	if ( $c->req->param( 'secret' ) eq 'Viblio2013' ) {
+	    my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+	    $self->status_ok( $c, { share_type => $c->req->param( 'share_type' ),
+				    media => $mf } );
+	}
+	else {
+	    $self->status_bad_request( $c, $c->loc( 'Bad secret passed' ) );
+	}
+    }
+
     # If the user is logged in and its their video, show it
     if ( $user && $mediafile->user_id == $user->id ) {
 	# They own it
