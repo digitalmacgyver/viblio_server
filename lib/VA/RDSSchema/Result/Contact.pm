@@ -104,11 +104,6 @@ __PACKAGE__->table("contacts");
   is_nullable: 1
   size: 45
 
-=head2 intellivision_id
-
-  data_type: 'integer'
-  is_nullable: 1
-
 =head2 picture_uri
 
   data_type: 'varchar'
@@ -146,8 +141,6 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 16 },
   "provider_id",
   { data_type => "varchar", is_nullable => 1, size => 45 },
-  "intellivision_id",
-  { data_type => "integer", is_nullable => 1 },
   "picture_uri",
   { data_type => "varchar", is_nullable => 1, size => 2048 },
   "created_date",
@@ -278,8 +271,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-07 08:33:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:GVdkra0N2m4j6DYw8KOtqg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-27 19:26:42
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9Z363hu/vyExWgdNQlVl/w
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

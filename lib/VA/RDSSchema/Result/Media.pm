@@ -73,6 +73,12 @@ __PACKAGE__->table("media");
   is_nullable: 0
   size: 36
 
+=head2 unique_hash
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 32
+
 =head2 media_type
 
   data_type: 'varchar'
@@ -148,6 +154,8 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "uuid",
   { data_type => "varchar", is_nullable => 0, size => 36 },
+  "unique_hash",
+  { data_type => "varchar", is_nullable => 1, size => 32 },
   "media_type",
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 16 },
   "title",
@@ -199,6 +207,20 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("id", "user_id");
 
 =head1 UNIQUE CONSTRAINTS
+
+=head2 C<unique_hash_UNIQUE>
+
+=over 4
+
+=item * L</unique_hash>
+
+=item * L</user_id>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("unique_hash_UNIQUE", ["unique_hash", "user_id"]);
 
 =head2 C<uuid_UNIQUE>
 
@@ -318,8 +340,8 @@ Composing rels: L</media_workorders> -> workorder
 __PACKAGE__->many_to_many("workorders", "media_workorders", "workorder");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-07 08:33:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:l/Zra2zzkwCxYABeqnLg1A
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-27 19:26:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:L5EhRFh71fd6barbuCyulw
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
