@@ -434,7 +434,7 @@ sub get :Local {
 	$params->{views} = \@views;
     }
 
-    my $mf = $c->user->media->find({uuid=>$mid},{prefetch=>'assets'});
+    my $mf = $c->user->media->find({uuid=>$mid},{prefetch=>['assets','user']});
 
     unless( $mf ) {
 	$self->status_bad_request
@@ -442,7 +442,7 @@ sub get :Local {
     }
 
     my $view = VA::MediaFile->new->publish( $c, $mf, $params );
-    $self->status_ok( $c, { media => $view } );
+    $self->status_ok( $c, { media => $view, owner => $mf->user->TO_JSON } );
 }
 
 sub get_metadata :Local {
