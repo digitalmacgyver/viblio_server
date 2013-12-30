@@ -537,5 +537,11 @@
 }
 
 .customBullets {
-    list-style-image: url('https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png');
+    list-style: none;
+}
+
+.customBullets li {
+    background-image: url('https://www.viblio.com/css/images/viblioEmail/orangeBullet.png');
+    background-repeat: no-repeat;
+    background-position: 0 .5em;
 }
