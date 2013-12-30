@@ -537,8 +537,5 @@
 }
 
 .orangeBullet {
-    list-style-type: none;
-    background: url('https://www.viblio.com/css/images/viblioEmail/orangeBullet.png') no-repeat top left;
-    height: 10px;
-    padding-left: 40px;
+    list-style-image: url('https://www.viblio.com/css/images/viblioEmail/orangeBullet.png');
 }
