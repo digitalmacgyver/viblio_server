@@ -1,10 +1,13 @@
 var express = require( 'express' );
 var http = require( 'http' );
+var https = require( 'https' );
 var formidable = require( 'formidable' );
 var fs = require( 'fs' );
 var request = require( 'request' );
 var util = require( 'util' );
 var async = require( 'async' );
+var AwsSign = require('aws-sign');
+var path = require( 'path' );
 
 var config = require( './package.json' );
 
@@ -45,6 +48,7 @@ app.configure(function() {
         ]
     }));
 
+    app.use(express.bodyParser({ keepExtensions: true, uploadDir: '/tmp' }));
     app.use(app.router);
     app.use(expressWinston.errorLogger({
         transports: [
@@ -116,9 +120,27 @@ function api( method, endpoint, data, callback ) {
 	    callback( err, { error: true, details: err } );
 	}
 	else {
-	    callback( err, body );
+	    if ( response && response.statusCode && response.statusCode != 200 ) {
+		callback( body, body );
+	    }
+	    else {
+		callback( err, body );
+	    }
 	}
     });
+}
+
+function filenames( filename ) {
+    var basename = path.basename( filename );
+    var dirname  = path.dirname( filename );
+    var fullpath;
+    if ( dirname != '.' ) {
+	fullpath = filename;
+    }
+    else {
+	fullpath = path.join( '/viblio', filename );
+    }
+    return( [ basename, fullpath ] );
 }
 
 // Can use '/' as a health check.  Does not atempt to authenticate with yes video.
@@ -179,6 +201,145 @@ app.get( '/build', auth, function( req, res, next ) {
 	}, seconds);
     }, function( err, results ) {
 	log.debug( 'UPLOAD COMPLETE' );
+    });
+});
+
+// curl -v -X POST -H "Content-Type: application/json" -d '{"foo":"bar"}' http://localhost:3000/json
+// curl -v -X POST -H "Content-Type: application/json" --data @/tmp/yes.json http://localhost:3000/json
+//
+app.post( '/json', function( req, res, next ) {
+    // logdump( req.body );
+
+    // S3 information
+    var s3 = req.body.s3;
+
+    // User information
+    var user = req.body.user;
+
+    // The disk type
+    var disk_type = req.body.disk_type;
+
+    // The files array
+    var files = req.body.files;
+
+    // Some validation
+    if ( ! s3 ) 
+	res.json({error: true, error_description: 'Missing S3 data'});
+
+    if ( ! user ) 
+	res.json({error: true, error_description: 'Missing user data'});
+
+    if ( ! disk_type ) 
+	res.json({error: true, error_description: 'Missing disk type data'});
+
+    if ( ! files ) 
+	res.json({error: true, error_description: 'Missing files data'});
+
+    var total_bytes = 0;
+    for( var i=0; i<files.length; i++ ) {
+	total_bytes += files[i].bytes;
+    }
+
+    if ( disk_type == 'dvd_4_7G' &&
+	 total_bytes > ( 1024*1024*1024*6.5 ) ) {
+	res.json({ error: true, error_description: 'Files will not all fit on a DVD' });
+	return next();
+    }
+    if ( disk_type == 'blueray_25G' &&
+	 total_bytes > ( 1024*1024*1024*24.5 ) ) {
+	res.json({ error: true, error_description: 'Files will not all fit on a Blueray' });
+	return next();
+    }
+
+    // Everything OK so far, create a new collection
+    api( 'POST', '/api/v1/collections', { type: disk_type }, function( err, data ) {
+	if ( err ) {
+	    log.error( 'Could not create collection' );
+	    return res.json( err );
+	}
+	else
+	    // detact early, but continue working...
+	    res.json( data );
+
+	var collection_id = data.id;
+
+	async.map( files, function( file, callback ) {
+	    var names = filenames( file.filename );  // create local and remote filenames
+	    var local = path.join(config.tmpdir, names[0]), remote = names[1];
+
+	    // Create the AWS signed options to fetch the video from S3
+	    var signer = new AwsSign({
+		accessKeyId: s3.access_key_id, secretAccessKey: s3.secret_access_key });
+	    var opts = {
+		method: 'GET',
+		host: s3.bucket + '.s3.amazonaws.com',
+		port: 443,
+		path: '/' + file.uri
+	    };
+	    signer.sign( opts );
+	    // var ws = fs.createWriteStream( local );
+
+	    var seq = 0;
+
+	    // Create a file in the collection
+	    api( 'POST', '/api/v1/collections/' + collection_id + '/files', {path: remote}, function( err, yv_file ) {
+		if ( err ) {
+		    return callback( err, yv_file );
+		}
+		var file_id = yv_file.id;
+
+		// Start the fetch from S3
+		var x = https.request( opts, function( r ) {
+		    log.debug( r.statusCode );
+		    r.on( 'data', function( chunk ) {
+			//log.debug( file.uri + ' data ' + chunk.length );
+			//ws.write( chunk );
+
+			// For every chunk, we have to get data from YesVideo to upload
+			// that chunk.
+			var yv_url = path.join( '/api/v1/collections', collection_id, 'files', file_id, 'parts/upload_cfg' );
+			api( 'GET', yv_url, {seq_id: seq }, function( err, data ) {
+			    if ( err ) {
+				return callback( err, yv_file );
+			    }
+			    var upload = request.post( data.url, { form: data.data }, function( err, response, body ) {
+				if ( err ) {
+				    console.log( yv_url, err );
+				}
+				if ( response.statusCode != 200 ) {
+				    console.log( yv_url, response.statusCode );
+				    console.log( body );
+				}
+			    });
+			    upload.write( chunk );
+			    upload.end();
+			    seq += 1;
+			});
+
+		    });
+		    r.on( 'end', function() {
+			log.debug( file.uri + ' finished' );
+			//ws.end();
+			callback( null, yv_file );
+		    });
+		    r.on( 'error', function(e) {
+			log.debug( file.uri + ' error' );
+			callback( e, yv_file );
+		    });
+		});
+		x.on( 'error', function(e) {
+		    console.log('problem with request: ' + e.message);
+		});
+		x.end();
+	    });
+	}, function( err, results ) {
+	    log.debug( 'Finished, downloaded ' + results.length + ' files' );
+	    if ( err ) {
+		log.error( 'There were upload errors!' );
+		log.error( util.inspect( err ) );
+	    }
+	    log.debug( util.inspect( results ) );
+	});
     });
 });
 

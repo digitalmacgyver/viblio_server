@@ -93,12 +93,6 @@ __PACKAGE__->table("media_assets");
   is_nullable: 1
   size: 40
 
-=head2 filename
-
-  data_type: 'varchar'
-  is_nullable: 1
-  size: 1024
-
 =head2 uri
 
   data_type: 'text'
@@ -110,12 +104,6 @@ __PACKAGE__->table("media_assets");
   default_value: 'fp'
   is_nullable: 0
   size: 28
-
-=head2 format
-
-  data_type: 'varchar'
-  is_nullable: 1
-  size: 40
 
 =head2 duration
 
@@ -138,12 +126,6 @@ __PACKAGE__->table("media_assets");
   data_type: 'integer'
   is_nullable: 1
 
-=head2 time_stamp
-
-  data_type: 'decimal'
-  is_nullable: 1
-  size: [14,6]
-
 =head2 metadata_uri
 
   data_type: 'text'
@@ -163,11 +145,6 @@ __PACKAGE__->table("media_assets");
   size: 45
 
 =head2 view_count
-
-  data_type: 'integer'
-  is_nullable: 1
-
-=head2 intellivision_file_id
 
   data_type: 'integer'
   is_nullable: 1
@@ -204,14 +181,10 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 16 },
   "mimetype",
   { data_type => "varchar", is_nullable => 1, size => 40 },
-  "filename",
-  { data_type => "varchar", is_nullable => 1, size => 1024 },
   "uri",
   { data_type => "text", is_nullable => 1 },
   "location",
   { data_type => "varchar", default_value => "fp", is_nullable => 0, size => 28 },
-  "format",
-  { data_type => "varchar", is_nullable => 1, size => 40 },
   "duration",
   { data_type => "decimal", is_nullable => 1, size => [14, 6] },
   "bytes",
@@ -220,8 +193,6 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_nullable => 1 },
   "height",
   { data_type => "integer", is_nullable => 1 },
-  "time_stamp",
-  { data_type => "decimal", is_nullable => 1, size => [14, 6] },
   "metadata_uri",
   { data_type => "text", is_nullable => 1 },
   "provider",
@@ -229,8 +200,6 @@ __PACKAGE__->add_columns(
   "provider_id",
   { data_type => "varchar", is_nullable => 1, size => 45 },
   "view_count",
-  { data_type => "integer", is_nullable => 1 },
-  "intellivision_file_id",
   { data_type => "integer", is_nullable => 1 },
   "created_date",
   {
@@ -353,8 +322,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 08:21:08
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4dE6UQiRWgThOjy2qzO8MQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-27 19:26:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:z07ITK/hwPjPNs3dAHD7UA
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

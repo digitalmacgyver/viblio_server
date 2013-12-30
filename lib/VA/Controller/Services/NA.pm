@@ -1185,9 +1185,21 @@ sub media_shared :Local {
     # Is caller logged in?
     my $user = $c->user;
 
-    my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid });
+    my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid }, {prefetch => 'user'});
     unless( $mediafile ) {
 	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
+    }
+
+    # FOR TESTING
+    if ( $c->req->param( 'share_type' ) && $c->req->param( 'secret' ) ) {
+	if ( $c->req->param( 'secret' ) eq 'Viblio2013' ) {
+	    my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+	    $self->status_ok( $c, { share_type => $c->req->param( 'share_type' ),
+				    media => $mf, owner => $mediafile->user->TO_JSON } );
+	}
+	else {
+	    $self->status_bad_request( $c, $c->loc( 'Bad secret passed' ) );
+	}
     }
 
     # If the user is logged in and its their video, show it
@@ -1196,7 +1208,7 @@ sub media_shared :Local {
 	$c->log->debug( "SHARE: OWNED BY USER" );
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
 	$self->status_ok( $c, { share_type => "owned_by_user", 
-				media => $mf } );
+				media => $mf, owner => $mediafile->user->TO_JSON } );
     }
 
     # Gather all of the media_shares ...
@@ -1282,7 +1294,7 @@ sub media_shared :Local {
 	$mediafile->update;
 
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
-	$self->status_ok( $c, { share_type => $share_type, media => $mf } );
+	$self->status_ok( $c, { share_type => $share_type, media => $mf, owner => $mediafile->user->TO_JSON } );
     }
     else {
 	$self->status_bad_request( $c, $c->loc( "You are not authorized to view this media." ) );
@@ -1449,9 +1461,7 @@ sub avatar :Local {
 	$c->stash->{zoom} = $zoom if ( $zoom );
     }
     else {
-	my @colors = ('red', 'green', 'yellow', 'purple' );
-	my $color  = $colors[ int( rand( 3 ) ) ];
-	$c->stash->{image} = $c->model( 'File' )->slurp( "nopic-" . $color . "-90.png" );
+	$c->stash->{image} = $c->model( 'File' )->slurp( "avatar.png" );
     }
 
     $c->stash->{y} = $y if ( $y );
@@ -1464,6 +1474,9 @@ sub avatar :Local {
 Unauthenticated endpoint to get comments associated with the media file
 passed in as mid.  Needed for the web_player page.
 
+Also pass back the owner information for this media file.  This is
+also used on the web_player to show who created the mediafile.
+
 =cut
 
 sub media_comments :Local {
@@ -1473,7 +1486,8 @@ sub media_comments :Local {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
     }
-    my $mf = $c->model( 'RDS::Media' )->find({uuid=>$mid});
+
+    my $mf = $c->model( 'RDS::Media' )->find({ uuid => $mid }, { prefetch => 'user' });
     unless( $mf ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
@@ -1487,7 +1501,7 @@ sub media_comments :Local {
 	}
 	push( @data, $hash );
     }
-    $self->status_ok( $c, { comments => \@data } );
+    $self->status_ok( $c, { comments => \@data, owner => $mf->user->TO_JSON } );
 }
 
 sub faces_in_mediafile :Local {
@@ -1512,6 +1526,36 @@ sub geo_loc :Local {
     my $res = $c->model( 'GoogleMap' )->get( "/maps/api/geocode/json?latlng=$latlng&sensor=true" );
 
     $self->status_ok( $c, $res->data->{results} );
+}
+
+=head2 /services/na/form_feedback
+
+For sending feedback to viblio team.  The UI is responsible for
+setting feedback_email to the correct email address that Mandrill
+uses to route back to us, which we then file in our feedback system.
+
+=cut
+
+sub form_feedback :Local {
+    my( $self, $c ) = @_;
+    my $feedback = $c->req->param( 'feedback' );
+    my $feedback_email = $c->req->param( 'feedback_email' );
+    my $feedback_location = $c->req->param( 'feedback_location' );
+
+    $self->send_email( $c, {
+	subject => 'feedback on ' . $feedback_location,
+	from => {
+	    email => ( $c->user ? $c->user->obj->email : undef ),
+	    name  => ( $c->user ? $c->user->obj->displayname : 'Anonymous' ) },
+	to => [{ email => $feedback_email,
+		 name  => 'Feedback' }],
+	template => 'email/feedback.tt',
+	stash => {
+	    feedback => $feedback,
+	    feedback_user => ( $c->user ? $c->user->obj->email : 'Anonymous' ),
+	    feedback_location => $feedback_location
+	} });
+    $self->status_ok( $c, {} );
 }
 
 __PACKAGE__->meta->make_immutable;

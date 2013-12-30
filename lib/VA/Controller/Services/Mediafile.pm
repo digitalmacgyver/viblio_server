@@ -4,6 +4,7 @@ use namespace::autoclean;
 
 use JSON;
 use URI::Escape;
+use DateTime::Format::Flexible;
 
 use Geo::Distance;
 
@@ -433,7 +434,7 @@ sub get :Local {
 	$params->{views} = \@views;
     }
 
-    my $mf = $c->user->media->find({uuid=>$mid},{prefetch=>'assets'});
+    my $mf = $c->user->media->find({uuid=>$mid},{prefetch=>['assets','user']});
 
     unless( $mf ) {
 	$self->status_bad_request
@@ -441,7 +442,7 @@ sub get :Local {
     }
 
     my $view = VA::MediaFile->new->publish( $c, $mf, $params );
-    $self->status_ok( $c, { media => $view } );
+    $self->status_ok( $c, { media => $view, owner => $mf->user->TO_JSON } );
 }
 
 sub get_metadata :Local {
@@ -1148,6 +1149,19 @@ sub related :Local {
     # $_->media->assets->find({ asset_type=>'main'})
     push( @media, VA::MediaFile->new->publish( $c, $_->media, { assets => [$_] } ) ) foreach( @data );
     $self->status_ok( $c, { media => \@media, pager => $pager } );
+}
+
+sub change_recording_date :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $dstring = $c->req->param( 'date' );
+    my $media = $c->user->media->find({uuid => $mid });
+    unless( $media ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+    }
+    $media->recording_date( DateTime::Format::Flexible->parse_datetime( $dstring ) );
+    $media->update;
+    $self->status_ok( $c, { date => $media->recording_date } );
 }
 
 __PACKAGE__->meta->make_immutable;

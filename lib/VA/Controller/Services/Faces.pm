@@ -543,7 +543,7 @@ sub avatar_for_name :Local {
 	    $url = $fp->uri2url( $c, $contact->picture_uri );
 	}
 	else {
-	    $url = '/css/images/nopic-green-36.png';
+	    $url = '/css/images/avatar.png';
 	}
 	$self->status_ok( $c, { url => $url } );
     }
@@ -756,6 +756,74 @@ sub remove_from_video :Local {
 	}
     }
     $self->status_ok( $c, {} );
+}
+
+=head2 /services/faces/add_contact_to_media_file
+
+Pass in mid for mediafile, and either contact_name to do a lookup or cid to find a contact.  Add
+that contact as someone who is in the media file (video).
+
+=cut
+
+sub add_contact_to_mediafile :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $cid = $c->req->param( 'cid' );
+    my $contact_name = $c->req->param( 'contact_name' );
+
+    my $media = $c->user->media->find({ uuid => $mid });
+    unless( $media ) {
+	$self->status_bad_request( $c, $c->loc( "Cannot find mediafile for [_1]", $mid ) );
+    }
+
+    my $contact;
+    if ( $cid ) {
+	$contact = $c->user->contacts->find({ uuid => $cid });
+    }
+    elsif ( $contact_name ) {
+	$contact = $c->user->contacts->find({ contact_name => $contact_name });
+    }
+    unless( $contact ) {
+	if ( $cid ) {
+	    $self->status_bad_request( $c, $c->loc( "Cannot find contact for [_1]", $cid ) );
+	}
+	else {
+	    $self->status_bad_request( $c, $c->loc( "Cannot find contact for [_1]", $contact_name ) );
+	}
+    }
+    
+    # Have to create a media_asset with a media_asset_feature and attach it to the mediafile.
+    #
+    my $asset = $media->create_related( 'media_assets', {
+	user_id => $c->user->obj->id,
+	asset_type => 'face',
+	mimetype => 'image/jpg',
+	uri => $contact->picture_uri,
+	location => 'us',
+	bytes => 0,
+	view_count => 0 });
+
+    unless( $asset ) {
+	$self->status_bad_request( $c, $c->loc( "Unable to create a new asset to add face to mediafile" ) );
+    }
+
+    my $feature = $asset->create_related( 'media_asset_features', {
+	media_id => $media->id,
+	user_id => $c->user->obj->id,
+	feature_type => 'face',
+	coordinates => '{}',
+	contact_id => $contact->id });
+
+    unless( $feature ) {
+	$self->status_bad_request( $c, $c->loc( "Unable to create a new asset feature to add face to mediafile" ) );
+    }
+
+    my $data = $contact->TO_JSON;
+    if ( $data->{picture_uri} ) {
+	$data->{picture_url} = VA::MediaFile::US->new->uri2url( $c, $data->{picture_uri} );
+    }
+
+    $self->status_ok( $c, { contact => $data } );
 }
 
 __PACKAGE__->meta->make_immutable;

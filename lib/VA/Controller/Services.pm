@@ -369,9 +369,13 @@ sub endpoints :Local {
 #
 #  $self->send_email( $c, {
 #    subject => $c->loc( 'Someone has commented on one of your videos.' ),
+#    from => {  *** Optional defaults to viblio ***
+#      email => 'address',
+#      name  => 'name'
+#    },
 #    to => [{ email => $mf->user->email,
 #	      name  => $mf->user->displayname }],
-#    template => 'email/commentsOnYourVid.tt',
+#    template => 'email/commentsOnYourVid.tt',  *** or body => 'text' ***
 #    stash => {
 #	from => $c->user->obj,
 #	commentText => $comment->comment,
@@ -382,13 +386,22 @@ sub endpoints :Local {
 #
 sub send_email :Local {
     my( $self, $c, $opts ) = @_;
+
+    my $from_email = 'reply@' . $c->config->{viblio_return_email_domain};
+    my $from_name  = 'Viblio';
+
+    if ( $opts->{from} ) {
+	$from_email = $opts->{from}->{email} || $from_email;
+	$from_name  = $opts->{from}->{name}  || $from_name;
+    }
+
     my $headers = {
 	subject => $opts->{subject} || 'No Subject',
-	from_email => 'reply@' . $c->config->{viblio_return_email_domain},
-	from_name => 'Viblio',
+	from_email => $from_email,
+	from_name => $from_name,
 	to => $opts->{to},
 	headers => {
-	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+	    'Reply-To' => $from_email,
 	},
 	inline_css => 1,
     };
@@ -396,7 +409,12 @@ sub send_email :Local {
     foreach my $key ( keys( %{$opts->{stash}} ) ) {
 	$c->stash->{$key} = $opts->{stash}->{$key};
     }
-    $headers->{html} = $c->view( 'HTML' )->render( $c, $opts->{template} );
+    if ( $opts->{body} ) {
+	$headers->{html} = $opts->{body};
+    }
+    else {
+	$headers->{html} = $c->view( 'HTML' )->render( $c, $opts->{template} );
+    }
     my $res = $c->model( 'Mandrill' )->send( $headers );
     if ( $res && $res->{status} && $res->{status} eq 'error' ) {
 	$c->log->error( "Error using Mailchimp to send" );
