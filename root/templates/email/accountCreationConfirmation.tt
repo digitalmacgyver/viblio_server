@@ -1,5 +1,5 @@
 [% INCLUDE email/top.tt 
-    previewText = "Welcome to Viblio! Here are some more details regarding your new account."
+    previewText = "Getting started with your new VIBLIO account"
 %]
 
     <div class='centered regSize darkText'>
@@ -10,7 +10,7 @@
         <br />
         <br />
         <br />
-        If you've already downloaded out Viblio Video Finder, then
+        If you've <strong>already downloaded</strong> out Viblio Video Finder, then
         <br />
         <br />
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
@@ -26,17 +26,22 @@
         </table>
         <br />
         <br />
-        If you haven't downloaded our Viblio Video Finder yet, <a class="tomato" href="[% c.server %]#getApp?from=account_creation_email" ><span class="tomato">let's get you started!</span></a>
+        <strong>Haven't downloaded</strong> our Viblio Video Finder yet?
         <br />
         <br />
-        You registered with: [% model.user.email %]
+        <a class="tomato" href="[% c.server %]#getApp?from=account_creation_email" ><span class="tomato">let's get you started!</span></a>
         <br />
-        <a class="tomato" href="[% c.server %]#login"><span class="tomato">Forgot your password?</span></a>
+        <br />
+        <span style="font-size:14px">You registered with: [% model.user.email %]
+            <br />
+            <a class="tomato" href="[% c.server %]#login"><span class="tomato">Forgot your password?</span></a>
+        </span>
         <br />
     </div>
     <br />
     <br />
     <div class="centered">
+        <p class="share" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;margin-bottom: -15px;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;margin-bottom: -15px;"></a></em></p>
         <span class="smallPrivacy">
             Privacy is important to you - and to us too. We do not sell, rent, barter for beads, or otherwise share your name or address. At any point, you can select the link at the bottom of any email to unsubscribe or change your email preferences.
             <br />
