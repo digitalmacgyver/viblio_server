@@ -536,6 +536,6 @@
     text-decoration: none;
 }
 
-.orangeBullet {
+.customBullets {
     list-style-image: url('https://www.viblio.com/css/images/viblioEmail/orangeBullet.png');
 }
