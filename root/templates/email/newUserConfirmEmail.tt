@@ -2,7 +2,7 @@
     previewText = "Please confirm your Viblio account registration."
 %]
 
-    <div class='bottomBorder-Thin paddedDiv regSize darkText leftAligned'>
+    <div class='paddedDiv regSize darkText leftAligned'>
         <span>Your account is almost active. To protect your privacy and security, we need to verify your registration.</span>
         <br />
         <br />
@@ -43,18 +43,12 @@
                         </tr>
                 </tbody>
         </table>
-    </div>
-    <div class='signatureDiv regSize darkText leftAligned'>
+        <br />
         <span>Thanks for choosing to be part of the Viblio community.</span>
-        <br />
-        <br />
-        <strong>Mona</strong>
-        <br />
-        <em>Co-founder, <strong>Viblio</strong></em>
     </div>
     <br>
     <br>
-    <span class="leftAligned"><em>If you didn't create an account with us, please let us know by forwarding this email to <a href="mailto:notifications@viblio.com">notifications@viblio.com</a></em></span>
+    <span class="leftAligned darkText"><em>If you didn't create an account with us, please let us know by forwarding this email to <a href="mailto:notifications@viblio.com">notifications@viblio.com</a></em></span>
     
     <p class="darkText" style="font-size:16px;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;margin-bottom: -15px;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;margin-bottom: -15px;"></a></em></p>
 
