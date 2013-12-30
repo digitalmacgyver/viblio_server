@@ -41,24 +41,7 @@
                             <tr>
                             	<td valign="top" width="100%" style="width:100%;">
                                     <!-- // Begin Template Body \\ -->
-                                	<table cellpadding="0" cellspacing="0" align="center" width="100%" id="templateBody" style="width:100%;">
-                                            <tr>
-                                                <td width='100%' height='104' align="center" border="0" cellspacing="0" cellpadding="0" style="width:100%;" valign="middle" id="social">
-                                                    <table width='590' height='104' align="center" border="0" cellspacing="0" cellpadding="0" style="width:590px;">
-                                                        <tr height='104'>
-                                                            <td width="495" style="width:495px">
-                                                                <a href="[% c.server %]" style="color: #ffffff"><img style="color: #ffffff" src="[% c.server %]/css/images/viblioLogo-WhiteWText.png" alt="Viblio Logo" align='left'></img></a>
-                                                            </td>
-                                                            <td width='58' style="width:58px;">
-                                                                <a href="https://www.facebook.com/pages/Viblio/452842304820094" style="color: #ffffff"><img style="color: #ffffff" src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" align='left'></img></a>
-                                                            </td>
-                                                            <td width='37' style="width:37px;">
-                                                                <a href="https://twitter.com/iviblio"style="color: #ffffff" ><img style="color: #ffffff" src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" align='right'></img></a>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>    
+                                	<table cellpadding="0" cellspacing="0" align="center" width="100%" id="templateBody" style="width:100%;">    
                                             <tr>
                                                 <td class="bodyContent">
 
