@@ -535,3 +535,7 @@
     color: white;
     text-decoration: none;
 }
+
+.share img {
+    width: 20px;
+}
