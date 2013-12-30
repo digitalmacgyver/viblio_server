@@ -535,15 +535,3 @@
     color: white;
     text-decoration: none;
 }
-
-.customBullets {
-    list-style: none;
-}
-
-.customBullets li {
-    color: red;
-    padding-left: 10px;
-    background-image: url('https://www.viblio.com/css/images/viblioEmail/orangeBullet.png');
-    background-repeat: no-repeat;
-    background-position: 0 .5em;
-}
