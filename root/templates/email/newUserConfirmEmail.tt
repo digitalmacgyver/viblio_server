@@ -36,7 +36,7 @@
                                 <td height="100" style="width:400px; height:100px; padding:0; padding-left:10px;" valign="middle" width="400">
                                     <ul>
                                         <li><strong>upload</strong> your videos to your new VIBLIO library</li>
-                                        <li><strong>name the faces</strong> we find in the videos so you can <strong>browse</strong> by face when you want to, and </li>
+                                        <li><strong>name the faces</strong> we find in the videos so you can <strong>create albums</strong> of the people you care about </li>
                                         <li><strong>share</strong> the love! I'm sure there are a few people out there who are dying to see what you've been up to</li>
                                     </ul>
                                 </td>
@@ -47,7 +47,7 @@
         <span>Thanks for choosing to be part of the Viblio community.</span>
         <br />
         <br />
-        <span><em>If you didn't create an account with us, please let us know by forwarding this email to <a href="mailto:notifications@viblio.com">notifications@viblio.com</a></em></span>
+        <span style="font-size:14px;"><em>If you didn't create an account with us, please let us know by forwarding this email to <a style="font-size:14px;" href="mailto:notifications@viblio.com">notifications@viblio.com</a></em></span>
         <br />
         <p class="share" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;margin-bottom: -15px;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;margin-bottom: -15px;"></a></em></p>
     </div>
