@@ -158,7 +158,6 @@ sub contacts :Local {
 	'me.user_id' => $user->id,
 	contact_id => {'!=',undef},
 	'contact.contact_name' => { '!=',undef},
-	'contact.picture_uri' => { '!=',undef},
     };
     my $where = {
 	select => ['contact_id', 'media_asset_id'],
@@ -174,12 +173,16 @@ sub contacts :Local {
 	my $asset   = $feat->media_asset;
 	my $hash    = $contact->TO_JSON;
 
-
-	my $klass = $c->config->{mediafile}->{$asset->location};
-	my $fp = new $klass;
-	my $url = $fp->uri2url( $c, $contact->picture_uri );
-
-	$hash->{url} = $url;
+	if ( $contact->picture_uri ) {
+	    my $klass = $c->config->{mediafile}->{$asset->location};
+	    my $fp = new $klass;
+	    my $url = $fp->uri2url( $c, $contact->picture_uri );
+	    $hash->{url} = $url;
+	}
+	else {
+	    $hash->{url} = '/css/images/avatar-nobd.png';
+	    $hash->{nopic} = 1;  # in case UI needs to know
+	}
 	$hash->{asset_id} = $asset->uuid;
 	$hash->{appears_in} = $c->model( 'RDS::MediaAssetFeature' )->
 	    search({contact_id=>$feat->contact_id},{prefetch => { 'media_asset' => 'media' }, group_by => ['media.id']})->count;
@@ -196,6 +199,73 @@ sub contacts :Local {
     $sorted[1]->{star_power} = 'star2' if ( $#sorted >=1 );
     $sorted[2]->{star_power} = 'star3' if ( $#sorted >=2 );
     
+    if ( $args->{page} ) {
+	my $pager = Data::Page->new( $#sorted + 1, $args->{rows}, $args->{page} );
+	my @slice = ();
+	if ( $#sorted >= 0 ) {
+	    @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
+	}
+	
+	$self->status_ok( $c, { faces => \@slice, 
+				pager => $self->pagerToJson( $pager ) });
+    }
+    else {
+	$self->status_ok( $c, { faces => \@sorted } );
+    }
+}
+
+#
+# Like contacts above, but list all contacts in videos, even if no name and
+# no picture.  This is used on the people page to get all known and unknown
+# people in videos.
+#
+sub contacts_present_in_videos :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ page => undef,
+          rows => 10,
+        ],
+        @_ );
+
+    my $user = $c->user->obj;
+
+    # Find all contacts for a user that appear in at least one video.
+    my $search = {
+	'me.user_id' => $user->id,
+	contact_id => {'!=',undef},
+    };
+    my $where = {
+	select => ['contact_id', 'media_asset_id'],
+	prefetch=>['contact', 'media_asset'],
+	group_by => ['contact_id'],
+    };
+    my @feats = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
+
+    my @data = ();
+    foreach my $feat ( @feats ) {
+
+	my $contact = $feat->contact;
+	my $asset   = $feat->media_asset;
+	my $hash    = $contact->TO_JSON;
+
+	if ( $contact->picture_uri ) {
+	    my $klass = $c->config->{mediafile}->{$asset->location};
+	    my $fp = new $klass;
+	    my $url = $fp->uri2url( $c, $contact->picture_uri );
+	    $hash->{url} = $url;
+	}
+	else {
+	    $hash->{url} = '/css/images/avatar-nobd.png';
+	    $hash->{nopic} = 1;  # in case UI needs to know
+	}
+	$hash->{asset_id} = $asset->uuid;
+
+	push( @data, $hash );
+    }
+
+    my @sorted = @data;
+
     if ( $args->{page} ) {
 	my $pager = Data::Page->new( $#sorted + 1, $args->{rows}, $args->{page} );
 	my @slice = ();
@@ -397,6 +467,7 @@ sub photos_of :Local {
 
     my @features = $c->model( 'RDS::MediaAssetFeature' )->
 	search({ contact_id => $contact->id,
+		 'media_asset.uri' => { '!=' => undef },
 		 'me.user_id' => $c->user->id },
 	       { prefetch => 'media_asset' });
     my @data = ();
@@ -782,13 +853,18 @@ sub add_contact_to_mediafile :Local {
     }
     elsif ( $contact_name ) {
 	$contact = $c->user->contacts->find({ contact_name => $contact_name });
+	if ( ! $contact ) {
+	    # NEW!! A brand new face/contact can be created out of thin air here.
+	    $contact = $c->user->obj->create_related( 'contacts', {
+		contact_name => $contact_name });
+	}
     }
     unless( $contact ) {
 	if ( $cid ) {
 	    $self->status_bad_request( $c, $c->loc( "Cannot find contact for [_1]", $cid ) );
 	}
 	else {
-	    $self->status_bad_request( $c, $c->loc( "Cannot find contact for [_1]", $contact_name ) );
+	    $self->status_bad_request( $c, $c->loc( "Cannot find/create contact for [_1]", $contact_name ) );
 	}
     }
     
