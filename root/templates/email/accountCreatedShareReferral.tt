@@ -37,7 +37,7 @@
         <br />
         If you've <strong>already downloaded</strong> Viblio, then
         <br />
-            <a class="tomato" href="[% c.server %]#login" ><span class="tomato">VISIT YOUR VIBLIO LIBRARY</span></a>
+            <a class="tomato" href="[% c.server %]#videos" ><span class="tomato">VISIT YOUR VIBLIO LIBRARY</span></a>
         <br />
         <br />
         <span style="font-size:14px">You registered with: [% model.user.email %]
