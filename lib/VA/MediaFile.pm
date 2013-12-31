@@ -178,11 +178,16 @@ sub publish {
 		     });
 	my @data = ();
 	foreach my $feat ( @feat ) {
-	    my $klass = $c->config->{mediafile}->{$feat->media_asset->location};
-	    my $fp = new $klass;
-	    my $url = $fp->uri2url( $c, $feat->media_asset->uri );
 	    my $hash = $feat->media_asset->TO_JSON;
-	    $hash->{url} = $url;
+	    if ( $feat->media_asset->uri ) {
+		my $klass = $c->config->{mediafile}->{$feat->media_asset->location};
+		my $fp = new $klass;
+		my $url = $fp->uri2url( $c, $feat->media_asset->uri );
+		$hash->{url} = $url;
+	    }
+	    else {
+		$hash->{url} = $c->server() . 'css/images/avatar-nobd.png';
+	    }
 	    $hash->{contact} = $feat->contact->TO_JSON;
 	    push( @data, $hash );
 	}
