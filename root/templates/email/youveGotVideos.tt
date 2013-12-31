@@ -48,28 +48,6 @@
             <br />
         [% END %]
         
-        [% IF model.faces.size == 0 %]
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                <tbody>
-                    <tr>
-                        <td width="500" style="width:500px;">
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                                <tbody>
-                                    <tr>
-                                        <td width="99" style="width:99px;"></td>
-                                        <td class="button" width="302" height="33" align="center" style="width:302px;">
-                                            <a class="noUnderline" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><b><span class="buttonSpan">Share [% IF model.media.size == 1 %]this video [% ELSE %] these videos [% END %] privately&raquo;</span></b></a>
-                                        </td>
-                                        <td width="99" style="width:99px;"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        [% END %]
-
         [% IF model.faces.size > 0 %]
             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
                 <tbody>
@@ -128,7 +106,7 @@
             <br />
             <br />
         [% END %]
-        <p class="share" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;margin-bottom: -15px;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;margin-bottom: -15px;"></a></em></p>
+        <p class="share" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
     </div>
 
 [% INCLUDE email/bottom.tt %]
