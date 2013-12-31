@@ -1,0 +1,67 @@
+[% INCLUDE email/top.tt 
+    previewText = "Make some memories this weekend"
+%]
+
+    <div class='paddedDiv regSize darkText leftAligned'>
+        We've noticed you haven't uploaded videos to your VIBLIO library for a while.
+        <br />
+        <br />
+        <strong>Have a bunch of videos you want to keep safe &amp; organized?</strong>
+        Use your VIBLIO video uploader to upload them to your VIBLIO library.
+        <div style='text-align: center;'>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tbody>
+                    <tr>
+                        <td width="500" style="width:500px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                                <tbody>
+                                    <tr>
+                                        <td width="94" style="width:94px;"></td>
+                                        <td class="button" width="312" height="33" align="center" style="width:312px;">
+                                                <a class="noUnderline" href="[% c.server %]#tutorial"><b><span class="buttonSpan">NEED INSTRUCTIONS? &raquo;</span></b></a>
+                                        </td>
+                                        <td width="94" style="width:94px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <br />
+        <strong>Haven't downloaded VIBLIO yet?</strong>
+        <div style='text-align: center;'>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tbody>
+                    <tr>
+                        <td width="500" style="width:500px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                                <tbody>
+                                    <tr>
+                                        <td width="94" style="width:94px;"></td>
+                                        <td class="button" width="312" height="33" align="center" style="width:312px;">
+                                                <a class="noUnderline" href="[% c.server %]#getApp?from=upload_some_videos_email"><b><span class="buttonSpan">GET VIBLIO NOW &raquo;</span></b></a>
+                                        </td>
+                                        <td width="94" style="width:94px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <br />
+        <strong>Haven't taken any videos in a while?</strong>
+        ... Well we can't do that for you!
+        <br />
+        <br />
+        But we can help you with almost everything else!
+        <br />
+        <br />
+        So capture some of those memories with video this weekend &ndash; and we'll help you organize them into a video log of <em>your memories in motion</em>!
+        <p class="share" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
+    </div>
+
+[% INCLUDE email/bottom.tt %]                                                            
