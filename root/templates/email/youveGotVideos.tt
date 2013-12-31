@@ -3,7 +3,7 @@
     previewText = "You've got Videos!"
 %]
     <div class="centered regSize darkText">
-        <span>You've got [% newVideos %] new videos in your VIBLIO account.</span>
+        <span>You've got [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %] new videos in your VIBLIO account.</span>
         <br />
         <em>Someone you know is dying to see this.</em>
         <br />
