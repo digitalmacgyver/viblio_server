@@ -3,7 +3,7 @@
     previewText = "Your friend has shared a video with you on Viblio!"
 %]
     <div class="centered regSize darkText">
-        <span style="text-align: left;">[% from.displayname %] says: </span><span>"[% body %]"</span>
+        <p style="text-align: left;"><span>[% from.displayname %] says: </span><span>"[% body %]"</span></p>
         <br />
         <br />
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
@@ -30,7 +30,6 @@
                 </tr>
             </tbody>
         </table>
-        <br />
         <br />
         <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
         <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
