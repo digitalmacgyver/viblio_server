@@ -3,12 +3,12 @@
     previewText = "You've got Videos!"
 %]
     <div class="centered regSize darkText">
-        <span>You've got [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %] new videos in your VIBLIO account.</span>
+        <span>You've got [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %] in your VIBLIO account.</span>
         <br />
         <em>Someone you know is dying to see this.</em>
         <br />
         <br />
-        <span><a class="tomato" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><span class="tomato">SHARE YOUR VIDEOS</span></a><em> privately</em> through VIBLIO</span> 
+        <span><a class="tomato" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><strong><span class="tomato">SHARE YOUR VIDEOS</span></strong></a><em> privately</em> through VIBLIO</span> 
         
         <div class="line"></div>
 
