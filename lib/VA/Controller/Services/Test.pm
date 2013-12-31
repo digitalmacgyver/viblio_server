@@ -139,11 +139,28 @@ sub template_test :Local {
 	media => \@media_array,
     };
 
+    # Need some faces
+    #
+    my @feats = $c->model( 'RDS::MediaAssetFeature' )
+	->search({ 'me.user_id' => $c->user->obj->id,
+		   'contact.id' => { '!=', undef }, 
+		   'me.feature_type'=>'face'}, 
+                 {prefetch=>['contact','media_asset'], 
+		  page=>1, rows=>4,
+                  group_by=>['media_asset.media_id','contact.id'] });
+    my @faces = ();
+    foreach my $feat ( @feats ) {
+        push( @faces, { uri => $feat->media_asset->uri,
+                        name => $feat->contact->contact_name
+              });
+    }
+
     $c->stash({
 	no_wrapper => 1,
 	model => {
 	    user  => $c->user,
 	    media => \@media_array,
+	    faces => \@faces,
 	    vars => {
 		shareType => 'private',
 		user => $c->user,
