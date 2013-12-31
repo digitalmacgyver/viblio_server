@@ -88,7 +88,7 @@
                                                                 <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                                                     <td cellspacing="0" cellpadding="0">
                                                                         <a href='[% c.server %]#faces'>
-                                                                            <img class="boxShadowed" width="100" height="100" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 100px;height: 100px;">
+                                                                            <img class="boxShadowed" width="74" height="74" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 74px;height: 74px;">
                                                                         </a>    
                                                                     </td>
                                                                 </tr>
