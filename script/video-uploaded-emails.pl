@@ -41,7 +41,7 @@ while( my $arg = shift( @ARGV ) ) {
 
 # The email template to use.
 #
-my $email_template = 'email/newVideos.tt';
+my $email_template = 'email/youveGotVideos.tt';
 my $subject        = 'Videos uploaded today';
 unless( $force1 ) {
     if ( $days_ago > 1 ) {
