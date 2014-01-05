@@ -13,10 +13,7 @@ Services related to the Year In Review
 sub dates_for_user :Private {
     my( $self, $c ) = @_;
     return $c->user->media
-	->search({
-	    -or => [ status => 'TranscodeComplete',
-		     status => 'FaceDetectComplete',
-		     status => 'FaceRecognizeComplete' ] },
+	->search($self->where_valid_mediafile(),
 		 {columns=>['recording_date'], 
 		  order_by=>'recording_date desc'});
 }

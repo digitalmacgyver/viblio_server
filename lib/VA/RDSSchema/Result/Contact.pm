@@ -73,6 +73,12 @@ __PACKAGE__->table("contacts");
   is_foreign_key: 1
   is_nullable: 0
 
+=head2 is_group
+
+  data_type: 'tinyint'
+  default_value: 0
+  is_nullable: 1
+
 =head2 contact_name
 
   data_type: 'varchar'
@@ -131,6 +137,8 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 1, size => 36 },
   "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "is_group",
+  { data_type => "tinyint", default_value => 0, is_nullable => 1 },
   "contact_name",
   { data_type => "varchar", is_nullable => 1, size => 128 },
   "contact_email",
@@ -185,6 +193,51 @@ __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
 
+=head2 contact_groups_contact_viblios
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::ContactGroup>
+
+=cut
+
+__PACKAGE__->has_many(
+  "contact_groups_contact_viblios",
+  "VA::RDSSchema::Result::ContactGroup",
+  { "foreign.contact_viblio_id" => "self.contact_viblio_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 contact_groups_contacts
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::ContactGroup>
+
+=cut
+
+__PACKAGE__->has_many(
+  "contact_groups_contacts",
+  "VA::RDSSchema::Result::ContactGroup",
+  { "foreign.contact_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 contact_groups_groups
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::ContactGroup>
+
+=cut
+
+__PACKAGE__->has_many(
+  "contact_groups_groups",
+  "VA::RDSSchema::Result::ContactGroup",
+  { "foreign.group_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 contact_viblio
 
 Type: belongs_to
@@ -235,6 +288,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 media_shares
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::MediaShare>
+
+=cut
+
+__PACKAGE__->has_many(
+  "media_shares",
+  "VA::RDSSchema::Result::MediaShare",
+  { "foreign.contact_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 provider
 
 Type: belongs_to
@@ -271,8 +339,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-27 19:26:42
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9Z363hu/vyExWgdNQlVl/w
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-01-04 12:11:22
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:T44IjQFBWADBgJkF2cZr1g
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
@@ -284,6 +352,20 @@ sub TO_JSON {
     return $hash;
 }
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
+__PACKAGE__->has_many(
+  "contact_groups_contacts",
+  "VA::RDSSchema::Result::ContactGroup",
+  { "foreign.group_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+__PACKAGE__->has_many(
+  "contact_groups_groups",
+  "VA::RDSSchema::Result::ContactGroup",
+  { "foreign.contact_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+__PACKAGE__->many_to_many( 'groups', 'contact_groups_groups', 'cgroup' );
+__PACKAGE__->many_to_many( 'contacts', 'contact_groups_contacts', 'contact' );
+
 __PACKAGE__->meta->make_immutable;
 1;

@@ -79,12 +79,24 @@ __PACKAGE__->table("media_shares");
   is_foreign_key: 1
   is_nullable: 1
 
+=head2 contact_id
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 1
+
 =head2 share_type
 
   data_type: 'varchar'
   is_foreign_key: 1
   is_nullable: 0
   size: 16
+
+=head2 is_group_share
+
+  data_type: 'tinyint'
+  default_value: 0
+  is_nullable: 1
 
 =head2 view_count
 
@@ -114,8 +126,12 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
+  "contact_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "share_type",
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 16 },
+  "is_group_share",
+  { data_type => "tinyint", default_value => 0, is_nullable => 1 },
   "view_count",
   { data_type => "integer", is_nullable => 1 },
   "created_date",
@@ -159,6 +175,26 @@ __PACKAGE__->set_primary_key("id");
 __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
+
+=head2 contact
+
+Type: belongs_to
+
+Related object: L<VA::RDSSchema::Result::Contact>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "contact",
+  "VA::RDSSchema::Result::Contact",
+  { id => "contact_id" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+  },
+);
 
 =head2 media
 
@@ -226,8 +262,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-07 08:33:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Ci8jRMazedghAEFHf/58dw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-01-04 12:11:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:2MJhIO95LLjUZH95LYHV0g
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

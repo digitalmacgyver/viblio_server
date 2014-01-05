@@ -90,7 +90,7 @@ __PACKAGE__->table("users");
 
   data_type: 'varchar'
   is_nullable: 1
-  size: 256
+  size: 128
 
 =head2 displayname
 
@@ -140,7 +140,7 @@ __PACKAGE__->add_columns(
   "password",
   { data_type => "varchar", is_nullable => 1, size => 128 },
   "email",
-  { data_type => "varchar", is_nullable => 1, size => 256 },
+  { data_type => "varchar", is_nullable => 1, size => 128 },
   "displayname",
   { data_type => "varchar", is_nullable => 1, size => 128 },
   "active",
@@ -176,6 +176,18 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("id");
 
 =head1 UNIQUE CONSTRAINTS
+
+=head2 C<email_UNIQUE>
+
+=over 4
+
+=item * L</email>
+
+=back
+
+=cut
+
+__PACKAGE__->add_unique_constraint("email_UNIQUE", ["email"]);
 
 =head2 C<uuid_UNIQUE>
 
@@ -357,8 +369,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2013-10-15 16:49:38
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jVK5ov3e79gGbdv1v85Qdg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-01-04 12:11:28
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9/cob8/r2iPJuiZSGquL8A
 
 # I like this relationship name better
 #

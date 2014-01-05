@@ -94,12 +94,12 @@ sub template_test :Local {
 	inline_css => 1,
     };
 
+    my $with_faces = $self->where_valid_mediafile();
+    $with_faces->{'media_assets.asset_type'} = 'face';
+    my $without_faces = $self->where_valid_mediafile();
+
     my @media = $c->user->media->search
-	({
-	    -and => [ 'media_assets.asset_type' => 'face',
-		      -or => [ status => 'TranscodeComplete',
-			       status => 'FaceDetectComplete',
-			       status => 'FaceRecognizeComplete' ] ] },
+	($with_faces,
 	 {order_by => 'me.id desc', 
 	  prefetch=>'media_assets',
 	  });
@@ -109,9 +109,7 @@ sub template_test :Local {
     }
     else {
 	@media = $c->user->media->search
-	    ({-or => [ status => 'TranscodeComplete',
-		       status => 'FaceDetectComplete',
-		       status => 'FaceRecognizeComplete' ]},
+	    ($without_faces,
 	     {order_by => 'me.id desc'});
 	if ( $#media >= 0 ) {
 	    $media = $media[0];
@@ -217,11 +215,13 @@ sub role_test :Local {
 
 sub new_video_test :Local {
     my( $self, $c ) = @_;
+
+    my $with_faces = $self->where_valid_mediafile();
+    $with_faces->{'media_assets.asset_type'} = 'face';
+    my $without_faces = $self->where_valid_mediafile();
+
     my @media = $c->user->media->search
-	({-and => [ 'media_assets.asset_type' => 'face',
-		    -or => [ status => 'TranscodeComplete',
-			     status => 'FaceDetectComplete',
-			     status => 'FaceRecognizeComplete' ] ] },
+	($with_faces,
 	 {order_by => 'me.id desc', 
 	  prefetch=>'media_assets',
 	  });
@@ -231,9 +231,7 @@ sub new_video_test :Local {
     }
     else {
 	my @media = $c->user->media->search
-	    ({-or => [ status => 'TranscodeComplete',
-		       status => 'FaceDetectComplete',
-		       status => 'FaceRecognizeComplete' ]},
+	    ($without_faces,
 	     {order_by => 'me.id desc'});
 	if ( $#media >= 0 ) {
 	    $uuid = $media[0]->uuid;

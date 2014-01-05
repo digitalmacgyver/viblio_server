@@ -138,6 +138,35 @@ sub parse_args : Private {
     return $ret;
 }
 
+# Return a where claus suitable for obtaining mediafiles
+#
+sub where_valid_mediafile :Private {
+    my( $self, $isAlbum, $prefix ) = @_;
+    $isAlbum = 0 unless( defined( $isAlbum ) );
+    $prefix  = 'me' unless( defined( $prefix ) );
+    return { $prefix . '.is_album' => $isAlbum,
+	     -or => [ $prefix . '.status' => 'TranscodeComplete',
+		      $prefix . '.status' => 'FaceDetectComplete',
+		      $prefix . '.status' => 'FaceRecognizeComplete' ] };
+}
+
+# Return a resultset for media belonging to, and shared to, the logged in user.
+#
+sub user_media :Private {
+    my( $self, $c, $terms ) = @_;
+    my $user = $c->user->obj;
+    $terms = $terms || {};
+    $terms->{is_album} = 0;
+    $terms->{-and} = [ -or => ['me.user_id' => $user->id, 
+			       'media_shares.user_id' => $user->id], 
+		       -or => [status => 'TranscodeComplete',
+			       status => 'FaceDetectComplete',
+			       status => 'FaceRecognizeComplete' ]
+	];
+    my $rs = $c->model( 'RDS::Media' )->search( $terms, {prefetch=>'media_shares'} );
+    return $rs;
+}
+
 # Use these methods to return from service calls.  They can be used to
 # exit the processing chain at any time (they use detach()).
 #
