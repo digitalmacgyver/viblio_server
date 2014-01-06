@@ -385,9 +385,7 @@ sub list :Local {
     };
 
     my $rs = $c->user->media->search(
-	{ -or => [ status => 'TranscodeComplete',
-		   status => 'FaceDetectComplete',
-		   status => 'FaceRecognizeComplete' ] },
+	$self->where_valid_mediafile(),
 	{ prefetch => 'assets',
 	  order_by => { -desc => 'me.id' } } );
 
@@ -798,11 +796,7 @@ sub count :Local {
     my $uid = $c->req->param( 'uid' );
     my $count = 0;
 
-    my $where = {
-	-or => [ status => 'TranscodeComplete',
-		 status => 'FaceDetectComplete',
-		 status => 'FaceRecognizeComplete' ]
-    };
+    my $where = $self->where_valid_mediafile();
 
     if ( $uid ) {
 	my $user = $c->model( 'RDS::User' )->find({uuid => $uid });
@@ -979,6 +973,7 @@ sub related :Local {
     #
     my $media = $c->model( 'RDS::Media' )->find({ 
 	'me.uuid' => $mid,
+	'me.is_album' => 0,
 	-and => [ -or => ['me.user_id' => $user->id, 
 			  'media_shares.user_id' => $user->id], 
 		  -or => [status => 'TranscodeComplete',

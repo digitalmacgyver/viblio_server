@@ -86,6 +86,12 @@ __PACKAGE__->table("media");
   is_nullable: 0
   size: 16
 
+=head2 is_album
+
+  data_type: 'tinyint'
+  default_value: 0
+  is_nullable: 1
+
 =head2 title
 
   data_type: 'varchar'
@@ -158,6 +164,8 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 1, size => 32 },
   "media_type",
   { data_type => "varchar", is_foreign_key => 1, is_nullable => 0, size => 16 },
+  "is_album",
+  { data_type => "tinyint", default_value => 0, is_nullable => 1 },
   "title",
   { data_type => "varchar", is_nullable => 1, size => 200 },
   "filename",
@@ -235,6 +243,36 @@ __PACKAGE__->add_unique_constraint("unique_hash_UNIQUE", ["unique_hash", "user_i
 __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
+
+=head2 media_albums_albums
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::MediaAlbum>
+
+=cut
+
+__PACKAGE__->has_many(
+  "media_albums_albums",
+  "VA::RDSSchema::Result::MediaAlbum",
+  { "foreign.album_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 media_albums_medias
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::MediaAlbum>
+
+=cut
+
+__PACKAGE__->has_many(
+  "media_albums_medias",
+  "VA::RDSSchema::Result::MediaAlbum",
+  { "foreign.media_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
 
 =head2 media_assets
 
@@ -340,8 +378,8 @@ Composing rels: L</media_workorders> -> workorder
 __PACKAGE__->many_to_many("workorders", "media_workorders", "workorder");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-27 19:26:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:L5EhRFh71fd6barbuCyulw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-01-04 12:11:23
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ORByyVHIlRhPOd4ieB2GwA
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
@@ -404,6 +442,21 @@ sub face_data {
     return $feat->contact;
 }
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
+__PACKAGE__->has_many(
+  "media_albums_albums",
+  "VA::RDSSchema::Result::MediaAlbum",
+  { "foreign.media_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+__PACKAGE__->has_many(
+  "media_albums_medias",
+  "VA::RDSSchema::Result::MediaAlbum",
+  { "foreign.album_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+__PACKAGE__->many_to_many( 'albums', 'media_albums_albums', 'album' );
+__PACKAGE__->many_to_many( 'media',  'media_albums_medias', 'media' );
+
+
 __PACKAGE__->meta->make_immutable;
 1;

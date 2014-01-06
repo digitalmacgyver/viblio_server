@@ -1,0 +1,1 @@
+ssh -i ~/va-services.pem ubuntu@ec2-54-201-155-74.us-west-2.compute.amazonaws.com

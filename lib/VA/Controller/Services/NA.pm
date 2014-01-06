@@ -464,7 +464,8 @@ sub new_user :Local {
 	    password => undef,
 	    username => undef,
 	    displayname => undef,
-	    realm => 'db'
+	    realm => 'db',
+	    via => 'trayapp'
 	  ],
 	  @_ );
 
@@ -574,7 +575,12 @@ sub new_user :Local {
 	$c->stash->{no_wrapper} = 1;
 	$c->stash->{url} = $c->server . '#confirmed?uuid=' . $user->uuid;
 
-	$headers->{html} = $c->view( 'HTML' )->render( $c, 'email/newUserConfirmEmail.tt' );
+	if ( $args->{via} eq 'trayapp' ) {
+	    $headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountConfirmation.tt' );
+	}
+	else {
+	    $headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountCreated_ShareReferral.tt' );
+	}
 	my $res = $c->model( 'Mandrill' )->send( $headers );
 	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
 	    $c->log->error( "Error using Mailchimp to send" );
@@ -633,7 +639,7 @@ sub account_confirm :Local {
 	user => $user,
     };
 
-    $headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountCreationConfirmation.tt' );
+    $headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountCreated_trayApp.tt' );
     my $res = $c->model( 'Mandrill' )->send( $headers );
     if ( $res && $res->{status} && $res->{status} eq 'error' ) {
 	$c->log->error( "Error using Mailchimp to send" );
@@ -1004,10 +1010,7 @@ sub mediafile_create :Local {
 
     ### FOR NOW, LIMIT ANY EMAILS TO THE FIRST FEW VIDEOS UPLOADED
     ### TO THE ACCOUNT
-    my $rs = $user->media->search({
-	-or => [ status => 'TranscodeComplete',
-		 status => 'FaceDetectComplete',
-		 status => 'FaceRecognizeComplete' ] });
+    my $rs = $user->media->search( $self->where_valid_mediafile() );
     if ( $rs->count < 4 ) {
 
 	if ( $user->profile->setting( 'email_notifications' ) &&
