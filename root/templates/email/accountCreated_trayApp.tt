@@ -6,31 +6,34 @@
         <span class='xLargeText'>Success!</span>
         <br />
         <br />
-        <span><strong>You're ready to start using VIBLIO's great features </strong></span>
+        <span><strong>You're ready to start using VIBLIO's great features in just 3 easy steps</strong></span>
         <br />
         <br />
-        <br />
-        If you've <strong>already downloaded</strong> out Viblio Video Finder, then
-        <br />
-        <br />
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-            <tbody>
-                <tr>
-                    <td width="99" style="width:99px;"></td>
-                    <td class="button" width="302" height="33" align="center" style="width:302px;">
-                        <a class="noUnderline" href="[% c.server %]#login"><b><span class="buttonSpan">Go to Viblio on the web &raquo;</span></b></a>
-                    </td>
-                    <td width="99" style="width:99px;"></td>
-                </tr>
-            </tbody>
-        </table>
-        <br />
-        <br />
-        <strong>Haven't downloaded</strong> our Viblio Video Finder yet?
-        <br />
-        <br />
-        <a class="tomato" href="[% c.server %]#getApp?from=account_creation_email" ><span class="tomato">let's get you started!</span></a>
-        <br />
+        <ol>
+            <li>
+                Let us <strong>collect</strong> your videos from your devices and pull them altogether into your own private VIBLIO library.<br />
+                <br />
+                If you haven't already downloaded our VIBLIO video finder yet, <a class="tomato" href="[% c.server %]#getApp?from=accountCreated_tray_app_email" ><span class="tomato">DOWNLOAD IT NOW</span></a>.<br />
+                <br />
+                Don't worry about trying to figure out where all your videos are.  The VIBLIO video finder will do that for you.
+            </li>
+            <li>
+                <strong>Magic Tag&trade;</strong><br />
+                <br />
+                Once we have loaded everything into your library, we'll find people in your videos.  Let us know which people you want to build albums around by tagging those people.  Tagging a person allows us to automatically create albums of videos that person is in.<br />
+                <br />
+                We also organize your videos by the place they were taken.
+            </li>
+            <li>
+                <strong>Share the love!</strong><br />
+                <br />
+                Videos were meant to be shared with the people that matter to you.  Because we help you create video collections, it is easier to share specific videos with people who have an interest in particular albums.
+            </li>
+        </ol>
+        <div class="centered">HANG TIGHT.  WE'RE PROCESSING THE VIDEOS YOU HAVE ALREADY UPLOADED.<br />
+            <br />
+            We'll let you know when we're done.
+        </div>
         <br />
         <span style="font-size:14px">You registered with: [% model.user.email %]
             <br />
