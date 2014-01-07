@@ -9,7 +9,7 @@
         <span><strong>You're ready to start using VIBLIO's great features in just 3 easy steps</strong></span>
         <br />
         <br />
-        <ol>
+        <ol style="text-align: left;">
             <li>
                 Let us <strong>collect</strong> your videos from your devices and pull them altogether into your own private VIBLIO library.<br />
                 <br />
@@ -17,6 +17,7 @@
                 <br />
                 Don't worry about trying to figure out where all your videos are.  The VIBLIO video finder will do that for you.
             </li>
+            <br />
             <li>
                 <strong>Magic Tag&trade;</strong><br />
                 <br />
@@ -24,16 +25,17 @@
                 <br />
                 We also organize your videos by the place they were taken.
             </li>
+            <br />
             <li>
                 <strong>Share the love!</strong><br />
                 <br />
                 Videos were meant to be shared with the people that matter to you.  Because we help you create video collections, it is easier to share specific videos with people who have an interest in particular albums.
             </li>
         </ol>
-        <div class="centered">HANG TIGHT.  WE'RE PROCESSING THE VIDEOS YOU HAVE ALREADY UPLOADED.<br />
-            <br />
-            We'll let you know when we're done.
-        </div>
+        <br />
+        HANG TIGHT.  WE'RE PROCESSING THE VIDEOS YOU HAVE ALREADY UPLOADED.<br />
+        <br />
+        We'll let you know when we're done.
         <br />
         <span style="font-size:14px">You registered with: [% model.user.email %]
             <br />
