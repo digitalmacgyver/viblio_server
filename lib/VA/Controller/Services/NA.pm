@@ -1042,7 +1042,7 @@ sub mediafile_create :Local {
 		media => [ $mf ],
 	    };
 	
-	    $email->{html} = $c->view( 'HTML' )->render( $c, 'email/firstVideosUploadedEmail.tt' );
+	    $email->{html} = $c->view( 'HTML' )->render( $c, 'email/firstVideosUploaded.tt' );
 	    my $res = $c->model( 'Mandrill' )->send( $email );
 	    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
 		$c->log->error( "Error using Mailchimp to send" );
