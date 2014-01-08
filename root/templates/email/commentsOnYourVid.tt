@@ -2,7 +2,7 @@
     previewText = "Someone has commented on your video!"
 %]
     <div class="regSize darkText" style="text-align: left;">
-        <span>[% from.displayname %] has commented on your video.</span><br />
+        <span><span class="tomato">[% from.displayname %]</span> has commented on your video.</span><br />
         <br />
         <span>Comment:</span><br />
         <table cellspacing="0" cellpadding="0" style="margin-right: auto;margin-left: auto;">
