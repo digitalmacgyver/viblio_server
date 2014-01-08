@@ -3,10 +3,10 @@
 %]
     <div class="regSize darkText" style="text-align: left;">
         [%- META no_wrapper = 1 -%]
-        <span style="text-align:left;" class="largeText">Congratulations [% model.user.displayname %]!</span>
+        <span style="text-align:left;" class="largeText">Congratulations <span class="tomato">[% model.user.displayname %]</span>!</span>
         <br />
         <br />
-        <span style="text-align:left;">Your friend [% from.displayname %] wants to help you build and organize your own video private video library.</span>
+        <span style="text-align:left;">Your friend <span class="tomato">[% from.displayname %]</span> wants to help you build and organize your own video private video library.</span>
         <br />
         <br />
         <span style="text-align:left;">Here's their private message:</span><br />
