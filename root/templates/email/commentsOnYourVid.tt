@@ -5,7 +5,7 @@
         <span>[% from.displayname %] has commented on your video.</span><br />
         <br />
         <span>Comment:</span><br />
-        <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">
+        <table cellspacing="0" cellpadding="0" style="margin-right: auto;margin-left: auto;">
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
                 <td cellspacing="0" cellpadding="0">
