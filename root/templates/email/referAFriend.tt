@@ -11,9 +11,9 @@
         <br />
         <span style="text-align:left;">Here's their private message:</span><br />
         <br />
-        <span class="centered"><em>
+        <div class="centered"><p class="share darkText" style="font-size:14px; text-align: center;"><em>
             "[% message %]"
-        </em></span>
+        </p></em></div>
         <br />
         <br />
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
