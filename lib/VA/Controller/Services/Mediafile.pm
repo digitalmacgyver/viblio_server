@@ -597,21 +597,6 @@ sub add_comment :Local {
 					     type => 'new_comment',
 					     user => $c->user->obj->TO_JSON,
 					     media  => $published_mf } );
-	if ( $share->user->profile->setting( 'email_notifications' ) &&
-	     $share->user->profile->setting( 'email_comment' ) ) {
-	    $self->send_email( $c, {
-		subject => $c->loc( 'Someone has commented on a video shared with you.' ),
-		to => [{ email => $share->user->email,
-			 name  => $share->user->displayname }],
-		template => 'email/commentsOnVidSharedWYou.tt',
-		stash => {
-		    from => $c->user->obj,
-		    commentText => $comment->comment,
-		    model => {
-			media => [ $published_mf ] 
-		    }
-		} });
-	}
     }
 
     $self->status_ok( $c, { comment => $hash } );
