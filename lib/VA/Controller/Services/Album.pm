@@ -33,6 +33,7 @@ sub create :Local {
 
     my $album = $c->user->create_related( 'media', {
 	is_album => 1,
+	recording_date => DateTime->now,
 	media_type => 'original',
 	title => $name });
 
