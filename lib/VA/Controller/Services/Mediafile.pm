@@ -1144,6 +1144,22 @@ sub change_recording_date :Local {
     $self->status_ok( $c, { date => $media->recording_date } );
 }
 
+sub get_animated_gif :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $asset = $c->model( 'RDS::MediaAsset' )->search(
+	{ 'media.uuid' => $mid,
+	  'me.asset_type' => 'thumbnail_animated' },
+	{ prefetch => 'media' } );
+    if ( $asset ) {
+	my $gif = $asset->first;
+	if ( $gif ) {
+	    $self->status_ok( $c, { url => VA::MediaFile::US->new->uri2url( $c, $gif->uri ) } );
+	}
+    }
+    $self->status_ok($c,{});
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
