@@ -110,11 +110,17 @@ Mediafile: Media file management.
 /services/mediafile/delete?uuid=MID
   Delete a mediafile and its related assets. Returns {}.
 
-/services/mediafile/list[?page=PAGE&rows=ROWS]
+/services/mediafile/list[?page=PAGE&rows=ROWS][&views[]=poster]
+  The "views[]=poster" should in most cases be supplied.  It makes the query much
+  faster by returning only the poster view for a mediafile.
+
   Returns list of the logged in user's media files.  
     { media: [ <listof-media > ] }
 
-/services/mediafile/get?mid=MID
+/services/mediafile/get?mid=MID[&views[]=poster]
+  The "views[]=poster" should in most cases be supplied.  It makes the query much
+  faster by returning only the poster view for a mediafile.
+
   Return the mediafile for MID.  Also returns owner:
     { media: <mediafile>
       owner: <user> }
@@ -468,4 +474,99 @@ return data related to the logged in user.
   Return the list of videos taken in a particular month/year,
   from most recent to least.
 
+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+
+ D A T A  S T R U C T U R E S
+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+
 
+<user>:
+{
+   "user" : {
+      "provider" : "facebook",
+      "active" : "2013-12-10 18:02:15",
+      "provider_id" : null,
+      "accepted_terms" : null,
+      "created_date" : "2013-08-15 15:57:37",
+      "uuid" : "682DC812-05C3-11E3-839F-54DE3DA5649D",
+      "email" : "aqpeeb@gmail.com",
+      "confirmed" : null,
+      "displayname" : "Andrew Peebles",
+      "updated_date" : "2013-12-10 18:02:15"
+   }
+}
+
+<mediafile>:
+{
+   "media" : {
+     "lat" : "37.44361992",
+      "lng" : "-122.16307640",
+      "status" : "FaceRecognizeComplete",
+      "recording_date" : "1970-01-01 00:00:00",
+      "uuid" : "443f1da0-74b0-11e3-9ee5-2bc59fa2be56",
+      "view_count" : "0",
+      "media_type" : "original",
+      "is_album" : "0",
+      "unique_hash" : "ddd7e1e2362422d85602bea7157e2fb0",
+      "created_date" : "2014-01-03 19:50:22",
+      "description" : null,
+      "filename" : "/home/peebles/video-test/test2.mp4",
+      "title" : "test2",
+      "updated_date" : "2014-01-03 19:50:48",
+      "views" : {
+         "poster" : {
+            "width" : "320",
+            "provider" : null,
+            "bytes" : "86214",
+            "provider_id" : null,
+            "uuid" : "a3a13c07-1ed6-43e0-86f7-cc12ee698ba6",
+            "view_count" : "0",
+            "url" : "https://viblio-uploaded-files.s3.amazonaws.com:443/443f1da0-74b0-11e3-9ee5-2bc59fa2be56%2F443f1da0-74b0-11e3-9ee5-2bc59fa2be56_poster.png?Signature=FdKHbZ23QF5u%2Fp8nlJC7CeWJMLY%3D&Expires=1420156740&AWSAccessKeyId=AKIAJHD46VMHB2FBEMMA",
+            "location" : "us",
+            "asset_type" : "poster",
+            "duration" : null,
+            "created_date" : "2014-01-03 19:50:40",
+            "height" : "180",
+            "uri" : "443f1da0-74b0-11e3-9ee5-2bc59fa2be56/443f1da0-74b0-11e3-9ee5-2bc59fa2be56_poster.png",
+            "metadata_uri" : null,
+            "user_id" : "124",
+            "updated_date" : null,
+            "mimetype" : "image/png"
+         }
+      }
+   }
+}
+
+<contact>: (also <face>)
+{
+   "face": {
+      "provider" : null,
+      "contact_name" : null,
+      "provider_id" : null,
+      "created_date" : "2013-12-21 22:43:16",
+      "uuid" : "78e5c3f7-29b3-4197-b52f-fdd639db59d5",
+      "contact_viblio_id" : null,
+      "picture_uri" : "cf576260-6a08-11e3-a38c-65b033b76087/cf576260-6a08-11e3-a38c-65b033b76087_face_7_0.jpg",
+      "contact_email" : null,
+      "url" : "https://viblio-uploaded-files.s3.amazonaws.com:443/cf576260-6a08-11e3-a38c-65b033b76087%2Fcf576260-6a08-11e3-a38c-65b033b76087_face_7_0.jpg?Signature=xXELcseuBgVz5lho2FbO1YZAwsY%3D&Expires=1420156740&AWSAccessKeyId=AKIAJHD46VMHB2FBEMMA",
+      "is_group" : "0",
+      "id" : "2283",
+      "updated_date" : null
+   }
+}
+
+<pager>:
+{
+   "pager" : {
+      "first" : 1,
+      "last_page" : 13,
+      "current_page" : "1",
+      "entries_per_page" : "2",
+      "last" : 2,
+      "entries_on_this_page" : 2,
+      "next_page" : 2,
+      "previous_page" : null,
+      "total_entries" : "26",
+      "first_page" : 1
+   }
+}
+
+(next_page will be null if no more pages)

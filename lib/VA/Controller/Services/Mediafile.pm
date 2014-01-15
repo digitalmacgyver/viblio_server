@@ -1149,7 +1149,7 @@ sub get_animated_gif :Local {
     my $mid = $c->req->param( 'mid' );
     my $asset = $c->model( 'RDS::MediaAsset' )->search(
 	{ 'media.uuid' => $mid,
-	  'me.asset_type' => 'thumbnail_animated' },
+	  'me.asset_type' => 'poster_animated' },
 	{ prefetch => 'media' } );
     if ( $asset ) {
 	my $gif = $asset->first;
