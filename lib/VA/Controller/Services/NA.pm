@@ -713,7 +713,7 @@ sub forgot_password_request :Local {
     };
 
     $c->stash->{user} = $user;
-    $c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/forgotPasswordEmail.tt' );
+    $c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/forgotPassword.tt' );
 
     my $res = $c->model( 'Mandrill' )->send( $c->stash->{email} );
     if ( $res && $res->{status} && $res->{status} eq 'error' ) {
