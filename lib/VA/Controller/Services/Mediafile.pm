@@ -409,6 +409,30 @@ sub list :Local {
     }
 }
 
+sub popular :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ page => 1,
+          rows => 10000,
+	  'views[]' => undef
+        ],
+        @_ );
+    
+    my $where = $self->where_valid_mediafile();
+    $where->{ 'me.view_count' } = { '!=', 0 };
+    my $rs = $c->user->media->search( $where, 
+				      { prefetch => 'assets',
+					page => $args->{page},
+					rows => $args->{rows},
+					order_by => { -desc => 'me.view_count' } });
+    my @media;
+    push( @media, VA::MediaFile->new->publish( $c, $_, { views => $args->{'views[]'} } ) )
+	foreach( $rs->all );
+    my $pager = $self->pagerToJson( $rs->pager );
+    $self->status_ok( $c, { media => \@media, pager => $pager } );
+}
+
 =head2 /services/mediafile/get
 
 Get the information for a single mediafile (mid=uuid).  If include_contact_info=1,
