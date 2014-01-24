@@ -616,7 +616,7 @@ sub avatar_for_name :Local {
 	else {
 	    $url = '/css/images/avatar.png';
 	}
-	$self->status_ok( $c, { url => $url } );
+	$self->status_ok( $c, { url => $url, provider => $contact->provider || 'user supplied' } );
     }
     else {
 	$self->status_ok( $c, {} );
@@ -900,6 +900,33 @@ sub add_contact_to_mediafile :Local {
     }
 
     $self->status_ok( $c, { contact => $data } );
+}
+
+# Return unnamed contacts that have a photo
+#
+sub unnamed :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ page => 1,
+          rows => 10000]
+      );
+
+    my $rs = $c->user->contacts->search(
+	{ contact_name => undef,
+	  picture_uri => { '!=', undef } },
+	{ page => $args->{page}, rows => $args->{rows} } );
+
+    my @data = ();
+    foreach my $contact ( $rs->all ) {
+	my $hash = $contact->TO_JSON;
+	$hash->{url} = VA::MediaFile::US->new->uri2url( $c, $contact->picture_uri );
+	push( @data, $hash );
+    }
+
+    $self->status_ok( $c, {
+	faces => \@data,
+	pager => $self->pagerToJson( $rs->pager ) });
 }
 
 __PACKAGE__->meta->make_immutable;

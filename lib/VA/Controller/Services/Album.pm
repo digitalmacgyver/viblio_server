@@ -20,6 +20,7 @@ sub list :Local {
 	my @m = ();
 	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->media );
 	$a->{media} = \@m;
+	$a->{owner} = $album->user->TO_JSON; 
 	push( @data, $a );
     }
 
@@ -69,7 +70,10 @@ sub create :Local {
 	# Set the poster of the new album to a canned image
     }
 
-    $self->status_ok( $c, { album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ) } );
+    my $hash = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+    $hash->{owner} = $album->user->TO_JSON;
+
+    $self->status_ok( $c, { album => $hash } );
 }
 
 sub get :Local {
@@ -83,6 +87,7 @@ sub get :Local {
     my @m = ();
     push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->media );
     $hash->{media} = \@m;
+    $hash->{owner} = $album->user->TO_JSON; 
 
     $self->status_ok( $c, { album => $hash } );
 }

@@ -409,6 +409,30 @@ sub list :Local {
     }
 }
 
+sub popular :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ page => 1,
+          rows => 10000,
+	  'views[]' => undef
+        ],
+        @_ );
+    
+    my $where = $self->where_valid_mediafile();
+    $where->{ 'me.view_count' } = { '!=', 0 };
+    my $rs = $c->user->media->search( $where, 
+				      { prefetch => 'assets',
+					page => $args->{page},
+					rows => $args->{rows},
+					order_by => { -desc => 'me.view_count' } });
+    my @media;
+    push( @media, VA::MediaFile->new->publish( $c, $_, { views => $args->{'views[]'} } ) )
+	foreach( $rs->all );
+    my $pager = $self->pagerToJson( $rs->pager );
+    $self->status_ok( $c, { media => \@media, pager => $pager } );
+}
+
 =head2 /services/mediafile/get
 
 Get the information for a single mediafile (mid=uuid).  If include_contact_info=1,
@@ -1142,6 +1166,30 @@ sub change_recording_date :Local {
     $media->recording_date( DateTime::Format::Flexible->parse_datetime( $dstring ) );
     $media->update;
     $self->status_ok( $c, { date => $media->recording_date } );
+}
+
+sub get_animated_gif :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $asset = $c->model( 'RDS::MediaAsset' )->search(
+	{ 'media.uuid' => $mid,
+	  'me.asset_type' => 'poster_animated' },
+	{ prefetch => 'media' } );
+    if ( $asset ) {
+	my $gif = $asset->first;
+	if ( $gif ) {
+	    $self->status_ok( $c, { url => VA::MediaFile::US->new->uri2url( $c, $gif->uri ) } );
+	}
+    }
+    $self->status_ok($c,{});
+}
+
+sub media_exists :Local {
+    my( $self, $c ) = @_;
+    my $hash = $c->req->param( 'hash' );
+    my $count = $c->user->media->count({
+	unique_hash => $hash });
+    $self->status_ok( $c, { count => $count } );
 }
 
 __PACKAGE__->meta->make_immutable;

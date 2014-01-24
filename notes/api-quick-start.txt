@@ -1,0 +1,572 @@
+=========================================================================================
+AIR: Album in Review: Showing an album view with the medifile contents
+     organized by years and months.
+
+notes: AID is the uuid of a mediafile who's is_album==1
+-----------------------------------------------------------------------------------------
+/services/air/years?aid=AID
+  Returns an array of years from most to least recent, in which there
+  are recorded videos.
+
+/services/air/months?aid=AID
+  Returns an array of months from most to least recent, in which there
+  are recorded videos.
+
+/services/air/videos_for_year?aid=AID&year=YEAR[&page=PAGE&rows=ROWS]
+  Return the list of videos taken in a particular year, in month bins, 
+  from most recent to least.
+
+/services/air/videos_for_month?aid=AID&month=MONTH[&year=YEAR][&page=PAGE&rows=ROWS]
+  Return the list of videos taken in a particular month/year,
+  from most recent to least.
+
+=========================================================================================
+Album: Services to manipulate albums.
+
+notes: AID is the uuid of a mediafile who's is_album==1
+       <album> is equiv. to <mediafile> except is_album is always (1) and
+       we add owner: <user>
+-----------------------------------------------------------------------------------------
+/services/album/list[?page=PAGE&rows=ROWS]
+  Return list of albums (and related data) owned by logged in user.  Returns something
+  that looks like:
+    { albums: [ { <mediafile>
+      	      	  media: [ <listof-mediafiles> ],
+		  owner: <user>
+		}, ...
+	      ],
+      pager: { <pager> }
+    }
+
+/services/album/create[?name=NAME][&initial_mid=MID]
+  Create a new album for the logged in user.  If NAME is not specified, defaults to
+  'unnamed'.  If MID is specified, then the poster corresponding to that mediafile uuid
+  is used as the "cover photo" for the album.  The web UI delays creating an album until
+  the first video file is associated.  Returns { album: <album> }.
+
+/services/album/get?aid=AID
+  Returns { album: <album> }
+
+/services/album/add_media?aid=AID&mid=MID
+  Add a mediafile to an album.  Returns {}.
+
+/services/album/remove_media?AID=aid&mid=MID
+  Remove a mediafile from an album.  Returns {}.
+  
+/services/album/change_title?aid=AID&title=TITLE
+  Change the title/name of an album.  Returns {}.
+
+/services/album/delete_album?aid=AID
+  Delete an album.  Returns {}.
+
+=========================================================================================
+Faces: Face management.
+-----------------------------------------------------------------------------------------
+/services/faces/media_face_appears_in
+/services/faces/contact_mediafile_count
+/services/faces/contacts
+/services/faces/contacts_present_in_videos
+/services/faces/faces_in_mediafile
+/services/faces/contact
+/services/faces/all_contacts
+/services/faces/photos_of
+/services/faces/contact_emails
+/services/faces/change_contact
+/services/faces/tag
+/services/faces/avatar_for_name
+/services/faces/contact_for_name
+/services/faces/delete_contact
+/services/faces/remove_false_positives
+/services/faces/remove_from_video
+/services/faces/add_contact_to_mediafile
+
+=========================================================================================
+Geo: Geographical data.
+-----------------------------------------------------------------------------------------
+/services/geo/all
+  Returns geo data for all of the logged in user's mediafiles.  Returns:
+    { locations: [ { lat: LAT,
+      		     lng: LNG,
+		     uuid: mediafile-uuid,
+		     title: mediafile-title,
+		     view_count: mediafile-view_count,
+		     url: mediafile-poster },
+ 		   ...
+		 ]
+    }
+
+/services/geo/location?lat=LAT&lng=LNG
+  Returns the JSON struct returned from:
+    http://maps.googleapis.com/maps/api/geocode/json?latlng=$latlng&sensor=true
+  Used in the web UI to construct approx. address corresponding to the
+  given lat, lng.
+
+/services/geo/change_latlng?mid=MID&lat=LAT&lng=LNG
+  Change the lat/lng for the given mediafile.  Returns {}.  
+
+=========================================================================================
+Mediafile: Media file management.
+-----------------------------------------------------------------------------------------
+/services/mediafile/delete?uuid=MID
+  Delete a mediafile and its related assets. Returns {}.
+
+/services/mediafile/list[?page=PAGE&rows=ROWS][&views[]=poster]
+  The "views[]=poster" should in most cases be supplied.  It makes the query much
+  faster by returning only the poster view for a mediafile.
+
+  Returns list of the logged in user's media files.  
+    { media: [ <listof-media > ] }
+
+/services/mediafile/get?mid=MID[&views[]=poster]
+  The "views[]=poster" should in most cases be supplied.  It makes the query much
+  faster by returning only the poster view for a mediafile.
+
+  Return the mediafile for MID.  Also returns owner:
+    { media: <mediafile>
+      owner: <user> }
+
+/services/mediafile/get_metadata?mid=MID
+  Returns the metadata captured for this mediafile from the video processing
+  pipeline:
+    { <metadata> }
+
+/services/mediafile/set_title_description?mid=MID&title=TITLE&description=DESCRIPTION
+  Set/change the title and/or the description of the passed in mediafile.
+
+/services/mediafile/comments?mid=MID
+  Return the list of comments made on this mediafile.  Also returns the owner of this mediafile.
+    { comments: [ <listof-comment> ],
+      owner: <user> }
+
+/services/mediafile/add_comment?mid=MID&txt=COMMENT
+  Adds a comment to a mediafile.  Returns { comment: <comment> }.
+
+/services/mediafile/add_share?mid=MID&subject=SUBJECT&body=BODY[&list=LIST][&private=PRIVATE]
+  Called to share a video with someone or someones.  Requires a mid media uuid.  The
+  list parameter is optional.  If not present, this share is 'public', a post to a
+  social networking site.  If the list is present, its assumed to be a clean, sanitized
+  comma delimitted list of email addresses.  If an email address belongs to a viblio user,
+  a private share is created, otherwise a hidden share.  Email is sent to each address
+  on the list.  The url to the video is different depending on private or hidden.
+  
+  If a list is passed, every email address on that list is added to the user's
+  contact list unless it is already present.
+
+  PRIVATE can be one of "private" or "potential".  It defaults to "private".  Internally
+  the logic is as follows:
+
+  if ( LIST )
+    foreach email on LIST
+      if PRIVATE=="private"
+        mediafile is shared as a private share
+      else
+        mediafile is shared as "hidden" (unlisted), emailed to someone but technically
+	viewable by anyone with the link.
+  else if ( PRIVATE=="potential" )
+    # This is a potential share.  A potencial share is created in any context
+    # where we don't otherwise know that the share will ever actually be used.
+    # Currently this is the case for cut-n-paste or copy-to-clipboard link
+    # displayed in the shareVidModal in the web gui.  We don't know if the user
+    # will actually c-n-p or c-t-c, and if they do, we don't know if they 
+    # actually utilize the information.  So we create a potencial share, which
+    # will turn into a "hidden" share if anyone ever comes into viblio via the
+    # special link we will specify.
+  else
+    mediafile is shared as "public"
+  
+/services/mediafile/count[?uid=UID]
+  Return total number of mediafiles in a user's account.  If UID is passed in, its the
+  number of mediafiles in the users account with uuid=CID.  Otherwise its the logged in user.
+
+/services/mediafile/all_shared[?cid=CID]
+  Return a struct that contains all media shared to this user.  Returns:
+    { shared: [ { owner: <user>,
+      	      	  media: [ <listof-mediafile> ] },
+		...
+	      ] }
+  If cid is passed in, it is interpreted as a contact_uuid, and will filter
+  the results so that only media containing this contact are returned.
+
+/services/mediafile/delete_share?mid=MID
+  The mediafile is removed from the logged in user's list of videos that have
+  been shared to this user.  This is how a user can remove a video that has
+  been privately shared to them.  The video is not removed from the database,
+  just removed from the list of videos shared to this user.
+
+/services/mediafile/cf?mid=MID
+  Return the S3 and Cloudfront URLs for playing this mediafile.  Returns:
+    { url: S3_URL,
+      cf_url: Cloudfront_URL }
+
+/services/mediafile/relatedmid=MID[&page=PAGE&rows=ROWS][&by_date||&by_faces||&by_geo]
+  Return list of mediafiles related to the passed in mediafile.  You can specify
+  one or more of:
+  
+  by_date=1    : All videos taken on same day followed by all videos 
+                 taken in same month as this video
+  by_faces=1   : All videos that contain at least one of the faces contained
+                 in this video
+  by_geo=1     : All videos taken "near" this video (see below)
+  
+  If more than one by_ is specified, the array returned is in the order shown
+  above (date, faces, geo).
+
+  Returns: 
+    { media: [ <listof-media> ],
+      pager: <pager> }
+
+/services/mediafile/change_recording_date&mid=MID&date=DATE
+  Change the recording date of a mediafile.  The incoming DATE string must be
+  parsable by perl's DateTime::Format::Flexible->parse_datetime().  A Javascript
+  Date()->toString() is parsable.
+
+=========================================================================================
+NA: Non-authenticated services.
+-----------------------------------------------------------------------------------------
+/services/na/authenticate?email=EMAIL&password=PASSWORD&realm=REALM
+  Authenticate a user.  For security purposes, should be called as a POST.  Parameters are 
+  email, password and realm.  The realm parameter selects the type of authenticator to use; 
+  currently 'facebook' or 'db' (for local database).  Other realms may be added in the future.
+  If realm is 'facebook', the Facebook access_token from a successful OAuth session should
+  be included.  On success, returns { user: <user> } and a session cookie.
+
+/services/na/logout
+  Logs the currently logged in user out.
+
+/services/na/i18n
+  Obtain information about the current localization environment; the user's current
+  language and the languages available.  The returned information is guessed from
+  the user-agent header and possibly other available headers.  The return will
+  look something like:
+    {
+     "guessed_locale" : "en",
+     "current_language" : [
+        "en"
+     ],
+     "user_session_language" : null,
+     "installed_languages" : {
+        "en" : "English",
+        "sv" : "Swedish"
+     }
+    }
+
+/services/na/device_info[?user_agent=USER-AGENT]
+  Return what we know about the connecting device.  Can pass in a user-agent, or it defaults 
+  to the user-agent header.  Returns something like:
+  {
+   "gecko_version" : null,
+   "is_pspgameos" : null,
+   "public_version" : 4,
+   "engine_version" : null,
+   "public_major" : "4",
+   "mobile" : 1,
+   "browser_string" : "Safari",
+   "device_name" : "Android",
+   "device_type" : "android",
+   "is_windows" : null,
+   "engine_string" : "KHTML",
+   "robot" : null,
+   "country" : "US",
+   "language" : "EN",
+   "user_agent" : "Mozilla/5.0 (Linux; U; Android 3.1; en-us; GT-P7310 Build/HMJ37) AppleWebKit/534.13 (KHTML, like Gecko) Version/4.0 XXX/534.13",
+   "engine_major" : null,
+   "os_string" : "Linux",
+   "device" : "android",
+   "is_mac" : null,
+   "public_minor" : ".0",
+   "engine_minor" : null,
+   "is_os2" : null,
+   "is_ps3gameos" : null,
+   "is_vms" : null,
+   "is_unix" : 1,
+   "is_dotnet" : null
+  }
+
+/services/na/new_user?email=EMAIL&password=PASSWORD&displayname=DISPLAYNAME&realm=REALM[&via=xxx]
+  Add a new user to the system.  Upon success, the user is authenticated and { user: <user> } is
+  returned along with a session cookie, and the client can re-driect into the application.  No
+  additional authentication step is required.  See /services/na/authenticate for details.
+  The "via" parameter is used for analytics purposes.  It defaults to "trayapp" if not specified
+  for legacy reasons.  Should be set to some short, representative string assigned by a Viblio
+  representative.  Returns { user: <user> }.
+
+/services/na/account_confirm?uuid=UID
+  This endpoint sets the confirm bit in the passed in user's account, and
+  sends them another email welcoming them to viblio.  Returns { user: <user> }.
+
+/services/na/forgot_password_request?email=EMAIL
+  This resets the user's password (corresponding to the EMAIL param) to a random string and
+  sends email to the EMAIL provided with this string.  Returns { user: <user> }.
+
+/services/na/media_shared?mid=MID
+  Should be called to get the mediafile record of a mediafile that is known to be
+  shared.  This is typically called when a user clicks on
+  some sort of a link that has been shared to them.  If they are allowed to see
+  the shared mediafile, the share type (private, hidden, public, or owned_by_user)
+  the mediafile and the owner of the media file are returned.  If it is a private
+  share and the user is not logged in, { auth_required: 1 } is returned which
+  should cause the client to redirect to a login page, then try this endpoint
+  again.  BASED ON THE RETURNED SHARE_TYPE, certain related assets of the mediafile
+  should be rendered as read-only or not rendered at all.  Contact a Viblio 
+  representative for the complete set of rules related to this.
+  
+  Returns:
+    { share_type: SHARE_TYPE,
+      media: <mediafile>,
+      owner: <user> }
+  OR:
+    { auth_required: 1 }  
+
+/services/na/terms
+  Returns an HTML string that displayes the Viblio Terms Of Use.  Returns:
+    { terms: HTML-STRING }
+
+/services/na/valid_email?email=EMAIL
+  Can be called by a client to validate a string as a legal email address.  Also tells
+  the client if this email address has already been taken by a current Viblio user.
+  Returns:
+    { valid: 1/0,
+      why: (string: if valid==0, why) }
+
+/services/na/download_trayapp
+  Streams the most current version of the TrayApp to the client as a document
+  attchement.
+
+/services/na/avatar[?uid=-&zoom=&x=-&y=90]
+  Unauthenticated version of /services/user/avatar.  See that documentation for
+  details.  
+
+/services/na/media_comments?mid=MID
+  Unauthenticated version of /services/mediafile/comments.  See that documentation
+  for details.
+  
+/services/na/faces_in_mediafile?mid=MID
+  Return the list of faces that appear in this mediafile.  Returns:
+    { faces: [ <listof-face> ] }
+
+/services/na/geo_loc?lat=LAT&lng=LNG
+  Unauthenticated version of /services/geo/location.  See that documentation for
+  details.  
+
+/services/na/form_feedback?feedback=MESSAGE&feedback_email=EMAIL&feedback_location=LOCATION
+  For sending feedback to viblio team.  The UI is responsible for
+  setting feedback_email to the correct email address that Mandrill
+  uses to route back to us, which we then file in our feedback system.
+
+=========================================================================================
+User: User management.
+-----------------------------------------------------------------------------------------
+/services/user/me
+  Returns user struct for logged in user.  Can be used to see if user is authenticated.
+    { user: <user> }
+
+/services/user/profile
+  Retrieve logged in user profile.  Returns profile fields and account link information.
+    { profile: { uuid: <user>.uuid,
+      	       	 email: <user>.email,
+		 fields: [ { name: 'email_notifications', value: 'True' },
+		           ... ],
+		 links: [ { provider: 'facebook', link: 'https://www.facebook.com/andrew.peebles.9843' },
+		  	  ... ],
+	       } } 
+
+/services/user/change_profile?FIELD=VALUE&FIELD=VALUE...
+  Change one or more fields in the logged in users profile.  Returns the modified
+  users profile as described in /services/user/profile.
+
+/services/user/change_email_or_displayname?[email=EMAIL][&displayname=DISPLAYNAME]
+  Pass in one or both of 'email', 'displayname' to change these
+  values for the logged in user.  Presently 'email' does not
+  do anything, as changing the primary user key is frought with
+  danger.  Returns:
+    { user: <user> }
+
+/services/user/link_facebook_account?access_token=TOKEN
+  Link a user's account with their Facebook account.  TOKEN must be the access token returned
+  from a successful Facebook OAuth transaction performed in the UI.  This endpoint creates
+  the database link, then calls an Amazon SQS endpoint so the Viblio backend can retrieve
+  Facebook information (like tagged faces) and do something with it.  Returns the Facebook
+  user struct:
+    { user: <fb_user> }
+
+/services/user/unlink_facebook_account
+  Unlinks the user's account with their Facebook account.  Presently just deletes the
+  database link information.  There is presently no Amazon SQS endpoint to call, so nothing
+  else really happens.  Returns {}.
+
+/services/user/add_or_replace_profile_photo
+  Add or replace the logged in user's profile photo.  This is the "action" of a form with
+  enctype=multipart/form-data, and an input with type=file and name=upload (or the equiv.).
+  The server treats this like a HTML file upload and sets the user's profile photo to the
+  contents of the uploaded file.  The input file is sized such that its height is no more 
+  than 128px while preserving its w/h ratio.
+
+  Alternatively, this can be a more REST-like call, with "mimetype" set to the mimetype of
+  the image (defaults to image/jpeg) and "upload" set to a Base64 encoded string of the
+  image.  This is not the prefered way of changing the user's profile photo as it is not
+  re-scaled.  
+
+  Returns {}.
+
+/services/user/avatar[?uid=-&zoom=&x=-&y=90]
+  Streams the user's profile photo to the client.  This endpoint is sutable for use
+  as the "src=" attribute of an img element.  If uid is "-", streams the logged in user's
+  profile photo, or if set to a user uuid, that user's photo.  If x and y are set to numbers,
+  resizes the image.  If one of x or y is set to "-" and the other to a number, will 
+  scale accordingly by fixing one dimension while preserving ratio.  If the zoom option is given, 
+  the thumbnail will be 'zoomed-in' by the appropriate amount, e.g. a zoom level of 80 will create 
+  a thumbnail using the middle 80% of the source image.  
+
+/services/user/accept_terms
+  Sets the date in the user's record when they accepted the terms of use document to NOW.
+  Returns {}.
+
+/services/user/media[?page=PAGE&rows=ROWS]
+  Returns list of the logged in user's media files.  
+    { media: [ <listof-media > ] }
+
+/services/user/auth_token
+  Obtain a token that can be used to access the public apis on the file
+  server and message queue services.  The services may accept the token
+  in different ways.  This endpoint generates a token based on the logged
+  in user's uuid and a secret password that is known by viblio servers.
+  When the token and the user's uuid are passed to a secured api, a new
+  token can be generated with the uuid and shared secret, then compared
+  with the tramsmitted token.
+  Returns:
+    { uuid: <user>.uuid, token: TOKEN }
+
+/services/user/change_password?password=PASSWORD
+  Changes the logged in user's password.  NO VALIDATION IS DONE on the input.  If the
+  input is NULL, then the password will be set to NULL with unknown ramifications.  The
+  UI is expected to perform any needed validation before calling this endpoint.  For
+  security reasons, this endpoint should be called as a POST.  The user is immediately
+  re-authenticated with this password, and a new session cookie will be sent.
+  Returns { user: <user> }
+  
+/services/user/tell_a_friend?list=LIST&message=MESSAGE
+  Parses LIST as a comma delimited list of email addresses and sends a Viblio branded
+  email to each address with a subject of "Invitation to join Viblio" and a body that
+  will include MESSAGE.  Returns {}.
+  
+
+=========================================================================================
+YIR: Year in review: Show user's videos organized by years
+     and months.
+
+notes: CID is the uuid of a RDS::Contact.  If specified, the
+endpoints below return data related to that contact, else they
+return data related to the logged in user.
+-----------------------------------------------------------------------------------------
+/services/yir/years[?cid=CID]
+  Returns an array of years from most to least recent, in which there
+  are recorded videos.
+
+/services/yir/months[?cid=CID]
+  Returns an array of months from most to least recent, in which there
+  are recorded videos.
+
+/services/yir/videos_for_year[?cid=CID]&year=YEAR[&page=PAGE&rows=ROWS]
+  Return the list of videos taken in a particular year, in month bins, 
+  from most recent to least.
+
+/services/yir/videos_for_month[?cid=CID]&month=MONTH[&year=YEAR][&page=PAGE&rows=ROWS]
+  Return the list of videos taken in a particular month/year,
+  from most recent to least.
+
+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+
+ D A T A  S T R U C T U R E S
+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+
+
+<user>:
+{
+   "user" : {
+      "provider" : "facebook",
+      "active" : "2013-12-10 18:02:15",
+      "provider_id" : null,
+      "accepted_terms" : null,
+      "created_date" : "2013-08-15 15:57:37",
+      "uuid" : "682DC812-05C3-11E3-839F-54DE3DA5649D",
+      "email" : "aqpeeb@gmail.com",
+      "confirmed" : null,
+      "displayname" : "Andrew Peebles",
+      "updated_date" : "2013-12-10 18:02:15"
+   }
+}
+
+<mediafile>:
+{
+   "media" : {
+     "lat" : "37.44361992",
+      "lng" : "-122.16307640",
+      "status" : "FaceRecognizeComplete",
+      "recording_date" : "1970-01-01 00:00:00",
+      "uuid" : "443f1da0-74b0-11e3-9ee5-2bc59fa2be56",
+      "view_count" : "0",
+      "media_type" : "original",
+      "is_album" : "0",
+      "unique_hash" : "ddd7e1e2362422d85602bea7157e2fb0",
+      "created_date" : "2014-01-03 19:50:22",
+      "description" : null,
+      "filename" : "/home/peebles/video-test/test2.mp4",
+      "title" : "test2",
+      "updated_date" : "2014-01-03 19:50:48",
+      "views" : {
+         "poster" : {
+            "width" : "320",
+            "provider" : null,
+            "bytes" : "86214",
+            "provider_id" : null,
+            "uuid" : "a3a13c07-1ed6-43e0-86f7-cc12ee698ba6",
+            "view_count" : "0",
+            "url" : "https://viblio-uploaded-files.s3.amazonaws.com:443/443f1da0-74b0-11e3-9ee5-2bc59fa2be56%2F443f1da0-74b0-11e3-9ee5-2bc59fa2be56_poster.png?Signature=FdKHbZ23QF5u%2Fp8nlJC7CeWJMLY%3D&Expires=1420156740&AWSAccessKeyId=AKIAJHD46VMHB2FBEMMA",
+            "location" : "us",
+            "asset_type" : "poster",
+            "duration" : null,
+            "created_date" : "2014-01-03 19:50:40",
+            "height" : "180",
+            "uri" : "443f1da0-74b0-11e3-9ee5-2bc59fa2be56/443f1da0-74b0-11e3-9ee5-2bc59fa2be56_poster.png",
+            "metadata_uri" : null,
+            "user_id" : "124",
+            "updated_date" : null,
+            "mimetype" : "image/png"
+         }
+      }
+   }
+}
+
+<contact>: (also <face>)
+{
+   "face": {
+      "provider" : null,
+      "contact_name" : null,
+      "provider_id" : null,
+      "created_date" : "2013-12-21 22:43:16",
+      "uuid" : "78e5c3f7-29b3-4197-b52f-fdd639db59d5",
+      "contact_viblio_id" : null,
+      "picture_uri" : "cf576260-6a08-11e3-a38c-65b033b76087/cf576260-6a08-11e3-a38c-65b033b76087_face_7_0.jpg",
+      "contact_email" : null,
+      "url" : "https://viblio-uploaded-files.s3.amazonaws.com:443/cf576260-6a08-11e3-a38c-65b033b76087%2Fcf576260-6a08-11e3-a38c-65b033b76087_face_7_0.jpg?Signature=xXELcseuBgVz5lho2FbO1YZAwsY%3D&Expires=1420156740&AWSAccessKeyId=AKIAJHD46VMHB2FBEMMA",
+      "is_group" : "0",
+      "id" : "2283",
+      "updated_date" : null
+   }
+}
+
+<pager>:
+{
+   "pager" : {
+      "first" : 1,
+      "last_page" : 13,
+      "current_page" : "1",
+      "entries_per_page" : "2",
+      "last" : 2,
+      "entries_on_this_page" : 2,
+      "next_page" : 2,
+      "previous_page" : null,
+      "total_entries" : "26",
+      "first_page" : 1
+   }
+}
+
+(next_page will be null if no more pages)
