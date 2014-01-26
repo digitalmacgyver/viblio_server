@@ -1,0 +1,99 @@
+# Viblio assigned APIKEYs for external customers
+# This is used to authenticate calls made by a
+# customer.  May need other data like customer name,
+# call limits, etc.
+table apikeys
+  id     integer primary key
+  apikey text
+  metadata text
+
+# To simplify customer code changes, allow customers
+# to call our api with their user ids, which we will
+# map to our user uuids.
+table foreign_users
+  id     integer primary key
+  community_id integer foreign key references communities(id)
+  userid text
+  uuid   text
+
+table communities
+  id          integer primary key
+  apikey      text
+  uuid        text
+  name        text
+  webhook     text
+  curated     integer (boolean)
+  members_id  integer foreign key references contacts(id)
+  media_id    integer foreign key references media(id)
+  curators_id integer foreign key references contacts(id)
+  pending_id  integer foreign key references media(id)
+
+Community members are added to a contact group that is pointed to by
+the community record.  The videos all memebers can see are in an album
+pointed to by the community record.  For communities that need to 
+curate videos before allowing members to view, there are a group of 
+curators and an album containing pending media files for review.
+
+Our partners will be given a generated apikey.  With this key a partner can:
+
+1. Create communities
+POST http://viblio.com/services/na/create_community?apikey=APIKEY&\
+     curated=1&\
+     name=NAME
+
+That will return a uuid that they need for future reference.  A partner can create multiple
+communities.
+
+2. Add users to communities
+POST http://viblio.com/services/na/add_community_member?apikey=APIKEY&\
+     community=UUID&\
+     userid=PARTNER_USER_ID&\
+     username=USERNAME&\
+     email=EMAIL&\
+     is_curator=[TRUE|FALSE]
+
+That will return a viblio uuid, which they can use or ignore.
+
+#1 and #2 are admin commands they must execute either on the command line as shown above, or
+via a script we supply, or via a web page we provide.
+
+On their user-facing web portals, a partner must
+
+1.  Include viblio.css in their list of styles
+2.  Include viblio.js in their list of javascript libraries
+
+* This would be like including any standard javascript 3rd party library, of which they 
+probably already include dozens.
+
+When a user authenticated with their system at login time, they must add this call:
+
+  viblio.auth( apikey, community_uuid, user_id );
+
+The user_id can be their own user unique id.  This call if successful will install another
+session cookie onto their browser.
+
+Our UI comes packaged as jQuery plugins.  For the uploader drag-n-drop:
+
+  $(".viblio-uploader").viblio_uploader({ options });
+
+For a scrollable panel of videos:
+
+  $(".viblio-media").viblio_media({ options });
+
+That's it.  Our plugins will take care of the other apis needed to interact with our backend.
+By default videos would play in a lightbox popup, but they can override this with a callback
+and fetch an embedded version of our video player via another api call, so they can fully
+customize the playback GUI.
+
+If the connecting user is a curator and the cummunity is curated, they will have more UI
+that allows them to accept an incoming video (which will then be moved from then pending
+album to the media album), or reject it (in which case it is simply deleted from the
+pending album).
+
+On our side, when the Cat server sees an incoming video from the backend, I will first
+check to see if the user who owns it belongs to a cummunity.  If not, our standard process
+is followed.  But if they belong to a cummunty, the media is added to either the pending
+album for that community if curated, or the media album.  I could then execute a webhook
+(optional) that could notify the partner of this event, where they could send email or
+whatever if they want to put in the extra work.
+
