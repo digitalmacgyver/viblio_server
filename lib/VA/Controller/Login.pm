@@ -24,6 +24,9 @@ sub index :Path :Args(0) {
     elsif ( $realm =~ /facebook/ ) {
 	$creds = {};
     }
+    elsif ( $realm =~ /community/ ) {
+	$creds = $c->request->params;
+    }
 
     if ( $c->authenticate( $creds, $realm ) ) {
 	$c->response->redirect(

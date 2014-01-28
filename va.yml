@@ -83,6 +83,12 @@ authentication:
         user_model: RDS::User
         role_relation: roles
         role_field: role
+    community:
+      credential:
+        class: Community
+      store:
+        class: DBIx::Class
+        user_model: RDS::User
     facebook:
       credential:
         class: FacebookToken

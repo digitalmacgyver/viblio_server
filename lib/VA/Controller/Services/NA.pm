@@ -119,6 +119,9 @@ sub authenticate :Local {
     elsif ( $realm =~ /facebook/ ) {
 	$creds = {};
     }
+    elsif ( $realm =~ /community/ ) {
+	$creds = $c->req->params;
+    }
     
     $c->{no_autocreate} = 1;
     if ( $c->authenticate( $creds, $realm ) ) {

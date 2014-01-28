@@ -97,3 +97,21 @@ album for that community if curated, or the media album.  I could then execute a
 (optional) that could notify the partner of this event, where they could send email or
 whatever if they want to put in the extra work.
 
+WORK
+---------------------------------------------------------------------
+1. Schema additions in RDS
+2. Cat Server
+   a.  Authentication class to handle api/userid/community
+   b.  Incoming new mediafile redirection
+   c.  New APIs:
+       1. create/delete community
+       2. add/delete memebers
+       3. list videos in pending/media albums
+       4. delete pending or move pending to media album
+3. UI
+   1.  Uploader
+   2.  Mediafile list
+   3.  Videoplayer lightbox
+4. Test/verification
+
+   
