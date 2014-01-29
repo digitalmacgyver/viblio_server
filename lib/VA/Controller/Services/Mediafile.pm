@@ -1187,7 +1187,10 @@ sub get_animated_gif :Local {
 # Pass in a MD5 checksum, see if a mediafile exists with that hash
 sub media_exists :Local {
     my( $self, $c ) = @_;
-    $c->forward( '/services/na/media_exists' );
+    my $hash = $c->req->param( 'hash' );
+    my $count = $c->user->media->count({
+	unique_hash => $hash });
+    $self->status_ok( $c, { count => $count } );
 }
 
 __PACKAGE__->meta->make_immutable;
