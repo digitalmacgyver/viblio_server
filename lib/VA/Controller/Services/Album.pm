@@ -167,8 +167,8 @@ sub delete_album :Local {
     }
 
     my $rs = $c->model( 'RDS::MediaAlbum' )->search({ album_id => $album->id });
-    $rs->delete; $rs->update;
-    $album->delete; $album->update;
+    $rs->delete;
+    $album->delete;
 
     $self->status_ok( $c, {} );
 }
