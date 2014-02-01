@@ -147,7 +147,9 @@ sub where_valid_mediafile :Private {
     return { $prefix . '.is_album' => $isAlbum,
 	     -or => [ $prefix . '.status' => 'TranscodeComplete',
 		      $prefix . '.status' => 'FaceDetectComplete',
-		      $prefix . '.status' => 'FaceRecognizeComplete' ] };
+		      $prefix . '.status' => 'FaceRecognizeComplete',
+		      $prefix . '.status' => 'visible',
+		      $prefix . '.status' => 'complete' ] };
 }
 
 # Return a resultset for media belonging to, and shared to, the logged in user.

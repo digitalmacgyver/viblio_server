@@ -987,7 +987,9 @@ sub related :Local {
 			  'media_shares.user_id' => $user->id], 
 		  -or => [status => 'TranscodeComplete',
 			  status => 'FaceDetectComplete',
-			  status => 'FaceRecognizeComplete' ]
+			  status => 'FaceRecognizeComplete',
+			  status => 'visible',
+			  status => 'complete' ]
 	    ]}, {prefetch=>'media_shares'});
     unless( $media ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find mediafile for [_1]', $mid ) );
