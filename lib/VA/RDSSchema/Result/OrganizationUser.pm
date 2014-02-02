@@ -1,12 +1,12 @@
 use utf8;
-package VA::RDSSchema::Result::MediaAlbum;
+package VA::RDSSchema::Result::OrganizationUser;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::RDSSchema::Result::MediaAlbum
+VA::RDSSchema::Result::OrganizationUser
 
 =cut
 
@@ -47,26 +47,37 @@ __PACKAGE__->load_components(
   "FilterColumn",
 );
 
-=head1 TABLE: C<media_albums>
+=head1 TABLE: C<organization_users>
 
 =cut
 
-__PACKAGE__->table("media_albums");
+__PACKAGE__->table("organization_users");
 
 =head1 ACCESSORS
 
-=head2 album_id
+=head2 id
+
+  data_type: 'integer'
+  is_auto_increment: 1
+  is_nullable: 0
+
+=head2 organization_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 media_id
+=head2 user_id
 
   data_type: 'integer'
-  default_value: 0
   is_foreign_key: 1
   is_nullable: 0
+
+=head2 organization_uid
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 128
 
 =head2 created_date
 
@@ -83,15 +94,14 @@ __PACKAGE__->table("media_albums");
 =cut
 
 __PACKAGE__->add_columns(
-  "album_id",
+  "id",
+  { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
+  "organization_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "media_id",
-  {
-    data_type      => "integer",
-    default_value  => 0,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  "user_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "organization_uid",
+  { data_type => "varchar", is_nullable => 1, size => 128 },
   "created_date",
   {
     data_type => "datetime",
@@ -110,51 +120,53 @@ __PACKAGE__->add_columns(
 
 =over 4
 
-=item * L</album_id>
+=item * L</id>
 
-=item * L</media_id>
+=item * L</organization_id>
+
+=item * L</user_id>
 
 =back
 
 =cut
 
-__PACKAGE__->set_primary_key("album_id", "media_id");
+__PACKAGE__->set_primary_key("id", "organization_id", "user_id");
 
 =head1 RELATIONS
 
-=head2 album
+=head2 organization
 
 Type: belongs_to
 
-Related object: L<VA::RDSSchema::Result::Media>
+Related object: L<VA::RDSSchema::Result::User>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "album",
-  "VA::RDSSchema::Result::Media",
-  { id => "album_id" },
+  "organization",
+  "VA::RDSSchema::Result::User",
+  { id => "organization_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
-=head2 media
+=head2 user
 
 Type: belongs_to
 
-Related object: L<VA::RDSSchema::Result::Media>
+Related object: L<VA::RDSSchema::Result::User>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "media",
-  "VA::RDSSchema::Result::Media",
-  { id => "media_id" },
+  "user",
+  "VA::RDSSchema::Result::User",
+  { id => "user_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:45
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1NnU+gw+qvYmytDYxn8MVA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:sQ+1BXG0ablKorOs3Vt0Jw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

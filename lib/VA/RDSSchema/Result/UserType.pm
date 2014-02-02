@@ -1,12 +1,12 @@
 use utf8;
-package VA::RDSSchema::Result::AssetType;
+package VA::RDSSchema::Result::UserType;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::RDSSchema::Result::AssetType
+VA::RDSSchema::Result::UserType
 
 =cut
 
@@ -47,18 +47,17 @@ __PACKAGE__->load_components(
   "FilterColumn",
 );
 
-=head1 TABLE: C<asset_types>
+=head1 TABLE: C<user_types>
 
 =cut
 
-__PACKAGE__->table("asset_types");
+__PACKAGE__->table("user_types");
 
 =head1 ACCESSORS
 
 =head2 type
 
   data_type: 'varchar'
-  default_value: (empty string)
   is_nullable: 0
   size: 32
 
@@ -78,7 +77,7 @@ __PACKAGE__->table("asset_types");
 
 __PACKAGE__->add_columns(
   "type",
-  { data_type => "varchar", default_value => "", is_nullable => 0, size => 32 },
+  { data_type => "varchar", is_nullable => 0, size => 32 },
   "created_date",
   {
     data_type => "datetime",
@@ -107,24 +106,24 @@ __PACKAGE__->set_primary_key("type");
 
 =head1 RELATIONS
 
-=head2 media_assets
+=head2 users
 
 Type: has_many
 
-Related object: L<VA::RDSSchema::Result::MediaAsset>
+Related object: L<VA::RDSSchema::Result::User>
 
 =cut
 
 __PACKAGE__->has_many(
-  "media_assets",
-  "VA::RDSSchema::Result::MediaAsset",
-  { "foreign.asset_type" => "self.type" },
+  "users",
+  "VA::RDSSchema::Result::User",
+  { "foreign.user_type" => "self.type" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:42
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Sa7oyRJL6C6+DM0BKxxRdA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4InK+CnEoce7+WERTCdxgA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

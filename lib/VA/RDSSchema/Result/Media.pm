@@ -244,6 +244,36 @@ __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
 
+=head2 communities_medias
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::Community>
+
+=cut
+
+__PACKAGE__->has_many(
+  "communities_medias",
+  "VA::RDSSchema::Result::Community",
+  { "foreign.media_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 communities_pending
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::Community>
+
+=cut
+
+__PACKAGE__->has_many(
+  "communities_pending",
+  "VA::RDSSchema::Result::Community",
+  { "foreign.pending_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 media_albums_albums
 
 Type: has_many
@@ -337,6 +367,24 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+=head2 media_workflow_stages
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::MediaWorkflowStage>
+
+=cut
+
+__PACKAGE__->has_many(
+  "media_workflow_stages",
+  "VA::RDSSchema::Result::MediaWorkflowStage",
+  {
+    "foreign.media_id" => "self.id",
+    "foreign.user_id"  => "self.user_id",
+  },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 media_workorders
 
 Type: has_many
@@ -378,8 +426,8 @@ Composing rels: L</media_workorders> -> workorder
 __PACKAGE__->many_to_many("workorders", "media_workorders", "workorder");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-01-04 12:11:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ORByyVHIlRhPOd4ieB2GwA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:lou6RGhKxwhu6g9iERaGVw
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

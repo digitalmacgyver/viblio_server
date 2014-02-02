@@ -1,12 +1,12 @@
 use utf8;
-package VA::RDSSchema::Result::AssetType;
+package VA::RDSSchema::Result::WorkflowStage;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-VA::RDSSchema::Result::AssetType
+VA::RDSSchema::Result::WorkflowStage
 
 =cut
 
@@ -47,20 +47,19 @@ __PACKAGE__->load_components(
   "FilterColumn",
 );
 
-=head1 TABLE: C<asset_types>
+=head1 TABLE: C<workflow_stages>
 
 =cut
 
-__PACKAGE__->table("asset_types");
+__PACKAGE__->table("workflow_stages");
 
 =head1 ACCESSORS
 
-=head2 type
+=head2 stage
 
   data_type: 'varchar'
-  default_value: (empty string)
   is_nullable: 0
-  size: 32
+  size: 64
 
 =head2 created_date
 
@@ -70,15 +69,15 @@ __PACKAGE__->table("asset_types");
 
 =head2 updated_date
 
-  data_type: 'datetime'
-  datetime_undef_if_invalid: 1
+  data_type: 'varchar'
   is_nullable: 1
+  size: 45
 
 =cut
 
 __PACKAGE__->add_columns(
-  "type",
-  { data_type => "varchar", default_value => "", is_nullable => 0, size => 32 },
+  "stage",
+  { data_type => "varchar", is_nullable => 0, size => 64 },
   "created_date",
   {
     data_type => "datetime",
@@ -86,45 +85,41 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
   },
   "updated_date",
-  {
-    data_type => "datetime",
-    datetime_undef_if_invalid => 1,
-    is_nullable => 1,
-  },
+  { data_type => "varchar", is_nullable => 1, size => 45 },
 );
 
 =head1 PRIMARY KEY
 
 =over 4
 
-=item * L</type>
+=item * L</stage>
 
 =back
 
 =cut
 
-__PACKAGE__->set_primary_key("type");
+__PACKAGE__->set_primary_key("stage");
 
 =head1 RELATIONS
 
-=head2 media_assets
+=head2 media_workflow_stages
 
 Type: has_many
 
-Related object: L<VA::RDSSchema::Result::MediaAsset>
+Related object: L<VA::RDSSchema::Result::MediaWorkflowStage>
 
 =cut
 
 __PACKAGE__->has_many(
-  "media_assets",
-  "VA::RDSSchema::Result::MediaAsset",
-  { "foreign.asset_type" => "self.type" },
+  "media_workflow_stages",
+  "VA::RDSSchema::Result::MediaWorkflowStage",
+  { "foreign.workflow_stage" => "self.stage" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:42
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Sa7oyRJL6C6+DM0BKxxRdA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:dStXXBzSFMEP8WextJo2Yw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

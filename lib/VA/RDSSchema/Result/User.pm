@@ -114,6 +114,25 @@ __PACKAGE__->table("users");
   data_type: 'tinyint'
   is_nullable: 1
 
+=head2 api_key
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 128
+
+=head2 metadata
+
+  data_type: 'text'
+  is_nullable: 1
+
+=head2 user_type
+
+  data_type: 'varchar'
+  default_value: 'individual'
+  is_foreign_key: 1
+  is_nullable: 0
+  size: 32
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -149,6 +168,18 @@ __PACKAGE__->add_columns(
   { data_type => "tinyint", is_nullable => 1 },
   "accepted_terms",
   { data_type => "tinyint", is_nullable => 1 },
+  "api_key",
+  { data_type => "varchar", is_nullable => 1, size => 128 },
+  "metadata",
+  { data_type => "text", is_nullable => 1 },
+  "user_type",
+  {
+    data_type => "varchar",
+    default_value => "individual",
+    is_foreign_key => 1,
+    is_nullable => 0,
+    size => 32,
+  },
   "created_date",
   {
     data_type => "datetime",
@@ -202,6 +233,21 @@ __PACKAGE__->add_unique_constraint("email_UNIQUE", ["email"]);
 __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
+
+=head2 communities
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::Community>
+
+=cut
+
+__PACKAGE__->has_many(
+  "communities",
+  "VA::RDSSchema::Result::Community",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
 
 =head2 contacts
 
@@ -293,6 +339,36 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 organization_users_organizations
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::OrganizationUser>
+
+=cut
+
+__PACKAGE__->has_many(
+  "organization_users_organizations",
+  "VA::RDSSchema::Result::OrganizationUser",
+  { "foreign.organization_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 organization_users_users
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::OrganizationUser>
+
+=cut
+
+__PACKAGE__->has_many(
+  "organization_users_users",
+  "VA::RDSSchema::Result::OrganizationUser",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 profiles
 
 Type: has_many
@@ -343,6 +419,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 user_type
+
+Type: belongs_to
+
+Related object: L<VA::RDSSchema::Result::UserType>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "user_type",
+  "VA::RDSSchema::Result::UserType",
+  { type => "user_type" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
 =head2 workorders
 
 Type: has_many
@@ -369,8 +460,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-01-04 12:11:28
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9/cob8/r2iPJuiZSGquL8A
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bK65PAD554nWisep7G9mWA
 
 # I like this relationship name better
 #

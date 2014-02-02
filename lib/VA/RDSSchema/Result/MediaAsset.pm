@@ -85,7 +85,7 @@ __PACKAGE__->table("media_assets");
   data_type: 'varchar'
   is_foreign_key: 1
   is_nullable: 1
-  size: 16
+  size: 32
 
 =head2 mimetype
 
@@ -178,7 +178,7 @@ __PACKAGE__->add_columns(
   "uuid",
   { data_type => "varchar", is_nullable => 0, size => 36 },
   "asset_type",
-  { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 16 },
+  { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 32 },
   "mimetype",
   { data_type => "varchar", is_nullable => 1, size => 40 },
   "uri",
@@ -322,8 +322,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-27 19:26:44
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:z07ITK/hwPjPNs3dAHD7UA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:45
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:p0+EMmjHKFKrfDNdChCRHA
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

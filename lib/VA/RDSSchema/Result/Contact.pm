@@ -193,6 +193,36 @@ __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
 
+=head2 communities_curators
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::Community>
+
+=cut
+
+__PACKAGE__->has_many(
+  "communities_curators",
+  "VA::RDSSchema::Result::Community",
+  { "foreign.curators_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 communities_members
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::Community>
+
+=cut
+
+__PACKAGE__->has_many(
+  "communities_members",
+  "VA::RDSSchema::Result::Community",
+  { "foreign.members_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 contact_groups_contact_viblios
 
 Type: has_many
@@ -339,8 +369,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-01-04 12:11:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:T44IjQFBWADBgJkF2cZr1g
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Q3aF+qGodj/RUc+DqUDJZA
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
