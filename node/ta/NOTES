@@ -1,0 +1,33 @@
+var Uploader = require( './lib/uploader' );
+
+q = async.queue( function( o, cb ) {
+    o.upload( cb );
+}, config.concurrency );
+
+var file = new Upload( filename, user_uuid );
+q.push( file, function( err, results ) {
+    if ( err ) {
+	// This is expected to be unrecoverable.  Retries have
+	// already been attempted (? or we could simply do retries
+	// here with a setTimeout and requeue ?)
+	log.debug( err.message );
+    }
+    else {
+	if ( file.cancelled ) 
+	    file.delete().then( 
+		function() {
+		    log.info( 'deleted' );
+		    // REMOVE FROM LIST
+		},
+		function(err) {
+		    log.error( err.message );
+		}
+	    );
+	else if ( file.done )
+	    // REMOVE FROM LIST
+    }
+});
+
+list.push( file );
+
+** This list can be queried via web apis.
