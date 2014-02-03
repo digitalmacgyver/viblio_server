@@ -7,9 +7,11 @@
       "promised-io": "latest",
       "cookie": "latest",
       "node-uuid": "latest",
-      "mkdirp": "latest"
+      "mkdirp": "latest",
+      "node-localstorage": "latest"
   },
   "viblio_upload_endpoint": "https://localhost/files",
+  "viblio_server_endpoint": "https://localhost",
   "chunk_size": 2560,
   "max_retries": 5
 }
