@@ -1,0 +1,63 @@
+Authenticate
+
+curl -v -b /tmp/cookies -c /tmp/cookies -X POST -d "email=aqpeeb@gmail.com&password=password&realm=db" https://staging.viblio.com/services/na/authenticate
+
+List Media
+
+1.  Get only poster views, do paging
+curl -v -b /tmp/cookies -c /tmp/cookies -X POST -d "views[]=poster&page=1&rows=3" https://staging.viblio.com/services/mediafile/list
+
+2.  Get everything, including streaming URLS, but this is slower!
+curl -v -b /tmp/cookies -c /tmp/cookies -X POST -d "page=1&rows=3" https://staging.viblio.com/services/mediafile/list
+
+Get media streaming URLS (needed if you do #1 above)
+
+curl -v -b /tmp/cookies -c /tmp/cookies -X POST -d "mid=c2b65e90-7cea-11e3-9ee5-2bc59fa2be56" https://staging.viblio.com/services/mediafile/cf
+
+All videos shared with user
+
+curl -v -b /tmp/cookies -c /tmp/cookies -X POST -d "" https://staging.viblio.com/services/mediafile/all_shared
+
+Faces in a mediafile
+
+curl -v -b /tmp/cookies -c /tmp/cookies -X POST -d "mid=c2b65e90-7cea-11e3-9ee5-2bc59fa2be56" https://staging.viblio.com/services/na/faces_in_mediafile
+
+Count of mediafiles
+
+curl -v -b /tmp/cookies -c /tmp/cookies -X POST -d "" https://staging.viblio.com/services/mediafile/count
+
+To get the profile picture of any user:
+
+/services/user/avatar[?uid=-&zoom=&x=-&y=90]
+  Streams the user's profile photo to the client.  This endpoint is sutable for use
+  as the "src=" attribute of an img element.  If uid is "-", streams the logged in user's
+  profile photo, or if set to a user uuid, that user's photo.  If x and y are set to numbers,
+  resizes the image.  If one of x or y is set to "-" and the other to a number, will 
+  scale accordingly by fixing one dimension while preserving ratio.  If the zoom option is given, 
+  the thumbnail will be 'zoomed-in' by the appropriate amount, e.g. a zoom level of 80 will create 
+  a thumbnail using the middle 80% of the source image.  
+
+I do not recall if we have an api that tells you how many times a particular video has been shared.  I am not sure if that query makes any sence to a UI.  Maybe it makes sense to know if a video has ever been shared (yes or no) but the count is probably meaningless since you can shared to a list of people and that would be counted in the database as a single share.  And shared to social sites are pratically untraceable.
+
+A note on paging.  Many of the api calls that return potencially long lists of output can be "paged".  The paging parameters are:
+
+page=page to return
+rows=items per page
+
+You should always start on page #1.  The return from a paging call will include, along with the other data returned:
+
+   "pager" : {
+      "first" : 1,
+      "last_page" : 10,
+      "current_page" : "1",
+      "entries_per_page" : "3",
+      "last" : 3,
+      "entries_on_this_page" : 3,
+      "next_page" : 2,
+      "previous_page" : null,
+      "total_entries" : "30",
+      "first_page" : 1
+   }
+
+The most useful data returned is next_page, which is the page number you should use on your next fetch, or NULL if there is no more data, and entries_on_this_page which is the number of items return on this call.
+

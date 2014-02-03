@@ -1,3 +1,19 @@
+1.  require('os') to figure out what platform
+2.  require( 'open' ); open( 'www.google.com' ); to fire a browser
+
+platform independent $HOME
+
+function getUserHome() {
+  return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+}
+
+In windows, $APPDATA is where applications store data.  Probably should:
+
+  $LOCALAPPDATA || $APPDATA
+
+On Mac: /Users/username/Library/Preferences/MyApp or /Users/username/Library/Application Support/MyApp.
+
+
 var Uploader = require( './lib/uploader' );
 
 q = async.queue( function( o, cb ) {

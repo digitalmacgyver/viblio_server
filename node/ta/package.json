@@ -1,0 +1,15 @@
+{
+  "name": "ta",
+  "version": "0.0.1",
+  "dependencies": {
+      "async": "latest",
+      "request": "latest",
+      "promised-io": "latest",
+      "cookie": "latest",
+      "node-uuid": "latest",
+      "mkdirp": "latest"
+  },
+  "viblio_upload_endpoint": "https://localhost/files",
+  "chunk_size": 2560,
+  "max_retries": 5
+}
