@@ -67,6 +67,7 @@ Uploader.prototype.toJSON = function() {
 	done: this.done,
 	started: this.started,
 	offset: this.offset,
+	length: this.length,
 	error: this.error,
 	retries: this.retries
     });
@@ -234,36 +235,39 @@ Uploader.prototype._doChunk = function( doneCallback ) {
     var self = this;
     var dfd  = new Deferred();
 
-    if ( ! self.fd ) {
-	self.fd = fs.openSync( self.filename, 'r' );
-	if ( ! self.fd )
-	    return dfd.reject( new Error( 'Failed to open ' + self.filename + ' to read' ) );
-    }
-    var buffer = new Buffer( config.chunk_size );
-    var bytes_read = fs.readSync( self.fd, buffer, 0, config.chunk_size, self.offset );
-    request({
+    var start = self.offset;
+    var end   = self.offset + config.chunk_size;
+    if ( end > self.length ) end = self.length;
+
+    var rs = fs.createReadStream( self.filename, { 
+	start: start, 
+	end:   end } );
+
+    rs.pipe( request({
 	url: config.viblio_upload_endpoint + '/' + self.fileid,
 	method: 'PATCH',
 	headers: {
 	    'Content-Type': 'application/offset+octet-stream',
-	    'Content-Length': bytes_read,
+	    'Content-Length': ( end - start ),
 	    'Offset': self.offset,
 	    'Cookie': self.cookie,
 	},
-	body: buffer,
 	strictSSL: false
     }, function( err, res, body ) {
 	if ( err ) dfd.reject( err );
 	else if ( res.statusCode != 200 )
 	    dfd.reject( new Error( 'PATCH: ' + self.fileid + ': ' + res.statusCode ) );
 	else {
-	    self.offset += bytes_read;
-	    if ( self.offset >= self.length )
-		fs.closeSync( self.fd );
+	    self.offset += ( end - start );
 	    self.emit( 'progress', self );
 	    dfd.resolve();
 	}
+    }));
+
+    rs.on( 'error', function(e) {
+	dfd.reject(e);
     });
+
     return dfd.promise;
 }
 

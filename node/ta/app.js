@@ -3,9 +3,15 @@ var async = require( 'async' );
 var util = require( 'util' );
 var config = require( './package.json' );
 
-var filename = '/home/peebles/video-test/test2.mp4';
+// var filename = '/home/peebles/video-test/test2.mp4';
 // var uuid = '682DC812-05C3-11E3-839F-54DE3DA5649D';
+var filename = process.argv[2];
 var uuid = '86FD9216-A8B9-11E2-9637-3B9C97344F04';
+
+if ( ! filename ) {
+    console.log( 'Usage: app <filename>' );
+    process.exit();
+}
 
 var q = async.queue( function( o, cb ) {
     o.upload( cb );
