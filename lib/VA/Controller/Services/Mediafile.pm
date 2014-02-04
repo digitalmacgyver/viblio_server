@@ -1015,11 +1015,14 @@ sub related :Local {
     #
     my $rs = $c->model( 'RDS::MediaAsset' )->search({ 
 	'me.asset_type' => 'poster',
+	'media.is_album' => 0,
 	-and => [ -or => ['media.user_id' => $user->id, 
 			  'media_shares.user_id' => $user->id], 
 		  -or => ['media.status' => 'TranscodeComplete',
 			  'media.status' => 'FaceDetectComplete',
-			  'media.status' => 'FaceRecognizeComplete' ]
+			  'media.status' => 'FaceRecognizeComplete',
+			  'media.status' => 'visible',
+			  'media.status' => 'complete' ]
 	    ]}, {prefetch=>{'media' => 'media_shares'}, group_by=>['media.id']});
 
     # Return:

@@ -163,7 +163,9 @@ sub user_media :Private {
 			       'media_shares.user_id' => $user->id], 
 		       -or => [status => 'TranscodeComplete',
 			       status => 'FaceDetectComplete',
-			       status => 'FaceRecognizeComplete' ]
+			       status => 'FaceRecognizeComplete',
+			       status => 'visible',
+			       status => 'complete' ]
 	];
     my $rs = $c->model( 'RDS::Media' )->search( $terms, {prefetch=>'media_shares'} );
     return $rs;
