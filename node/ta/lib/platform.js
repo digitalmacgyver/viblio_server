@@ -8,8 +8,8 @@ module.exports = {
     // User's HOME
     home: function() {
 	return process.env.HOME || 
-	    process.env.HOMEPATH || 
-	    process.env.USERPROFILE;
+	    process.env.USERPROFILE ||
+	    process.env.HOMEPATH;
     },
     // Where to store local-data
     appdata: function() {

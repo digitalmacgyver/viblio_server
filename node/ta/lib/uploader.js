@@ -241,28 +241,36 @@ Uploader.prototype._doChunk = function( doneCallback ) {
 
     var rs = fs.createReadStream( self.filename, { 
 	start: start, 
-	end:   end } );
+	end:   (end - 1) } );
 
-    rs.pipe( request({
-	url: config.viblio_upload_endpoint + '/' + self.fileid,
-	method: 'PATCH',
-	headers: {
-	    'Content-Type': 'application/offset+octet-stream',
-	    'Content-Length': ( end - start ),
-	    'Offset': self.offset,
-	    'Cookie': self.cookie,
-	},
-	strictSSL: false
-    }, function( err, res, body ) {
-	if ( err ) dfd.reject( err );
-	else if ( res.statusCode != 200 )
-	    dfd.reject( new Error( 'PATCH: ' + self.fileid + ': ' + res.statusCode ) );
-	else {
-	    self.offset += ( end - start );
-	    self.emit( 'progress', self );
-	    dfd.resolve();
-	}
-    }));
+    var body = new Buffer(0);
+    rs.on( 'data', function( chunk ) {
+	body = Buffer.concat([body,chunk]);
+    });
+
+    rs.on( 'end', function() {
+	request({
+	    url: config.viblio_upload_endpoint + '/' + self.fileid,
+	    method: 'PATCH',
+	    body: body,
+	    headers: {
+		'Content-Type': 'application/offset+octet-stream',
+		'Content-Length': ( end - start ),
+		'Offset': self.offset,
+		'Cookie': self.cookie,
+	    },
+	    strictSSL: false
+	}, function( err, res, body ) {
+	    if ( err ) dfd.reject( err );
+	    else if ( res.statusCode != 200 )
+		dfd.reject( new Error( 'PATCH: ' + self.fileid + ': ' + res.statusCode ) );
+	    else {
+		self.offset += ( end - start );
+		self.emit( 'progress', self );
+		dfd.resolve();
+	    }
+	});
+    });
 
     rs.on( 'error', function(e) {
 	dfd.reject(e);
