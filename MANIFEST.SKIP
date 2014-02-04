@@ -31,6 +31,7 @@ VA-0.01.tar.gz
 ^node/yes-video/node_modules
 ^node/fs/
 ^node/faces/
+^node/ta/node_modules
 
 ^node-v0.8.19.tar.gz
 ^node.tar.gz
