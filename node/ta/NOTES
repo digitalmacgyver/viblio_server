@@ -47,3 +47,35 @@ q.push( file, function( err, results ) {
 list.push( file );
 
 ** This list can be queried via web apis.
+
+======================
+
+Local Storage
+
+var settings = require( './lib/storage' )( 'settings' );
+var private  = require( './lib/storage' )( 'private' );
+
+Uses a node version of the browser localStorage API.  The argument to the require is used
+to create a <primary_key>: in front of the keys for that object.  The objects are created
+as singletons via a factory, so multiple requires will always return the same object.
+The reason for this is so you can do the following whenever you are going to perform an
+authenticated call:
+
+viblio.api( '/services/user/me' ).then(
+  function() {
+    // already authenticated
+    doit();
+  },
+  function() {
+    // not authenticated
+    private.once( 'set', function( key, val ) {
+      if ( key == 'uuid' ) {
+        doit();
+      }
+    });
+    open( --browser-- );
+  }
+);
+
+The open() will invoke the browser, the browser will call an authenticate api, the api will
+private.set( 'uuid', user.uuid ) which will emit the 'set' event.  Whew!
