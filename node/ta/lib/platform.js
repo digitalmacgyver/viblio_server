@@ -1,4 +1,4 @@
-var config = require( '../package.json' );
+var config = require( '../lib/app-config' );
 var os = require( 'os' );
 var fs = require( 'fs' );
 var path = require( 'path' );

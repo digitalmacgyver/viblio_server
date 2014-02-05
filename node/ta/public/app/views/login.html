@@ -1,0 +1,20 @@
+<div class="login-page">
+  <div class="login-wrapper">
+    <div class="login-form">
+      <form class="bottomBorder-Thick">
+        <div class="centeredEl">
+          <span data-bind="css: { error: email_entry_error() }">
+            <input id="loginEmail" type="email" name="email" class="email text" data-bind="value: email" placeholder="Email address" />
+          </span>
+          <span data-bind="css: { error: password_entry_error() }">
+            <input id="loginPassword" type="password" name="pword" class="password text" data-bind="value: password" placeholder="Password" />
+          </span>
+          <a id="forgotPasswordLink" class="turquoiseFont" href="#forgotPassword">Forgot Password?</a>
+          <button class="btn btn-primary pull-right" data-bind="click: nativeAuthenticate">
+            Log In
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

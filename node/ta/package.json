@@ -2,6 +2,13 @@
   "name": "ta",
   "version": "0.0.1",
   "dependencies": {
+      "express": "latest",
+      "ejs": "latest",
+      "open": "latest",
+      "faye": "latest",
+      "konphyg": "latest",
+      "winston": "latest",
+      "express-winston": "latest",
       "async": "latest",
       "request": "latest",
       "promised-io": "latest",
@@ -10,10 +17,5 @@
       "mkdirp": "latest",
       "node-localstorage": "latest",
       "crypto": "latest"
-  },
-  "port": 3000,
-  "viblio_upload_endpoint": "https://localhost/files",
-  "viblio_server_endpoint": "https://localhost",
-  "chunk_size": 262144,
-  "max_retries": 5
+  }
 }

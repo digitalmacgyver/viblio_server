@@ -1,5 +1,5 @@
 var platform = require( '../lib/platform' );
-var config = require( '../package.json' );
+var config = require( '../lib/app-config' );
 var LocalStorage = require( 'node-localstorage' ).LocalStorage;
 var path = require( 'path' );
 var async = require( 'async' );
@@ -110,6 +110,12 @@ Storage.prototype.json = function() {
 	}
     }
     dfd.resolve( obj );
+    return dfd.promise;
+}
+
+Storage.prototype.clear = function() {
+    var dfd = new Deferred();
+    dfd.resolve( this.storage.clear() );
     return dfd.promise;
 }
 

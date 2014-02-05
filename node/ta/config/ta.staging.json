@@ -1,0 +1,4 @@
+{
+  "viblio_upload_endpoint": "https://staging.viblio.com/files",
+  "viblio_server_endpoint": "https://staging.viblio.com"
+}

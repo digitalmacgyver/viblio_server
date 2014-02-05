@@ -1,7 +1,7 @@
 var async = require( 'async' );
 var Deferred = require( 'promised-io/promise').Deferred;
 var request = require( 'request' );
-var config = require( '../package.json' );
+var config = require( '../lib/app-config' );
 var privates = require( '../lib/storage' )( 'private' );
 var open = require( 'open' );
 

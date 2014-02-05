@@ -1,0 +1,10 @@
+{
+  "debug": true,
+  "trace_server": false,
+  "trace_http": false,
+  "port": 3000,
+  "viblio_upload_endpoint": "https://localhost/files",
+  "viblio_server_endpoint": "https://localhost",
+  "chunk_size": 262144,
+  "max_retries": 5
+}
