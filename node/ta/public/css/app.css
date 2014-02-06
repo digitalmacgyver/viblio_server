@@ -1,3 +1,187 @@
+/************ General *************/
+
+body {
+    background-color: rgba(239,239,232,1);
+    color: rgba(117,117,128,1);
+    padding-top: 57px; /* match header height */
+    font-family: 'Source Sans Pro', sans-serif;
+}
+
+textarea, input[type="text"],
+input[type="password"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="date"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+input[type="number"],
+input[type="email"],
+input[type="url"],
+input[type="search"],
+input[type="tel"],
+input[type="color"],
+.uneditable-input {
+    background-color: white;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
+    box-shadow: none;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    border-color: rgba(0,0,0,.3);
+    box-sizing: border-box;
+    -moz-box-sizing:border-box; /* Firefox */
+    height: 40px;
+    font-size: 17px;
+}
+
+.btn-group > .btn:first-child,
+.btn-group > .btn:last-child,
+.btn-group > .dropdown-toggle,
+.btn-group > .btn,
+.btn {
+    font-size: 17px;
+    background-image: none;
+    filter: none;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    background-repeat: no-repeat;
+    border-top: none;
+    border-right: none;
+    border-left: none;
+    color: white;
+    -moz-text-shadow: 2px 2px rgba(0,0,0,.2);
+    -webkit-text-shadow: 2px 2px rgba(0,0,0,.2);
+    text-shadow: 2px 2px rgba(0,0,0,.2);
+    border-bottom: 3px inset rgba(0,0,0,.2);
+    padding: 8px 40px;
+    -moz-box-sizing:border-box; /* Firefox */
+    box-sizing: border-box;
+}
+
+.btn-small {
+    padding: 2px 6px;
+    font-size: 14px;
+}
+
+.btn-primary:focus,
+.btn-primary:active,
+.btn:active,
+.btn:hover {
+    -moz-box-shadow: inset 0 0 0 50px rgba(0,0,0,.1);
+    -webkit-box-shadow: inset 0 0 0 50px rgba(0,0,0,.1);
+    box-shadow: inset 0 0 0 50px rgba(0,0,0,.1);
+}
+
+.btn-white:hover,
+.btn-white {
+    background-color: white;
+    color: rgb(112, 113, 123);
+    -moz-text-shadow: none;
+    -webkit-text-shadow: none;
+    text-shadow: none;
+}
+
+.btn-primary {
+    background-color: rgba(239,85,65,1);
+}
+
+.btn-primary.disabled, .btn-primary[disabled], .btn-primary[disabled]:hover {
+    color: white;
+    background-color: rgba(239,85,65,1);
+}
+
+.btn-primary.disabled,
+.btn-primary[disabled],
+.btn-secondary.disabled,
+.btn-secondary[disabled],
+.btn.disabled,
+.btn[disabled] {
+    box-shadow: none;
+}
+
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.btn-primary:hover {
+    background-color: rgba(239,85,65,1);
+}
+
+.btn-secondary {
+    background-color: rgba(179,179,179,1);
+}
+
+.btn-secondary:focus,
+.btn-secondary:active,
+.btn-secondary.active,
+.btn-secondary:hover,
+.btn-secondary.disabled,
+.btn-secondary[disabled] {
+    background-color: rgba(179,179,179,1);
+    color: white;
+}
+
+.btn-blue {
+    background-color: rgba(28,184,209,1);
+}
+
+.btn-blue:focus,
+.btn-blue:active,
+.btn-blue.active,
+.btn-blue:hover,
+.btn-blue.disabled,
+.btn-blue[disabled] {
+    background-color: rgba(28,184,209,1);
+    color: white;
+}
+
+.btn-darkBlue,
+.btn-darkBlue:focus,
+.btn-darkBlue:active,
+.btn-darkBlue:hover{
+    background-color: rgba(50,53,68,1);
+    color: white;
+}
+
+.mocksWhiteBG {
+    background-color: white;
+    border: 1px solid lightgrey;
+}
+
+.turquoiseFont,
+.turquoiseFont:hover {
+    color: rgba(28,184,209,1);
+}
+
+.bottomBorder {
+    border-bottom: 1px solid rgba(0,0,0,.2);
+}
+
+.bottomBorder-Thin {
+    border-bottom: 3px inset rgba(0,0,0,.2);
+}
+
+.bottomBorder-Thick {
+    border-bottom: 8px inset rgba(0,0,0,.1); 
+}
+
+.centeredEl {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+.centered {
+    text-align: center;
+}
+
+/************ Old ****************/
+
 .login-form {
     position: relative;
     width: 300px;
@@ -18,4 +202,103 @@
 .login-form form {
     padding: 40px;
     padding-top: 100px;
+}
+
+/************* New ***************/
+
+.loginArea {
+    width: 600px;
+}
+
+.loginArea form {
+    margin-bottom: 0;
+}
+
+.fbBtn-Wrap {
+    padding: 48px 0;
+}
+
+.facebookLoginBtn {
+    max-width: 100%;
+    display: block;
+    background: none;
+    filter: none;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
+    box-shadow: none;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    background-repeat: no-repeat;
+    border-color: transparent;
+    border: none;
+    color: white;
+    width: 340px;
+    height: 65px;
+    -moz-text-shadow: 2px 2px rgba(0,0,0,.2);
+    -webkit-text-shadow: 2px 2px rgba(0,0,0,.2);
+    text-shadow: 2px 2px rgba(0,0,0,.2);
+    border-bottom: 3px inset rgba(0,0,0,.2);
+    background-color: rgba(48,97,148,1);
+    padding-top: 2px;
+    font-size: 20px;
+    box-sizing: border-box;
+    -moz-box-sizing:border-box; /* Firefox */
+    cursor: pointer;
+    position: relative;
+}
+
+
+.facebookLoginBtn img {
+    margin: 0 41px 0 28px;
+    border-right: 1px solid rgba(0,0,0,.3);
+    padding: 21px 26px 19px 0;
+    position: relative;
+    top: -2px;
+}
+
+.facebookLoginBtn:hover {
+    color: white;
+    text-decoration: none;
+}
+
+.or-Wrap p {
+    width: 40px;
+    margin: 0 auto;
+    background: white;
+    border: none;
+    padding: 0;
+    position: relative;
+    top: -12px;
+    text-align: center;
+    font-size: 25px;
+    font-weight: bold;
+    color: rgba(117,117,128,1);
+}
+
+.loginArea form div {
+    width: 100%;
+}
+
+.loginArea form div input {
+    display: block;
+    width: 100%;
+    margin-bottom: 22px;
+}
+
+#forgotPasswordLink {
+    display: inline-block;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 6px 0 20px;
+    font-weight: 600;
+}
+
+.loginArea form {
+    padding: 20px 52px 40px;
+}
+
+#signupForm {
+    padding-bottom: 80px;
 }

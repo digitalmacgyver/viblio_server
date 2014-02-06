@@ -1,6 +1,7 @@
 <div class="login-page">
-  <div class="login-wrapper">
-    <div class="login-form">
+    <div class="login-wrapper">
+    
+    <!--<div class="login-form">
       <img class="login-bg" src="css/img/logo-color-300.png" />
       <form id="loginForm" class="bottomBorder-Thick">
         <div class="centeredEl">
@@ -16,6 +17,33 @@
           </button>
         </div>
       </form>
+    </div>-->
+        
+        <h3 class="centered">Log In to your account</h3>
+        <p class="centered" >
+            <a href="#signup">New to Viblio? Create your account &raquo;</a>
+        </p>
+        <div class="loginArea mocksWhiteBG centeredEl">
+            <div class="fbBtn-Wrap bottomBorder">
+                <a class="facebookLoginBtn centeredEl" data-bind="click: facebookAuthenticate"><img src="css/img/FBf.png" /> Log in with Facebook </a>
+            </div>
+            <div class="or-Wrap">
+                <p>or</p>
+            </div>
+            <form id="loginForm" class="bottomBorder-Thick">
+                <div class="centeredEl">
+                    <span data-bind="css: { error: email_entry_error() }">
+                        <input id="loginEmail" type="email" name="email" class="text" data-bind="value: email" placeholder="Email address" />
+                    </span>
+                    <span data-bind="css: { error: password_entry_error() }">
+                        <input id="loginPassword" type="password" name="pword" class="text" data-bind="value: password" placeholder="Password" />
+                    </span>
+                    <a id='forgotPasswordLink' class='turquoiseFont' data-bind="click: forgotPassword">Forgot Password?</a>
+                    <button class="btn btn-primary pull-right" data-bind="click: nativeAuthenticate">
+                        Log In
+                    </button>
+                </div>
+            </form>
+        </div> 
     </div>
-  </div>
 </div>
