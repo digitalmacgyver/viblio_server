@@ -155,4 +155,29 @@ Scanner.prototype.scanForFiles = function( topdir, concurrency ) {
     return dfd.promise;
 }
 
+Scanner.prototype.listing = function( dir ) {
+    var self = this;
+    var dfd  = new Deferred();
+    fs.readdir( dir, function( err, files ) {
+	if ( err ) return dfd.reject( err );
+	async.map( files, 
+		   function( file, cb ) {
+		       fs.stat( path.join( dir, file ), function( err, s ) {
+			   cb( null, s );
+		       });
+		   },
+		   function( err, stats ) {
+		       if ( err ) return dfd.reject( err );
+		       var result = [];
+		       for( var i=0; i<files.length; i++ )
+			   result.push({ file: files[i],
+					 path: path.join( dir, files[i] ),
+					 isdir: ( stats[i] ? stats[i].isDirectory() : false ),
+					 size:  ( stats[i] ? stats[i].size : 0 ) });
+		       dfd.resolve( result );
+		   });
+    });
+    return dfd.promise;
+}
+
 module.exports = Scanner;

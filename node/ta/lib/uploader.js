@@ -8,6 +8,7 @@ var url = require( 'url' );
 var path = require ( 'path' );
 var cookie = require( 'cookie' );
 var gen_uuid = require( 'node-uuid' );
+var crypto = require( 'crypto' );
 
 // Utility function to allow me to wait on an OR of
 // many events, and react to the first that occurs.
@@ -29,6 +30,7 @@ function onMany(emitter, events, callback) {
 var Uploader = function( filename, uuid ) {
     this.filename = filename;
     this.uuid     = uuid;
+    this.md5      = null;
 
     this.id = gen_uuid.v4();
 
@@ -52,12 +54,22 @@ var Uploader = function( filename, uuid ) {
     events.EventEmitter.call( this );
 };
 
+// I am an event emitter
+Uploader.super_ = events.EventEmitter;
+Uploader.prototype = Object.create(events.EventEmitter.prototype, {
+    constructor: {
+        value: Uploader,
+        enumerable: false
+    }
+});
+
 // Called when writing to persistent storage
 Uploader.prototype.toJSON = function() {
     return JSON.stringify({
 	id: this.id,
 	filename: this.filename,
 	uuid: this.uuid,
+	md5: this.md5,
 	fileid: this.fileid,
 	cookie: this.cookie,
 	cancel: this.cancel,
@@ -79,6 +91,7 @@ Uploader.prototype.initialize = function( data ) {
 
     this.filename = data.filename;
     this.uuid     = data.uuid;
+    this.md5      = data.md5;
 
     this.fileid   = data.fileid;
     this.cookie   = data.cookie;
@@ -97,15 +110,6 @@ Uploader.prototype.initialize = function( data ) {
     this.error    = data.error;
     this.retries  = data.retries;
 }
-
-// I am an event emitter
-Uploader.super_ = events.EventEmitter;
-Uploader.prototype = Object.create(events.EventEmitter.prototype, {
-    constructor: {
-        value: Uploader,
-        enumerable: false
-    }
-});
 
 // o.upload() is indended to be run withing the function 
 // passed to async.queue().  Both o.pause() and o.cancel()
@@ -153,44 +157,68 @@ Uploader.prototype.upload = function( doneCallback ) {
 		catch( e ) {
 		    cb( e );
 		};
-		request({
-		    url: config.viblio_upload_endpoint,
-		    method: 'POST',
-		    json: {
-			uuid: self.uuid,
-			file: { Path: self.filename }
+		async.series([
+		    function( xcb ) {
+			fs.stat( self.filename, function( err, stat ) {
+			    if ( err ) return xcb( err );
+			    self.length = stat.size;
+			    xcb();
+			});
 		    },
-		    headers: {
-			'Final-Length': self.length
+		    function( xcb ) {
+			var md5 = crypto.createHash( 'md5' );
+			var s = fs.ReadStream( self.filename );
+			s.on( 'data', function(d) {
+			    md5.update(d);
+			});
+			s.on( 'end', function() {
+			    self.md5 = md5.digest( 'hex' );
+			    xcb();
+			});
 		    },
-		    strictSSL: false
-		}, function( err, res, body ) {
-		    if ( err ) cb( err );
-		    else if ( ! ( res.statusCode == 200 || res.statusCode == 201 ) )
-			cb( new Error( 'POST: ' + self.filename + ': ' + res.statusCode ) );
-		    else {
-			var location = res.headers.location;
-			if ( ! location ) {
-			    cb( new Error( 'POST did not return a Location header' ) );
-			}
-			else {
-			    var pathname = url.parse( location ).pathname;
-			    self.fileid = path.basename( pathname );
+		    function( xcb ) {
+			request({
+			    url: config.viblio_upload_endpoint,
+			    method: 'POST',
+			    json: {
+				uuid: self.uuid,
+				file: { Path: self.filename }
+			    },
+			    headers: {
+				'Final-Length': self.length
+			    },
+			    strictSSL: false
+			}, function( err, res, body ) {
+			    if ( err ) xcb( err );
+			    else if ( ! ( res.statusCode == 200 || res.statusCode == 201 ) )
+				xcb( new Error( 'POST: ' + self.filename + ': ' + res.statusCode ) );
+			    else {
+				var location = res.headers.location;
+				if ( ! location ) {
+				    xcb( new Error( 'POST did not return a Location header' ) );
+				}
+				else {
+				    var pathname = url.parse( location ).pathname;
+				    self.fileid = path.basename( pathname );
 
-			    if ( res.headers['set-cookie'] ) {
-				res.headers['set-cookie'].forEach( function( c ) {
-				    var cookies = cookie.parse( c );
-				    if ( cookies && cookies.AWSELB )
-					self.cookie = 'AWSELB='+cookies.AWSELB;
-				});
+				    if ( res.headers['set-cookie'] ) {
+					res.headers['set-cookie'].forEach( function( c ) {
+					    var cookies = cookie.parse( c );
+					    if ( cookies && cookies.AWSELB )
+						self.cookie = 'AWSELB='+cookies.AWSELB;
+					});
+				    }
+
+				    self.started = true;
+				    xcb();
+				}
 			    }
-
-			    self.started = true;
-			    cb();
-			}
+			});
 		    }
-		});
-		    
+		], function( err, results ) {
+		    if ( err ) cb( err );
+		    else cb();
+		});		    
 	    }
 	},
 	patch: function( cb ) {

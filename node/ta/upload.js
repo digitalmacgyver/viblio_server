@@ -1,51 +1,26 @@
-var Uploader = require( './lib/uploader' );
-var async = require( 'async' );
-var util = require( 'util' );
-var config = require( './package.json' );
-
-// var filename = '/home/peebles/video-test/test2.mp4';
-// var uuid = '682DC812-05C3-11E3-839F-54DE3DA5649D';
+var queuer = require( './lib/queuer' );
 var filename = process.argv[2];
-var uuid = '86FD9216-A8B9-11E2-9637-3B9C97344F04';
 
-if ( ! filename ) {
-    console.log( 'Usage: app <filename>' );
-    process.exit();
-}
-
-var q = async.queue( function( o, cb ) {
-    o.upload( cb );
-}, 4 );
-
-var handler = function( f, err, results ) {
-    if ( err ) {
-	console.log( 'error: ' + err.message );
-	f.retries += 1;
-	if ( f.retries > config.max_retries ) {
-	    console.log( 'max retries exceeded for ' + ( f.fileid || f.filename ) );
-	}
-	else {
-	    setTimeout( function() {
-		q.push( f, function( err, results ) {
-		    handler( f, err, results );
-		});
-	    }, 1000 * f.retries );
-	}
+var log = {
+    debug: function() {
+	console.log.apply( null, arguments );
     }
-    else {
-	console.log( f.fileid + ' is finished.' );
-    }
-}
+};
 
-var f = new Uploader( filename, uuid );
-q.push( f, function( err, results ) {
-    handler( f, err, results );
+queuer.setLogger( log );
+
+queuer.on( 'file:done', function( f ) {
+    log.debug( 'DONE!' );
+    log.debug( JSON.stringify( JSON.parse(f.toJSON()), null, 2 ) );
 });
 
-f.on( 'progress', function() {
-    console.log( f.offset, f.length );
+queuer.on( 'file:progress', function( f ) {
+    log.debug( f.offset, f.length );
 });
 
-q.drain = function() {
-    console.log( 'DONE' );
-}
+queuer.on( 'file:retry', function( f ) {
+    log.debug( 'Retry: ' + f.retries );
+});
+
+queuer.add( filename );
+
