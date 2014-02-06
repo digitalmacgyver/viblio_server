@@ -9,12 +9,16 @@ var open = require( 'open' );
 
 (function() {
 
+    var cookies = request.jar();
+    var upgradeTmr;
+    var authKeepAliveTmr;
+
     function api( service, data ) {
 	var dfd = new Deferred();
 	request({
 	    url: config.viblio_server_endpoint + service,
 	    method: 'POST',
-	    jar: true,
+	    jar: cookies,
 	    form: data,
 	    strictSSL: false
 	}, function( err, res, body ) {
@@ -25,10 +29,17 @@ var open = require( 'open' );
 	    else {
 		try {
 		    var json = JSON.parse( body );
-		    if ( json && json.error ) 
+		    if ( json && json.error ) {
 			dfd.reject( json );
-		    else
+		    }
+		    else {
 			dfd.resolve( json );
+
+			// extract and save the session cookie for this user
+			if ( res.headers['set-cookie'] )
+			    privates.set( 'cookie',
+					  res.headers['set-cookie'][0] );
+		    }
 		}
 		catch( e ) {
 		    dfd.reject({error: 1, message: e.message });
@@ -42,25 +53,69 @@ var open = require( 'open' );
     // viblio cat server.  If so, it resolves.  If not, it pops up the 
     // local browser to prompt the user.  When the user authenticates,
     // the uuid field in the privates storage area will change.
-    function authenticate() {
+    function authenticate( dont_open ) {
 	var dfd = new Deferred();
 
-	api( '/services/user/me' ).then(
-	    function() {
-		dfd.resolve();
-	    },
-	    function( res ) {
-		privates.on( 'uuid', function() {
-		    dfd.resolve();
-		});
-		open( 'http://localhost:' + config.port );
+	privates.get( 'cookie' ).then(
+	    function( cookie ) {
+		if ( cookie )
+		    cookies.setCookie( cookie, config.viblio_server_endpoint );
+		api( '/services/user/me' ).then(
+		    function() {
+			dfd.resolve();
+		    },
+		    function( res ) {
+			var tmr = null;
+			privates.once( 'set:uuid', function( val ) {
+			    if ( tmr ) clearTimeout( tmr );
+			    dfd.resolve();
+			});
+			if ( ! dont_open ) {
+			    var child;
+			    child = open( 'http://localhost:' + config.port, function( err ) {
+				if ( err ) {
+				    dfd.reject( err );
+				}
+				else {
+				    // The browser is open, but what if no one is around to
+				    // interact with it?  Give it five minutes.  If the user
+				    // has not logged in by then, kill the browser process
+				    // and continue.
+				    //
+				    // Actually ... why not just leave it be?  
+				    // tmr = setTimeout( function() {
+				    //    dfd.resolve();
+				    // }, 1000 * 60 * 5 );
+				}
+			    });
+			}
+		    }
+		);
 	    }
 	);
 	
 	return dfd.promise;
     }
 
+    function fireTimers() {
+	// This keeps the session cookie going forever
+	authKeepAliveTmr = setInterval( function() {
+	    api( '/services/user/me' );
+	}, 1000 * config.keepalive_period );
+
+	// This checks for software upgrades
+	//upgradeTmr = setInterval( function() {
+	//}, 1000 * config.upgrade_period );
+    }
+
+    function cancelTimers() {
+	if ( authKeepAliveTmr ) clearInterval( authKeepAliveTmr );
+	if ( upgradeTmr ) clearInterval( upgradeTmr );
+    }
+
     module.exports.api = api;
     module.exports.authenticate = authenticate;
+    module.exports.fireTimers = fireTimers;
+    module.exports.cancelTimers = cancelTimers;
 
 })();

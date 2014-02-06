@@ -1,3 +1,12 @@
 <div class="walkthru-page">
-  First time user walkthru
+  <div class="page-header">
+    <h1>First time User <small>Walkthrough screens for settings and media discovery</small></h1>
+  </div>
+  <h3>Scanning for folders that contain video files&nbsp;
+    <span data-bind="visible: dir_scan_done()==true">Done!</span>
+    <i class="icon-spinner icon-spin icon-large" data-bind="visible: dir_scan_done()==false"></i>
+  </h3>
+  <ul data-bind="foreach: dirs">
+    <li data-bind="html: $data"></li>
+  </ul>
 </div>

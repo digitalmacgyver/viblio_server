@@ -74,7 +74,7 @@ define(['durandal/system', 'lib/mq', 'knockout'], function(system, mq, ko) {
 		url: service( path ),
 		data: data,
 		method: 'POST',
-		dataType: 'jsonp' });
+		dataType: 'json' });
             x.fail( function( xhr, text, error ) {
 		var code = xhr.status || 403
 		var message = xhr.responseText;

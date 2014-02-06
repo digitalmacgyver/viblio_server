@@ -47,29 +47,47 @@ Scanner.prototype.scanForDirs = function( topdir, concurrency ) {
 	fs.readdir( dir, function( err, files ) {
 	    if ( err ) done( err );
 	    else {
-		var found = false;
-		var todo  = [];
-		for( var i=0; ( i<files.length && ! found ); i++ ) {
-		    var f = files[i];
-		    var stat = fs.statSync( path.join( dir, f ) );
-		    if ( ! stat.isDirectory() ) {
-			if ( f.match( self.regexp ) ) {
-			    self.emit( 'dir', dir );
-			    self.dirs.push( dir );
-			    found = true;
-			}
+		async.map( files, function( f, mcb ) {
+		    fs.stat( path.join( dir, f ), function( err, res ) {
+			mcb( null, res );
+		    });
+		}, function( err, stats ) {
+		    if ( err ) {
+			return done( err );
+		    }
+		    var found = false;
+		    var todo  = [];
+		    for( var i=0; ( i<files.length && ! found ); i++ ) {
+			try {
+			    var f = files[i];
+			    var stat = stats[i];
+			    if ( ! stat.isDirectory() ) {
+				if ( f.match( self.regexp ) ) {
+				    self.emit( 'dir', dir );
+				    self.dirs.push( dir );
+				    found = true;
+				}
+			    }
+			    else {
+				// remember subdirs if we don't find any files
+				todo.push( path.join( dir, f ) ); 
+			    }
+			} catch(e) {
+			    // ignore errors
+			};
+		    }
+		    if ( ! found ) {
+			async.nextTick( function() {
+			    todo.forEach( function( pathname ) {
+				q.push( pathname );
+			    });
+			    done();
+			});
 		    }
 		    else {
-			// remember subdirs if we don't find any files
-			todo.push( path.join( dir, f ) ); 
+			done();
 		    }
-		}
-		if ( ! found ) {
-		    todo.forEach( function( pathname ) {
-			q.push( pathname );
-		    });
-		}
-		done();
+		});
 	    }
 	});
     }, concurrency );
@@ -93,18 +111,38 @@ Scanner.prototype.scanForFiles = function( topdir, concurrency ) {
 	fs.readdir( dir, function( err, files ) {
 	    if ( err ) done( err );
 	    else {
-		files.forEach( function( f ) {
-		    var stat = fs.statSync( path.join( dir, f ) );
-		    if ( stat.isDirectory() ) {
-			q.push( path.join( dir, f ) );
+		async.map( files, function( f, mcb ) {
+		    fs.stat( path.join( dir, f ), function( err, res ) {
+			mcb( null, res );
+		    });
+		}, function( err, stats ) {
+		    if ( err ) {
+			return done( err );
 		    }
-		    else if ( f.match( self.regexp ) ) {
-			self.emit( 'file', path.join( dir, f ) );
-			self.files.push( path.join( dir, f ) );
+		    var todo = [];
+		    for( var i=0; i<files.length; i++ ) {
+			try {
+			    var f = files[i];
+			    var stat = stats[i];
+			    if ( stat.isDirectory() ) {
+				todo.push( path.join( dir, f ) );
+			    }
+			    else if ( f.match( self.regexp ) ) {
+				self.emit( 'file', path.join( dir, f ) );
+				self.files.push( path.join( dir, f ) );
+			    }
+			} catch(e) {
+			    // ignore errors
+			};
 		    }
+		    async.nextTick( function() {
+			todo.forEach( function( pathname ) {
+				q.push( pathname );
+			});
+			done();
+		    });
 		});
-		done();
-	    }
+	    }	 
 	});
     }, concurrency );
     q.push( topdir );

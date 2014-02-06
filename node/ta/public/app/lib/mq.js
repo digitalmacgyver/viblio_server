@@ -18,7 +18,7 @@ define(['durandal/app','durandal/system'], function(app, system) {
 	    if ( mq ) {
 		if ( ! subscribed ) {
 		    try {
-			var s = mq.subscribe( '/messages', function( msg ) {
+			var s = mq.subscribe( '/TA', function( msg ) {
 			    system.log( 'received a message!', msg );
 			    app.trigger( 'mq:'+msg.mtype, msg.data );
 			});
@@ -41,7 +41,7 @@ define(['durandal/app','durandal/system'], function(app, system) {
 	},
 	unsubscribe: function() {
 	    if ( mq && subscribed ) {
-		mq.unsubscribe( '/messages' );
+		mq.unsubscribe( '/TA' );
 	    }
 	}
     };

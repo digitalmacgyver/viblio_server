@@ -33,14 +33,14 @@ Storage.prototype.get = function( key ) {
 
 Storage.prototype.set = function( key, val ) {
     var dfd = new Deferred();
-    this.emit( 'set', key, val );
+    this.emit( 'set:'+key, val );
     dfd.resolve( this.storage.setItem( this.mkkey( key ), val ) );
     return dfd.promise;
 }
 
 Storage.prototype.del = function( key ) {
     var dfd = new Deferred();
-    this.emit( 'del', key );
+    this.emit( 'del:'+key );
     dfd.resolve( this.storage.removeItem( this.mkkey( key ) ) );
     return dfd.promise;
 }
@@ -52,7 +52,7 @@ Storage.prototype.add = function( key, item ) {
     if ( ! json ) json = '[]';
     var a = JSON.parse( json );
     a.push( item );
-    this.emit( 'add', item );
+    this.emit( 'add:'+key, item );
     dfd.resolve(
 	this.storage.setItem( this.mkkey( key ), JSON.stringify( a ) )
     );
@@ -69,7 +69,7 @@ Storage.prototype.rem = function( key, item ) {
     a.forEach( function( i ) {
 	if ( i !== item ) b.push( i );
     });
-    this.emit( 'rem', item );
+    this.emit( 'rem:'+key, item );
     if ( b.length == 0 )
 	dfd.resolve( this.storage.removeItem( this.mkkey( key ) ) );
     else

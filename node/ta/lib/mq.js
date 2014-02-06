@@ -15,6 +15,6 @@ module.exports = {
 	mq.attach(server);
     },
     send: function( mtype, data ) {
-	mq.getClient().publish( '/messages', { mtype: mtype, data: data } );
+	mq.getClient().publish( '/TA', { mtype: mtype, data: data } );
     }
 };

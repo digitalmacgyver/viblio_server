@@ -40,6 +40,24 @@ module.exports = {
     platform: function() {
 	return [os.platform(), os.type(),
 		os.arch(), os.release()].join(':');
+    },
+    // Default watch dirs
+    defaultWatchDirs: function() {
+	if ( os.platform() == 'linux' ) {
+	    return [
+		path.join( module.exports.home(), 'Videos' )
+	    ];
+	}
+	else if ( os.platform() == 'darwin' ) {
+	    return [
+		path.join( module.exports.home(), 'Videos' )
+	    ];
+	}
+	else {
+	    return [
+		path.join( module.exports.home(), 'Videos' )
+	    ];
+	}
     }
 };
 

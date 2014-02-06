@@ -92,7 +92,7 @@ function( router, app, system, viblio, config, ko ) {
                 return;
             }
 	}
-        
+
 	viblio.api( '/authenticate',
 		    { email: email(),
 		      password: password(),

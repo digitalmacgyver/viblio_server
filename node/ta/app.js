@@ -6,6 +6,7 @@ var viblio = require( './lib/viblio' );
 var privates = require( './lib/storage' )( 'private' );
 var settings = require( './lib/storage' )( 'settings' );
 var mq = require( './lib/mq' );
+var routines = require( './lib/routines' );
 
 // config
 var config = require( './lib/app-config' );
@@ -72,18 +73,6 @@ app.configure(function() {
         }));
     }
 
-    if ( config.trace_http ) {
-        app.use( function( req, res, next ) {
-            log.debug( req.url );
-            log.debug( 'HEADERS:' ); logdump( req.headers );
-            log.debug( 'BODY:' );
-            req.on( 'data', function( chunk ) {
-                log.debug( '> ' + chunk );
-            });
-            next();
-        });
-    }
-
     app.use(express.bodyParser());
 
     // The express jsonp() call only looks at query[], not
@@ -103,6 +92,18 @@ app.configure(function() {
 
     app.use(express.static(__dirname + '/public'));
 
+    if ( config.trace_http ) {
+        app.use( function( req, res, next ) {
+            log.debug( req.url );
+            log.debug( 'HEADERS:' ); logdump( req.headers );
+            log.debug( 'BODY:' );
+            req.on( 'data', function( chunk ) {
+                log.debug( '> ' + chunk );
+            });
+            next();
+        });
+    }
+    
     app.use( function( req, res, next ) {
 	if ( ! res.stash ) return next();
 	var accept = req.headers.accept || '';
@@ -137,7 +138,6 @@ app.get( '/', function( req, res, next ) {
 
 app.post( '/ping', function( req, res, next ) {
     res.stash = {};
-    mq.send( 'ping', { status: 'alive' } );
     next();
 });
 
@@ -157,16 +157,18 @@ app.post( '/authenticate', function( req, res, next ) {
     viblio.api( '/services/na/authenticate', req.body ).then(
 	function( data ) {
 	    if ( data && data.user ) {
-		privates.set( 'uuid', data.user.uuid );
-		privates.set( 'displayname', data.user.displayname );
-
 		// New user detection...
 		privates.get( 'newuser' ).then( function( val ) {
 		    if ( val == null )
 			data.user['newuser'] = 'true';
 		    else
 			data.user['newuser'] = val;
-		    privates.set( 'newuser', 'false' );
+		    // Give it a second, then set the uuid.  This will kick off
+		    // a new user routine, which will send messages to the gui.
+		    setTimeout( function() {
+			privates.set( 'uuid', data.user.uuid );
+			privates.set( 'displayname', data.user.displayname );
+		    }, 1000 );
 		    res.stash = data; next();
 		});
 	    }
@@ -191,10 +193,28 @@ app.post( '/logout', function( req, res, next ) {
     );
 });
 
-//http.createServer(app).listen(app.get('port'), function(){
-//});
-
 var server = http.createServer(app);
 server.listen(app.get('port'), function(){
+    viblio.authenticate( true ).then(
+	function() {
+	    log.debug( 'Ready to Start!' );
+	    privates.get( 'newuser' ).then( function( v ) {
+		if ( v == null || v == 'true' ) {
+		    privates.set( 'newuser', 'false' );
+		    // NEW USER ROUTINE
+		    routines.newUser();
+		}
+		else {
+		    // EXISTING USER ROUTINE
+		}
+	    });
+	    // Kick off the auth keepalive and sw upgrade timers
+	    viblio.fireTimers();
+	},
+	function( err ) {
+	    log.error( 'Could not open the local browser: platform: %s, code: %s, detail: %s',
+		       platform.platform(), err.code, err.message );
+	}
+    );
 });
 mq.attach( server );
