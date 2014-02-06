@@ -46,7 +46,7 @@ module.exports = {
     defaultWatchDirs: function() {
 	if ( os.platform() == 'linux' ) {
 	    return [
-		path.join( module.exports.home(), 'Videos' )
+		module.exports.home(),
 	    ];
 	}
 	else if ( os.platform() == 'darwin' ) {
