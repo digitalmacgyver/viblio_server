@@ -195,7 +195,7 @@ app.post( '/logout', function( req, res, next ) {
 
 var server = http.createServer(app);
 server.listen(app.get('port'), function(){
-    viblio.authenticate( true ).then(
+    viblio.authenticate( false ).then(
 	function() {
 	    log.debug( 'Ready to Start!' );
 	    privates.get( 'newuser' ).then( function( v ) {

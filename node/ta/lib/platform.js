@@ -1,4 +1,5 @@
 var config = require( '../lib/app-config' );
+var pj = require( '../package.json' );
 var os = require( 'os' );
 var fs = require( 'fs' );
 var path = require( 'path' );
@@ -16,12 +17,12 @@ module.exports = {
 	var dir;
 	if ( os.platform() == 'linux' ) {
 	    dir = path.join( module.exports.home(),
-			     '.' + config.name );
+			     '.' + pj.name );
 	}
 	else if ( os.platform() == 'darwin' ) {
 	    dir = path.join( module.exports.home(),
 			     'Library', 'Preferences',
-			     config.name );
+			     pj.name );
 	}
 	else {
 	    dir = process.env.LOCALAPPDATA ||
@@ -50,13 +51,28 @@ module.exports = {
 	}
 	else if ( os.platform() == 'darwin' ) {
 	    return [
-		path.join( module.exports.home(), 'Videos' )
+		path.join( module.exports.home(), 'Documents' ),
+		path.join( module.exports.home(), 'Downloads' ),
+		path.join( module.exports.home(), 'Movies' ),
+		path.join( module.exports.home(), 'Desktop' ),
+		path.join( module.exports.home(), 'Pictures' ),
 	    ];
 	}
 	else {
 	    return [
 		path.join( module.exports.home(), 'Videos' )
 	    ];
+	}
+    },
+    dirskips: function() {
+	if ( os.platform() == 'linux' ) {
+	    return null;
+	}
+	else if ( os.platform() == 'darwin' ) {
+	    return 'Library';
+	}
+	else {
+	    return null;
 	}
     }
 };

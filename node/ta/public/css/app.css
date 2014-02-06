@@ -1,0 +1,21 @@
+.login-form {
+    position: relative;
+    width: 300px;
+    height: 300px;
+}
+.login-bg {
+    position: absolute;
+    opacity: 0.1;
+    width: 300px;
+    height: 300px;
+    z-index: -1;
+}
+
+.login-form input {
+    display: block;
+}
+
+.login-form form {
+    padding: 40px;
+    padding-top: 100px;
+}

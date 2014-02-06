@@ -19,10 +19,11 @@ var events = require( 'events' );
 // });
 // scanner.scanForFiles( '/home/peebles/Videos' );
 //
-var Scanner = function( types ) {
+var Scanner = function( types, skips ) {
     types = types || 
 	'(\.|\/)(3gp|avi|flv|m4v|mp4|mts|mov|mpeg|mpg|ogg|swf|mwv)$';
     this.regexp = new RegExp( types, 'i' );
+    if ( skips ) this.skips = new RegExp( skips );
 }
 
 // I am an event emitter
@@ -70,7 +71,8 @@ Scanner.prototype.scanForDirs = function( topdir, concurrency ) {
 			    }
 			    else {
 				// remember subdirs if we don't find any files
-				todo.push( path.join( dir, f ) ); 
+				if ( ! ( self.skips && dir.match( self.skips ) ) ) 
+				    todo.push( path.join( dir, f ) ); 
 			    }
 			} catch(e) {
 			    // ignore errors
@@ -125,7 +127,8 @@ Scanner.prototype.scanForFiles = function( topdir, concurrency ) {
 			    var f = files[i];
 			    var stat = stats[i];
 			    if ( stat.isDirectory() ) {
-				todo.push( path.join( dir, f ) );
+				if ( ! ( self.skips && dir.match( self.skips ) ) ) 
+				    todo.push( path.join( dir, f ) );
 			    }
 			    else if ( f.match( self.regexp ) ) {
 				self.emit( 'file', path.join( dir, f ) );

@@ -69,7 +69,7 @@ function( router, app, system, viblio, config, ko ) {
 	else if ( code == "NOLOGIN_CANCEL" ) {
 	    return;
 	}
-	else if ( !defined( code ) || code.match( /NOLOGIN_/g ) ) {
+	else if ( ! code  || code.match( /NOLOGIN_/g ) ) {
 	    // msg is set to message coming back from server
 	}
 	else {

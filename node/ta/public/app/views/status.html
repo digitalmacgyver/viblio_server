@@ -1,4 +1,14 @@
 <div class="status-page">
-  <button class="btn btn-danger pull-right" data-bind="click: logout">Logout</button>
-  Status
+  <div class="buttons pull-right">
+    <button class="btn btn-danger" data-bind="click: close">Close</button>
+    <button class="btn btn-primary" data-bind="click: logout">Logout</button>
+  </div>
+  <div class="page-header">
+    <h1>Status Screen <small>Settings and status</small></h1>
+  </div>
+  <p>Show currently watched dirs, and show the queue and upload progress if anything is running.  Allow user
+    to add or remove watched dirs.
+  </p>
+  <p>Maybe also show lifetime total uploaded bytes?  Other stats?
+  </p>
 </div>
