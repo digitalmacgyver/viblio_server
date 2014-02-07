@@ -115,9 +115,39 @@ Storage.prototype.json = function() {
 
 Storage.prototype.clear = function() {
     var dfd = new Deferred();
+    var regexp = new RegExp( '^' + this.pkey );
+    for( var i=0; i< this.storage.length; i++ ) {
+	var key = this.storage.key(i);
+	if ( key.match( regexp ) )
+	    this.storage.removeItem( key );
+    }
+    dfd.resolve();
+    return dfd.promise;
+}
+
+Storage.prototype.clearAll = function() {
+    var dfd = new Deferred();
     dfd.resolve( this.storage.clear() );
     return dfd.promise;
 }
+
+Storage.prototype.values = function( rx ) {
+    var dfd = new Deferred();
+    var regexp = new RegExp( '^' + this.pkey + ':' + rx + ':(.+)' );
+    var result = [];
+    for( var i=0; i< this.storage.length; i++ ) {
+	var key = this.storage.key(i);
+	var m   = key.match( regexp );
+	if ( m && m[1] ) {
+	    var sval = this.storage.getItem( key );
+	    result.push( sval );
+	}
+    }
+    dfd.resolve( result );
+
+    return dfd.promise;
+}
+    
 
 var factory = {};
 module.exports = function( pkey ) {

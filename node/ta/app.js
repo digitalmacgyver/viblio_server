@@ -7,9 +7,19 @@ var privates = require( './lib/storage' )( 'private' );
 var settings = require( './lib/storage' )( 'settings' );
 var mq = require( './lib/mq' );
 var routines = require( './lib/routines' );
+var queuer = require( './lib/queuer' );
+var fs = require( 'fs' );
 
 // config
 var config = require( './lib/app-config' );
+
+// For testing, can override server endpoints on the
+// command line.  Be sure to use https:// when connecting
+// to a local server.
+if ( process.argv[2] ) {
+    config.viblio_server_endpoint = process.argv[2];
+    config.viblio_upload_endpoint = process.argv[2] + '/files';
+}
 
 // Logging
 var expressWinston = require('express-winston');
@@ -49,6 +59,8 @@ var log = new (winston.Logger)({
 function logdump( o ) {
     log.debug( JSON.stringify( o, null, 2 ) );
 }
+
+queuer.setLogger( log );
 
 app.configure(function() {
     app.set('port', config.port || process.env.PORT || 3000);
@@ -144,7 +156,14 @@ app.post( '/ping', function( req, res, next ) {
 app.post( '/authping', function( req, res, next ) {
     viblio.api( '/services/user/me' ).then(
 	function( data ) {
-	    res.stash = data; next();
+	    privates.get( 'version' ).then( function( version ) {
+		if ( ! version ) {
+		    version = '0.0.1';
+		    privates.set( 'version', version );
+		}
+		data.version = version;
+		res.stash = data; next();
+	    });
 	},
 	function( err ) {
 	    res.stash = err; next();
@@ -169,7 +188,14 @@ app.post( '/authenticate', function( req, res, next ) {
 			privates.set( 'uuid', data.user.uuid );
 			privates.set( 'displayname', data.user.displayname );
 		    }, 1000 );
-		    res.stash = data; next();
+		    privates.get( 'version' ).then( function( version ) {
+			if ( ! version ) {
+			    version = '0.0.1';
+			    privates.set( 'version', version );
+			}
+			data.version = version;
+			res.stash = data; next();
+		    });
 		});
 	    }
 	    else {
@@ -193,6 +219,36 @@ app.post( '/logout', function( req, res, next ) {
     );
 });
 
+app.post( '/stats', function( req, res, next ) {
+    queuer.stats().then( function( stats ) {
+	res.stash = stats; next();
+    });
+});
+
+app.post( '/add_watchdir', function( req, res, next ) {
+    var dir = req.param( 'dir' );
+    fs.exists( dir, function( exists ) {
+	if ( ! exists ) {
+	    res.stash = { error: 1, message: 'Folder ' + dir + ' not found' };
+	    next();
+	}
+	else {
+	    settings.add( 'watchdir', dir ).then( function() {
+		routines.addWatchDir( dir );
+		res.stash = {}; next();
+	    });
+	}
+    });
+});
+
+app.post( '/remove_watchdir', function( req, res, next ) {
+    var dir = req.param( 'dir' );
+    settings.rem( 'watchdir', dir ).then( function() {
+	routines.resetWatchDirs();
+	res.stash = {}; next();
+    });
+});
+
 var server = http.createServer(app);
 server.listen(app.get('port'), function(){
     viblio.authenticate( false ).then(
@@ -206,6 +262,7 @@ server.listen(app.get('port'), function(){
 		}
 		else {
 		    // EXISTING USER ROUTINE
+		    routines.existingUser();
 		}
 	    });
 	    // Kick off the auth keepalive and sw upgrade timers

@@ -1,51 +1,48 @@
-var Uploader = require( './lib/uploader' );
-var async = require( 'async' );
-var util = require( 'util' );
-var config = require( './package.json' );
+var queuer = require( './lib/queuer' );
 
-// var filename = '/home/peebles/video-test/test2.mp4';
-// var uuid = '682DC812-05C3-11E3-839F-54DE3DA5649D';
-var filename = process.argv[2];
-var uuid = '86FD9216-A8B9-11E2-9637-3B9C97344F04';
+var files = [];
+for( var i=2; i<process.argv.length; i++ )
+    files.push( process.argv[i] );
+var num = 0;
+var e1, e2;
 
-if ( ! filename ) {
-    console.log( 'Usage: app <filename>' );
-    process.exit();
-}
-
-var q = async.queue( function( o, cb ) {
-    o.upload( cb );
-}, 4 );
-
-var handler = function( f, err, results ) {
-    if ( err ) {
-	console.log( 'error: ' + err.message );
-	f.retries += 1;
-	if ( f.retries > config.max_retries ) {
-	    console.log( 'max retries exceeded for ' + ( f.fileid || f.filename ) );
-	}
-	else {
-	    setTimeout( function() {
-		q.push( f, function( err, results ) {
-		    handler( f, err, results );
-		});
-	    }, 1000 * f.retries );
-	}
+var log = {
+    debug: function() {
+	console.log.apply( null, arguments );
     }
-    else {
-	console.log( f.fileid + ' is finished.' );
-    }
-}
+};
 
-var f = new Uploader( filename, uuid );
-q.push( f, function( err, results ) {
-    handler( f, err, results );
+queuer.setLogger( log );
+
+queuer.on( 'file:done', function( f ) {
+    e2 = new Date().getTime();
+    log.debug( 'DONE!' );
+    log.debug( JSON.stringify( JSON.parse(f.toJSON()), null, 2 ) );
+    if ( ++num == files.length ) {
+	var seconds = ( e2 - e1 ) / 1000;
+	queuer.stats().then( function( s ) {
+	    var bytes = s.bytes;
+	    var bps = ( bytes * 8 ) / seconds;
+	    if ( bps > (1024*1024) )
+		console.log( (bps/(1024*1024)) + ' Mbp/s' );
+	    else if ( bps > 1024 )
+		console.log( (bps/1024) + ' Kbp/s' );
+	    else
+		console.log( bps + ' bp/s' );
+	});
+    }
 });
 
-f.on( 'progress', function() {
-    console.log( f.offset, f.length );
+queuer.on( 'file:progress', function( f ) {
+    log.debug( f.offset, f.length );
 });
 
-q.drain = function() {
-    console.log( 'DONE' );
-}
+queuer.on( 'file:retry', function( f ) {
+    log.debug( 'Retry: ' + f.retries );
+});
+
+e1 = new Date().getTime();
+files.forEach( function( filename ) {
+    queuer.add( filename );
+});
+
