@@ -3,7 +3,7 @@
 body {
     background-color: rgba(239,239,232,1);
     color: rgba(117,117,128,1);
-    padding-top: 57px; /* match header height */
+    padding-top: 56px; /* match header height */
     font-family: 'Source Sans Pro', sans-serif;
 }
 
@@ -378,7 +378,7 @@ input[type="color"],
 }
 
 .s-table-right-td .mainTitle {
-    margin-bottom: 0;
+    //margin-bottom: 0;
 }
 
 .s-table-left-td .mainTitle {

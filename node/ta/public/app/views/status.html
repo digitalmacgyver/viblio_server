@@ -1,42 +1,46 @@
 <div class="status-page">
     <!-- ko compose: taHeader --><!-- /ko -->
-    <div>
-        <h1>Status Screen <small>Settings and status</small></h1>
-    </div>
-    <p>Show currently watched dirs, and show the queue and upload progress if anything is running.  Allow user
-    to add or remove watched dirs.
-    </p>
-    <p>Maybe also show lifetime total uploaded bytes?  Other stats?
-    </p>
-    
     <table class="table s-table">
-    <tr>
+        <tr>
 
-      <td class="s-table-td s-table-left-td">
-	<div class="s-wrapper s-left-wrapper lightGreyBG">
-	  <div class="s-header s-left-header">
-	    <p class="mainTitle textShadowed">My Computer</p>
-	  </div>
-            
-            
-            
-	</div>
-      </td>
+            <td class="s-table-td s-table-left-td">
+                <div class="s-wrapper s-left-wrapper lightGreyBG">
+                    <div class="s-header s-left-header">
+                        <p class="mainTitle textShadowed">My Computer</p>
+                    </div>
+                    <div class="s-content s-left-content">
+                        <div>
+                            <h1>Status Screen <small>Settings and status</small></h1>
+                        </div>
+                        <p>Show currently watched dirs, and show the queue and upload progress if anything is running.  Allow user
+                        to add or remove watched dirs.
+                        </p>
+                        <p>Maybe also show lifetime total uploaded bytes?  Other stats?
+                        </p>
+                        <!-- ko foreach: dirs -->
+                            <input type="checkbox" data-bind="checked: $data.selected()"/>
+                            <i class="icon-folder-close"></i>
+                            <p data-bind="text: $data.name"></p>
+                            Selected? <span data-bind="text: $data.selected"></span><br>
+                        <!-- /ko -->
+                    </div>
+                </div>
+            </td>
 
-      <td class="s-table-td s-table-right-td">
-	<div class="s-wrapper s-right-wrapper lightBlueBG" style="position: relative;">
-	  <img src="/css/img/dnd.png" style="position: absolute; top: 35px; left: -21px;" />
-	  <div class="s-header s-right-header">
-	    <p class="mainTitle textShadowed whiteText">My VIBLIO</p>
-	  </div>
-	  <div class="s-content s-right-content">
+            <td class="s-table-td s-table-right-td lightBlueBG">
+                <div class="s-wrapper s-right-wrapper" style="position: relative;">
+                    <img src="/css/img/dnd.png" style="position: absolute; top: 35px; left: -21px;" />
+                    <div class="s-header s-right-header">
+                        <p class="mainTitle textShadowed whiteText">My VIBLIO</p>
+                    </div>
+                    <div class="s-content s-right-content">
+                        <!-- ko foreach: dirs -->
+                            <p data-bind="text: $data.selected"></p>
+                        <!-- /ko -->
+                    </div>
+                </div>
+            </td>
 
-	   
-	  </div>
-	</div>
-      </td>
-
-    </tr>
-  </table>
-    
+        </tr>
+    </table>    
 </div>
