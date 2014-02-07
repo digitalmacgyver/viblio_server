@@ -13,6 +13,14 @@ var fs = require( 'fs' );
 // config
 var config = require( './lib/app-config' );
 
+// For testing, can override server endpoints on the
+// command line.  Be sure to use https:// when connecting
+// to a local server.
+if ( process.argv[2] ) {
+    config.viblio_server_endpoint = process.argv[2];
+    config.viblio_upload_endpoint = process.argv[2] + '/files';
+}
+
 // Logging
 var expressWinston = require('express-winston');
 var winston = require( "winston" );
