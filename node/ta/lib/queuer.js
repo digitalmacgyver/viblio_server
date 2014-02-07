@@ -14,6 +14,14 @@ var Queuer = function() {
     this.q = async.queue( function( o, cb ) {
 	o.upload( cb );
     }, config.max_uploads );
+    this.q.drain = function() {
+	var items = this.state();
+	if ( items.length == 0 ) {
+	    this.emit( 'q:drain' );
+	    mq.send( 'q:drain' );
+	}
+    };
+    this.in_memory = {};
     events.EventEmitter.call( this );
 };
 
@@ -38,8 +46,11 @@ Queuer.prototype.handler = function( f, err, results ) {
 	if ( f.retries > config.max_retries ) {
 	    self.log.debug( 'max retries exceeded for ' + ( f.fileid || f.filename ) );
 	    f.retries = 0;
+
 	    self.emit( 'file:failed', f );
 	    mq.send( 'file:failed', JSON.parse( f.toJSON() ) )
+	    delete self.in_memory[ f.id ];
+
 	    f.started = false;  // make sure it starts over from scratch
 	    queue.set( 'failed:'+f.id, f.toJSON() );
 	}
@@ -57,7 +68,9 @@ Queuer.prototype.handler = function( f, err, results ) {
 	self.log.debug( f.fileid + ' is finished.' );
 	queue.set( 'md5:'+f.md5, f.toJSON() );  // Done uploading, remember md5
 	queue.del( 'id:'+f.id );                // remove from queue storage
+
 	self.emit( 'file:done', f );
+	delete self.in_memory[ f.id ];
 	mq.send( 'file:done', JSON.parse( f.toJSON() ) )
     }
 };
@@ -98,13 +111,18 @@ Queuer.prototype.add = function( filename, data ) {
 		    }
 		    else {
 			self.log.debug( 'File ' + filename + ' added to the queue.' );
+
+			self.emit( 'file:add', f );
+			self.in_memory[ f.id ] = f;
+			mq.send( 'file:add', JSON.parse( f.toJSON() ) );
+
 			queue.set( 'id:'+f.id, f.toJSON() ).then( function() {
 			    self.q.push( f, function( err, results ) {
 				self.handler( f, err, results );
 			    });
 			    f.on( 'progress', function() {
 				self.emit( 'file:progress', f );
-				mq.send( 'file:progress', JSON.parse( f.toJSON() ) )
+				mq.send( 'file:progress', JSON.parse( f.toJSON() ) );
 				// Remember offset in queue storage...
 				queue.get( 'id:'+f.id ).then( function( json ) {
 				    var struct = JSON.parse( json );
@@ -176,6 +194,161 @@ Queuer.prototype.stats = function() {
 	});
 	dfd.resolve({ total: total, bytes: bytes });
     });
+    return dfd.promise;
+}
+
+Queuer.prototype.state = function() {
+    var ret = [];
+    for( var fid in this.in_memory ) {
+	ret.push( JSON.parse( this.in_memory[ fid ].toJSON() ) );
+    }
+    return ret;
+}
+
+Queuer.prototype.pause = function( fid ) {
+    var self = this;
+    var dfd = new Deferred();
+    if ( ! self.in_memory[ fid ] ) return;
+    var f = self.in_memory[ fid ];
+
+    if ( ! f.started ) {
+	dfd.resolve();
+    }
+    else {
+	f.pauseUpload().then(
+	    function() {
+		self.emit( 'file:paused', f );
+		mq.send( 'file:paused', JSON.parse( f.toJSON() ) );
+		dfd.resolve();
+	    },
+	    function(err) {
+		self.log.error( 'cancel error: ' + err.message );
+		dfd.reject( err );
+	    }
+	);
+    }
+
+    return dfd.promise;
+}
+
+Queuer.prototype.resume = function( fid ) {
+    var self = this;
+    var dfd = new Deferred();
+    if ( ! self.in_memory[ fid ] ) return;
+    var f = self.in_memory[ fid ];
+    
+    if ( ! f.paused ) {
+	dfd.resolve();
+    }
+    else {
+	self.add( f.filename, f );
+	dfd.resolve();
+    }
+
+    return dfd.promise;
+}
+
+Queuer.prototype.cancel = function( fid ) {
+    var self = this;
+    var dfd = new Deferred();
+    if ( ! self.in_memory[ fid ] ) return;
+    var f = self.in_memory[ fid ];
+
+    if ( ! f.started ) {
+	self.emit( 'file:cancelled', f );
+	mq.send( 'file:cancelled', JSON.parse( f.toJSON() ) );
+	delete self.in_memory[ f.id ];
+	dfd.resolve();
+    }
+    else {
+	f.cancelUpload().then( 
+	    function() {
+		self.emit( 'file:cancelled', f );
+		mq.send( 'file:cancelled', JSON.parse( f.toJSON() ) );
+		delete in_memory[ f.id ];
+		f.deleteUpload().then(
+		    function() {
+			dfd.resolve();
+		    },
+		    function(err) {
+			self.log.error( 'delete error: ' + err.message );
+			dfd.reject( err );
+		    }
+		);
+	    },
+	    function(err) {
+		self.log.error( 'cancel error: ' + err.message );
+		dfd.reject( err );
+	    }
+	);
+    }
+
+    return dfd.promise;
+}
+
+Queuer.prototype.cancelAll = function() {
+    var self = this;
+    var dfd = new Deferred();
+    var fids = [];
+    for( var fid in self.in_memory ) {
+	fids.push( fid );
+    }
+    async.map( fids, 
+	       function( fid, cb ) {
+		   self.cancel( fid ).then( function() {
+		       cb();
+		   }, function( err ) {
+		       cb(err);
+		   } );
+	       },
+	       function( err ) {
+		   if ( err ) dfd.reject( err );
+		   else dfd.resolve();
+	       } );
+    return dfd.promise;
+}
+
+Queuer.prototype.pauseAll = function() {
+    var self = this;
+    var dfd = new Deferred();
+    var fids = [];
+    for( var fid in self.in_memory ) {
+	fids.push( fid );
+    }
+    async.map( fids, 
+	       function( fid, cb ) {
+		   self.pause( fid ).then( function() {
+		       cb();
+		   }, function( err ) {
+		       cb(err);
+		   } );
+	       },
+	       function( err ) {
+		   if ( err ) dfd.reject( err );
+		   else dfd.resolve();
+	       } );
+    return dfd.promise;
+}
+
+Queuer.prototype.resumeAll = function() {
+    var self = this;
+    var dfd = new Deferred();
+    var fids = [];
+    for( var fid in self.in_memory ) {
+	fids.push( fid );
+    }
+    async.map( fids, 
+	       function( fid, cb ) {
+		   self.resume( fid ).then( function() {
+		       cb();
+		   }, function( err ) {
+		       cb(err);
+		   } );
+	       },
+	       function( err ) {
+		   if ( err ) dfd.reject( err );
+		   else dfd.resolve();
+	       } );
     return dfd.promise;
 }
 

@@ -19,7 +19,10 @@ while( arg = process.argv.shift() ) {
 
 if ( dirs.length == 0 )
     dirs = platform.defaultWatchDirs();
-
+console.log( 'Going to scan:' );
+dirs.forEach( function( dir ) {
+    console.log( dir );
+});
 var scanner = new Scanner( null, skips );
 scanner.on( 'dir', function( dir ) {
     console.log( dir );

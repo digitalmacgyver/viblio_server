@@ -15,9 +15,10 @@ var watcher;
 function newUser() {
     var scanner = new Scanner( null, platform.dirskips() );
     scanner.on( 'dir', function( dir ) {
-	mq.send( 'scan:dir', { dir: dir } );
+	mq.send( 'scan:dir', { label: path.basename( dir ), path: dir } );
     });
 
+    mq.send( 'scan:dir:start', results );
     async.map( platform.defaultWatchDirs(), 
 	       function( dir, cb ) {
 		   scanner.scanForDirs( dir ).then(

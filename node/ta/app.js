@@ -9,6 +9,7 @@ var mq = require( './lib/mq' );
 var routines = require( './lib/routines' );
 var queuer = require( './lib/queuer' );
 var fs = require( 'fs' );
+var Scanner = require( './lib/scan' );
 
 // config
 var config = require( './lib/app-config' );
@@ -247,6 +248,112 @@ app.post( '/remove_watchdir', function( req, res, next ) {
 	routines.resetWatchDirs();
 	res.stash = {}; next();
     });
+});
+
+app.post( '/watchdirs', function( req, res, next ) {
+    settings.getArray( 'watchdir' ).then( function( values ) {
+	res.stash = values; next();
+    });
+});
+
+app.post( '/default_watchdirs', function( req, res, next ) {
+    var dirs = platform.defaultWatchDirs();
+    var ret = [];
+    dirs.forEach( function( dir ) {
+	ret.push({ label: path.basename( dir ), path: dir });
+    });
+    res.stash = ret; next();
+});
+
+app.post( '/places', function( req, res, next ) {
+    platform.places().then( function( dirs ) {
+	res.stash = dirs; next();
+    });
+});
+
+app.post( '/listing', function( req, res, next ) {
+    var scanner = new Scanner();
+    scanner.listinig( req.param( 'dir' ) ).then( function( result ) {
+	res.stash = result; next();
+    });
+});
+
+app.post( '/pause', function( req, res, next ) {
+    var fid = req.param( 'fid' );
+    if ( fid ) {
+	queuer.pause( fid ).then(
+	    function() {
+		res.stash = {}; next();
+	    },
+	    function(err) {
+		res.stash = { error: 1, message: err.message };
+		next();
+	    }
+	);
+    }
+    else {
+	queuer.pauseAll().then(
+	    function() {
+		res.stash = {}; next();
+	    },
+	    function(err) {
+		res.stash = { error: 1, message: err.message };
+		next();
+	    }
+	);
+    }
+});
+
+app.post( '/resume', function( req, res, next ) {
+    var fid = req.param( 'fid' );
+    if ( fid ) {
+	queuer.resume( fid ).then(
+	    function() {
+		res.stash = {}; next();
+	    },
+	    function(err) {
+		res.stash = { error: 1, message: err.message };
+		next();
+	    }
+	);
+    }
+    else {
+	queuer.resumeAll().then(
+	    function() {
+		res.stash = {}; next();
+	    },
+	    function(err) {
+		res.stash = { error: 1, message: err.message };
+		next();
+	    }
+	);
+    }
+});
+
+app.post( '/cancel', function( req, res, next ) {
+    var fid = req.param( 'fid' );
+    if ( fid ) {
+	queuer.cancel( fid ).then(
+	    function() {
+		res.stash = {}; next();
+	    },
+	    function(err) {
+		res.stash = { error: 1, message: err.message };
+		next();
+	    }
+	);
+    }
+    else {
+	queuer.cancelAll().then(
+	    function() {
+		res.stash = {}; next();
+	    },
+	    function(err) {
+		res.stash = { error: 1, message: err.message };
+		next();
+	    }
+	);
+    }
 });
 
 var server = http.createServer(app);
