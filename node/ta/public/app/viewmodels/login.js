@@ -128,7 +128,10 @@ function( router, app, system, viblio, config, ko ) {
 	},{scope: config.facebook_ask_features()});
     };
 
-
+    function forgotPassword() {
+        app.showMessage( 'Add forgot password functionality.' );
+    }
+    
     return {
 	email: email,
 	email_entry_error: email_entry_error,
@@ -138,6 +141,6 @@ function( router, app, system, viblio, config, ko ) {
 
 	nativeAuthenticate: nativeAuthenticate,
 	facebookAuthenticate: facebookAuthenticate,
-
+        forgotPassword: forgotPassword
     };
 });

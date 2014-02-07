@@ -1,3 +1,38 @@
 <div class="signup-page">
-  Signup
+    <div class="login-wrapper">
+        <h3 class="centered">Create your account</h3>
+        <p class="centered" >
+            <a href="#login">Already have an account? Log In &raquo;</a>
+        </p>
+        <div class="loginArea mocksWhiteBG centeredEl">
+            <div class="bottomBorder fbBtn-Wrap">
+                <a class="facebookLoginBtn centeredEl" data-bind="click: facebookAuthenticate"><img src="css/img/FBf.png" /> Log in with Facebook </a>
+            </div>
+            <div class='or-Wrap'>
+                <p>or</p>
+            </div>
+            <form id="signupForm" class="bottomBorder-Thick">
+                <div class="centeredEl">
+                    <span data-bind="css: { error: fname_entry_error() }">
+                        <input id="signupFName" type="text" name="fname" class="text" data-bind="value: fname" placeholder="First name" />
+                    </span>
+                    <span data-bind="css: { error: lname_entry_error() }">
+                        <input id="signupLName" type="text" name="lname" class="text" data-bind="value: lname" placeholder="Last name" />
+                    </span>
+                    <span data-bind="css: { error: email_entry_error() }">
+                        <input id="signupEmail" type="email" name="email" class="text" data-bind="value: email" placeholder="Email address" />
+                    </span>
+                    <span data-bind="css: { error: pword1_entry_error() }">
+                        <input id="signupPassword1" type="password" name="pword1" class="text" data-bind="value: pword1, valueUpdate: 'afterkeydown'" placeholder="Choose password - min length of 6 characters" />
+                    </span>
+                    <span data-bind="css: { error: pword2_entry_error() }">
+                        <input id="signupPassword2" type="password" name="pword2" class="text" data-bind="value: pword2, valueUpdate: 'afterkeydown'" placeholder="Confirm password" />
+                    </span>
+                    <button class="btn btn-primary pull-right" data-bind="click: signup, enable: enableSubmit">
+                        Sign Up
+                    </button>
+                </div>
+            </form>
+        </div> 
+    </div>
 </div>

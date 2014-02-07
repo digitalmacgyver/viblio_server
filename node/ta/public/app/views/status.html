@@ -1,14 +1,42 @@
 <div class="status-page">
-  <div class="buttons pull-right">
-    <button class="btn btn-danger" data-bind="click: close">Close</button>
-    <button class="btn btn-primary" data-bind="click: logout">Logout</button>
-  </div>
-  <div class="page-header">
-    <h1>Status Screen <small>Settings and status</small></h1>
-  </div>
-  <p>Show currently watched dirs, and show the queue and upload progress if anything is running.  Allow user
+    <!-- ko compose: taHeader --><!-- /ko -->
+    <div>
+        <h1>Status Screen <small>Settings and status</small></h1>
+    </div>
+    <p>Show currently watched dirs, and show the queue and upload progress if anything is running.  Allow user
     to add or remove watched dirs.
-  </p>
-  <p>Maybe also show lifetime total uploaded bytes?  Other stats?
-  </p>
+    </p>
+    <p>Maybe also show lifetime total uploaded bytes?  Other stats?
+    </p>
+    
+    <table class="table s-table">
+    <tr>
+
+      <td class="s-table-td s-table-left-td">
+	<div class="s-wrapper s-left-wrapper lightGreyBG">
+	  <div class="s-header s-left-header">
+	    <p class="mainTitle textShadowed">My Computer</p>
+	  </div>
+            
+            
+            
+	</div>
+      </td>
+
+      <td class="s-table-td s-table-right-td">
+	<div class="s-wrapper s-right-wrapper lightBlueBG" style="position: relative;">
+	  <img src="/css/img/dnd.png" style="position: absolute; top: 35px; left: -21px;" />
+	  <div class="s-header s-right-header">
+	    <p class="mainTitle textShadowed whiteText">My VIBLIO</p>
+	  </div>
+	  <div class="s-content s-right-content">
+
+	   
+	  </div>
+	</div>
+      </td>
+
+    </tr>
+  </table>
+    
 </div>
