@@ -18,7 +18,7 @@ function newUser() {
 	mq.send( 'scan:dir', { label: path.basename( dir ), path: dir } );
     });
 
-    mq.send( 'scan:dir:start', results );
+    mq.send( 'scan:dir:start' );
     async.map( platform.defaultWatchDirs(), 
 	       function( dir, cb ) {
 		   scanner.scanForDirs( dir ).then(

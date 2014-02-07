@@ -35,30 +35,30 @@ define(['durandal/app', 'lib/viblio', 'knockout'], function( app, viblio, ko ) {
 	    });
 	    app.on( 'mq:scan:dir:done', function() {
 		dir_scan_done( true );
+		viblio.api( '/default_watchdirs' ).then( function( dirs ) {
+		    dirs.forEach( function( dir ) {
+			watchdirs.push({ label: dir.label, path: dir.path, found: (found[dir.path]?true:false) });
+			if ( found[dir.path] )
+			    alldirs.push({ label: dir.label, path: dir.path, found: true });
+			else 
+			    suggesteddirs.push({ label: dir.label, path: dir.path, found: false });
+			delete found[ dir.path ];
+		    });
+		    for( var key in found ) {
+			alldirs.push({ label: found[key], path: key, found: true });
+			otherdirs.push({ label: found[key], path: key, found: true });
+		    }
+		});
+		viblio.api( '/places' ).then( function( dirs ) {
+		    dirs.forEach( function( dir ) {
+			places.push({ label: dir.label, path: dir.path, found: false });
+		    });
+		});
 	    });
 	},
 
 	compositionComplete: function( _view ) {
 	    view = _view;
-	    viblio.api( '/default_watchdirs' ).then( function( dirs ) {
-		dirs.forEach( function( dir ) {
-		    watchdirs.push({ label: dir.label, path: dir.path, found: (found[dir.path]?true:false) });
-		    if ( found[dir.path] )
-			alldirs.push({ label: found[key], path: key, found: true });
-		    else 
-			suggesteddirs.push({ label: dir.label, path: dir.path, found: false });
-		    delete found[ dir.path ];
-		});
-		for( var key in found ) {
-		    alldirs.push({ label: found[key], path: key, found: true });
-		    otherdirs.push({ label: found[key], path: key, found: true });
-		}
-	    });
-	    viblio.api( '/places' ).then( function( dirs ) {
-		dirs.forEach( function( dir ) {
-		    places.push({ label: dir.label, path: dir.path, found: false });
-		});
-	    });
 	}
 
     };

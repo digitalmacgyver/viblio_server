@@ -23,6 +23,7 @@ console.log( 'Going to scan:' );
 dirs.forEach( function( dir ) {
     console.log( dir );
 });
+console.log( '... Start ...' );
 var scanner = new Scanner( null, skips );
 scanner.on( 'dir', function( dir ) {
     console.log( dir );

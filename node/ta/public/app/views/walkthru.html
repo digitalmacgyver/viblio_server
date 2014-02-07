@@ -7,35 +7,36 @@
     <i class="icon-spinner icon-spin icon-large" data-bind="visible: dir_scan_done()==false"></i>
   </h3>
 
-  <div style="height: 200px; overflow: hidden; scroll: auto;">
-    <ul data-bind="foreach: dirs">
-      <li data-bind="html: $data"></li>
-    </ul>
-  </div>
+  <div data-bind="visible: dir_scan_done">
+    <div style="height: 200px; overflow: hidden; scroll: auto;">
+      <ul data-bind="foreach: dirs">
+	<li data-bind="html: $data"></li>
+      </ul>
+    </div>
 
-  <div class="we-found" data-bind="visible: alldirs().length > 0">
-    <h3>We found videos in these folders ...</h3>
-    <ul data-bind="foreach: alldirs">
-      <li data-bind="html: label"></li>
-    </ul>
-  </div>
+    <div class="we-found" data-bind="visible: alldirs().length > 0">
+      <h3>We found videos in these folders ...</h3>
+      <ul data-bind="foreach: alldirs">
+	<li data-bind="html: label"></li>
+      </ul>
+    </div>
 
-  <div class="we-found-none" data-bind="visible: alldirs().length == 0">
-    <h3>We didn't find any videos to sync!</h3>
-  </div>
+    <div class="we-found-none" data-bind="visible: alldirs().length == 0">
+      <h3>We didn't find any videos to sync!</h3>
+    </div>
 
-  <div class="we-suggest" data-bind="visible: suggesteddirs().length > 0">
-    <h3>We suggest adding these folders ...</h3>
-    <ul data-bind="foreach: suggesteddirs">
-      <li data-bind="html: label"></li>
-    </ul>
-  </div>
+    <div class="we-suggest" data-bind="visible: suggesteddirs().length > 0">
+      <h3>We suggest adding these folders ...</h3>
+      <ul data-bind="foreach: suggesteddirs">
+	<li data-bind="html: label"></li>
+      </ul>
+    </div>
 
-  <div class="you-add">
-    <h3>Add your own folders to sync...</h3>
-    <ul data-bind="foreach: places">
-      <li data-bind="html: label"></li>
-    </ul>
+    <div class="you-add">
+      <h3>Add your own folders to sync...</h3>
+      <ul data-bind="foreach: places">
+	<li data-bind="html: label"></li>
+      </ul>
+    </div>
   </div>
-
 </div>
