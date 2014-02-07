@@ -156,7 +156,14 @@ app.post( '/ping', function( req, res, next ) {
 app.post( '/authping', function( req, res, next ) {
     viblio.api( '/services/user/me' ).then(
 	function( data ) {
-	    res.stash = data; next();
+	    privates.get( 'version' ).then( function( version ) {
+		if ( ! version ) {
+		    version = '0.0.1';
+		    privates.set( 'version', version );
+		}
+		data.version = version;
+		res.stash = data; next();
+	    });
 	},
 	function( err ) {
 	    res.stash = err; next();
@@ -181,7 +188,14 @@ app.post( '/authenticate', function( req, res, next ) {
 			privates.set( 'uuid', data.user.uuid );
 			privates.set( 'displayname', data.user.displayname );
 		    }, 1000 );
-		    res.stash = data; next();
+		    privates.get( 'version' ).then( function( version ) {
+			if ( ! version ) {
+			    version = '0.0.1';
+			    privates.set( 'version', version );
+			}
+			data.version = version;
+			res.stash = data; next();
+		    });
 		});
 	    }
 	    else {
