@@ -1,9 +1,5 @@
-define([
-        'durandal/app',
-        'viewmodels/ta-header'],
-function(app, taHeader) {
+define(['durandal/app'], function(app) {
     return {
-        taHeader: taHeader,
 	logout: function() {
 	    app.trigger( 'system:logout' );
 	},
