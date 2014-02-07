@@ -150,29 +150,11 @@ Uploader.prototype.upload = function( doneCallback ) {
 		});
 	    }
 	    else {
-		try {
-		    var stat = fs.statSync( self.filename );
-		    self.length = stat.size;
-		}
-		catch( e ) {
-		    cb( e );
-		};
 		async.series([
 		    function( xcb ) {
 			fs.stat( self.filename, function( err, stat ) {
 			    if ( err ) return xcb( err );
 			    self.length = stat.size;
-			    xcb();
-			});
-		    },
-		    function( xcb ) {
-			var md5 = crypto.createHash( 'md5' );
-			var s = fs.ReadStream( self.filename );
-			s.on( 'data', function(d) {
-			    md5.update(d);
-			});
-			s.on( 'end', function() {
-			    self.md5 = md5.digest( 'hex' );
 			    xcb();
 			});
 		    },

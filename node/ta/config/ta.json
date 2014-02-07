@@ -9,5 +9,6 @@
   "max_uploads": 4,
   "max_retries": 5,
   "keepalive_period": 7200,
-  "upgrade_period": 21600
+  "upgrade_period": 21600,
+  "file_types": "(3gp|avi|flv|m4v|mp4|mts|mov|mpeg|mpg|ogg|swf|mwv)"
 }

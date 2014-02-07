@@ -3,6 +3,7 @@ var async = require( 'async' );
 var Deferred = require( 'promised-io/promise').Deferred;
 var fs = require( 'fs' );
 var events = require( 'events' );
+var config = require( '../lib/app-config' );
 
 // Usage:
 //
@@ -20,8 +21,7 @@ var events = require( 'events' );
 // scanner.scanForFiles( '/home/peebles/Videos' );
 //
 var Scanner = function( types, skips ) {
-    types = types || 
-	'(\.|\/)(3gp|avi|flv|m4v|mp4|mts|mov|mpeg|mpg|ogg|swf|mwv)$';
+    types = types || '(\.|\/)' + config.file_types + '$';
     this.regexp = new RegExp( types, 'i' );
     if ( skips ) this.skips = new RegExp( skips );
 }

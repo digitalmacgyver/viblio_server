@@ -3,6 +3,8 @@
 */
 var faye = require('faye');
 var mq;
+var subscribed = false;
+var attached = false;
 
 module.exports = {
     init: function() {
@@ -13,8 +15,17 @@ module.exports = {
     },
     attach: function( server ) {
 	mq.attach(server);
+	attached = true;
+
+	mq.bind( 'subscribe', function( clientID, channel ) {
+	    subscribed = true;
+	});
+	mq.bind( 'unsubscribe', function( clientID, channel ) {
+	    subscribed = false;
+	});
     },
     send: function( mtype, data ) {
-	mq.getClient().publish( '/TA', { mtype: mtype, data: data } );
+	if ( attached && subscribed )
+	    mq.getClient().publish( '/TA', { mtype: mtype, data: data } );
     }
 };
