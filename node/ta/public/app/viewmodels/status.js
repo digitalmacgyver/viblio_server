@@ -1,18 +1,36 @@
 define([
         'durandal/app',
+        'lib/viblio',
+        'knockout',
         'viewmodels/ta-header',
-        'knockout'],
-function(app, taHeader, ko) {
-    var dirs = ko.observableArray([{'name': 'Desktop'}, {'name': 'Shared'}, {'name': 'iPhoto'}, {'name': 'Movies'}]);
-    
-    dirs().forEach(function( d ){
-        d.selected = ko.observable(false);
-        console.log(d);
-    });
+        'viewmodels/folder'],
+function(app,viblio,ko,taHeader,Folder) {
+    var folders = ko.observableArray();
     
     return {
         taHeader: taHeader,
-        dirs: dirs,
+        folders: folders,
+        
+        activate: function() {
+            viblio.api( '/places').then( function( data ) {
+                console.log( data );
+            });
+            viblio.api( '/default_watchdirs').then( function( dirs ) {
+                console.log( dirs );
+                
+                dirs.forEach(function( dir ){
+                    var f = new Folder( dir );
+                    folders.push( f );
+                });
+            });
+        },
+        
+        compositionComplete: function() {
+            $("#columns").hColumns({
+                nodeSource: function(node_id, callback) {
+                }
+            });
+        },
         
 	logout: function() {
 	    app.trigger( 'system:logout' );

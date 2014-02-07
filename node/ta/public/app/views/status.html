@@ -17,11 +17,9 @@
                         </p>
                         <p>Maybe also show lifetime total uploaded bytes?  Other stats?
                         </p>
-                        <!-- ko foreach: dirs -->
-                            <input type="checkbox" data-bind="checked: $data.selected()"/>
-                            <i class="icon-folder-close"></i>
-                            <p data-bind="text: $data.name"></p>
-                            Selected? <span data-bind="text: $data.selected"></span><br>
+                        <div id="columns"></div>
+                        <!-- ko foreach: folders -->
+                        <!-- ko compose: $data --><!-- /ko -->
                         <!-- /ko -->
                     </div>
                 </div>
@@ -34,8 +32,8 @@
                         <p class="mainTitle textShadowed whiteText">My VIBLIO</p>
                     </div>
                     <div class="s-content s-right-content">
-                        <!-- ko foreach: dirs -->
-                            <p data-bind="text: $data.selected"></p>
+                        <!-- ko foreach: folders -->
+                            <p data-bind="text: path, if: $data.selected"></p>
                         <!-- /ko -->
                     </div>
                 </div>
