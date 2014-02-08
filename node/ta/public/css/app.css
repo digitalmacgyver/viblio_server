@@ -3,7 +3,7 @@
 body {
     background-color: rgba(239,239,232,1);
     color: rgba(117,117,128,1);
-    padding-top: 57px; /* match header height */
+    padding-top: 56px; /* match header height */
     font-family: 'Source Sans Pro', sans-serif;
 }
 
@@ -223,6 +223,22 @@ input[type="color"],
     margin-bottom: 27px;
 }
 
+.font18 {
+    font-size: 18px;
+}
+
+.font20 {
+    font-size: 20px;
+}
+
+.font24 {
+    font-size: 24px;
+}
+
+.font40 {
+    font-size: 40px;
+}
+
 /********** Header ***********/
 
 .ta-header .buttonWrap {
@@ -378,7 +394,7 @@ input[type="color"],
 }
 
 .s-table-right-td .mainTitle {
-    margin-bottom: 0;
+    //margin-bottom: 0;
 }
 
 .s-table-left-td .mainTitle {
@@ -393,4 +409,26 @@ input[type="color"],
     width: 100%;
     overflow: auto;
     position: relative;
+}
+
+/********* Folder **********/
+
+.folder .folderIcon {
+    margin-left: 10px;
+    display: inline-block;
+    position: relative;
+}
+
+.folder .title {
+    display: inline-block;
+}
+
+.folder .numVids {
+    position: absolute;
+    background-color: red;
+    padding: 5px;
+    border-radius: 20px;
+    top: 0;
+    right: -3px;
+    color: white;
 }

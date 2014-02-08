@@ -273,7 +273,7 @@ app.post( '/places', function( req, res, next ) {
 
 app.post( '/listing', function( req, res, next ) {
     var scanner = new Scanner();
-    scanner.listinig( req.param( 'dir' ) ).then( function( result ) {
+    scanner.listing( req.param( 'dir' ) ).then( function( result ) {
 	res.stash = result; next();
     });
 });
