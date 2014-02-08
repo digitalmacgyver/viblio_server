@@ -20,10 +20,10 @@ function(app,viblio,ko) {
         
         self.navigate = function() {
             var args = {
-                path: self.path()
+                dir: self.path()
             };
             console.log( typeof args.path );
-            viblio.api( '/listing', args.path ).then( function( data ) {
+            viblio.api( '/listing', args ).then( function( data ) {
                 console.log(data);
             });
         };
