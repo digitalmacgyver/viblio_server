@@ -11,18 +11,19 @@ var crypto   = require( 'crypto' );
 var mq = require( '../lib/mq' );
 
 var Queuer = function() {
-    this.q = async.queue( function( o, cb ) {
+    var self = this;
+    self.q = async.queue( function( o, cb ) {
 	o.upload( cb );
     }, config.max_uploads );
-    this.q.drain = function() {
-	var items = this.state();
+    self.q.drain = function() {
+	var items = self.state();
 	if ( items.length == 0 ) {
-	    this.emit( 'q:drain' );
+	    self.emit( 'q:drain' );
 	    mq.send( 'q:drain' );
 	}
     };
-    this.in_memory = {};
-    events.EventEmitter.call( this );
+    self.in_memory = {};
+    events.EventEmitter.call( self );
 };
 
 // I am an event emitter

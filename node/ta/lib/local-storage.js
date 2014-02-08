@@ -1,3 +1,8 @@
+/*
+  node-localStorage was used initially, but that code is full of Sync calls.  This
+  is a rewrite with everything being async.  I also attempt to cache the state in
+  memory to minimize startup cost.
+*/
 fs = require( 'fs' );
 path = require( 'path' );
 async = require( 'async' );
@@ -9,17 +14,16 @@ var _length = 0;
 var _inited = false;
 
 module.exports = {
-    length: function(callback) {
-	if ( ! _inited ) {
-	    this._readdb(function(err) {
-		if (callback) callback(err,_length);
-	    });
+
+    // Initialize the location of the database
+    init: function( root ) {
+	if ( ! fs.existsSync( root ) ) {
+	    fs.mkdirSync( root );
 	}
-	else {
-	    if (callback) callback(null,_length);
-	}
+	location = root;
     },
 
+    // Read the existing database into memory
     _readdb: function(callback) {
 	fs.readdir( location, function( err, files ) {
 	    if ( err ) return callback( err );
@@ -44,17 +48,23 @@ module.exports = {
 	});
     },
 
-    init: function( root ) {
-	if ( ! fs.existsSync( root ) ) {
-	    fs.mkdirSync( root );
+    length: function(callback) {
+	if ( ! _inited ) {
+	    // Need to read the entire database to get an accurate length
+	    this._readdb(function(err) {
+		if (callback) callback(err,_length);
+	    });
 	}
-	location = root;
+	else {
+	    if (callback) callback(null,_length);
+	}
     },
 
     setItem: function( key, value, callback ) {
 	var filename = path.join( location, encodeURIComponent(key) );
 	fs.writeFile( filename, value, { encoding: 'utf8' }, function(err) {
 	    if ( ! cacheHash[key] ) {
+		// cache it
 		cacheHash[key] = value;
 		cacheArray.push( key );
 		_length = cacheArray.length;
@@ -66,6 +76,7 @@ module.exports = {
     getItem: function( key, callback ) {
 	var filename = path.join( location, encodeURIComponent(key) );
 	if ( cacheHash[key] ) {
+	    // read from cache
 	    if (callback) callback( null, cacheHash[key] );
 	}
 	else {
@@ -98,6 +109,7 @@ module.exports = {
 
     clear: function( callback ) {
 	var self = this;
+	// To clear, we need to read the database if it has not already been read
 	async.series([
 	    function(scb) {
 		if ( _inited ) 
@@ -138,6 +150,7 @@ module.exports = {
 
     key: function( n, callback ) {
 	if ( ! _inited ) {
+	    // Read the database into memory if we don't already have it.
 	    this._readdb(function(err) {
 		if (callback) callback( err, cacheArray[n] );
 	    });
