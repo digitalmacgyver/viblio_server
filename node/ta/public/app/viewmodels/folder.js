@@ -18,11 +18,12 @@ function(app,viblio,ko) {
             }
         });
         
-        self.navigate = function( path ) {
+        self.navigate = function() {
             var args = {
-                path: path
+                path: self.path()
             };
-            viblio.api( '/listing', args).then( function( data ) {
+            console.log( typeof args.path );
+            viblio.api( '/listing', args.path ).then( function( data ) {
                 console.log(data);
             });
         };
