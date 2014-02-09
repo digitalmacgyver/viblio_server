@@ -109,6 +109,7 @@ Queuer.prototype.add = function( filename, data ) {
 		    if ( val ) {
 			// This file has already been uploaded
 			self.log.debug( 'File ' + filename + ' has already been uploaded.' );
+			xcb();
 		    }
 		    else {
 			self.log.debug( 'File ' + filename + ' added to the queue.' );
@@ -132,12 +133,12 @@ Queuer.prototype.add = function( filename, data ) {
 				});
 			    });
 			});
+			xcb(f);
 		    }
-		    xcb();
 		});
 	    }
 	], function( err, res ) {
-	    dfd.resolve();
+	    dfd.resolve(res[1]);
 	});
     });
     return dfd.promise;

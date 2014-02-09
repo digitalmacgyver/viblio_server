@@ -16,6 +16,6 @@
       "node-uuid": "latest",
       "mkdirp": "latest",
       "crypto": "latest",
-      "chokidar": "latest"
+      "watchr": "latest"
   }
 }

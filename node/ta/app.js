@@ -234,20 +234,22 @@ app.post( '/add_watchdir', function( req, res, next ) {
 	    next();
 	}
 	else {
-	    settings.add( 'watchdir', dir ).then( function() {
-		routines.addWatchDir( dir );
-		res.stash = {}; next();
-	    });
+	    routines.addWatchDir( dir ).then(
+		function() {
+		    res.stash = {}; next();
+		},
+		function(err) {
+		    res.stash = {error:1, message: err.message}; next();
+		}
+	    );
 	}
     });
 });
 
 app.post( '/remove_watchdir', function( req, res, next ) {
     var dir = req.param( 'dir' );
-    settings.rem( 'watchdir', dir ).then( function() {
-	routines.resetWatchDirs();
-	res.stash = {}; next();
-    });
+    routines.removeWatchDir( dir );
+    res.stash = {}; next();
 });
 
 app.post( '/watchdirs', function( req, res, next ) {
@@ -268,6 +270,14 @@ app.post( '/default_watchdirs', function( req, res, next ) {
 app.post( '/places', function( req, res, next ) {
     platform.places().then( function( dirs ) {
 	res.stash = dirs; next();
+    });
+});
+
+app.post( '/volumes', function( req, res, next ) {
+    platform.volumes().then( function( dirs ) {
+	res.stash = dirs; next();
+    }, function( err ) {
+	res.stash = { error: 1, message: err.message }; next();
     });
 });
 

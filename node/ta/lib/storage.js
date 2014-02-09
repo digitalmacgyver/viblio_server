@@ -35,8 +35,9 @@ Storage.prototype.mkkey = function ( key ) {
 }
 
 Storage.prototype.get = function( key ) {
+    var self = this;
     var dfd = new Deferred();
-    this.storage.getItem( this.mkkey( key ), function( err, val ) {
+    self.storage.getItem( self.mkkey( key ), function( err, val ) {
 	if ( err ) debug( err.message );
 	dfd.resolve( val );
     });
@@ -44,9 +45,10 @@ Storage.prototype.get = function( key ) {
 }
 
 Storage.prototype.set = function( key, val ) {
+    var self = this;
     var dfd = new Deferred();
-    this.emit( 'set:'+key, val );
-    this.storage.setItem( this.mkkey( key ), val, function( err ) {
+    self.emit( 'set:'+key, val );
+    self.storage.setItem( self.mkkey( key ), val, function( err ) {
 	if ( err ) debug( err.message );
 	dfd.resolve();
     });
@@ -54,9 +56,10 @@ Storage.prototype.set = function( key, val ) {
 }
 
 Storage.prototype.del = function( key ) {
+    var self = this;
     var dfd = new Deferred();
-    this.emit( 'del:'+key );
-    this.storage.removeItem( this.mkkey( key ), function(err) {
+    self.emit( 'del:'+key );
+    self.storage.removeItem( self.mkkey( key ), function(err) {
 	if ( err ) debug( err.message );
 	dfd.resolve();
     });
@@ -64,14 +67,15 @@ Storage.prototype.del = function( key ) {
 }
 
 Storage.prototype.add = function( key, item ) {
+    var self = this;
     // add item to array
     var dfd = new Deferred();
-    this.storage.getItem( this.mkkey( key ), function( err, json ) {
+    self.storage.getItem( self.mkkey( key ), function( err, json ) {
 	if ( ! json ) json = '[]';
 	var a = JSON.parse( json );
 	a.push( item );
-	this.emit( 'add:'+key, item );
-	this.storage.setItem( this.mkkey( key ), JSON.stringify( a ), function(err) {
+	self.emit( 'add:'+key, item );
+	self.storage.setItem( self.mkkey( key ), JSON.stringify( a ), function(err) {
 	    if ( err ) debug( err.message );
 	    dfd.resolve();
 	});
@@ -80,23 +84,24 @@ Storage.prototype.add = function( key, item ) {
 }
 
 Storage.prototype.rem = function( key, item ) {
+    var self = this;
     // remove item from array
     var dfd = new Deferred();
-    this.storage.getItem( this.mkkey( key ), function( err, json ) {
+    self.storage.getItem( self.mkkey( key ), function( err, json ) {
 	if ( ! json ) json = '[]';
 	var a = JSON.parse( json );
 	var b = [];
 	a.forEach( function( i ) {
 	    if ( i !== item ) b.push( i );
 	});
-	this.emit( 'rem:'+key, item );
+	self.emit( 'rem:'+key, item );
 	if ( b.length == 0 )
-	    this.storage.removeItem( this.mkkey( key ), function(err) {
+	    self.storage.removeItem( self.mkkey( key ), function(err) {
 		if ( err ) debug( err.message );
 		dfd.resolve();
 	    });
 	else
-	    this.storage.setItem( this.mkkey( key ), JSON.stringify( b ), function(err) {
+	    self.storage.setItem( self.mkkey( key ), JSON.stringify( b ), function(err) {
 		if ( err ) debug( err.message );
 		dfd.resolve();
 	    });
@@ -105,9 +110,10 @@ Storage.prototype.rem = function( key, item ) {
 }
 
 Storage.prototype.getArray = function( key ) {
+    var self = this;
     // return array
     var dfd = new Deferred();
-    this.storage.getItem( this.mkkey( key ), function( err, json ) {
+    self.storage.getItem( self.mkkey( key ), function( err, json ) {
 	if ( err ) debug( err.message );
 	if ( ! json ) json = '[]';
 	var a = JSON.parse( json );
@@ -203,8 +209,9 @@ Storage.prototype.clear = function() {
 }
 
 Storage.prototype.clearAll = function() {
+    var self = this;
     var dfd = new Deferred();
-    this.storage.clear( function(err) {
+    self.storage.clear( function(err) {
 	if ( err ) debug( err.message );
 	dfd.resolve();
     });

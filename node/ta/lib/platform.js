@@ -164,6 +164,82 @@ module.exports = {
 		     );
 	}
 	return dfd.promise;
+    },
+    volumes: function() {
+	var dfd = new Deferred();
+	if ( os.platform() == 'linux' ) {
+	    async.map( ['/mnt', '/media'],
+		       function( root, cb ) {
+			   fs.readdir( root, function( err, files ) {
+			       if ( err ) {
+				   cb( err );
+			       }
+			       else {
+				   var result = [];
+				   files.forEach( function( file ) {
+				       result.push({ label: file, path: path.join(root,file) });
+				   });
+				   cb( null, result );
+			       }
+			   });
+		       },
+		       function( err, results ) {
+			   if ( err ) {
+			       dfd.reject( err );
+			   }
+			   else {
+			       var result = results[0];
+			       dfd.resolve( result.concat( results[1] ) );
+			   }
+		       }
+		     );
+	}
+	else if ( os.platform() == 'darwin' ) {
+	    fs.readdir( '/Volumes', function( err, files ) {
+		if ( err ) return dfd.reject( err );
+		var result = [];
+		files.forEach( function( file ) {
+		    if ( ! ( file.match( /^\./ ) ||
+			     file.match( /^Macintosh HD/ ) ) ) {
+			result.push({ label: file, path: '/Volumes/'+file });
+		    }
+		});
+		dfd.resolve( result );
+	    });
+	}
+	else {
+	    var parts = [];
+	    var spawn = require('child_process').spawn,
+	    list  = spawn('cmd');
+
+	    list.stdout.on('data', function (data) {
+		data = data.toString('utf8');
+		if ( data.match(/^Name/) ) return;
+		data = data.replace(/[\n\r]/g,'');
+		data = data.replace(/\s+$/, '');
+		if ( data.match(/^$/) ) return;
+		parts.push(data);
+	    });
+
+	    list.on('exit', function (code) {
+		if ( parts.length >= 3 ) {
+		    parts.shift(); // remove initial command prompt
+		    parts.pop(); // remove final command prompt
+		    var result = [];
+		    parts.forEach( function( part ) {
+			result.push({ label: part, path: part+path.sep });
+		    });
+		    dfd.resolve( result );
+		}
+		else {
+		    dfd.reject( new Error( 'Could not find volumes' ) );
+		}
+	    });
+
+	    list.stdin.write('wmic logicaldisk get name\n');
+	    list.stdin.end();
+	}
+	return dfd.promise;
     }
 };
 

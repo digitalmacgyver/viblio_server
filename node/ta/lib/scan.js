@@ -43,7 +43,7 @@ Scanner.prototype.scanForDirs = function( topdir, concurrency ) {
     var self = this;
     var dfd  = new Deferred();
     concurrency = concurrency || 1;
-    self.dirs = [];
+    var dirs = [];
     var q = async.queue( function( dir, done ) {
 	fs.readdir( dir, function( err, files ) {
 	    if ( err ) done( err );
@@ -65,7 +65,7 @@ Scanner.prototype.scanForDirs = function( topdir, concurrency ) {
 			    if ( ! stat.isDirectory() ) {
 				if ( f.match( self.regexp ) ) {
 				    self.emit( 'dir', dir );
-				    self.dirs.push( dir );
+				    dirs.push( dir );
 				    found = true;
 				}
 			    }
@@ -95,7 +95,7 @@ Scanner.prototype.scanForDirs = function( topdir, concurrency ) {
     }, concurrency );
     q.push( topdir );
     q.drain = function() {
-	dfd.resolve( self.dirs );
+	dfd.resolve( dirs );
     }
     return dfd.promise;
 }
@@ -108,7 +108,7 @@ Scanner.prototype.scanForFiles = function( topdir, concurrency ) {
     var self = this;
     var dfd  = new Deferred();
     concurrency = concurrency || 1;
-    self.files = [];
+    var myfiles = [];
     var q = async.queue( function( dir, done ) {
 	fs.readdir( dir, function( err, files ) {
 	    if ( err ) done( err );
@@ -131,8 +131,12 @@ Scanner.prototype.scanForFiles = function( topdir, concurrency ) {
 				    todo.push( path.join( dir, f ) );
 			    }
 			    else if ( f.match( self.regexp ) ) {
-				self.emit( 'file', path.join( dir, f ) );
-				self.files.push( path.join( dir, f ) );
+				var struct = {
+				    topdir: topdir,
+				    file: path.join( dir, f )
+				};
+				self.emit( 'file', struct );
+				myfiles.push( struct );
 			    }
 			} catch(e) {
 			    // ignore errors
@@ -150,7 +154,7 @@ Scanner.prototype.scanForFiles = function( topdir, concurrency ) {
     }, concurrency );
     q.push( topdir );
     q.drain = function() {
-	dfd.resolve( self.files );
+	dfd.resolve( myfiles );
     }
     return dfd.promise;
 }
