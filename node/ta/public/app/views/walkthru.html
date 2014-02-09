@@ -17,7 +17,7 @@
     <div class="we-found" data-bind="visible: alldirs().length > 0">
       <h3>We found videos in these folders ...</h3>
       <ul data-bind="foreach: alldirs">
-	<li data-bind="html: label"></li>
+	<li data-bind="html: label + ' (' + found + ')'"></li>
       </ul>
     </div>
 
@@ -38,5 +38,13 @@
 	<li data-bind="html: label"></li>
       </ul>
     </div>
+
+    <div class="you-add">
+      <h3>These volumes are also present...</h3>
+      <ul data-bind="foreach: volumes">
+	<li data-bind="html: label"></li>
+      </ul>
+    </div>
+
   </div>
 </div>
