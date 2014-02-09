@@ -301,6 +301,19 @@ app.post( '/miller', function( req, res, next ) {
     });
 });
 
+app.get( '/miller', function( req, res, next ) {
+    var scanner = new Scanner();
+    scanner.listing( req.param( 'id' ) ).then( function( result ) {
+	var ret = [];
+	result.forEach( function( s ) {
+	    ret.push({ id: s.path,
+		       name: s.file,
+		       parent: s.isdir });
+	});
+	res.json( ret );
+    });
+});
+
 app.post( '/pause', function( req, res, next ) {
     var fid = req.param( 'fid' );
     if ( fid ) {
