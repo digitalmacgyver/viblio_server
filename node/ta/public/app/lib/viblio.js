@@ -67,13 +67,15 @@ define(['durandal/system', 'lib/mq', 'knockout'], function(system, mq, ko) {
             return user().uuid;
         },
 
-	api: function( path, data ) {
+	api: function( path, data, sync ) {
             var deferred = $.Deferred();
             var promise  = deferred.promise();
+	    if ( sync ) async = false; else async = true;
             var x = $.ajax({
 		url: service( path ),
 		data: data,
 		method: 'POST',
+		async: async,
 		dataType: 'json' });
             x.fail( function( xhr, text, error ) {
 		var code = xhr.status || 403

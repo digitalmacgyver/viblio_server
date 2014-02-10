@@ -288,30 +288,32 @@ app.post( '/listing', function( req, res, next ) {
     });
 });
 
-app.post( '/miller', function( req, res, next ) {
-    var scanner = new Scanner();
-    scanner.listing( req.param( 'id' ) ).then( function( result ) {
-	var ret = [];
-	result.forEach( function( s ) {
-	    ret.push({ id: s.path,
-		       name: s.file,
-		       parent: s.isdir });
-	});
-	res.stash = ret; next();
-    });
-});
-
 app.get( '/miller', function( req, res, next ) {
     var scanner = new Scanner();
-    scanner.listing( req.param( 'id' ) ).then( function( result ) {
-	var ret = [];
-	result.forEach( function( s ) {
-	    ret.push({ id: s.path,
-		       name: s.file,
-		       parent: s.isdir });
+    var id = req.param( 'id' );
+
+    if ( ! id ) {
+	platform.places().then( function( dirs ) {
+	    var ret = [];
+	    dirs.forEach( function( dir ) {
+		ret.push({ id: dir.path,
+			   name: dir.label,
+			   parent: true });
+	    });
+	    res.json( ret );
 	});
-	res.json( ret );
-    });
+    }
+    else {
+	scanner.listing( id ).then( function( result ) {
+	    var ret = [];
+	    result.forEach( function( s ) {
+		ret.push({ id: s.path,
+			   name: s.file,
+			   parent: s.isdir });
+	    });
+	    res.json( ret );
+	});
+    }
 });
 
 app.post( '/pause', function( req, res, next ) {

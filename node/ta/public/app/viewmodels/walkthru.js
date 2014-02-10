@@ -69,6 +69,27 @@ define(['durandal/app', 'lib/viblio', 'knockout'], function( app, viblio, ko ) {
 
 	compositionComplete: function( _view ) {
 	    view = _view;
+	    $(view).find('.miller-demo').miller({
+		url: function( id ) {
+		    if ( id ) 
+			return '/miller?id=' + encodeURIComponent( id );
+		    else 
+			return '/miller';
+		},
+		'toolbar': {
+		    'options': {
+			'Select': function(id) { alert('Select node or leaf ' + id); },
+			'Quickview': function(id) { alert('Quickview on node or leaf ' + id); }
+		    }
+		},
+		'pane': {
+		    'options': {
+			'Add': function(id) { alert('Add to leaf ' + id); },
+			'Update': function(id) { alert('Update leaf ' + id); },
+			'Delete': function(id) { alert('Delete leaf ' + id); }
+		    }
+		}
+	    });
 	}
 
     };
