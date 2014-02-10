@@ -1,6 +1,7 @@
 var express = require( 'express' );
 var http = require( 'http' );
 var path = require( 'path' );
+var async = require( 'async' );
 var platform = require( './lib/platform' );
 var viblio = require( './lib/viblio' );
 var privates = require( './lib/storage' )( 'private' );
@@ -293,25 +294,66 @@ app.get( '/miller', function( req, res, next ) {
     var id = req.param( 'id' );
 
     if ( ! id ) {
-	platform.places().then( function( dirs ) {
-	    var ret = [];
-	    dirs.forEach( function( dir ) {
-		ret.push({ id: dir.path,
-			   name: dir.label,
-			   parent: true });
-	    });
-	    res.json( ret );
+	async.series([
+	    function( cb ) {
+		platform.places().then( function( dirs ) {
+		    var ret = [{ category: 'Places' }];
+		    dirs.forEach( function( dir ) {
+			ret.push({ id: dir.path,
+				   name: dir.label,
+				   parent: true });
+		    });
+		    cb( null, ret );
+		});
+	    },
+	    function( cb ) {
+		platform.volumes().then( function( dirs ) {
+		    var ret = [{ category: 'Volumes' }];
+		    dirs.forEach( function( dir ) {
+			ret.push({ id: dir.path,
+				   name: dir.label,
+				   parent: true });
+		    });
+		    cb( null, ret );
+		});
+	    }
+	], function( err, results ) {
+	    if ( err ) {
+		res.json( err );
+	    }
+	    else {
+		var ret = results[0];
+		res.json( ret.concat( results[1] ) );
+	    }
 	});
     }
     else {
-	scanner.listing( id ).then( function( result ) {
-	    var ret = [];
-	    result.forEach( function( s ) {
-		ret.push({ id: s.path,
-			   name: s.file,
-			   parent: s.isdir });
-	    });
-	    res.json( ret );
+	async.series([
+	    function( cb ) {
+		fs.stat( id, function( err, stat ) {
+		    if ( err ) cb( err );
+		    else {
+			if ( ! stat.isDirectory() )
+			    cb( {} );
+			else 
+			    cb();
+		    }
+		});
+	    },
+	    function( cb ) {
+		scanner.listing( id ).then( function( result ) {
+		    var ret = [];
+		    result.forEach( function( s ) {
+			ret.push({ id: s.path,
+				   name: s.file,
+				   parent: s.isdir });
+		    });
+		    cb( null, ret );
+		});
+	    },
+	], function( err, results ) {
+	    if ( err ) res.json( err );
+	    else res.json( results[1] );
 	});
     }
 });
