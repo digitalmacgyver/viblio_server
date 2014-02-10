@@ -15,8 +15,7 @@
       "cookie": "latest",
       "node-uuid": "latest",
       "mkdirp": "latest",
-      "node-localstorage": "latest",
       "crypto": "latest",
-      "chokidar": "latest"
+      "watchr": "latest"
   }
 }

@@ -1,6 +1,7 @@
 var express = require( 'express' );
 var http = require( 'http' );
 var path = require( 'path' );
+var async = require( 'async' );
 var platform = require( './lib/platform' );
 var viblio = require( './lib/viblio' );
 var privates = require( './lib/storage' )( 'private' );
@@ -234,20 +235,22 @@ app.post( '/add_watchdir', function( req, res, next ) {
 	    next();
 	}
 	else {
-	    settings.add( 'watchdir', dir ).then( function() {
-		routines.addWatchDir( dir );
-		res.stash = {}; next();
-	    });
+	    routines.addWatchDir( dir ).then(
+		function() {
+		    res.stash = {}; next();
+		},
+		function(err) {
+		    res.stash = {error:1, message: err.message}; next();
+		}
+	    );
 	}
     });
 });
 
 app.post( '/remove_watchdir', function( req, res, next ) {
     var dir = req.param( 'dir' );
-    settings.rem( 'watchdir', dir ).then( function() {
-	routines.resetWatchDirs();
-	res.stash = {}; next();
-    });
+    routines.removeWatchDir( dir );
+    res.stash = {}; next();
 });
 
 app.post( '/watchdirs', function( req, res, next ) {
@@ -271,11 +274,91 @@ app.post( '/places', function( req, res, next ) {
     });
 });
 
+app.post( '/volumes', function( req, res, next ) {
+    platform.volumes().then( function( dirs ) {
+	res.stash = dirs; next();
+    }, function( err ) {
+	res.stash = { error: 1, message: err.message }; next();
+    });
+});
+
 app.post( '/listing', function( req, res, next ) {
     var scanner = new Scanner();
     scanner.listing( req.param( 'dir' ) ).then( function( result ) {
 	res.stash = result; next();
     });
+});
+
+app.get( '/miller', function( req, res, next ) {
+    var scanner = new Scanner();
+    var id = req.param( 'id' );
+
+    if ( ! id ) {
+	async.series([
+	    function( cb ) {
+		platform.places().then( function( dirs ) {
+		    var ret = [{ category: 'Places' }];
+		    dirs.forEach( function( dir ) {
+			ret.push({ id: dir.path,
+				   name: dir.label,
+				   parent: true });
+		    });
+		    cb( null, ret );
+		});
+	    },
+	    function( cb ) {
+		platform.volumes().then( function( dirs ) {
+		    var ret = [{ category: 'Volumes' }];
+		    dirs.forEach( function( dir ) {
+			ret.push({ id: dir.path,
+				   name: dir.label,
+				   parent: true });
+		    });
+		    cb( null, ret );
+		});
+	    }
+	], function( err, results ) {
+	    if ( err ) {
+		res.json( err );
+	    }
+	    else {
+		var ret = results[0];
+		res.json( ret.concat( results[1] ) );
+	    }
+	});
+    }
+    else {
+	async.series([
+	    function( cb ) {
+		fs.stat( id, function( err, stat ) {
+		    if ( err ) cb( err );
+		    else {
+			if ( ! stat.isDirectory() )
+			    cb( {} );
+			else 
+			    cb();
+		    }
+		});
+	    },
+	    function( cb ) {
+		scanner.listing( id ).then( function( result ) {
+		    var ret = [];
+		    result.forEach( function( s ) {
+			ret.push({ id: s.path,
+				   name: s.file,
+				   parent: s.isdir });
+		    });
+		    ret.sort( function( a, b ) {
+			return ((a.name < b.name) ? -1 : ((a.name > b.name) ? 1 : 0));
+		    });
+		    cb( null, ret );
+		});
+	    },
+	], function( err, results ) {
+	    if ( err ) res.json( err );
+	    else res.json( results[1] );
+	});
+    }
 });
 
 app.post( '/pause', function( req, res, next ) {

@@ -4,6 +4,7 @@ var Deferred = require( 'promised-io/promise').Deferred;
 var fs = require( 'fs' );
 var events = require( 'events' );
 var config = require( '../lib/app-config' );
+var platform = require( '../lib/platform' );
 
 // Usage:
 //
@@ -24,6 +25,7 @@ var Scanner = function( types, skips ) {
     types = types || '(\.|\/)' + config.file_types + '$';
     this.regexp = new RegExp( types, 'i' );
     if ( skips ) this.skips = new RegExp( skips );
+    else if ( platform.dirskips() ) this.skips = new RegExp( platform.dirskips() );
 }
 
 // I am an event emitter
@@ -43,7 +45,7 @@ Scanner.prototype.scanForDirs = function( topdir, concurrency ) {
     var self = this;
     var dfd  = new Deferred();
     concurrency = concurrency || 1;
-    self.dirs = [];
+    var dirs = [];
     var q = async.queue( function( dir, done ) {
 	fs.readdir( dir, function( err, files ) {
 	    if ( err ) done( err );
@@ -65,7 +67,7 @@ Scanner.prototype.scanForDirs = function( topdir, concurrency ) {
 			    if ( ! stat.isDirectory() ) {
 				if ( f.match( self.regexp ) ) {
 				    self.emit( 'dir', dir );
-				    self.dirs.push( dir );
+				    dirs.push( dir );
 				    found = true;
 				}
 			    }
@@ -95,7 +97,7 @@ Scanner.prototype.scanForDirs = function( topdir, concurrency ) {
     }, concurrency );
     q.push( topdir );
     q.drain = function() {
-	dfd.resolve( self.dirs );
+	dfd.resolve( dirs );
     }
     return dfd.promise;
 }
@@ -108,8 +110,9 @@ Scanner.prototype.scanForFiles = function( topdir, concurrency ) {
     var self = this;
     var dfd  = new Deferred();
     concurrency = concurrency || 1;
-    self.files = [];
+    var myfiles = [];
     var q = async.queue( function( dir, done ) {
+	self.emit( 'log', 'Scanning ' + dir );
 	fs.readdir( dir, function( err, files ) {
 	    if ( err ) done( err );
 	    else {
@@ -127,12 +130,18 @@ Scanner.prototype.scanForFiles = function( topdir, concurrency ) {
 			    var f = files[i];
 			    var stat = stats[i];
 			    if ( stat.isDirectory() ) {
-				if ( ! ( self.skips && dir.match( self.skips ) ) ) 
-				    todo.push( path.join( dir, f ) );
+				var subdir = path.join( dir, f );
+				if ( ! ( ( self.skips && subdir.match( self.skips ) ) ||
+					 ( platform.is_dir_ok( subdir ) == false ) ) )
+				    todo.push( subdir );
 			    }
 			    else if ( f.match( self.regexp ) ) {
-				self.emit( 'file', path.join( dir, f ) );
-				self.files.push( path.join( dir, f ) );
+				var struct = {
+				    topdir: topdir,
+				    file: path.join( dir, f )
+				};
+				self.emit( 'file', struct );
+				myfiles.push( struct );
 			    }
 			} catch(e) {
 			    // ignore errors
@@ -150,7 +159,7 @@ Scanner.prototype.scanForFiles = function( topdir, concurrency ) {
     }, concurrency );
     q.push( topdir );
     q.drain = function() {
-	dfd.resolve( self.files );
+	dfd.resolve( myfiles );
     }
     return dfd.promise;
 }

@@ -11,18 +11,19 @@ var crypto   = require( 'crypto' );
 var mq = require( '../lib/mq' );
 
 var Queuer = function() {
-    this.q = async.queue( function( o, cb ) {
+    var self = this;
+    self.q = async.queue( function( o, cb ) {
 	o.upload( cb );
     }, config.max_uploads );
-    this.q.drain = function() {
-	var items = this.state();
+    self.q.drain = function() {
+	var items = self.state();
 	if ( items.length == 0 ) {
-	    this.emit( 'q:drain' );
+	    self.emit( 'q:drain' );
 	    mq.send( 'q:drain' );
 	}
     };
-    this.in_memory = {};
-    events.EventEmitter.call( this );
+    self.in_memory = {};
+    events.EventEmitter.call( self );
 };
 
 // I am an event emitter
@@ -108,6 +109,7 @@ Queuer.prototype.add = function( filename, data ) {
 		    if ( val ) {
 			// This file has already been uploaded
 			self.log.debug( 'File ' + filename + ' has already been uploaded.' );
+			xcb();
 		    }
 		    else {
 			self.log.debug( 'File ' + filename + ' added to the queue.' );
@@ -131,12 +133,12 @@ Queuer.prototype.add = function( filename, data ) {
 				});
 			    });
 			});
+			xcb(f);
 		    }
-		    xcb();
 		});
 	    }
 	], function( err, res ) {
-	    dfd.resolve();
+	    dfd.resolve(res[1]);
 	});
     });
     return dfd.promise;

@@ -26,10 +26,12 @@ function(app,viblio,ko,taHeader,Folder) {
         },
         
         compositionComplete: function() {
+	    /**
             $("#columns").hColumns({
                 nodeSource: function(node_id, callback) {
                 }
             });
+	    **/
         },
         
 	logout: function() {
