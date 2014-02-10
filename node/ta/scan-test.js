@@ -6,6 +6,7 @@ var path = require( 'path' );
 var con = 1;
 var skips = platform.dirskips();
 var dirs = [];
+var showdirs = false;
 process.argv.shift();
 process.argv.shift();
 var arg;
@@ -16,6 +17,8 @@ while( arg = process.argv.shift() ) {
 	dirs.push( process.argv.shift() );
     else if ( arg == '-skip' )
 	skips = process.argv.shift();
+    else if ( arg == '-showdirs' )
+	showdirs = true;
 }
 
 if ( dirs.length == 0 )
@@ -29,6 +32,11 @@ var scanner = new Scanner( null, skips );
 scanner.on( 'file', function( s ) {
     console.log( s.file );
 });
+if ( showdirs ) {
+    scanner.on( 'log', function( msg ) {
+	console.log( '+' + msg );
+    });
+}
 var e1 = new Date().getTime();
 async.map( dirs, 
 	   function( dir, cb ) {
@@ -42,7 +50,7 @@ async.map( dirs,
 	       console.log( '... DONE ...' );
 	       var e2 = new Date().getTime();
 	       results.forEach( function( s ) {
-		   console.log( '==> ' + path.basename( s.dir ) + ': ' + s.files.length );
+		   console.log( '==> ' + ( path.basename( s.dir ) || '(root)' ) + ': ' + s.files.length );
 	       });
 	       console.log( 'Took ' + 
 			    ( ( e2 - e1 )/1000 ) + ' seconds' );

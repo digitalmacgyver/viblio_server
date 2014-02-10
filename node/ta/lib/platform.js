@@ -71,6 +71,7 @@ module.exports = {
 		path.join( module.exports.home(), 'Videos' ),
 		path.join( module.exports.home(), 'Desktop' ),
 		path.join( module.exports.home(), 'Pictures' ),
+		path.join( module.exports.home(), 'SkyDrive' ),
 	    ];
 	}
     },
@@ -79,11 +80,73 @@ module.exports = {
 	    return '\\\/\\\.';
 	}
 	else if ( os.platform() == 'darwin' ) {
-	    return 'Library';
+	    return '(Library|Macintosh HD|\\\/\\\.)';
 	}
 	else {
 	    return null;
 	}
+    },
+    skipdirs: function() {
+	if ( os.platform() == 'linux' ) {
+	    return [
+		'/bin',
+		'/etc',
+		'/usr',
+		'/sbin',
+		'/var',
+		'/dev',
+		'/proc',
+		'/sys',
+		'/lib',
+		'/boot',
+		'/run',
+		'/selinux',
+		'/lost+found',
+		'/cdrom',
+		'/root',
+	    ];
+	}
+	else if ( os.platform() == 'darwin' ) {
+	    return [
+		'/Applications',
+		'/Developer',
+		'/Library',
+		'/Network',
+		'/System',
+		'/bin',
+		'/etc',
+		'/usr',
+		'/sbin',
+		'/var',
+		'/dev',
+		'/proc',
+		'/sys',
+		'/lib',
+		'/boot',
+		'/run',
+		'/private',
+		'/cores',
+		'/net',
+	    ];
+	}
+	else {
+	    return [
+		process.env['windir'],
+		process.env['ProgramData'],
+		process.env['ProgramFiles'],
+		process.env['ProgramFiles(x86)'],
+		process.env['SystemRoot'],
+	    ];
+	}
+    },
+    is_dir_ok: function( dir ) {
+	for( var i=0; i<module.exports.skipdirs().length; i++ )
+	    if ( dir.indexOf( module.exports.skipdirs()[i] ) == 0 ) return false;
+	var home = path.dirname( module.exports.home() );
+	if ( dir != home &&
+	     dir.indexOf( home ) == 0 &&
+	     dir.indexOf( module.exports.home() ) == -1 ) return false;
+	return true;
     },
     places: function() {
 	var dfd = new Deferred();
@@ -147,6 +210,7 @@ module.exports = {
 		{ label: 'Pictures', path: path.join( home, 'Pictures' ) },
 		{ label: 'Videos', path: path.join( home, 'Videos' ) },
 		{ label: 'Downloads', path: path.join( home, 'Downloads' ) },
+		{ label: 'SkyDrive', path: path.join( home, 'SkyDrive' ) },
 		{ label: 'Computer', path: 'C:' + path.sep }
 	    ];
 	    var result = [];
