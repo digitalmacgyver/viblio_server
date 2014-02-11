@@ -1,4 +1,4 @@
-define(['durandal/app', 'lib/viblio', 'knockout'], function( app, viblio, ko ) {
+define(['durandal/app', 'lib/viblio', 'knockout', 'viewmodels/ta-header', 'viewmodels/folder', 'plugins/router'], function( app, viblio, ko, taHeader, Folder, router ) {
     var view;
 
     var dirs = ko.observableArray([]);
@@ -13,8 +13,27 @@ define(['durandal/app', 'lib/viblio', 'knockout'], function( app, viblio, ko ) {
 
     var places = ko.observableArray([]);
     var volumes = ko.observableArray([]);
-
+    
+    confirm = function() {
+        alldirs().forEach( function( dir ) {
+            console.log( dir );
+            if( dir.shouldSync() ) {
+                var args = {
+                    dir: dir.path()
+                };
+                console.log('this dir was selected: ' + dir.label() );
+                console.log( args );
+                viblio.api( '/add_watchdir', args ).then( function( data ) {
+                    console.log('Dir added');
+                    console.log(data);
+                });
+            }
+        });
+        //router.navigate('#status');
+    };
+    
     return {
+        taHeader: taHeader,
 	dirs: dirs,
 	dir_scan_done: dir_scan_done,
 
@@ -24,7 +43,7 @@ define(['durandal/app', 'lib/viblio', 'knockout'], function( app, viblio, ko ) {
 	suggesteddirs: suggesteddirs,
 	places: places,
 	volumes: volumes,
-
+        
 	activate: function() {
 	    dirs.removeAll();
 	    found = {};
@@ -42,11 +61,17 @@ define(['durandal/app', 'lib/viblio', 'knockout'], function( app, viblio, ko ) {
 		dir_scan_done( true );
 		viblio.api( '/default_watchdirs' ).then( function( dirs ) {
 		    dirs.forEach( function( dir ) {
-			watchdirs.push({ label: dir.label, path: dir.path, found: found[dir.path] });
+                        
+                        var f = new Folder( { label: dir.label, path: dir.path, found: found[dir.path] } );
+                        watchdirs.push( f );
+                        
+			//watchdirs.push({ label: dir.label, path: dir.path, found: found[dir.path] });
 			if ( found[dir.path] )
-			    alldirs.push({ label: dir.label, path: dir.path, found: found[dir.path] });
-			else 
-			    suggesteddirs.push({ label: dir.label, path: dir.path, found: 0 });
+                            alldirs.push( f );
+			    //alldirs.push({ label: dir.label, path: dir.path, found: found[dir.path] });
+			else
+                            suggesteddirs.push( f );
+			    //suggesteddirs.push({ label: dir.label, path: dir.path, found: 0 });
 			delete found[ dir.path ];
 		    });
 		    for( var key in found ) {

@@ -3,9 +3,14 @@ define([
         'lib/viblio',
         'knockout',
         'viewmodels/ta-header',
-        'viewmodels/folder'],
-function(app,viblio,ko,taHeader,Folder) {
+        'viewmodels/folder',
+        'viewmodels/miller'],
+function(app,viblio,ko,taHeader,Folder,miller) {
     var folders = ko.observableArray();
+    
+    showMiller = function() {
+        app.showDialog(miller);
+    };
     
     return {
         taHeader: taHeader,
@@ -15,13 +20,16 @@ function(app,viblio,ko,taHeader,Folder) {
             viblio.api( '/places').then( function( data ) {
                 console.log( data );
             });
-            viblio.api( '/default_watchdirs').then( function( dirs ) {
+            viblio.api( '/watchdirs').then( function( dirs ) {
                 console.log( dirs );
                 
                 dirs.forEach(function( dir ){
                     var f = new Folder( dir );
                     folders.push( f );
                 });
+            });
+            viblio.api( '/stats' ).then( function( data ) {
+                console.log( data );
             });
         },
         

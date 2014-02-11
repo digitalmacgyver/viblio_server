@@ -6,8 +6,9 @@ function(app,viblio,ko) {
     var Folder = function( data, options ) {
         var self = this;
         
-        self.name = ko.observable(data.label);
+        self.label = ko.observable(data.label);
         self.path = ko.observable( data.path );
+        self.found = ko.observable( data.found );
         self.selected = ko.observable( false );
         self.numVids = ko.observable( 50 );
         self.shouldSync = ko.computed(function(){
@@ -17,6 +18,18 @@ function(app,viblio,ko) {
                 return false;
             }
         });
+        
+        self.addWatchdir = function() {
+            viblio.api( '/add_watchdir', { dir: self.path } ).then( function( data ) {
+                console.log(data);
+            });
+        };
+        
+        self.removeWatchdir = function() {
+            viblio.api( '/remove_watchdir', { dir: self.path } ).then( function( data ) {
+                console.log(data);
+            });
+        };
         
         self.navigate = function() {
             var args = {
