@@ -83,7 +83,7 @@ module.exports = {
 	    return '(Library|Macintosh HD|\\\/\\\.)';
 	}
 	else {
-	    return null;
+	    return 'AppData';
 	}
     },
     skipdirs: function() {
