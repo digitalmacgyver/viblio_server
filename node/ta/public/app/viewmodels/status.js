@@ -7,9 +7,30 @@ define([
         'viewmodels/miller'],
 function(app,viblio,ko,taHeader,Folder,miller) {
     var folders = ko.observableArray();
+    var testDir = ko.observable();
     
     showMiller = function() {
         app.showDialog(miller);
+    };
+    
+    getStats = function() {
+        viblio.api( '/stats' ).then( function( data ) {
+            console.log( data );
+        });
+    };
+    
+    getWatchdirs = function() {
+        console.log( testDir() );
+        viblio.api( '/watchdirs', testDir() ).then( function( data ) {
+            console.log( data );
+        });
+    };
+    
+    getDefaultWatchdirs = function() {
+        viblio.api( '/default_watchdirs' ).then( function( data ) {
+            console.log( data );
+            testDir( data[0] );
+        });
     };
     
     return {
@@ -27,9 +48,6 @@ function(app,viblio,ko,taHeader,Folder,miller) {
                     var f = new Folder( dir );
                     folders.push( f );
                 });
-            });
-            viblio.api( '/stats' ).then( function( data ) {
-                console.log( data );
             });
         },
         

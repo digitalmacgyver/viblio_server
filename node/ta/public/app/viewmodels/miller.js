@@ -7,7 +7,7 @@ define(['durandal/app', 'lib/viblio', 'knockout', 'viewmodels/ta-header', 'viewm
         },
         
         compositionComplete: function( _view ) {
-            view = _view;
+            var view = _view;
             $(view).find('.miller-test').miller({
                 url: function( id ) {
                     if ( id ) 

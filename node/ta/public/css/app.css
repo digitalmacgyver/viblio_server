@@ -436,6 +436,7 @@ input[type="color"],
 
 .folder .title {
     display: inline-block;
+    margin-left: 10px;
 }
 
 .folder .numVids {
@@ -463,7 +464,7 @@ input[type="color"],
     margin-top: 5%;
     width: 80%;
     max-width: 80%;
-    height: 560px;
+    height: 550px;
     left: 50%;
     margin-left: -40%;
 }
@@ -472,12 +473,13 @@ input[type="color"],
     border-radius: 0;
     width: 100%;
     height: 100%;
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .millerDialog .miller div.path {
-    height: 75px;
-    font-size: 14px;
+    height: 65px;
+    font-size: 15px;
+    -moz-box-sizing: border-box;
     box-sizing: border-box;
     padding-top: 40px;
 }
@@ -488,20 +490,28 @@ input[type="color"],
 
 .millerDialog .miller div.columns {
     height: 435px;
-    top: 75px;
+    top: 65px; /* Needs to match div.path height - line 480 */
 }
 
 .millerDialog .miller div.columns ul {
-    width: 120px;
+    width: 180px;
 }
 
 .millerDialog .miller li {
     padding-right: 1.25em;
 }
 
+.millerDialog .miller .category {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: rgb(235, 235, 235);
+    font-weight: 500;
+}
+
 .millerDialog .miller div.toolbar {
     height: 50px;
-    font-size: 14px;
+    font-size: 15px;
+    -moz-box-sizing: border-box;
     box-sizing: border-box;
     padding-top: 10px;
     border-bottom: 8px inset rgba(0,0,0,.1);
