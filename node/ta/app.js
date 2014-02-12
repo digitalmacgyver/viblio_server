@@ -268,6 +268,30 @@ app.post( '/default_watchdirs', function( req, res, next ) {
     res.stash = ret; next();
 });
 
+app.post( '/all_dirs', function( req, res, next ) {
+    async.parallel({
+	watchdirs: function( cb ) {
+	    settings.getArray( 'watchdir' ).then( function( dirs ) {
+		var ret = [];
+		dirs.forEach( function( dir ) {
+		    ret.push({ label: path.basename( dir ), path: dir });
+		});
+		cb( null, ret );
+	    });
+	},
+	defaults: function( cb ) {
+	    var dirs = platform.defaultWatchDirs();
+	    var ret = [];
+	    dirs.forEach( function( dir ) {
+		ret.push({ label: path.basename( dir ), path: dir });
+	    });
+	    cb( null, ret );
+	}
+    }, function( err, results ) {
+	res.stash = results; next();
+    });
+});
+
 app.post( '/places', function( req, res, next ) {
     platform.places().then( function( dirs ) {
 	res.stash = dirs; next();

@@ -12,12 +12,15 @@ var watcher = require( '../lib/watcher' );
 var Deferred = require( 'promised-io/promise').Deferred;
 
 var uploads = {};
-watcher.on( 'change', function( filename, stat, prev ) {
+watcher.on( 'change', function( filename, stat, prev, topdir ) {
     var scanner = new Scanner( null, platform.dirskips() );
     var types = '(\.|\/)' + config.file_types + '$';
     var regexp = new RegExp( types, 'i' );
 
     if ( ! filename.match( regexp ) ) return;
+
+    // send it to the UI
+    mq.send( 'file', { topdir: topdir, file: filename });
 
     // This is a "bounce" detector.  Filesystem watchers
     // can fire multiple times during an "add".  If we detect
@@ -83,6 +86,7 @@ function newUser() {
     var scanner = new Scanner( null, platform.dirskips() );
     scanner.on( 'file', function( s ) {
 	mq.send( 'scan:file', s );
+	mq.send( 'file', s );
     });
 
     mq.send( 'scan:files:start' );
@@ -115,6 +119,7 @@ function addWatchDir( dir, illdoit ) {
 
     scanner.on( 'file', function( s ) {
 	mq.send( 'scan:file', s );
+	mq.send( 'file', s );
     });
 
     watcher.add( dir ).then( function( info ) {

@@ -1,4 +1,10 @@
-﻿define(['plugins/router', 'durandal/app', 'durandal/system', 'lib/viblio'], function (router, app, system, viblio) {
+﻿define(['plugins/router', 
+	'durandal/app', 
+	'durandal/system', 
+	'viewmodels/folder',
+	'lib/viblio', 
+	'knockout'], 
+function (router, app, system, Folder, viblio, ko) {
 
     router.on('router:navigation:complete').then(function(instance, instruction, router) {
         if (app.title) {
@@ -50,6 +56,40 @@
 	window.close();
     });
 
+    app.watchdirs = ko.observableArray([]);
+    app.watchHash = {};
+    function getFolders() {
+	viblio.api( '/all_dirs' ).then( function( data ) {
+	    var dirs = data.watchdirs;
+	    var watched = true;
+	    if ( data.watchdirs.length == 0 ) {
+		dirs = data.defaults;
+		watched = false;
+	    }
+	    dirs.forEach( function( dir ) {
+		var folder = new Folder( dir );
+		folder.watched( watched );
+		app.watchdirs.push( folder );
+		app.watchHash[ dir.label ] = folder;
+	    });
+	});
+    }
+    function basename( path ) { return path.replace( /.*\//, "" ).replace( /.*\\/, "" ); }
+    function dirname( path ) { return path.match( /.*\// ); }
+    app.addFolder = function( _dirname ) {
+	var label = basename( _dirname );
+	var path  = dirname(  _dirname );
+	var folder = new Folder({ label: label, path: path });
+	app.watchdirs.push( folder );
+	app.watchHash[ label ] = folder;
+	viblio.api( '/add_watchdir', { dir: dirname } );
+    };
+    app.removeFolder = function( folder ) {
+	app.watchdirs.remove( folder );
+	delete app.watchHash[ folder.name() ];
+	viblio.api( '/remove_watchdir', { dir: folder.path() } );
+    };
+
     return {
         router: router,
         activate: function () {
@@ -61,6 +101,8 @@
                 { auth: false, route: 'signup', moduleId: 'viewmodels/signup', nav: false },
             ]).buildNavigationModel();
             
+	    getFolders();
+
             return router.activate();
         }
     };
