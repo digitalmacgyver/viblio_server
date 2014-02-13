@@ -20,12 +20,10 @@ module.exports = {
 	mq.bind( 'subscribe', function( clientID, channel ) {
 	    subscribed = true;
 	});
-	mq.bind( 'unsubscribe', function( clientID, channel ) {
-	    subscribed = false;
-	});
     },
     send: function( mtype, data ) {
-	if ( attached && subscribed )
+	if ( attached && subscribed ) {
 	    mq.getClient().publish( '/TA', { mtype: mtype, data: data } );
+	}
     }
 };

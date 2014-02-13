@@ -19,6 +19,23 @@ function(app,viblio,ko,taHeader,Folder) {
             });
 	    **/
         },
+
+	scan: function() {
+	    app.showMessage( 'Whamo' );
+	    viblio.api( '/scan' );
+	},
+
+	testfail: function() {
+	    app.addFolder( '/home/ubuntu/TestVids/More', function( err ) {
+		app.showMessage( err, 'Add Folder' );
+	    });
+	},
+        
+	testadd: function() {
+	    app.addFolder( '/home/ubuntu/TestVids', function( err ) {
+		app.showMessage( err, 'Add Folder' );
+	    });
+	},
         
 	logout: function() {
 	    app.trigger( 'system:logout' );

@@ -1,0 +1,31 @@
+<div class="queue">
+  <div class="vup-area">
+    <table class="vup-files" data-bind="foreach: files">
+      <tr>
+	<td class="vup-filename-column" data-bind="text: $data.basename"></td>
+	<td class="vup-file-progress-column">
+	  <span class="bar" data-bind="attr:{uuid:$data.id}">waiting...</span>
+	</td>
+	<td class="vup-cancel-column">
+	  <a title="Cancel" data-bind="click: $parent.cancel_file" class="vup-cancel-file"><i class="icon-remove"></i></a>
+	  <a title="Pause/Resume" data-bind="click: $parent.pause_file" class="vup-pause-file"><i class="icon-pause"></i></a>
+	</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="vup-stats">
+    <table>
+      <tr>
+	<td><span class="vup-data-point vup-overall-bitrate" data-bind="html: overall_bitrate"></span></td>
+	<td><span class="vup-data-point vup-overall-percent" data-bind="html: overall_percent"></span></td>
+	<td><span class="vup-data-point vup-overall-size" data-bind="html: overall_size"></span></td>
+      </tr>
+      <tr>
+	<td><span class="vup-data-title">Upload Speed</span></td>
+	<td><span class="vup-data-title">Percent Done</span></td>
+	<td><span class="vup-data-title">Data Uploaded</span></td>
+      </tr>
+    </table>
+  </div>
+</div>

@@ -313,6 +313,11 @@ app.post( '/listing', function( req, res, next ) {
     });
 });
 
+app.post( '/scan', function( req, res, next ) {
+    routines.scanAll();
+    res.stash = {}; next();
+});
+
 app.get( '/miller', function( req, res, next ) {
     var scanner = new Scanner();
     var id = req.param( 'id' );
@@ -387,6 +392,7 @@ app.get( '/miller', function( req, res, next ) {
 
 app.post( '/pause', function( req, res, next ) {
     var fid = req.param( 'fid' );
+    log.debug( 'pausing: ', fid );
     if ( fid ) {
 	queuer.pause( fid ).then(
 	    function() {
@@ -413,6 +419,7 @@ app.post( '/pause', function( req, res, next ) {
 
 app.post( '/resume', function( req, res, next ) {
     var fid = req.param( 'fid' );
+    log.debug( 'resuming: ', fid );
     if ( fid ) {
 	queuer.resume( fid ).then(
 	    function() {

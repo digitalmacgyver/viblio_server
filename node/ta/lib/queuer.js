@@ -210,7 +210,12 @@ Queuer.prototype.state = function() {
 Queuer.prototype.pause = function( fid ) {
     var self = this;
     var dfd = new Deferred();
-    if ( ! self.in_memory[ fid ] ) return;
+
+    if ( ! self.in_memory[ fid ] ) {
+	dfd.resolve();
+	return dfd.promise;
+    }
+
     var f = self.in_memory[ fid ];
 
     if ( ! f.started ) {
@@ -236,7 +241,12 @@ Queuer.prototype.pause = function( fid ) {
 Queuer.prototype.resume = function( fid ) {
     var self = this;
     var dfd = new Deferred();
-    if ( ! self.in_memory[ fid ] ) return;
+
+    if ( ! self.in_memory[ fid ] ) {
+	dfd.resolve();
+	return dfd.promise;
+    }
+
     var f = self.in_memory[ fid ];
     
     if ( ! f.paused ) {
@@ -253,7 +263,12 @@ Queuer.prototype.resume = function( fid ) {
 Queuer.prototype.cancel = function( fid ) {
     var self = this;
     var dfd = new Deferred();
-    if ( ! self.in_memory[ fid ] ) return;
+
+    if ( ! self.in_memory[ fid ] ) {
+	dfd.resolve();
+	return dfd.promise;
+    }
+
     var f = self.in_memory[ fid ];
 
     if ( ! f.started ) {

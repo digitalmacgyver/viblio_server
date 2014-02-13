@@ -26,13 +26,21 @@ function(app,viblio,ko) {
         });
 
 	app.on( 'mq:file', function( data ) {
-	    if ( data.topdir == self.name() ) {
+	    if ( data.topdir == self.path() ) {
 		// its mine
-		if ( self.files.indexOf( data.file ) != -1 )
+		if ( self.files.indexOf( data.file ) == -1 )
 		    // haven't already seen it
 		    self.files.push( data.file );
 	    }
 	});
+
+	self.sync = function() {
+	    app.addFolder( self.path() );
+	};
+
+	self.remove = function() {
+	    app.removeFolder( self );
+	};
         
         self.navigate = function() {
             var args = {
