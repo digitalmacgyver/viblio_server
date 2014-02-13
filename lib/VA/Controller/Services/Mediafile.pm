@@ -1209,6 +1209,16 @@ sub media_exists :Local {
     $self->status_ok( $c, { count => $count } );
 }
 
+# see if a particular mediafile has ever been shared by the user
+sub has_been_shared :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my @shared = $c->model( 'RDS::MediaShare' )->search(
+	{ 'media.uuid' => $mid, 'me.user_id' => $c->user->obj->id },
+	{ prefetch => 'media' });
+    $self->status_ok( $c, { count => ( $#shared + 1 ) } );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
