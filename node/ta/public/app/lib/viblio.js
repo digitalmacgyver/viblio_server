@@ -17,6 +17,7 @@ define(['durandal/system', 'lib/mq', 'knockout'], function(system, mq, ko) {
                 // subscribe callbacks from firing.
                 user( u );
                 // subscribe to the async message queue
+		system.log( '=> subscribed to mq' );
                 mq.subscribe();
             }
             if ( u.displayname != user().displayname ) {
@@ -28,6 +29,7 @@ define(['durandal/system', 'lib/mq', 'knockout'], function(system, mq, ko) {
                 displayname: 'anonymous',
                 uuid: null
             });
+	    system.log( '=> unsubscribing from mq' );
             mq.unsubscribe();
         }
     };

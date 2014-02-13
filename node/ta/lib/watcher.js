@@ -90,7 +90,7 @@ Watcher.prototype._add = function( dir ) {
             },
             change: function(changeType,filePath,fileCurrentStat,filePreviousStat){
 		if ( fileCurrentStat && ! fileCurrentStat.isDirectory() ) {
-		    self.emit( 'change', filePath, fileCurrentStat, filePreviousStat );
+		    self.emit( 'change', filePath, fileCurrentStat, filePreviousStat, dir );
 		}
             }
 	},

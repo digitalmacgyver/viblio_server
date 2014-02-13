@@ -226,8 +226,8 @@ Uploader.prototype.upload = function( doneCallback ) {
 	}
     }, function( err, results ) {
 	if ( err ) { self.error = err.message; self.emit( 'errored', err ); }
-	else if ( self.pause ) self.emit( 'paused' );
-	else if ( self.cancel ) self.emit( 'cancelled' );
+	else if ( self.pause ) { self.paused = true; self.emit( 'paused' ); }
+	else if ( self.cancel ) { self.cancelled = true; self.emit( 'cancelled' ); }
 	else {
 	    self.done = true;
 	    self.emit( 'done' );

@@ -12,12 +12,15 @@ var watcher = require( '../lib/watcher' );
 var Deferred = require( 'promised-io/promise').Deferred;
 
 var uploads = {};
-watcher.on( 'change', function( filename, stat, prev ) {
+watcher.on( 'change', function( filename, stat, prev, topdir ) {
     var scanner = new Scanner( null, platform.dirskips() );
     var types = '(\.|\/)' + config.file_types + '$';
     var regexp = new RegExp( types, 'i' );
 
     if ( ! filename.match( regexp ) ) return;
+
+    // send it to the UI
+    mq.send( 'file', { topdir: topdir, file: filename });
 
     // This is a "bounce" detector.  Filesystem watchers
     // can fire multiple times during an "add".  If we detect
@@ -57,6 +60,7 @@ function uploadFiles( dirs ) {
     var scanner = new Scanner( null, platform.dirskips() );
 
     scanner.on( 'file', function( s ) {
+	mq.send( 'file', s );
 	queuer.add( s.file );
     });
 
@@ -80,9 +84,14 @@ function uploadFiles( dirs ) {
 }
 
 function newUser() {
+    /*
+
+      THE UI DOES A MANUAL SCAN NOW AFTER LOGIN!!!
+
     var scanner = new Scanner( null, platform.dirskips() );
     scanner.on( 'file', function( s ) {
 	mq.send( 'scan:file', s );
+	mq.send( 'file', s );
     });
 
     mq.send( 'scan:files:start' );
@@ -98,6 +107,7 @@ function newUser() {
 		   mq.send( 'scan:files:done', results );
 	       }
 	     );
+    */
 }
 
 function existingUser() {
@@ -106,16 +116,38 @@ function existingUser() {
     addWatchDirs();
 }
 
+function scanAll() {
+    var scanner = new Scanner( null, platform.dirskips() );
+    scanner.on( 'file', function( s ) {
+	mq.send( 'scan:file', s );
+	mq.send( 'file', s );
+    });
+    mq.send( 'scan:files:start' );
+
+    settings.getArray( 'watchdir' ).then( function( dirs ) {
+	if ( dirs.length == 0 ) {
+	    dirs = platform.defaultWatchDirs()
+	}
+	async.map( dirs, 
+		   function( dir, cb ) {
+		       scanner.scanForFiles( dir ).then(
+			   function( files ) {
+			       cb( null, files );
+			   }
+		       );
+		   },
+		   function( err, results ) {
+		       mq.send( 'scan:files:done', results );
+		   }
+		 );
+    });
+}
+
 var watchTimers = {};
 function addWatchDir( dir, illdoit ) {
     var dfd = new Deferred();
-    var scanner = new Scanner( null, platform.dirskips() );
     var types = '(\.|\/)' + config.file_types + '$';
     var regexp = new RegExp( types, 'i' );
-
-    scanner.on( 'file', function( s ) {
-	mq.send( 'scan:file', s );
-    });
 
     watcher.add( dir ).then( function( info ) {
 	var dir = info.dir;
@@ -141,7 +173,7 @@ function addWatchDir( dir, illdoit ) {
 	    });
 	}
 	else {
-	    dfd.reject( new Error( 'already being watched' ) );
+	    dfd.reject( new Error( "Folder's parent already being watched" ) );
 	}
     });
 
@@ -183,3 +215,4 @@ module.exports.existingUser = existingUser;
 module.exports.addWatchDirs = addWatchDirs;
 module.exports.addWatchDir = addWatchDir;
 module.exports.removeWatchDir = removeWatchDir;
+module.exports.scanAll = scanAll;

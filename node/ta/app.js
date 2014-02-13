@@ -268,6 +268,30 @@ app.post( '/default_watchdirs', function( req, res, next ) {
     res.stash = ret; next();
 });
 
+app.post( '/all_dirs', function( req, res, next ) {
+    async.parallel({
+	watchdirs: function( cb ) {
+	    settings.getArray( 'watchdir' ).then( function( dirs ) {
+		var ret = [];
+		dirs.forEach( function( dir ) {
+		    ret.push({ label: path.basename( dir ), path: dir });
+		});
+		cb( null, ret );
+	    });
+	},
+	defaults: function( cb ) {
+	    var dirs = platform.defaultWatchDirs();
+	    var ret = [];
+	    dirs.forEach( function( dir ) {
+		ret.push({ label: path.basename( dir ), path: dir });
+	    });
+	    cb( null, ret );
+	}
+    }, function( err, results ) {
+	res.stash = results; next();
+    });
+});
+
 app.post( '/places', function( req, res, next ) {
     platform.places().then( function( dirs ) {
 	res.stash = dirs; next();
@@ -287,6 +311,11 @@ app.post( '/listing', function( req, res, next ) {
     scanner.listing( req.param( 'dir' ) ).then( function( result ) {
 	res.stash = result; next();
     });
+});
+
+app.post( '/scan', function( req, res, next ) {
+    routines.scanAll();
+    res.stash = {}; next();
 });
 
 app.get( '/miller', function( req, res, next ) {
@@ -363,6 +392,7 @@ app.get( '/miller', function( req, res, next ) {
 
 app.post( '/pause', function( req, res, next ) {
     var fid = req.param( 'fid' );
+    log.debug( 'pausing: ', fid );
     if ( fid ) {
 	queuer.pause( fid ).then(
 	    function() {
@@ -389,6 +419,7 @@ app.post( '/pause', function( req, res, next ) {
 
 app.post( '/resume', function( req, res, next ) {
     var fid = req.param( 'fid' );
+    log.debug( 'resuming: ', fid );
     if ( fid ) {
 	queuer.resume( fid ).then(
 	    function() {

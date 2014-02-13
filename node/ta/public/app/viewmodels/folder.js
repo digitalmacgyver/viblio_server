@@ -8,8 +8,15 @@ function(app,viblio,ko) {
         
         self.name = ko.observable(data.label);
         self.path = ko.observable( data.path );
+	self.watched = ko.observable( false );
+	self.files = ko.observableArray([]);
+
         self.selected = ko.observable( false );
-        self.numVids = ko.observable( 50 );
+
+        self.numVids = ko.computed( function() {
+	    return self.files().length;
+	});
+
         self.shouldSync = ko.computed(function(){
             if( self.selected() ) {
                 return true;
@@ -17,6 +24,23 @@ function(app,viblio,ko) {
                 return false;
             }
         });
+
+	app.on( 'mq:file', function( data ) {
+	    if ( data.topdir == self.path() ) {
+		// its mine
+		if ( self.files.indexOf( data.file ) == -1 )
+		    // haven't already seen it
+		    self.files.push( data.file );
+	    }
+	});
+
+	self.sync = function() {
+	    app.addFolder( self.path() );
+	};
+
+	self.remove = function() {
+	    app.removeFolder( self );
+	};
         
         self.navigate = function() {
             var args = {

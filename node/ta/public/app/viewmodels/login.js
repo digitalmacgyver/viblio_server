@@ -33,9 +33,9 @@ function( router, app, system, viblio, config, ko ) {
 	// either go to the personal channel page, or
 	// do a pass thru to the page the user was
 	// trying to get to.
-	if ( viblio.user().newuser == 'true' )
-	    router.navigate( 'walkthru' );
-	else
+	//if ( viblio.user().newuser == 'true' )
+	//    router.navigate( 'walkthru' );
+	//else
 	    router.navigate( viblio.getLastAttempt() || 'status' );
     };
 

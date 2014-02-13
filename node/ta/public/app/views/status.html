@@ -9,6 +9,7 @@
                         <p class="mainTitle textShadowed">My Computer</p>
                     </div>
                     <div class="s-content s-left-content">
+		      <button data-bind="click: scan">scan</button>
                         <div>
                             <h1>Status Screen <small>Settings and status</small></h1>
                         </div>
@@ -23,6 +24,8 @@
                         <!-- /ko -->
                     </div>
                 </div>
+		<button data-bind="click: testadd">testadd</button>
+		<button data-bind="click: testfail">testfail</button>
             </td>
 
             <td class="s-table-td s-table-right-td lightBlueBG">
@@ -32,9 +35,7 @@
                         <p class="mainTitle textShadowed whiteText">My VIBLIO</p>
                     </div>
                     <div class="s-content s-right-content">
-                        <!-- ko foreach: folders -->
-                            <p data-bind="text: path, if: $data.selected"></p>
-                        <!-- /ko -->
+		      <!-- ko compose: 'viewmodels/queue' --><!-- /ko -->
                     </div>
                 </div>
             </td>

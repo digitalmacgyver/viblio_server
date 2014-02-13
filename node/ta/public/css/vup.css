@@ -1,0 +1,126 @@
+/*
+  Viblio Uploader
+*/
+
+.vup {
+    position: relative;
+}
+
+.vup-files {
+    width: 100%;
+}
+.vup-files .vup-filename-column {
+    width: 200px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.vup-files .vup-cancel-column {
+    width: 50px;
+    text-align: center;
+}
+
+.vup-files .vup-cancel-column a {
+    color: #ccc;
+    font-size: 20px;
+    opacity: 0.3;
+}
+.vup-files .vup-cancel-column a:first-child {
+    margin-right: 8px;
+}
+
+.vup-files .vup-cancel-column a,
+.vup-files .vup-cancel-column a:hover,
+.vup-files .vup-cancel-column a:visited {
+    text-decoration: none;
+}
+
+.vup-files .vup-cancel-column a:hover {
+    opacity: 1;
+}
+
+.vup-instructions {
+    position: absolute;
+    margin-right: auto;
+    margin-left: auto;
+    width: 100%;
+    text-align: center;
+    margin-top: 40px;
+}
+
+.vup-instructions .line1 {
+    font-size: 40px;
+    font-weight: bold;
+    line-height: 35px;
+}
+.vup-instructions .line2 {
+    font-size: 25px;
+}
+
+/* applied to the vup-file-progress-column when the
+   file is done uploading. */
+.vup-file-done {
+}
+
+.vup-alert {
+    position: absolute;
+    margin-right: auto;
+    margin-left: auto;
+    width: 100%;
+    text-align: center;
+    display: none;
+    font-size: 140%;
+    line-height: 27px;
+}
+
+.vup-alert span {
+    width: 300px;
+    display: inline-block;
+    cursor: pointer;
+    max-height: 500px;
+    overflow: auto;
+    -moz-box-shadow: 3px 3px 0px 1px rgba(0,0,0,.1); /* Firefox */
+    -webkit-box-shadow: 3px 3px 0px 1px rgba(0,0,0,.1);
+    box-shadow: 3px 3px 0px 1px rgba(0,0,0,.1); 
+    border: 1px solid black;
+}
+
+.vup-data-title,
+.vup-data-point { 
+    text-align: left;
+}
+
+.vup-data-point {
+    font-size: 18px;
+}
+
+.vup-stats {
+    margin-right: auto;
+    margin-left: auto;
+    text-align: center;
+    padding: 8px;
+    visibility: hidden;
+}
+.vup-stats table {
+    width: 100%;
+}
+.vup-stats table td {
+    width: 33%;
+}
+
+/* dashed dropzone, with a fixed height and scrollable */
+.vup-area {
+    height: 200px;
+    overflow: auto;
+    border: 1px dashed black;
+    padding: 8px;
+}
+
+/* progress bar */
+.vup-file-progress-column span.bar {
+    width: 0%;
+    background-color: #eeeeb3;
+    display: block;
+    text-align: center;
+}
+

@@ -23,7 +23,9 @@ define(['durandal/app','durandal/system'], function(app, system) {
 			    app.trigger( 'mq:'+msg.mtype, msg.data );
 			});
 			s.callback( function(arg) {
+			    console.log( 'FAYE CALLBACK:', arg );
 			    subscribed = true;
+			    app.trigger( 'mq:subscribed' );
 			});
 			s.errback( function( err ) {
 			    system.log( 'Failed to subscribe to message queue: ' + err );
@@ -42,6 +44,7 @@ define(['durandal/app','durandal/system'], function(app, system) {
 	unsubscribe: function() {
 	    if ( mq && subscribed ) {
 		mq.unsubscribe( '/TA' );
+		app.trigger( 'mq:unsubscribed' );
 	    }
 	}
     };

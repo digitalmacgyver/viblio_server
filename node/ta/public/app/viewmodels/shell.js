@@ -1,4 +1,10 @@
-﻿define(['plugins/router', 'durandal/app', 'durandal/system', 'lib/viblio'], function (router, app, system, viblio) {
+﻿define(['plugins/router', 
+	'durandal/app', 
+	'durandal/system', 
+	'viewmodels/folder',
+	'lib/viblio', 
+	'knockout'], 
+function (router, app, system, Folder, viblio, ko) {
 
     router.on('router:navigation:complete').then(function(instance, instruction, router) {
         if (app.title) {
@@ -50,6 +56,98 @@
 	window.close();
     });
 
+    // ========================================================================
+    // 
+    // Here's what's going on.  We maintain an observable list of the user's
+    // watchdirs hanging off of app.  Any view that displays watchdirs does
+    // it will app.watchdirs().  These are Folder models.  These folder models
+    // are watching for mq:file events which come from the server whenever
+    // content is found or added to these watchdirs.  They will update their
+    // state (and therefore the UI) when these events occur.  Since every view
+    // is rendering app.watchdirs() array, every view gets automatically updated.
+    //
+    // We also add a couple of methods to app; app.addFolder( path ) and 
+    // app.removeFolder( folder ), which view models should call to add or
+    // remove watchdirs.  
+    //
+    app.watchdirs = ko.observableArray([]);
+    app.watchHash = {};
+    function getFolders() {
+	viblio.api( '/all_dirs' ).then( function( data ) {
+	    var dirs = data.watchdirs;
+	    var watched = true;
+	    if ( data.watchdirs.length == 0 ) {
+		dirs = data.defaults;
+		watched = false;
+	    }
+	    dirs.forEach( function( dir ) {
+		var folder = new Folder( dir );
+		folder.watched( watched );
+		app.watchdirs.push( folder );
+		app.watchHash[ dir.label ] = folder;
+	    });
+	});
+    }
+    app.on( 'mq:subscribed', function() {
+	viblio.api( '/scan' );
+    });
+    function _basename( path ) { return path.replace(/.*\//, "").replace( /.*\\/, "" ); }
+    function _dirname( path ) { 
+	var isWin = path.indexOf('\\');
+	var bn = _basename( path );
+	var regexp = new RegExp( bn+'$' );
+	var dn = path.replace( regexp, '' ).replace(/\/$/, '').replace(/\\$/,'');
+	if ( dn == "" ) {
+	    if ( isWin == -1 ) {
+		return "/";
+	    }
+	    else {
+		return "\\";
+	    }
+	}
+	else {
+	    return dn;
+	}
+    }
+    app.addFolder = function( i_dirname, err_callback ) {
+	var label = _basename( i_dirname );
+	var path  = _dirname(  i_dirname );
+
+	if ( app.watchHash[label] ) {
+	    // Probably turning a default watch into a real watch
+	    app.watchHash[label].watched( true );
+	    viblio.api( '/add_watchdir', { dir: i_dirname } );
+	}
+	else {
+	    var folder = new Folder({ label: label, path: i_dirname });
+	    folder.watched( true );
+	    app.watchdirs.push( folder );
+	    app.watchHash[ label ] = folder;
+	    viblio.api( '/add_watchdir', { dir: i_dirname } ).then( 
+		function( data ) {
+		    // success
+		},
+		function( data ) {
+		    if ( data.error ) {
+			if ( err_callback )
+			    err_callback( data.message );
+			delete app.watchHash[ folder.name() ];
+			setTimeout( function() {
+			    app.watchdirs.remove( folder );
+			},0 );
+		    }
+		}
+	    );
+	}
+    };
+    app.removeFolder = function( folder ) {
+	app.watchdirs.remove( folder );
+	delete app.watchHash[ folder.name() ];
+	viblio.api( '/remove_watchdir', { dir: folder.path() } );
+    };
+    //
+    // ========================================================================
+
     return {
         router: router,
         activate: function () {
@@ -61,6 +159,8 @@
                 { auth: false, route: 'signup', moduleId: 'viewmodels/signup', nav: false },
             ]).buildNavigationModel();
             
+	    getFolders();
+
             return router.activate();
         }
     };

@@ -1,21 +1,34 @@
+<style>
+.actions {
+    display: inline;
+}
+.actions .btn {
+    display: block;
+    padding: 0 6px;
+    font-size: 10.5px;
+    width: 50px;
+    margin-top: 2px;
+}
+.folder table tr td {
+    padding-bottom: 0px;
+}
+.folderIcon i {
+    font-size: 50px;
+}
+</style>
 <div class="folder">
-    <label for="sync">Sync?</label>
-    <input type="checkbox" name="sync" data-bind="checked: selected"/>
-    <!-- ko ifnot: selected -->
-    <div class="folderIcon" data-bind="click: navigate">
-            <i class="icon-folder-close font40"></i>
-            <div class="numVids">
-                <span class="textShadowed" data-bind="text: numVids"></span>
-            </div>
-        </div>
-    <!-- /ko -->
-    <!-- ko if: selected -->
-        <div class="folderIcon">
-            <i class="icon-folder-open font40"></i>
-            <div class="numVids">
-                <span class="textShadowed" data-bind="text: numVids"></span>
-            </div>
-        </div>
-    <!-- /ko -->
-    <p class="title font20 textShadowed" data-bind="text: name"></p>    
+<table><tr><td>
+  <div class="actions">
+    <button class="btn btn-mini btn-success" data-bind="visible: watched()==false,click: sync">sync</button>
+    <button class="btn btn-mini btn-danger" data-bind="click: remove">remove</button>
+  </div>
+</td><td>
+  <div class="folderIcon" data-bind="click: navigate">
+    <i class="icon-folder-close font40"></i>
+    <div class="numVids">
+      <span class="textShadowed" data-bind="text: numVids"></span>
+    </div>
+  </div>
+  <p class="title font20 textShadowed" data-bind="text: name"></p>    
+</td></tr></table>
 </div>
