@@ -877,6 +877,17 @@ sub all_shared :Local {
     my @data = ();
     foreach my $key ( @sorted_user_keys ) {
 	my @media = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ] } ) } sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }};
+
+	# iOS app wants to sort based on shared on date ...
+	my @mids = map { $_->id } sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }};
+	for( my $i=0; $i<=$#media; $i++ ) {
+	    my $share = $c->model( 'RDS::MediaShare' )->find({ media_id => $mids[$i],
+							       user_id  => $c->user->obj->id });
+	    # force the date to be formatted like other dates
+	    my $s = { %{$share->{_column_data}} };
+	    $media[$i]->{shared_date} = $s->{created_date};
+	}
+
 	push( @data, {
 	    owner => $users->{ $key }[0]->user->TO_JSON,
 	    media => \@media
