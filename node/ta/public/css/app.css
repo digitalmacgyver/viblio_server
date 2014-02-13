@@ -167,6 +167,21 @@ input[type="color"],
     color: white;
 }
 
+/* Make sure that the container the close x is used with has position:relative */
+.closeX {
+    color: white;
+    padding: 8px 10px 10px;
+    position: absolute;
+    right: 10px;
+    top: -4px;
+    z-index: 10000;
+}
+
+.closeX > img {
+    max-height: 21px;
+    max-width: 21px;
+}
+
 .mocksWhiteBG {
     background-color: white;
     border: 1px solid lightgrey;
@@ -421,6 +436,7 @@ input[type="color"],
 
 .folder .title {
     display: inline-block;
+    margin-left: 10px;
 }
 
 .folder .numVids {
@@ -432,3 +448,72 @@ input[type="color"],
     right: -3px;
     color: white;
 }
+
+/********** Miller Columns Modal **********/
+
+.millerDialog-innerWrap {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+.millerDialog {
+    position: relative;
+    margin-top: 5%;
+    width: 80%;
+    max-width: 80%;
+    height: 550px;
+    left: 50%;
+    margin-left: -40%;
+}
+
+.millerDialog .miller {
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+    font-size: 15px;
+}
+
+.millerDialog .miller div.path {
+    height: 65px;
+    font-size: 15px;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    padding-top: 40px;
+}
+
+.millerDialog .miller div.path span {
+    padding-left: 1em;
+}
+
+.millerDialog .miller div.columns {
+    height: 435px;
+    top: 65px; /* Needs to match div.path height - line 480 */
+}
+
+.millerDialog .miller div.columns ul {
+    width: 180px;
+}
+
+.millerDialog .miller li {
+    padding-right: 1.25em;
+}
+
+.millerDialog .miller .category {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: rgb(235, 235, 235);
+    font-weight: 500;
+}
+
+.millerDialog .miller div.toolbar {
+    height: 50px;
+    font-size: 15px;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    padding-top: 10px;
+    border-bottom: 8px inset rgba(0,0,0,.1);
+}
+

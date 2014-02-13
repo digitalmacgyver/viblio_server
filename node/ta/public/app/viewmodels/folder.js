@@ -6,8 +6,9 @@ function(app,viblio,ko) {
     var Folder = function( data, options ) {
         var self = this;
         
-        self.name = ko.observable(data.label);
+        self.label = ko.observable(data.label);
         self.path = ko.observable( data.path );
+
 	self.watched = ko.observable( false );
 	self.files = ko.observableArray([]);
 
@@ -41,16 +42,6 @@ function(app,viblio,ko) {
 	self.remove = function() {
 	    app.removeFolder( self );
 	};
-        
-        self.navigate = function() {
-            var args = {
-                path: self.path()
-            };
-            console.log( typeof args.path );
-            viblio.api( '/listing', args.path ).then( function( data ) {
-                console.log(data);
-            });
-        };
         
     };
     

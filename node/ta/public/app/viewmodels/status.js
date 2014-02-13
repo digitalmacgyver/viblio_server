@@ -3,23 +3,26 @@ define([
         'lib/viblio',
         'knockout',
         'viewmodels/ta-header',
-        'viewmodels/folder'],
-function(app,viblio,ko,taHeader,Folder) {
+        'viewmodels/folder',
+        'viewmodels/miller'],
+function(app,viblio,ko,taHeader,Folder,miller) {
     var folders = ko.observableArray();
+    var testDir = ko.observable();
+    
+    showMiller = function() {
+        app.showDialog(miller);
+    };
+    
+    getStats = function() {
+        viblio.api( '/stats' ).then( function( data ) {
+            console.log( data );
+        });
+    };
     
     return {
         taHeader: taHeader,
         folders: app.watchdirs,
         
-        compositionComplete: function() {
-	    /**
-            $("#columns").hColumns({
-                nodeSource: function(node_id, callback) {
-                }
-            });
-	    **/
-        },
-
 	scan: function() {
 	    app.showMessage( 'Whamo' );
 	    viblio.api( '/scan' );
