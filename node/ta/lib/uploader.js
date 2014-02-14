@@ -122,7 +122,12 @@ Uploader.prototype.initialize = function( data ) {
 //
 Uploader.prototype.upload = function( doneCallback ) {
     var self = this;
-    // var dfd  = new Deferred();
+
+    // If we get into the queue in a pause or cancel state,
+    // then that means user did a cancel all or pause all,
+    // so we're not suppossed to execute.
+    if ( self.pause || self.cancel )
+	return doneCallback();
 
     async.series({
 	start: function( cb ) {
@@ -233,11 +238,7 @@ Uploader.prototype.upload = function( doneCallback ) {
 	    self.emit( 'done' );
 	}
 	doneCallback( err );
-	//if ( err ) dfd.reject( err );
-	//else dfd.resolve();
     });
-
-    // return dfd.promise;
 }
 
 // Do one POST

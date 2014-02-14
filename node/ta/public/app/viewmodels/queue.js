@@ -8,6 +8,8 @@ function(app,viblio,ko) {
 
     function _basename( path ) { return path.replace(/.*\//, "").replace( /.*\\/, "" ); }
 
+    var inprogress = 0;
+
     var total = 0;
     var sent  = 0;
     var BR = 0;
@@ -18,6 +20,9 @@ function(app,viblio,ko) {
     var overall_bitrate = ko.observable();
     var overall_percent = ko.observable();
     var overall_size    = ko.observable();
+
+    var total_files_uploaded = ko.observable(0);
+    var total_data_uploaded  = ko.observable('0 MB');
 
     function _reset() {
 	files.removeAll();
@@ -64,12 +69,14 @@ function(app,viblio,ko) {
     };
 
     function _add( data ) {
+	inprogress += 1;
 	data.basename = _basename( data.filename );
 	files.push( data );
 	total += data.length;
 	if ( start_time == 0 )
 	    start_time = new Date().getTime();
 	$(view).find( '.vup-stats' ).css( 'visibility', 'visible' );
+	showControls();
     }
 
     app.on( 'mq:file:add', function( data ) {
@@ -93,9 +100,10 @@ function(app,viblio,ko) {
 
 	    var end_time = new Date().getTime();
 	    var bits_sec = (sent * 8) / ( (end_time/1000) - (start_time/1000) );
-	    BR += bits_sec;
-	    BP += 1;
-	    overall_bitrate( _formatBitrate( BR/BP ) );
+	    //BR += bits_sec;
+	    //BP += 1;
+	    //overall_bitrate( _formatBitrate( BR/BP ) );
+	    overall_bitrate( _formatBitrate( bits_sec ) );
 	    overall_percent( _formatPercentage( sent / total ) );
 	    overall_size( _formatFileSize( sent  ) + '/' + 
 			  _formatFileSize( total ) );
@@ -107,6 +115,8 @@ function(app,viblio,ko) {
 	    var elm = $(view).find('span[uuid="'+data.id+'"]');
 	    elm.css( 'width', '100%' );
 	    elm.html( 'DONE' );	
+	    inprogress -= 1;
+	    hideFileControls( data.id );
 	}
     });
     
@@ -114,6 +124,8 @@ function(app,viblio,ko) {
 	var elm = $(view).find('span[uuid="'+data.id+'"]');
 	elm.css( 'width', '100%' );
 	elm.html( 'FAILED' );	
+	inprogress -= 1;
+	hideFileControls( data.id );
     });
     
     app.on( 'mq:file:retry', function( data ) {
@@ -130,22 +142,50 @@ function(app,viblio,ko) {
 	var elm = $(view).find('span[uuid="'+data.id+'"]');
 	elm.css( 'width', '100%' );
 	elm.html( 'CANCELLED' );	
+	inprogress -= 1;
+	hideFileControls( data.id );
     });
     
     app.on( 'mq:q:drain', function() {
-	app.showMessage( 'All files uploaded.  We will start working on them now.',
-			 'Uploaded' ).then( function() {
-			     _reset();
-			     $(view).find( '.vup-stats' ).css( 'visibility', 'hidden' );
-			 });
-			 
+	_getStats();
+	if ( inprogress <= 0 ) {
+	    app.showMessage( 'All files uploaded.  We will start working on them now.',
+			     'Uploaded' ).then( function() {
+				 _reset();
+				 $(view).find( '.vup-stats' ).css( 'visibility', 'hidden' );
+			     });
+	    hideControls();
+	}
     });
+
+    function _getStats() {
+	viblio.api( '/stats' ).then( function( stats ) {
+	    total_files_uploaded( stats.total );
+	    total_data_uploaded( _formatFileSize( stats.bytes ) );
+	});
+    }
+
+    function showControls() {
+	$(view).find( '.vup-all-control' ).css( 'visibility', 'visible' );
+    }
+
+    function hideControls() {
+	$(view).find( '.vup-all-control' ).css( 'visibility', 'hidden' );
+    }
+
+    function hideFileControls(fid) {
+	$(view).find('span[uuid="'+fid+'"]')
+	    .parent().parent().find( 'a' )
+	    .css( 'visibility', 'hidden' );
+    }
 
     return {
 	files: files,
 	overall_bitrate: overall_bitrate,
 	overall_percent: overall_percent,
 	overall_size: overall_size,
+	total_files_uploaded: total_files_uploaded,
+	total_data_uploaded: total_data_uploaded,
 
 	attached: function( _view ) {
 	    view = _view;
@@ -155,12 +195,63 @@ function(app,viblio,ko) {
 	    _reset();
 	},
 
+	pause: function( me, e ) {
+	    var btn = $(e.target);
+	    if ( btn.html() == 'Pause All' ) {
+		viblio.api( '/pause' ).then(
+		    function() {
+			files().forEach( function( f ) {
+			    f.paused = true;
+			    $(view).find('span[uuid="'+f.id+'"]')
+				.parent().parent().find( '.icon-pause' )
+				.removeClass( 'icon-pause' ).addClass( 'icon-play' );
+				
+			});
+			btn.html( 'Resume All' );
+		    },
+		    function(err) {
+			app.showMessage( err.message );
+		    }
+		);
+	    }
+	    else {
+		viblio.api( '/resume' ).then(
+		    function() {
+			files().forEach( function( f ) {
+			    f.paused = false;
+			    $(view).find('span[uuid="'+f.id+'"]')
+				.parent().parent().find( '.icon-play' )
+				.removeClass( 'icon-play' ).addClass( 'icon-pause' );
+				
+			});
+			btn.html( 'Pause All' );
+		    },
+		    function(err) {
+			app.showMessage( err.message );
+		    }
+		);
+	    }
+	},
+
+	cancel: function( me, e ) {
+	    viblio.api( '/cancel' ).then( 
+		function() {
+		    
+		},
+		function(err) {
+		    app.showMessage( err.message );
+		}
+	    );
+	},
+
 	pause_file: function( file, i ) {
 	    if ( file.paused ) {
+		$(i.target).css( 'visibility', 'hidden' );
 		viblio.api( '/resume', { fid: file.id } ).then( 
 		    function() {
-			$(i).removeClass( 'icon-play' );
-			$(i).addClass( 'icon-pause' );
+			$(i.target).removeClass( 'icon-play' );
+			$(i.target).addClass( 'icon-pause' );
+			$(i.target).css( 'visibility', 'visible' );
 			file.paused = false;
 		    },
 		    function(err) {
@@ -169,10 +260,12 @@ function(app,viblio,ko) {
 		);
 	    }
 	    else {
+		$(i.target).css( 'visibility', 'hidden' );
 		viblio.api( '/pause', { fid: file.id } ).then( 
 		    function() {
-			$(i).removeClass( 'icon-pause' );
-			$(i).addClass( 'icon-play' );
+			$(i.target).removeClass( 'icon-pause' );
+			$(i.target).addClass( 'icon-play' );
+			$(i.target).css( 'visibility', 'visible' );
 			file.paused = true;
 		    },
 		    function(err) {
@@ -183,15 +276,23 @@ function(app,viblio,ko) {
 	},
 
 	cancel_file: function( file, i ) {
-	    viblio.api( '/cancel', { fid: file.id } ).then( 
-		function() {
-		    file.cancelled = true;
-		},
-		function(err) {
-		    app.showMessage( err.message );
-		}
-	    );
+	    if ( ! file.cancelled ) {
+		viblio.api( '/cancel', { fid: file.id } ).then( 
+		    function() {
+			$(i.target).parent().siblings().css( 'visibility', 'hidden' );
+			$(i.target).parent().css( 'visibility', 'hidden' );
+			file.cancelled = true;
+		    },
+		    function(err) {
+			app.showMessage( err.message );
+		    }
+		);
+	    }
 	},
+
+	compositionComplete: function( _view ) {
+	    _getStats();
+	}
 
     };
 });

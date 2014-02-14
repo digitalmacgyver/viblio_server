@@ -19,11 +19,10 @@ define(['durandal/app','durandal/system'], function(app, system) {
 		if ( ! subscribed ) {
 		    try {
 			var s = mq.subscribe( '/TA', function( msg ) {
-			    system.log( 'received a message!', msg );
+			    //system.log( 'received a message!', msg );
 			    app.trigger( 'mq:'+msg.mtype, msg.data );
 			});
 			s.callback( function(arg) {
-			    console.log( 'FAYE CALLBACK:', arg );
 			    subscribed = true;
 			    app.trigger( 'mq:subscribed' );
 			});

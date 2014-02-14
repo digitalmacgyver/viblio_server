@@ -63,8 +63,8 @@ module.exports = {
     setItem: function( key, value, callback ) {
 	var filename = path.join( location, encodeURIComponent(key) );
 	fs.writeFile( filename, value, { encoding: 'utf8' }, function(err) {
+	    // cache it
 	    if ( ! cacheHash[key] ) {
-		// cache it
 		cacheHash[key] = value;
 		cacheArray.push( key );
 		_length = cacheArray.length;

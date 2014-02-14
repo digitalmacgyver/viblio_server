@@ -13,18 +13,12 @@ function(app,viblio,ko,taHeader,Folder,miller) {
         app.showDialog(miller);
     };
     
-    getStats = function() {
-        viblio.api( '/stats' ).then( function( data ) {
-            console.log( data );
-        });
-    };
-    
     return {
         taHeader: taHeader,
         folders: app.watchdirs,
-        
+        newuser: app.newUser,
+
 	scan: function() {
-	    app.showMessage( 'Whamo' );
 	    viblio.api( '/scan' );
 	},
 

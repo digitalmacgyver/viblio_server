@@ -66,13 +66,16 @@ Queuer.prototype.handler = function( f, err, results ) {
 	}
     }
     else {
-	self.log.debug( f.fileid + ' is finished.' );
-	queue.set( 'md5:'+f.md5, f.toJSON() );  // Done uploading, remember md5
-	queue.del( 'id:'+f.id );                // remove from queue storage
+	if ( ! f.paused ) {
+	    self.log.debug( f.fileid + ' is finished.' );
+	    if ( ! f.cancelled )
+		queue.set( 'md5:'+f.md5, f.toJSON() );  // Done uploading, remember md5
+	    queue.del( 'id:'+f.id );                // remove from queue storage
 
-	self.emit( 'file:done', f );
-	delete self.in_memory[ f.id ];
-	mq.send( 'file:done', JSON.parse( f.toJSON() ) )
+	    self.emit( 'file:done', f );
+	    delete self.in_memory[ f.id ];
+	    mq.send( 'file:done', JSON.parse( f.toJSON() ) )
+	}
     }
 };
 
@@ -80,6 +83,7 @@ Queuer.prototype.add = function( filename, data ) {
     var self = this;
     var dfd  = new Deferred();
     var _md5;
+    var size = 0;
     privates.get( 'uuid' ).then( function( uuid ) {
 	async.series([
 	    function( xcb ) {
@@ -100,7 +104,15 @@ Queuer.prototype.add = function( filename, data ) {
 		}
 	    },
 	    function( xcb ) {
+		fs.stat( filename, function(err, stat ) {
+		    if ( ! err )
+			size = stat.size;
+		    xcb( err );
+		});
+	    },
+	    function( xcb ) {
 		var f = new Uploader( filename, uuid );
+		f.length = size;
 		if ( data ) 
 		    f.initialize( data );
 		else
@@ -218,7 +230,11 @@ Queuer.prototype.pause = function( fid ) {
 
     var f = self.in_memory[ fid ];
 
-    if ( ! f.started ) {
+    if ( f.paused ) {
+	dfd.resolve();
+    }
+    else if ( ! f.started ) {
+	f.pause = true; f.paused = true;
 	dfd.resolve();
     }
     else {
@@ -253,8 +269,13 @@ Queuer.prototype.resume = function( fid ) {
 	dfd.resolve();
     }
     else {
-	self.add( f.filename, f );
-	dfd.resolve();
+	f.pause = false; f.paused = false;
+	async.nextTick( function() {
+	    self.q.push( f, function( err, results ) {
+		self.handler( f, err, results );
+	    });
+	    dfd.resolve();
+	});
     }
 
     return dfd.promise;
@@ -272,6 +293,7 @@ Queuer.prototype.cancel = function( fid ) {
     var f = self.in_memory[ fid ];
 
     if ( ! f.started ) {
+	f.cancel = true; f.cancelled = true;
 	self.emit( 'file:cancelled', f );
 	mq.send( 'file:cancelled', JSON.parse( f.toJSON() ) );
 	delete self.in_memory[ f.id ];
@@ -282,7 +304,7 @@ Queuer.prototype.cancel = function( fid ) {
 	    function() {
 		self.emit( 'file:cancelled', f );
 		mq.send( 'file:cancelled', JSON.parse( f.toJSON() ) );
-		delete in_memory[ f.id ];
+		delete self.in_memory[ f.id ];
 		f.deleteUpload().then(
 		    function() {
 			dfd.resolve();
@@ -310,9 +332,11 @@ Queuer.prototype.cancelAll = function() {
     for( var fid in self.in_memory ) {
 	fids.push( fid );
     }
+    var count = 0;
     async.map( fids, 
 	       function( fid, cb ) {
 		   self.cancel( fid ).then( function() {
+		       console.log( 'cancelled', ( ++count ), fid );
 		       cb();
 		   }, function( err ) {
 		       cb(err);

@@ -11,6 +11,7 @@ var routines = require( './lib/routines' );
 var queuer = require( './lib/queuer' );
 var fs = require( 'fs' );
 var Scanner = require( './lib/scan' );
+var pj = require( './package.json' );
 
 // config
 var config = require( './lib/app-config' );
@@ -30,7 +31,7 @@ var winston = require( "winston" );
 var app = express();
 mq.init();
 
-var logfile = path.join( platform.tmpdir(), config.name + '.log' );
+var logfile = path.join( platform.tmpdir(), pj.name + '.log' );
 
 var log = new (winston.Logger)({
     transports: [
@@ -458,6 +459,9 @@ app.post( '/cancel', function( req, res, next ) {
 	);
     }
     else {
+	queuer.cancelAll();
+	res.stash = {}; next();
+/*
 	queuer.cancelAll().then(
 	    function() {
 		res.stash = {}; next();
@@ -467,6 +471,7 @@ app.post( '/cancel', function( req, res, next ) {
 		next();
 	    }
 	);
+*/
     }
 });
 

@@ -1,4 +1,13 @@
-<div class="queue">
+<div class="queue" data-bind="visible: files().length">
+  <div style="visibility: hidden;" class="vup-all-control">
+    <div class="pull-right">
+      <button class="cancel-button btn btn-small btn-primary"
+	      data-bind="click: cancel">Cancel All</button>
+      <button class="pause-button btn btn-small btn-warning"
+	      data-bind="click: pause">Pause All</button>
+    </div>
+    <div class="clearfix"></div>
+  </div>
   <div class="vup-area">
     <table class="vup-files" data-bind="foreach: files">
       <tr>
@@ -26,6 +35,15 @@
 	<td><span class="vup-data-title">Percent Done</span></td>
 	<td><span class="vup-data-title">Data Uploaded</span></td>
       </tr>
+    </table>
+  </div>
+</div>
+
+<div class="stats" data-bind="visible: files().length==0">
+  <div>
+    <table>
+      <tr><td>Files Uploaded:</td><td data-bind="text: total_files_uploaded">0</td></tr>
+      <tr><td>Data Uploaded:</td><td data-bind="text: total_data_uploaded"> 0 MB</td></tr>
     </table>
   </div>
 </div>

@@ -71,6 +71,7 @@ function (router, app, system, Folder, viblio, ko) {
     // remove watchdirs.  
     //
     app.watchdirs = ko.observableArray([]);
+    app.newUser = ko.observable( false );
     app.watchHash = {};
     function getFolders() {
 	viblio.api( '/all_dirs' ).then( function( data ) {
@@ -79,6 +80,7 @@ function (router, app, system, Folder, viblio, ko) {
 	    if ( data.watchdirs.length == 0 ) {
 		dirs = data.defaults;
 		watched = false;
+		app.newUser( true );
 	    }
 	    dirs.forEach( function( dir ) {
 		var folder = new Folder( dir );
@@ -131,7 +133,7 @@ function (router, app, system, Folder, viblio, ko) {
 		    if ( data.error ) {
 			if ( err_callback )
 			    err_callback( data.message );
-			delete app.watchHash[ folder.name() ];
+			delete app.watchHash[ folder.label() ];
 			setTimeout( function() {
 			    app.watchdirs.remove( folder );
 			},0 );
@@ -142,7 +144,7 @@ function (router, app, system, Folder, viblio, ko) {
     };
     app.removeFolder = function( folder ) {
 	app.watchdirs.remove( folder );
-	delete app.watchHash[ folder.name() ];
+	delete app.watchHash[ folder.label() ];
 	viblio.api( '/remove_watchdir', { dir: folder.path() } );
     };
     //

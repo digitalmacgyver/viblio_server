@@ -9,14 +9,16 @@
             <p class="mainTitle textShadowed">My Computer</p>
           </div>
           <div class="s-content s-left-content">
-	    <button data-bind="click: scan">scan</button>
+	    <!-- <button data-bind="click: scan">scan</button> -->
             <div>
-              <h1>Status Screen <small>Settings and status</small></h1>
+              <h1>Your Videos <small>Upload videos in these folders</small></h1>
             </div>
-            <p>Show currently watched dirs, and show the queue and upload progress if anything is running.  Allow user
-              to add or remove watched dirs.
+            <p>These folders are in your watch list.  Any new videos that appear in
+	      these folders will be uploaded to Viblio.
             </p>
-            <p>Maybe also show lifetime total uploaded bytes?  Other stats?
+            <p data-bind="visibile: newuser">Folders with a &lt;sync&gt; button are folders we suggest that you add to
+	      your watch list.  Click on the &lt;sync&gt; button to add them.  You
+	      may also add your own folders. 
             </p>
             <!-- ko foreach: folders -->
             <!-- ko compose: $data --><!-- /ko -->
@@ -25,11 +27,12 @@
 	    <p/>
             <a href="#" data-bind="click: showMiller">Add more folders to sync &raquo;</a>
 	    <p/>
+	    <!--
 	    <div>
 	      <button data-bind="click: testadd">testadd</button>
 	      <button data-bind="click: testfail">testfail</button>
 	    </div>
-	    
+	    -->
           </div>
         </div>
       </td>
