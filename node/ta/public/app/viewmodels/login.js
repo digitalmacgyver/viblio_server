@@ -13,7 +13,8 @@ function( router, app, system, viblio, config, ko ) {
     var password = ko.observable();
     var password_entry_error = ko.observable( false );
 
-    fb_appid   = config.facebook_appid();
+    // The ViblioTA appid
+    fb_appid   = '472956982833417';
     fb_channel = config.facebook_channel();
 
     FB.init({
