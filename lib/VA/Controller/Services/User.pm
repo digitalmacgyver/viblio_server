@@ -565,18 +565,17 @@ sub change_password :Local {
 
 sub tell_a_friend :Local {
     my( $self, $c ) = @_;
-    my $list = $c->req->param( 'list' );
+    my @list = $c->req->param( 'list[]' );
     my $message = $c->req->param( 'message' );
 
     my $user = $c->user->obj;
 
     # We don't want to return any errors from this routine
-    unless( $list && $message ) {
+    unless( ($#list >= 0) && $message ) {
 	$self->status_ok( $c, {} );
     }
 
-    my @list = split( /[ ,]+/, $list );
-    my @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
+    my @clean = $self->expand_email_list( $c, \@list );
 
     foreach my $recip ( @clean ) {
 	$self->send_email( $c, {

@@ -473,11 +473,68 @@ __PACKAGE__->has_many(
 );
 
 __PACKAGE__->has_many(
-  "contacts",
-  "VA::RDSSchema::Result::Contact",
-  { "foreign.user_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
+    "albums" => "VA::RDSSchema::Result::Media",
+    { "foreign.user_id" => "self.id" },
+    { cascade_copy => 0, 
+      cascade_delete => 0,
+      where => { "me.is_album" => 1 }
+    },
 );
+
+__PACKAGE__->has_many(
+    "videos" => "VA::RDSSchema::Result::Media",
+    { "foreign.user_id" => "self.id" },
+    { cascade_copy => 0, 
+      cascade_delete => 0,
+      where => { "me.is_album" => 0,
+		 -or => [ "me.status" => "visible",
+			  "me.status" => "complete" ] }
+    },
+);
+
+__PACKAGE__->has_many(
+    "contacts" => "VA::RDSSchema::Result::Contact",
+    { "foreign.user_id" => "self.id" },
+    { cascade_copy => 0, 
+      cascade_delete => 0,
+      where => { 'me.is_group' => 0 }
+    },
+);
+
+# groups the user owns
+__PACKAGE__->has_many(
+    "groups" => "VA::RDSSchema::Result::Contact",
+    { "foreign.user_id" => "self.id" },
+    { cascade_copy => 0, 
+      cascade_delete => 0,
+      where => { 'me.is_group' => 1 }
+    },
+);
+
+__PACKAGE__->has_many(
+    "contacts_and_groups" => "VA::RDSSchema::Result::Contact",
+    { "foreign.user_id" => "self.id" },
+    { cascade_copy => 0, 
+      cascade_delete => 0 }
+);
+
+sub is_member_of {
+    my( $self, $gid ) = @_;
+    if ( $gid ) {
+	my $rs = $self->result_source->schema->resultset( 'ContactGroup' )->search
+	    ({'contact.contact_email'=>$self->email,
+	      'cgroup.uuid' => $gid},
+	     {prefetch=>['contact','cgroup']});
+	if ( $rs ) { return $rs->count; }
+	else { return 0; }
+    }
+    else {
+	my @cgroups = $self->result_source->schema->resultset( 'ContactGroup' )->search
+	    ({'contact.contact_email'=>$self->email},
+	     {prefetch=>['contact','cgroup']});
+	return map { $_->cgroup } @cgroups;
+    }
+}
 
 # A user really only has one profile
 __PACKAGE__->has_one(

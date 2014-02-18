@@ -643,7 +643,7 @@ contact list unless it is already present.
 sub add_share :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $list = $c->req->param( 'list' );
+    my @list = $c->req->param( 'list[]' );
     my $subject = $c->req->param( 'subject' );
     my $body = $c->req->param( 'body' );
     my $disposition = $c->req->param( 'private' );
@@ -655,10 +655,9 @@ sub add_share :Local {
 	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
     }
     
-    if ( $list ) {
-	my @list = split( /[ ,]+/, $list );
-	my @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
+    if ( $#list >=0 ) {
 	my $addrs = {};
+	my @clean = $self->expand_email_list( $c, \@list );
 	foreach my $email ( @clean ) {
 	    my $share;
 	    my $recip = $c->model( 'RDS::User' )->find({ email => $email });
@@ -714,7 +713,8 @@ sub add_share :Local {
  		}
 
 		# Add to user's contact list
-		my $contact = $c->user->obj->find_or_create_related( 'contacts', { contact_email => $email, contact_name => $email } );
+		# my $contact = $c->user->obj->find_or_create_related( 'contacts', { contact_email => $email, contact_name => $email } );
+		my $contact = $self->create_contact( $c, $email );
 		unless( $contact ) {
 		    $c->log->error( "Failed to create a contact out of a shared email address!" );
 		}

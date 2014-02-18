@@ -485,7 +485,7 @@ sub contact_emails :Local {
 		       'LOWER(contact_name)' => { 'like', '%'.lc($q).'%' },
 		       'LOWER(contact_email)' => { 'like', '%'.lc($q).'%' },
 		      ] };
-    my @contacts = $c->user->contacts->search($where);
+    my @contacts = $c->user->contacts_and_groups->search($where);
 
     if ( $#contacts == -1 ) {
 	my $email = $self->is_email_valid( $q );
