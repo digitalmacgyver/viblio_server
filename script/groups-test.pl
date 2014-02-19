@@ -8,8 +8,6 @@ $c = VA->new;
 $user = $c->model( 'RDS::User' )->find({ email => 'aqpeeb@gmail.com' });
 $c->user( $user );
 
-$services = VA::Controller::Services->new( $c );
-
 # New relationships added for getting albums and videos:
 @albums = $user->albums;
 @videos = $user->videos;
@@ -17,14 +15,14 @@ $services = VA::Controller::Services->new( $c );
 print sprintf( "%s has %d albums\n", $user->displayname, ( $#albums + 1 ) );
 print sprintf( "%s has %d videos\n", $user->displayname, ( $#videos + 1 ) );
 
-$group = $services->create_group( $c, 'Matt and Bidyut', 'matt@viblio.com,bidyut@viblio.com' );
+$group = $user->create_group( 'Matt and Bidyut', 'matt@viblio.com,bidyut@viblio.com' );
 if( $group ) {
     print sprintf( "Created a group called %s\n", $group->contact_name );
 }
 else {
     print "For some reason, group is undefined\n";
 }
-$group = $services->create_group( $c, 'Matt and Mona', 'matt@viblio.com,mona@viblio.com' );
+$group = $user->create_group( 'Matt and Mona', 'matt@viblio.com,mona@viblio.com' );
 
 @groups = $user->groups;
 print sprintf( "%s owns %d groups\n", $user->displayname, ( $#groups + 1 ) );

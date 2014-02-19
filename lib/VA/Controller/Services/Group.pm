@@ -10,7 +10,7 @@ sub create :Local {
     my $name = $c->req->param( 'name' );
     my $list = $c->req->param( 'list' );
 
-    my $group = $self->create_group( $c, $name, $list );
+    my $group = $c->user->create_group( $name, $list );
     unless( $group ) {
 	$self->status_bad_request( 
 	    $c, $c->loc( 'Unable to create group [_1]', $name ) );

@@ -462,6 +462,15 @@ __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:51
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bK65PAD554nWisep7G9mWA
+use Email::AddressParser;
+use Email::Address;
+
+sub is_email_valid {
+    my( $self, $email ) = @_;
+    my @addresses = Email::Address->parse( $email );
+    return undef if ( $#addresses == -1 );
+    return $addresses[0];
+}
 
 # I like this relationship name better
 #
@@ -606,6 +615,99 @@ sub create_profile {
                                       value => 'True',
                                       public => 1 } );
 }
+
+sub create_contact {
+    my( $self, $email_or_name ) = @_;
+    my $address = $self->is_email_valid( $email_or_name );
+    my( $email, $name, $contact );
+    my $needs_update = 0;
+
+    if ( $address ) { $email = $email_or_name; }
+    else { $name = $email_or_name; }
+    if ( $email ) {
+	$name = $address->name;
+	$contact = $self->find_or_create_related(
+	    'contacts', { contact_email => $email });
+	unless( $contact ) {
+	    die "Unable to create contact";
+	}
+	unless( $contact->contact_name ) {
+	    $contact->contact_name( $name );
+	    $needs_update = 1;
+	}
+	unless( $contact->contact_viblio_id ) {
+	    my $vuser = $self->result_source->schema->resultset( 'User' )
+		->find({ email => $email });
+	    if ( $vuser ) {
+		$contact->contact_viblio_id( $vuser->id );
+		$needs_update = 1;
+	    }
+	}
+    }
+    elsif ( $name ) {
+	$contact = $self->find_or_create_related(
+	    'contacts', { contact_name => $name });
+	unless( $contact ) {
+	    die "Unable to create contact";
+	}	
+    }
+
+    if ( $needs_update ) { $contact->update; }
+    return $contact;
+}
+
+sub create_group {
+    my( $self, $name, $list ) = @_;
+    my @clean = ();
+
+    if ( $list && (ref $list eq 'ARRAY') ) {
+        @clean = @$list;
+    }
+    elsif ( $list ) {
+        my @list = split( /[ ,]+/, $list );
+        @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
+    }
+
+    my @new_contacts = ();
+    my @display_names = ();
+
+    foreach my $email ( @clean ) {
+        my $contact = $self->create_contact( $email );
+	push( @new_contacts, $contact );
+        push( @display_names, $contact->contact_name );
+    }
+
+    # Create a name for this group unless supplied
+    unless( $name ) {
+        if ( $#display_names == -1 ) {
+            $name = 'Unnamed Group';
+        }
+        elsif ( $#display_names == 0 ) {
+            $name = $display_names[0] . ' Group';
+        }
+        elsif ( $#display_names == 1 ) {
+            $name = join( ', ', @display_names );
+        }
+        elsif ( $#display_names > 1 ) {
+            $name = $display_names[0] . ', ' .
+		   $display_names[1] . ' and others';
+	}
+    }
+
+    my $group = $self->find_or_create_related(
+	'contacts', {
+	    is_group => 1,
+	    contact_name => $name });
+    unless( $group ) {
+	die "Cannot create group: $name";
+    }
+    foreach my $contact ( @new_contacts ) {
+	$self->result_source->schema->resultset( 'ContactGroup' )
+	    ->find_or_create({ group_id => $group->id, contact_id => $contact->id });
+    }
+    return $group;
+}
+
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;

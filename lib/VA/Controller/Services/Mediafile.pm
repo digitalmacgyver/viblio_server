@@ -714,7 +714,7 @@ sub add_share :Local {
 
 		# Add to user's contact list
 		# my $contact = $c->user->obj->find_or_create_related( 'contacts', { contact_email => $email, contact_name => $email } );
-		my $contact = $self->create_contact( $c, $email );
+		my $contact = $c->user->create_contact( $email );
 		unless( $contact ) {
 		    $c->log->error( "Failed to create a contact out of a shared email address!" );
 		}
