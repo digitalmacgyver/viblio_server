@@ -156,6 +156,12 @@ __PACKAGE__->belongs_to(
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:45
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1NnU+gw+qvYmytDYxn8MVA
 
+__PACKAGE__->belongs_to(
+    "videos",
+    "VA::RDSSchema::Result::Media",
+    { id => "media_id" },
+    { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;

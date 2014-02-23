@@ -397,5 +397,11 @@ __PACKAGE__->has_many(
 __PACKAGE__->many_to_many( 'groups', 'contact_groups_groups', 'cgroup' );
 __PACKAGE__->many_to_many( 'contacts', 'contact_groups_contacts', 'contact' );
 
+__PACKAGE__->has_one(
+    "community",
+    "VA::RDSSchema::Result::Community",
+    { "foreign.members_id" => "self.id" },
+);
+
 __PACKAGE__->meta->make_immutable;
 1;

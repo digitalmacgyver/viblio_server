@@ -527,6 +527,8 @@ __PACKAGE__->has_many(
       cascade_delete => 0 }
 );
 
+# Called with a group uuid, return 1/0 if user is a member of
+# Called with no arg, return list of groups user is a member of
 sub is_member_of {
     my( $self, $gid ) = @_;
     if ( $gid ) {
@@ -542,6 +544,26 @@ sub is_member_of {
 	    ({'contact.contact_email'=>$self->email},
 	     {prefetch=>['contact','cgroup']});
 	return map { $_->cgroup } @cgroups;
+    }
+}
+
+# Called with a community uuid, return 1/0 if user is a member of
+# Called with no arg, return list of communities user is a member of
+sub is_community_member_of {
+    my( $self, $gid ) = @_;
+    if ( $gid ) {
+	my $rs = $self->result_source->schema->resultset( 'ContactGroup' )->search
+	    ({'contact.contact_email'=>$self->email,
+	      'community.uuid' => $gid},
+	     {prefetch=>['contact',{'cgroup'=>'community'}]});
+	if ( $rs ) { return $rs->count; }
+	else { return 0; }
+    }
+    else {
+	my @cgroups = $self->result_source->schema->resultset( 'ContactGroup' )->search
+	    ({'contact.contact_email'=>$self->email},
+	     {prefetch=>['contact',{'cgroup'=>'community'}]});
+	return map { $_->cgroup->community } @cgroups;
     }
 }
 
@@ -695,7 +717,7 @@ sub create_group {
     }
 
     my $group = $self->find_or_create_related(
-	'contacts', {
+	'groups', {
 	    is_group => 1,
 	    contact_name => $name });
     unless( $group ) {

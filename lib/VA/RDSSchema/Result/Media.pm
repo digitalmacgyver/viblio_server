@@ -500,11 +500,71 @@ __PACKAGE__->has_many(
   "media_albums_medias",
   "VA::RDSSchema::Result::MediaAlbum",
   { "foreign.album_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
+  { cascade_copy => 0, cascade_delete => 0,
+    where => { "media.is_album" => 0,
+	       -or => [ "media.status" => "visible",
+			"media.status" => "complete" ] }
+  },
+);
+__PACKAGE__->has_many(
+  "media_albums_videos",
+  "VA::RDSSchema::Result::MediaAlbum",
+  { "foreign.album_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0,
+    where => { "videos.is_album" => 0,
+	       -or => [ "videos.status" => "visible",
+			"videos.status" => "complete" ] }
+  },
 );
 __PACKAGE__->many_to_many( 'albums', 'media_albums_albums', 'album' );
 __PACKAGE__->many_to_many( 'media',  'media_albums_medias', 'media' );
+__PACKAGE__->many_to_many( 'videos',  'media_albums_videos', 'videos' );
 
+__PACKAGE__->has_one(
+    "community",
+    "VA::RDSSchema::Result::Community",
+    { "foreign.media_id" => "self.id" },
+);
+
+# Called with an album uuid, return 1/0 if video is a member of
+# Called with no arg, return list of albums video is a member of
+sub is_member_of {
+    my( $self, $gid ) = @_;
+    if ( $gid ) {
+	my $rs = $self->result_source->schema->resultset( 'MediaAlbum' )->search
+	    ({'videos.id'=>$self->id,
+	      'album.uuid' => $gid},
+	     {prefetch=>['videos','album']});
+	if ( $rs ) { return $rs->count; }
+	else { return 0; }
+    }
+    else {
+	my @cgroups = $self->result_source->schema->resultset( 'MediaAlbum' )->search
+	    ({'videos.id'=>$self->id},
+	     {prefetch=>['videos','album']});
+	return map { $_->album } @cgroups;
+    }
+}
+
+# Called with a community uuid, return 1/0 if video is a member of
+# Called with no arg, return list of communities video is a member of
+sub is_community_member_of {
+    my( $self, $gid ) = @_;
+    if ( $gid ) {
+	my $rs = $self->result_source->schema->resultset( 'MediaAlbum' )->search
+	    ({'videos.id'=>$self->id,
+	      'community.uuid' => $gid},
+	     {prefetch=>['videos',{'album'=>'community'}]});
+	if ( $rs ) { return $rs->count; }
+	else { return 0; }
+    }
+    else {
+	my @cgroups = $self->result_source->schema->resultset( 'MediaAlbum' )->search
+	    ({'videos.id'=>$self->id},
+	     {prefetch=>['videos',{'album'=>'community'}]});
+	return map { $_->album->community } @cgroups;
+    }
+}
 
 __PACKAGE__->meta->make_immutable;
 1;

@@ -278,6 +278,20 @@ __PACKAGE__->belongs_to(
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:42
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:DAR+hRqtknI2ZBfUWNFL/Q
 
+__PACKAGE__->uuid_columns( 'uuid' );
+
+__PACKAGE__->belongs_to(
+  "album",
+  "VA::RDSSchema::Result::Media",
+  { id => "media_id" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+    where => { "me.is_album" => 1 }
+  },
+);
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
