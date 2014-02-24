@@ -205,18 +205,53 @@ sub share_album :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
     my $members = $c->req->param( 'members[]' );
+    my $album = $c->user->albums->find({ uuid => $aid });
+    unless( $album ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not find this album' ) );
+    }
+    my $com = $c->user->create_shared_album( $album, $members );
+    unless( $com ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not share this album' ) );
+    }
+    $self->status_ok( $c, {} );    
 }
 
 sub add_members_to_shared :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
     my $members = $c->req->param( 'members[]' );
+    my $album = $c->user->albums->find({ uuid => $aid });
+    unless( $album ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not find this album' ) );
+    }
+    my $community = $album->community;
+    unless( $community ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not find community container for album' ) );
+    }
+    $community->members->add_contacts( $members );
+    $self->status_ok( $c, {} );        
 }
 
 sub remove_members_from_shared :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
     my $members = $c->req->param( 'members[]' );
+    my $album = $c->user->albums->find({ uuid => $aid });
+    unless( $album ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not find this album' ) );
+    }
+    my $community = $album->community;
+    unless( $community ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not find community container for album' ) );
+    }
+    $community->members->remove_contacts( $members );
+    $self->status_ok( $c, {} );        
 }
 
 sub delete_shared_album :Local {
@@ -232,7 +267,9 @@ sub delete_shared_album :Local {
 	$self->status_bad_request(
 	    $c, $c->loc( 'Could not find community container for album' ) );
     }
-    
+    $community->members->delete;
+    $community->delete;
+    $self->status_ok( $c, {} );
 }
 
 __PACKAGE__->meta->make_immutable;
