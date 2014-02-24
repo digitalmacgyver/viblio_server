@@ -403,5 +403,80 @@ __PACKAGE__->has_one(
     { "foreign.members_id" => "self.id" },
 );
 
+# Add more contacts to an existing contact group.
+# List can be a comma-delimited list of emails, an
+# array ref of emails, or another contact group.
+# If its another contact group, the contacts in
+# that group are added to this group.
+#
+sub add_contacts {
+    my( $self, $list ) = @_;
+    my $user = $self->user;
+
+    my @clean = ();
+    my @new_contacts = ();
+
+    if ( $list && (ref $list eq 'ARRAY') ) {
+        @clean = @$list;
+    }
+    elsif ( $list && ( ref $list eq 'VA::Model::RDS::Contact' ) ) {
+	@new_contacts = $list->contacts;
+    }
+    elsif ( $list ) {
+        my @list = split( /[ ,]+/, $list );
+        @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
+    }
+
+    if ( $#new_contacts == -1 ) {
+	foreach my $email ( @clean ) {
+	    my $contact = $user->create_contact( $email );
+	    push( @new_contacts, $contact );
+	}
+    }
+
+    foreach my $contact ( @new_contacts ) {
+	$self->result_source->schema->resultset( 'ContactGroup' )
+	    ->find_or_create({ group_id => $self->id, contact_id => $contact->id });
+    }
+}
+
+# Remove contacts from an existing contact group.
+# List can be a comma-delimited list of emails, an
+# array ref of emails, or another contact group.
+# If its another contact group, the contacts in
+# that group are removed from this group.
+#
+sub remove_contacts {
+    my( $self, $list ) = @_;
+    my $user = $self->user;
+
+    my @clean = ();
+    my @new_contacts = ();
+
+    if ( $list && (ref $list eq 'ARRAY') ) {
+        @clean = @$list;
+    }
+    elsif ( $list && ( ref $list eq 'VA::Model::RDS::Contact' ) ) {
+	@new_contacts = $list->contacts;
+    }
+    elsif ( $list ) {
+        my @list = split( /[ ,]+/, $list );
+        @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
+    }
+
+    if ( $#new_contacts == -1 ) {
+	foreach my $email ( @clean ) {
+	    my $contact = $user->find_related( 'contacts', { contact_email => $email } );
+	    push( @new_contacts, $contact ) if ( $contact );
+	}
+    }
+
+    foreach my $contact ( @new_contacts ) {
+	my $o = $self->result_source->schema->resultset( 'ContactGroup' )
+	    ->find({ group_id => $self->id, contact_id => $contact->id });
+	$o->delete if ( $o );
+    }
+}
+
 __PACKAGE__->meta->make_immutable;
 1;

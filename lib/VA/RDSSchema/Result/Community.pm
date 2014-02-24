@@ -293,6 +293,29 @@ __PACKAGE__->belongs_to(
   },
 );
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
+__PACKAGE__->belongs_to(
+  "members",
+  "VA::RDSSchema::Result::Contact",
+  { id => "members_id" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+  },
+);
+
+__PACKAGE__->belongs_to(
+  "curators",
+  "VA::RDSSchema::Result::Contact",
+  { id => "curators_id" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "CASCADE",
+    on_update     => "CASCADE",
+  },
+);
+
 __PACKAGE__->meta->make_immutable;
 1;
