@@ -516,7 +516,7 @@ __PACKAGE__->has_many(
     { "foreign.user_id" => "self.id" },
     { cascade_copy => 0, 
       cascade_delete => 0,
-      where => { 'me.is_group' => 1 }
+      where => { 'me.is_group' => 1, 'me.provider_id' => undef }
     },
 );
 
@@ -524,7 +524,9 @@ __PACKAGE__->has_many(
     "contacts_and_groups" => "VA::RDSSchema::Result::Contact",
     { "foreign.user_id" => "self.id" },
     { cascade_copy => 0, 
-      cascade_delete => 0 }
+      cascade_delete => 0,
+      where => {provider_id => undef}
+    }
 );
 
 # Called with a group uuid, return 1/0 if user is a member of
@@ -695,25 +697,39 @@ sub create_contact {
     return $contact;
 }
 
+# When creating a normal group, $provider will be NULL
+# but when creating a group intended as a membership
+# group, provider will be non-NULL and this can be used
+# to filter user observable groups.
 sub create_group {
-    my( $self, $name, $list ) = @_;
+    my( $self, $name, $list, $provider ) = @_;
     my @clean = ();
+
+    my @new_contacts = ();
+    my @display_names = ();
 
     if ( $list && (ref $list eq 'ARRAY') ) {
         @clean = @$list;
+    }
+    elsif ( $list && ( ref $list eq 'VA::Model::RDS::Contact' ) ) {
+	@new_contacts = $list->contacts;
     }
     elsif ( $list ) {
         my @list = split( /[ ,]+/, $list );
         @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
     }
 
-    my @new_contacts = ();
-    my @display_names = ();
-
-    foreach my $email ( @clean ) {
-        my $contact = $self->create_contact( $email );
-	push( @new_contacts, $contact );
-        push( @display_names, $contact->contact_name );
+    if ( $#new_contacts >= 0 ) {
+	foreach my $contact ( @new_contacts ) {
+	    push( @display_names, $contact->contact_name );
+	}
+    }
+    else {
+	foreach my $email ( @clean ) {
+	    my $contact = $self->create_contact( $email );
+	    push( @new_contacts, $contact );
+	    push( @display_names, $contact->contact_name );
+	}
     }
 
     # Create a name for this group unless supplied
@@ -736,6 +752,7 @@ sub create_group {
     my $group = $self->find_or_create_related(
 	'groups', {
 	    is_group => 1,
+	    provider_id => $provider,
 	    contact_name => $name });
     unless( $group ) {
 	die "Cannot create group: $name";
@@ -747,7 +764,24 @@ sub create_group {
     return $group;
 }
 
+# Utility to create a shared album
+sub create_shared_album {
+    my( $self, $album, $members ) = @_;
+    # Name of community is same as title of shared album
+    my $name = $album->title;
+    my $community = $self->create_related(
+	'communities', {
+	    name => ( $name || 'Unnamed' ),
+	    media_id => $album->id
+	});
+    # Want to make sure the membership group is a *copy*
+    # of anything passed in.  So give it a unique name.
+    my $group_name = $community->name . $community->id;
+    my $group = $self->create_group( $group_name, $members, '_shared_album' );
+    $community->members_id( $group->id );
+    $community->update;
+    return $community;
+}
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
 1;

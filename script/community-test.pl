@@ -8,6 +8,9 @@ $c = VA->new;
 $user = $c->model( 'RDS::User' )->find({ email => 'aqpeeb@gmail.com' });
 $c->user( $user );
 
+$matt = $c->model( 'RDS::User' )->find({ email => 'matt@viblio.com' });
+$mona = $c->model( 'RDS::User' )->find({ email => 'msabet@viblio.com' });
+
 # New relationships added for getting albums and videos:
 @albums = $user->albums;
 @videos = $user->videos;
@@ -29,15 +32,17 @@ if( $group ) {
 else {
     print "For some reason, group is undefined\n";
 }
-$matt = $c->model( 'RDS::User' )->find({ email => 'matt@viblio.com' });
-$mona = $c->model( 'RDS::User' )->find({ email => 'msabet@viblio.com' });
-
+=perl
 my $com = $user->find_or_create_related( 
     'communities', {
 	name => 'My video friends',
 	members_id => $group->id,
 	media_id => $albums[0]->id
     });
+=cut
+my $com = $user->create_shared_album
+    ( $albums[0], $group );
+
 print sprintf( "Community created, id=%d\n", $com->id );
 print "The album is called: " . $albums[0]->title, "\n";
 print "Media uuids in " . $com->name, "\n";
@@ -76,5 +81,15 @@ print $_->name, "\n" foreach( $video->is_community_member_of() );
 print "Can matt see the video?: " . $matt->can_view_video( $video->uuid ), "\n";
 print "Can mona see the video?: " . $mona->can_view_video( $video->uuid ), "\n";
 
+# Add mona to the shared album
+$com->members->add_contacts( $mona->email );
+print "After adding Mona, can mona see the video?: " . $mona->can_view_video( $video->uuid ), "\n";
+
+# Remove matt from the shared album
+$com->members->remove_contacts( $matt->email );
+print "After removing Matt, can Matt see the video?: " . $matt->can_view_video( $video->uuid ), "\n";
+
 print "Done\n";
+$com->members->delete;
+$com->delete;
 
