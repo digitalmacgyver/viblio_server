@@ -30,6 +30,7 @@ else {
     print "For some reason, group is undefined\n";
 }
 $matt = $c->model( 'RDS::User' )->find({ email => 'matt@viblio.com' });
+$mona = $c->model( 'RDS::User' )->find({ email => 'msabet@viblio.com' });
 
 my $com = $user->find_or_create_related( 
     'communities', {
@@ -70,8 +71,10 @@ print $_->title, "\n" foreach( $video->is_member_of() );
 print "The video " . $video->title . " is a member of the following communities\n";
 print $_->name, "\n" foreach( $video->is_community_member_of() );
 
+# can can see a particular mediafile ?
 
-
+print "Can matt see the video?: " . $matt->can_view_video( $video->uuid ), "\n";
+print "Can mona see the video?: " . $mona->can_view_video( $video->uuid ), "\n";
 
 print "Done\n";
 

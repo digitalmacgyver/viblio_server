@@ -567,6 +567,23 @@ sub is_community_member_of {
     }
 }
 
+# Given a mediafile uuid, is the user able to view it
+# via shared albums?
+sub can_view_video {
+    my( $self, $mid ) = @_;
+    my $rs1 = $self->result_source->schema->resultset( 'ContactGroup' )->search
+	({'contact.contact_email'=>$self->email},
+	 {prefetch=>['contact',{'cgroup'=>'community'}]});
+
+    my $rs2 = $self->result_source->schema->resultset( 'MediaAlbum' )->search
+	({'videos.uuid'=>$mid,
+	  'community.id' => {
+	      -in => $rs1->get_column('community.id')->as_query}},
+	 {prefetch=>['videos',{'album'=>'community'}]});
+
+    return ( $rs2->count );
+}
+
 # A user really only has one profile
 __PACKAGE__->has_one(
   "profile",

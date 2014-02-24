@@ -1217,6 +1217,19 @@ sub media_shared :Local {
 				media => $mf, owner => $mediafile->user->TO_JSON } );
     }
 
+    # If the user is logged in and they can see the video because
+    # of a shared album membership, show it
+    if ( $user && $user->can_view_video( $mediafile->uuid ) ) {
+	# increment the view count
+	$mediafile->view_count( $mediafile->view_count + 1 ) unless( $preview );
+	$mediafile->update;
+	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+	$self->status_ok( $c, { share_type => 'private', 
+				media => $mf, 
+				owner => $mediafile->user->TO_JSON } );
+	$self->detach;
+    }
+
     # Gather all of the media_shares ...
     my @shares = $mediafile->media_shares;
 
