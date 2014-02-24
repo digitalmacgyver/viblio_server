@@ -201,6 +201,37 @@ sub list_shared :Local {
     $self->status_ok( $c, { albums => \@data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
+# Similar to list_shared() but organized by sharer.  No paging because of this.
+# This returns something very similar to all_shared() for videos.
+sub list_shared_by_sharer :Local {
+    my( $self, $c ) = @_;
+    my @albums = map { $_->album } $c->user->is_community_member_of();
+    my @data = ();
+    my $users = {};
+    foreach my $album ( @albums ) {
+	my $owner = $album->user->displayname;
+	if ( ! defined( $users->{ $owner } ) ) {
+            $users->{ $owner } = [];
+        }
+        push( @{$users->{ $owner }}, $album );
+    }
+    my @sorted_user_keys = sort{ lc( $a ) cmp lc( $b ) } keys( %$users );
+    foreach my $key ( @sorted_user_keys ) {
+        my @as = ();
+	foreach my $album ( sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }} ) {
+	    my $a = VA::MediaFile->publish( $c, $album, { views => ['poster' ] } );
+	    my @m = ();
+	    push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
+	    $a->{media} = \@m;
+	    push( @as, $a );
+	}
+	push( @data, {
+	    owner => $users->{ $key }[0]->user->TO_JSON,
+            albums => \@as });
+    }
+    $self->status_ok( $c, { shared => \@data } );
+}
+
 sub share_album :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
