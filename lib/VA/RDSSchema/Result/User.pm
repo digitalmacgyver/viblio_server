@@ -501,6 +501,18 @@ __PACKAGE__->has_many(
     },
 );
 
+# Return an rs that can find *all* videos, both owned by
+# user and shared to user
+sub private_and_shared_videos {
+    my( $self ) = @_;
+    return $self->result_source->schema->resultset( 'Media' )->search(
+	{ -and =>  [ -or => ['me.user_id' => $self->id, 
+			     'media_shares.user_id' => $self->id], 
+		     -or => [status => 'visible',
+			     status => 'complete' ] ] },
+	{ prefetch => 'media_shares' });
+}
+
 __PACKAGE__->has_many(
     "contacts" => "VA::RDSSchema::Result::Contact",
     { "foreign.user_id" => "self.id" },

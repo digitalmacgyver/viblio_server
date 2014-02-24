@@ -9,8 +9,7 @@ sub list :Local {
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 100000;
 
-    my $rs = $c->user->media->search({ is_album => 1 },
-				     { page => $page, rows => $rows });
+    my $rs = $c->user->albums->search({},{ page => $page, rows => $rows });
     my @albums = $rs->all;
     my $pager = $rs->pager;
 
@@ -18,7 +17,7 @@ sub list :Local {
     foreach my $album ( @albums ) {
 	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
 	my @m = ();
-	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->media );
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
 	push( @data, $a );
@@ -43,8 +42,7 @@ sub create :Local {
     }
 
     if ( $initial_mid ) {
-	my $rs = $self->user_media( $c, { 'me.uuid' => $initial_mid } );
-	my $media = $rs->first;
+	my $media = $c->user->videos->find({ uuid => $initial_mid });
 	unless( $media ) {
 	    $self->status_bad_request( $c, $c->loc( 'Bad initial media uuid' ) );
 	}
@@ -171,6 +169,70 @@ sub delete_album :Local {
     $album->delete;
 
     $self->status_ok( $c, {} );
+}
+
+# List albums shared to me
+sub list_shared :Local {
+    my( $self, $c ) = @_;
+    my $page = $c->req->param( 'page' ) || 1;
+    my $rows = $c->req->param( 'rows' ) || 100000;
+
+    # Following copied from User::is_community_member_of() to enable paging
+    # my @albums = map { $_->album } $c->user->is_community_member_of();
+
+    my $rs = $c->model( 'RDS::ContactGroup' )->search
+	({'contact.contact_email'=>$c->user->email},
+	 { page => $page, rows => $rows,
+	   prefetch=>['contact',{'cgroup'=>'community'}]});
+
+    my @communities = map { $_->cgroup->community } $rs->all;
+    my @albums = map { $_->album } @communities;
+
+    my @data = ();
+    foreach my $album ( @albums ) {
+	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+	my @m = ();
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
+	$a->{media} = \@m;
+	$a->{owner} = $album->user->TO_JSON; 
+	push( @data, $a );
+    }
+
+    $self->status_ok( $c, { albums => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+}
+
+sub share_album :Local {
+    my( $self, $c ) = @_;
+    my $aid = $c->req->param( 'aid' );
+    my $members = $c->req->param( 'members[]' );
+}
+
+sub add_members_to_shared :Local {
+    my( $self, $c ) = @_;
+    my $aid = $c->req->param( 'aid' );
+    my $members = $c->req->param( 'members[]' );
+}
+
+sub remove_members_from_shared :Local {
+    my( $self, $c ) = @_;
+    my $aid = $c->req->param( 'aid' );
+    my $members = $c->req->param( 'members[]' );
+}
+
+sub delete_shared_album :Local {
+    my( $self, $c ) = @_;
+    my $aid = $c->req->param( 'aid' );
+    my $album = $c->user->albums->find({ uuid => $aid });
+    unless( $album ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not delete this album' ) );
+    }
+    my $community = $album->community;
+    unless( $community ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not find community container for album' ) );
+    }
+    
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -372,8 +372,8 @@ sub list :Local {
     my $self = shift; my $c = shift;
     my $args = $self->parse_args
       ( $c,
-        [ page => undef,
-          rows => 10,
+        [ page => 1,
+          rows => 10000,
 	  include_contact_info => 0,
 	  'views[]' => undef
         ],
@@ -384,29 +384,19 @@ sub list :Local {
 	views => $args->{'views[]'}
     };
 
-    my $rs = $c->user->media->search(
-	$self->where_valid_mediafile(),
+    my $rs = $c->user->videos->search(
+	{},
 	{ prefetch => 'assets',
+	  page => $args->{page}, rows => $args->{rows},
 	  order_by => { -desc => 'me.id' } } );
-
-    if ( $args->{page} ) {
-	my $rss = $rs->search({},{ page => $args->{page}, rows => $args->{rows}});
-	my $pager = $rss->pager;
-	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_, $params ) )
-	    foreach( $rss->all );
-	$self->status_ok(
-	    $c,
-	    { media => \@media,
-	      pager => $self->pagerToJson( $pager ),
-	    } );
-    }
-    else {
-	my @media = ();
-	push( @media, VA::MediaFile->new->publish( $c, $_, $params ) )
-	    foreach( $rs->all );
-	$self->status_ok( $c, { media => \@media } );
-    }
+    my @media = ();
+    push( @media, VA::MediaFile->new->publish( $c, $_, $params ) )
+	foreach( $rs->all );
+    $self->status_ok(
+	$c,
+	{ media => \@media,
+	  pager => $self->pagerToJson( $rs->pager ),
+	} );
 }
 
 sub popular :Local {
