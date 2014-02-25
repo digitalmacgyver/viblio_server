@@ -20,6 +20,7 @@ sub list :Local {
 	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
+	$a->{is_shared} = ( $album->community ? 1 : 0 );
 	push( @data, $a );
     }
 
@@ -241,7 +242,22 @@ sub share_album :Local {
 	$self->status_bad_request(
 	    $c, $c->loc( 'Could not find this album' ) );
     }
-    my $com = $c->user->create_shared_album( $album, $members );
+
+    # If this album is already shared, then do not create another one!
+    # Although technically possible to have multiple communities pointing to
+    # a single album, this makes the GUI very problematic!!  So, if the album is
+    # already shared, then merge the new list of members into the existing
+    # list of members.
+    #
+    my $com = $album->community;
+    if ( $com ) {
+	# Already exists
+	$com->members->add_contacts( $members );
+    }
+    else {
+	# Create a new shared album
+	$com = $c->user->create_shared_album( $album, $members );
+    }
     unless( $com ) {
 	$self->status_bad_request(
 	    $c, $c->loc( 'Could not share this album' ) );
@@ -302,6 +318,51 @@ sub delete_shared_album :Local {
     $community->delete;
     $self->status_ok( $c, {} );
 }
+
+# List the people that the shared album is shared with.  Returns:
+# { displayname: "nice string to display",
+#   members: [ array-of-contacts ]
+# }
+#
+sub shared_with :Local {
+    my( $self, $c ) = @_;
+    my $aid = $c->req->param( 'aid' );
+    my $album = $c->user->albums->find({ uuid => $aid });
+    unless( $album ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not delete this album' ) );
+    }
+    my $community = $album->community;
+    unless( $community ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not find community container for album' ) );
+    }
+    my @members = $community->members->contacts;
+    my $displayname = $c->loc( 'Shared with no one' );
+
+    my $count = $#members + 1;
+    if ( $count == 1 ) {
+	$displayname = $members[0]->contact_name;
+    }
+    elsif ( $count == 2 ) {
+	$displayname = sprintf( 
+	    "%s and %s",
+	    $members[0]->contact_name,
+	    $members[1]->contact_name );
+    }
+    elsif ( $count > 2 ) {
+	my $rem = $count - 2;
+	$displayname = sprintf(
+	    "%s, %s and %d other%s",
+	    $members[0]->contact_name,
+	    $members[1]->contact_name,
+	    $rem, ( $rem > 1 ? 's' : '' ));
+    }
+    
+    my @data = map { $_->TO_JSON } @members;
+    $self->status_ok( $c, { displayname => $displayname, members => \@data } );
+}
+
 
 __PACKAGE__->meta->make_immutable;
 
