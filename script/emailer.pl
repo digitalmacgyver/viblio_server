@@ -39,10 +39,9 @@ while( 1 ) {
     try {
 	$msg = decode_json( $message->MessageBody() );
     } catch {
-	$c->log->error( 'Could not decode: ' . $message->MessageBody() . ': ' . $_ );
+	$c->log->error( 'Emailer: Could not decode: ' . $message->MessageBody() . ': ' . $_ );
     };
 
-    $c->log->debug( encode_json( $msg ) );
     #
     # A decoded message is going to look something like this:
     #
@@ -70,12 +69,18 @@ while( 1 ) {
     # performing email sends, which can be time expensive.
     #
     if ( send_email( $c, $msg ) ) {
-	$c->log->error( 'Could not send email! ' . $message->MessageBody() );
+	$c->log->error( 'Emailer: Could not send email! ' . $message->MessageBody() );
+    }
+    else {
+	$c->log->info( 
+	    sprintf( "Emailer: Sent email: Subject: '%s': To: %s",
+		     ( $msg->{subject} || 'Unknown' ),
+		     ( $msg->{to} ? encode_json( $msg->{to} ) : 'Unknown' ) ));
     }
 
     my $res = $c->model( 'SQS', $c->config->{sqs}->{email} )->DeleteMessage( $message->ReceiptHandle() );
     if ( ! ( $res && $res->{ResponseMetadata} && $res->{ResponseMetadata}->{RequestId} ) ) {
-	$c->log->error( 'Trouble deleting message: ' . $message->ReceiptHandle() );
+	$c->log->error( 'Emailer: Trouble deleting message: ' . $message->ReceiptHandle() );
 	sleep 3;
     }
     # Without this, c->log output does not go out!
@@ -115,7 +120,7 @@ sub send_email {
     }
     my $res = $c->model( 'Mandrill' )->send( $headers );
     if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	$c->log->error( "Error using Mailchimp to send" );
+	$c->log->error( "Emailer: Error using Mailchimp to send" );
 	$c->logdump( $res );
 	$c->logdump( $headers );
     }
