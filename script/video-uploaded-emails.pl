@@ -96,32 +96,15 @@ if ( $report ) {
     print sprintf( "%-30s %-7s %-7s %-7s\n", "User", "Total", "Found", "Viewed" );
 }
 
-my $where = {
-    -and => [
-	 created_date => { '>', $dtf->format_datetime( $TARGET ) },
-	 -or => [ status => 'TranscodeComplete',
-		  status => 'FaceDetectComplete',
-		  status => 'FaceRecognizeComplete' ]
-	] };
-
 foreach my $user ( @users ) {
     unless ( $user->profile->setting( 'email_notifications' ) && $user->profile->setting( 'email_upload' ) ) {
 	print sprintf( "%-30s %s\n", $user->email, "does not want email" ) if ( $report );
 	next;
     }
-    my $total = $user->media->count({
-	-or => [ status => 'TranscodeComplete',
-		 status => 'FaceDetectComplete',
-		 status => 'FaceRecognizeComplete' ] });
-    my @media = $user->media->search({
-	-and => [
-	     'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
-	     -or => [ status => 'TranscodeComplete',
-		      status => 'FaceDetectComplete',
-		      status => 'FaceRecognizeComplete' ]
-	    ] }, {
-		prefetch => 'assets' } );
-
+    my $total = $user->videos->count();
+    my @media = $user->videos->search(
+	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) }},
+	{prefetch => 'assets' } );
     my @ids = map{ $_->id } @media;
     my @feat = $c->model( 'RDS::MediaAssetFeature' )
 	->search({'me.media_id' => { -in => \@ids }, 
