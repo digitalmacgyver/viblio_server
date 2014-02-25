@@ -436,6 +436,7 @@ sub TO_JSON {
     my $hash = { %{$self->{_column_data}} };
     delete $hash->{id};
     delete $hash->{user_id};
+    $hash->{owner_uuid} = $self->user->uuid;
     return $hash;
 }
 

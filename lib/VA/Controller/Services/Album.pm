@@ -165,8 +165,14 @@ sub delete_album :Local {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
     }
 
+    my $community = $album->community;
+    if ( $community ) {
+	$community->members->delete;
+	$community->delete;
+    }
+
     my $rs = $c->model( 'RDS::MediaAlbum' )->search({ album_id => $album->id });
-    $rs->delete;
+    $rs->delete if ( $rs );
     $album->delete;
 
     $self->status_ok( $c, {} );
@@ -298,6 +304,24 @@ sub remove_members_from_shared :Local {
 	    $c, $c->loc( 'Could not find community container for album' ) );
     }
     $community->members->remove_contacts( $members );
+    $self->status_ok( $c, {} );        
+}
+
+# Anyone shoud be able to remove themselves from a shared album membership
+sub remove_me_from_shared :Local {
+    my( $self, $c ) = @_;
+    my $aid = $c->req->param( 'aid' );
+    my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid });
+    unless( $album ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not find this album' ) );
+    }
+    my $community = $album->community;
+    unless( $community ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Could not find community container for album' ) );
+    }
+    $community->members->remove_contacts( $c->user->obj->email );
     $self->status_ok( $c, {} );        
 }
 
