@@ -38,30 +38,15 @@ sub mailchimp :Local {
     # https://mandrillapp.com/api/docs/
     my $model = {
 	subject => 'Testing Mailchimp',
-	from_email => 'reply@' . $c->config->{viblio_return_email_domain},
-	from_name  => 'Viblio',
 	to => [{
 	    email => $c->user->email,
 	    name  => $c->user->displayname }],
-	headers => {
-	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
+	template => 'test-email.tt',
+	stash => {
 	}
     };
-
-    $c->stash->{no_wrapper} = 1;
-    $c->stash->{model} = $model;
-
-    my $html = $c->view( 'HTML' )->render( $c, 'test-email.tt' );
-    $model->{html} = $html;
-    # $model->{text} = $text;
-
-    my $res = $c->model( 'Mandrill' )->send( $model );
-    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	$c->log->error( "Error using Mailchimp to send" );
-	$c->logdump( $res );
-	$c->logdump( $model );
-    }
-    $self->status_ok( $c, $res );
+    $self->send_email( $c, $model );
+    $self->status_ok( $c, {} );
 }
 
 sub template_test :Local {
@@ -80,19 +65,6 @@ sub template_test :Local {
     if ( $force_staging ne 'false' ) {
 	$c->{server_override} = 'http://staging.viblio.com/';
     }
-
-    my $headers = {
-	subject => $c->loc( "This is a test" ),
-	from_email => 'reply@' . $c->config->{viblio_return_email_domain},
-	from_name => 'Viblio',
-	to => [{
-	    email => $to,
-	    name  => $c->user->displayname }],
-	headers => {
-	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-	},
-	inline_css => 1,
-    };
 
     my $with_faces = $self->where_valid_mediafile();
     $with_faces->{'media_assets.asset_type'} = 'face';
@@ -131,12 +103,6 @@ sub template_test :Local {
 	      ( $c, $media[1], { views => ['poster'], include_contact_info => 1, expires => (60*60*24*365) } ) );
     }
 
-    $c->stash->{no_wrapper} = 1;
-    $c->stash->{model} = {
-	user  => $c->user,
-	media => \@media_array,
-    };
-
     # Need some faces
     #
     my @feats = $c->model( 'RDS::MediaAssetFeature' )
@@ -153,38 +119,34 @@ sub template_test :Local {
               });
     }
 
-    $c->stash({
-	no_wrapper => 1,
-	model => {
-	    user  => $c->user,
-	    media => \@media_array,
-	    faces => \@faces,
-	    vars => {
-		shareType => 'private',
-		user => $c->user,
-		numVideosUploadedLastWeek => 10,
-		numVideosViewedLastWeek => 4,
-		totalVideosInAccount => $c->user->media->count
+    my $headers = {
+	subject => $c->loc( "This is a test" ),
+	to => [{
+	    email => $to,
+	    name  => $c->user->displayname }],
+	template => 'email/' . $template,
+	stash => {
+	    model => {
+		user  => $c->user,
+		media => \@media_array,
+		faces => \@faces,
+		vars => {
+		    shareType => 'private',
+		    user => $c->user->obj,
+		    numVideosUploadedLastWeek => 10,
+		    numVideosViewedLastWeek => 4,
+		    totalVideosInAccount => $c->user->media->count,
+		},
 	    },
-	},
-		    from => $c->user,
-		    commentText => "This is a new comment",
-		    body => "This was text from textarea.",
-		    url => sprintf( "%s#register?email=%s", $c->server,  $c->user->email ),
-		    new_password => 'xxxyyyzzzfff',
-	      });
-
-    my $exception;
-    try {
-	$headers->{html} = $c->view( 'HTML' )->render( $c, 'email/' . $template );
-    } catch {
-	$exception = $_;
+	    from => $c->user->obj,
+	    commentText => "This is a new comment",
+	    body => "This was text from textarea.",
+	    url => sprintf( "%s#register?email=%s", $c->server,  $c->user->email ),
+	    new_password => 'xxxyyyzzzfff',
+	}
     };
-    if ( $exception ) {
-	$self->status_bad_request( $c, $exception );
-    }
-    my $res = $c->model( 'Mandrill' )->send( $headers );
-    $self->status_ok( $c, $res );
+    $self->send_email( $c, $headers );
+    $self->status_ok( $c, {} );
 }
 
 sub i18n :Local {

@@ -22,7 +22,7 @@ my $servers = {
     'local' => 'https://localhost',
 };
 unless( $ENV{'VA_CONFIG_LOCAL_SUFFIX'} ) {
-    $ENV{'VA_CONFIG_LOCAL_SUFFIX'} = 'local';
+    $ENV{'VA_CONFIG_LOCAL_SUFFIX'} = 'staging';
 }
 
 $c = VA->new;

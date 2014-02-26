@@ -565,32 +565,21 @@ sub new_user :Local {
 	#
 	my $headers = {
 	    subject => $c->loc( "Viblio Account Confirmation" ),
-	    from_email => 'reply@' . $c->config->{viblio_return_email_domain},
-	    from_name => 'Viblio',
 	    to => [{
 		email => $user->email,
 		name  => $user->displayname }],
-	    headers => {
-		    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-	    },
-	    inline_css => 1,
+	    stash => {
+		url => $c->server . '#confirmed?uuid=' . $user->uuid,
+	    }
 	};
-	$c->stash->{no_wrapper} = 1;
-	$c->stash->{url} = $c->server . '#confirmed?uuid=' . $user->uuid;
 
 	if ( $args->{via} eq 'trayapp' ) {
-	    $headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountConfirmation.tt' );
+	    $headers->{template} = 'email/accountConfirmation.tt';
 	}
 	else {
-	    $headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountCreated_ShareReferral.tt' );
+	    $headers->{template} = 'email/accountCreated_ShareReferral.tt';
 	}
-	my $res = $c->model( 'Mandrill' )->send( $headers );
-	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	    $c->log->error( "Error using Mailchimp to send" );
-	    $c->logdump( $res );
-	    $c->logdump( $headers );
-	}
-
+	$self->send_email( $c, $headers );
 	$self->status_ok( $c, { user => $c->user->obj } );
     }
     else {
@@ -624,32 +613,19 @@ sub account_confirm :Local {
 
     my $headers = {
 	subject => $c->loc( "Welcome to Viblio" ),
-	from_email => 'reply@' . $c->config->{viblio_return_email_domain},
-	from_name => 'Viblio',
 	to => [{
 	    email => $user->email,
 	    name  => $user->displayname }],
-	headers => {
-	    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-	},
-	inline_css => 1,
+	template => 'email/accountCreated_trayApp.tt',
+	stash => {
+	    to => $user,
+	    url => $c->server,
+	    model => {
+		user => $user,
+	    }
+	}
     };
-    $c->stash->{no_wrapper} = 1;
-    $c->stash->{to} = $user;
-    $c->stash->{url} = $c->server;
-
-    $c->stash->{model} = {
-	user => $user,
-    };
-
-    $headers->{html} = $c->view( 'HTML' )->render( $c, 'email/accountCreated_trayApp.tt' );
-    my $res = $c->model( 'Mandrill' )->send( $headers );
-    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	$c->log->error( "Error using Mailchimp to send" );
-	$c->logdump( $res );
-	$c->logdump( $headers );
-    }
-
+    $self->send_email( $c, $headers );
     $self->status_ok( $c, { user => $user } );
 }
 
@@ -700,37 +676,20 @@ sub forgot_password_request :Local {
 	    ( $c, $c->loc( "Failed to create record: [_1]", 'RDS::PasswordReset' ) );
     }
 =cut
-    $c->stash->{new_password} = $code;
-
-    $c->stash->{no_wrapper} = 1;
-    $c->stash->{email} = 
-    { subject  => $c->loc( "Reset your password on Viblio" ),
-      from_email => 'reply@' . $c->config->{viblio_return_email_domain},
-      from_name  => 'Viblio',
-      to => [{
-	  email => $args->{email} }],
-      headers => {
-	  'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-      },
-      inline_css => 1,
+    my $email= { 
+	subject  => $c->loc( "Reset your password on Viblio" ),
+	to => [{
+	    email => $args->{email} }],
+	template => 'email/forgotPassword.tt',
+	stash => {
+	    new_password => $code,
+	    user => $user,
+	}
     };
-
-    $c->stash->{user} = $user;
-    $c->stash->{email}->{html} = $c->view( 'HTML' )->render( $c, 'email/forgotPassword.tt' );
-
-    my $res = $c->model( 'Mandrill' )->send( $c->stash->{email} );
-    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	$c->log->error( "Error using Mailchimp to send" );
-	$c->logdump( $res );
-	$c->logdump( $c->stash->{email} );
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to reset your password!" ) );
-    }
-    else {
-	$user->password( $code );
-	$user->update;
-	$self->status_ok( $c, { user => $user } );
-    }
+    $self->send_email( $c, $email );
+    $user->password( $code );
+    $user->update;
+    $self->status_ok( $c, { user => $user } );
 }
 
 =head2 /services/na/new_password
@@ -1025,33 +984,20 @@ sub mediafile_create :Local {
 
 	    my $email = {
 		subject    => $c->loc( "Your Viblio Video is Ready" ),
-		from_email => 'reply@' . $c->config->{viblio_return_email_domain},
-		from_name  => 'Viblio',
 		to => [{
 		    email => $user->email,
 		    name  => $user->displayname }],
-		headers => {
-		    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-		},
-		inline_css => 1,
+		template => 'email/firstVideosUploaded.tt',
+		stash => {
+		    user => $user,
+		    media => $mf,
+		    server => $c->server,
+		    model => {
+			media => [ $mf ],
+		    }
+		}
 	    };
-
-	    $c->stash->{no_wrapper} = 1;
-	    $c->stash->{user} = $user;
-	    $c->stash->{media} = $mf;
-	    $c->stash->{server} = $c->server;
-
-	    $c->stash->{model} = {
-		media => [ $mf ],
-	    };
-	
-	    $email->{html} = $c->view( 'HTML' )->render( $c, 'email/firstVideosUploaded.tt' );
-	    my $res = $c->model( 'Mandrill' )->send( $email );
-	    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-		$c->log->error( "Error using Mailchimp to send" );
-		$c->logdump( $res );
-		$c->logdump( $email );
-	    }
+	    $self->send_email( $c, $email );
 	}
     }
 
