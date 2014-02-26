@@ -1,8 +1,17 @@
 package VA::Controller::Services::Album;
 use Moose;
 use namespace::autoclean;
+use JSON::XS ();
 
 BEGIN { extends 'VA::Controller::Services' }
+
+my $encoder = JSON::XS
+    ->new
+    ->utf8
+    ->pretty(1)
+    ->indent(1)
+    ->allow_blessed(1)
+    ->convert_blessed(1);
 
 sub list :Local {
     my( $self, $c ) = @_;
@@ -125,11 +134,14 @@ sub add_media :Local {
 	    name  => $album->user->displayname,
 	    user  => $album->user });
 	# Now remove the initiating user
+	#$c->log->debug( $encoder->encode( \@to ) );
 	my $index = -1;
 	for( my $i=0; $i<=$#to; $i++ ) {
 	    $index = $i if ( $to[$i]->{email} eq $c->user->email );
 	}
-	@to = splice( @to, $index, 1 ) if ( $index >= 0 );
+	splice( @to, $index, 1 ) if ( $index >= 0 );
+	#$c->log->debug( 'index=' . $index );
+	#$c->log->debug( $encoder->encode( \@to ) );
 	# Prepare message model
 	my $model = {
 	    user => $c->user->obj->TO_JSON,
