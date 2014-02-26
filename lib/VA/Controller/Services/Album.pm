@@ -111,6 +111,54 @@ sub add_media :Local {
 	$self->status_bad_request( $c, $c->loc( 'Unable to establish relationship between album and media' ) );
     }
 
+    # If this is a shared album, we have some notifications to send!
+    #
+    my $com = $album->community;
+    if ( $com ) {
+	my @to = map {{
+	    email => $_->contact_email,
+	    name  => $_->contact_name,
+	    user  => $_->contact_viblio }} $com->members->contacts;
+	# Add the owner of this album
+	push( @to, {
+	    email => $album->user->email,
+	    name  => $album->user->displayname,
+	    user  => $album->user });
+	# Now remove the initiating user
+	my $index = -1;
+	for( my $i=0; $i<=$#to; $i++ ) {
+	    $index = $i if ( $to[$i]->{email} eq $c->user->email );
+	}
+	@to = splice( @to, $index, 1 ) if ( $index >= 0 );
+	# Prepare message model
+	my $model = {
+	    user => $c->user->obj->TO_JSON,
+	    album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ),
+	    video => VA::MediaFile->new->publish( $c, $media, { views => ['poster'] } ),
+	};
+	# Send them to the message queue
+	foreach my $to ( @to ) {
+	    if ( $to->{user} ) {
+		$c->model( 'MQ' )->post( '/enqueue', {
+		    uid => $to->{user}->uuid,
+		    type => 'new_album_video',
+		    send_event => {
+			event => 'album:refresh_album',
+			data  => { aid => $album->uuid }
+		    },
+		    data => $model } );
+		# remove user element, so we can use to for sending emails
+		delete $to->{user};
+	    }
+	}
+	# Send the email.  Let's try a group email ...
+	$self->send_email( $c, {
+	    subject => $c->loc( '[_1] added a new video to [_2]', $c->user->displayname, $album->title ),
+	    to => \@to,
+	    template => 'email/newVideoAddedToAlbum.tt',
+	    stash => $model } );
+    }
+
     $self->status_ok( $c, {} );
 }
 
@@ -268,6 +316,40 @@ sub share_album :Local {
 	$self->status_bad_request(
 	    $c, $c->loc( 'Could not share this album' ) );
     }
+
+    # We have some notifications to send!
+    #
+    my @to = map {{
+	email => $_->contact_email,
+	name  => $_->contact_name,
+	user  => $_->contact_viblio }} $com->members->contacts;
+    # Prepare message model
+    my $model = {
+	user => $c->user->obj->TO_JSON,
+	album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ),
+    };
+    # Send them to the message queue
+    foreach my $to ( @to ) {
+	if ( $to->{user} ) {
+	    $c->model( 'MQ' )->post( '/enqueue', {
+		uid => $to->{user}->uuid,
+		type => 'new_shared_album',
+		send_event => {
+		    event => 'album:shared_album',
+		    data  => { aid => $album->uuid }
+		},
+		data => $model } );
+	    # remove user element, so we can use to for sending emails
+	    delete $to->{user};
+	}
+    }
+    # Send the email.  Let's try a group email ...
+    $self->send_email( $c, {
+	subject => $c->loc( '[_1] shared an album with you', $c->user->displayname ),
+	to => \@to,
+	template => 'email/albumSharedToYou.tt',
+	stash => $model } );
+
     $self->status_ok( $c, {} );    
 }
 

@@ -1,0 +1,17 @@
+[% INCLUDE email/top.tt 
+    previewText = "A new video has been added to a shared album."
+%]
+
+[%# The data model that this template expects:
+
+  user:  The JSON object for a Viblio user, the one who added the video
+  album: The published album data
+  video: The published video data
+%]
+
+[% user.displayname %] has added a new video titled &quot;[% video.title %]&quot;
+to the shared album named &quot;[% album.title %]&quot;.  Enjoy the heck out of it, ok?
+<p/>
+Debug: server: [% c.server %]
+
+[% INCLUDE email/bottom.tt %]

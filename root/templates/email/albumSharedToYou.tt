@@ -1,0 +1,15 @@
+[% INCLUDE email/top.tt 
+    previewText = "An album of videos has been shared to you."
+%]
+
+[%# The data model that this template expects:
+
+  user:  The JSON object for a Viblio user, the one who shared the album
+  album: The published album data
+%]
+
+[% user.displayname %] has shared an album named &quot;[% album.title %]&quot; to you.  Enjoy the heck out of it, ok?
+<p/>
+Debug: server: [% c.server %]
+
+[% INCLUDE email/bottom.tt %]
