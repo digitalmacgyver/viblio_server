@@ -156,7 +156,7 @@ sub add_media :Local {
 		    type => 'new_album_video',
 		    send_event => {
 			event => 'album:refresh_album',
-			data  => { aid => $album->uuid }
+			data  => { aid => $album->uuid, mid => $media->uuid }
 		    },
 		    data => $model } );
 		# remove user element, so we can use to for sending emails
