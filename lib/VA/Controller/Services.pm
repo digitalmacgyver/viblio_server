@@ -23,6 +23,14 @@ my $encoder = JSON::XS
     ->allow_blessed(1)
     ->convert_blessed(1);
 
+my $compact_encoder = JSON::XS
+    ->new
+    ->utf8
+    ->pretty(0)
+    ->indent(0)
+    ->allow_blessed(1)
+    ->convert_blessed(1);
+
 BEGIN {extends 'Catalyst::Controller'; }
 
 # Return an Email::Address if valid, undef otherwise.
@@ -420,41 +428,11 @@ sub endpoints :Local {
 sub send_email :Local {
     my( $self, $c, $opts ) = @_;
 
-    my $from_email = 'reply@' . $c->config->{viblio_return_email_domain};
-    my $from_name  = 'Viblio';
-
-    if ( $opts->{from} ) {
-	$from_email = $opts->{from}->{email} || $from_email;
-	$from_name  = $opts->{from}->{name}  || $from_name;
-    }
-
-    my $headers = {
-	subject => $opts->{subject} || 'No Subject',
-	from_email => $from_email,
-	from_name => $from_name,
-	to => $opts->{to},
-	headers => {
-	    'Reply-To' => $from_email,
-	},
-	inline_css => 1,
-    };
-    $c->stash->{no_wrapper} = 1;
-    foreach my $key ( keys( %{$opts->{stash}} ) ) {
-	$c->stash->{$key} = $opts->{stash}->{$key};
-    }
-    if ( $opts->{body} ) {
-	$headers->{html} = $opts->{body};
-    }
-    else {
-	$headers->{html} = $c->view( 'HTML' )->render( $c, $opts->{template} );
-    }
-    my $res = $c->model( 'Mandrill' )->send( $headers );
-    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	$c->log->error( "Error using Mailchimp to send" );
-	$c->logdump( $res );
-	$c->logdump( $headers );
-    }
-    return ( $res && $res->{status} && $res->{status} eq 'error' );
+    # This now off loads to a Amazon SQS queue.  The emailer.pl server pops the
+    # queue and does the actual sending of email.
+    my $res = $c->model( 'SQS', $c->config->{sqs}->{email} )
+	->SendMessage( $compact_encoder->encode( $opts ) );
+    return undef;
 }
 
 # Takes an array of email addresses and resolves it

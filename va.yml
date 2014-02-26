@@ -25,6 +25,7 @@ sqs:
   facebook_link: arn:aws:sqs:us-west-2:442359467480:user_fb_link_local
   new_account_creation: arn:aws:sqs:us-west-2:442359467480:new_account_creation_local
   recognition: arn:aws:sqs:us-west-2:442359467480:recognition_local
+  email: arn:aws:sqs:us-west-2:442359467480:email_local
 
 # Set to 1 when in beta.  This activates whitelist checking
 # for authentication and sharing.

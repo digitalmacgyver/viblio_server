@@ -725,34 +725,22 @@ sub add_share :Local {
 	foreach my $addr ( keys %$addrs ) {
 	    my $email = {
 		subject => $subject || $c->loc( "Check out this video on viblio.com" ),
-		from_email => 'reply@' . $c->config->{viblio_return_email_domain},
-		from_name => 'Viblio',
 		to => [{
 		    email => $addr }],
-		headers => {
-		    'Reply-To' => 'reply@' . $c->config->{viblio_return_email_domain},
-		},
-		inline_css => 1,
-	    };
-	    $c->stash->{no_wrapper} = 1;
-	    $c->stash->{body} = $body;
-	    $c->stash->{from} = $c->user;
-	    $c->stash->{url} = $addrs->{$addr}->{url};
-
-	    $c->stash->{model} = {
-		media => [ VA::MediaFile->new->publish( $c, $media, { expires => (60*60*24*365) } ) ],
-		vars => {
-		    shareType => $addrs->{$addr}->{type},
+		template => 'email/videosSharedWithYou.tt',
+		stash => {
+		    body => $body,
+		    from => $c->user->obj,
+		    url => $addrs->{$addr}->{url},
+		    model => {
+			media => [ VA::MediaFile->new->publish( $c, $media, { expires => (60*60*24*365) } ) ],
+			vars => {
+			    shareType => $addrs->{$addr}->{type},
+			}
+		    }
 		}
 	    };
-
-	    $email->{html} = $c->view( 'HTML' )->render( $c, 'email/videosSharedWithYou.tt' );
-	    my $res = $c->model( 'Mandrill' )->send( $email );
-	    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-		$c->log->error( "Error using Mailchimp to send" );
-		$c->logdump( $res );
-		$c->logdump( $email );
-	    }
+	    $self->send_email( $c, $email );
 	}
     }
     elsif ( $disposition eq 'potential' ) {
