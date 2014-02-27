@@ -92,6 +92,7 @@ sub get :Local {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
     }
     my $hash  = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+    $hash->{is_shared} = ( $album->community ? 1 : 0 );
     my @m = ();
     push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->media );
     $hash->{media} = \@m;
@@ -155,7 +156,7 @@ sub add_media :Local {
 		    uid => $to->{user}->uuid,
 		    type => 'new_album_video',
 		    send_event => {
-			event => 'album:refresh_album',
+			event => 'album:new_shared_album_video',
 			data  => { aid => $album->uuid, mid => $media->uuid }
 		    },
 		    data => $model } );
@@ -262,6 +263,7 @@ sub list_shared :Local {
 	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
+	$a->{is_shared} = 1;
 	push( @data, $a );
     }
 
@@ -290,6 +292,7 @@ sub list_shared_by_sharer :Local {
 	    my @m = ();
 	    push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	    $a->{media} = \@m;
+	    $a->{is_shared} = 1;
 	    push( @as, $a );
 	}
 	push( @data, {
@@ -348,7 +351,7 @@ sub share_album :Local {
 		uid => $to->{user}->uuid,
 		type => 'new_shared_album',
 		send_event => {
-		    event => 'album:shared_album',
+		    event => 'album:new_shared_album',
 		    data  => { aid => $album->uuid }
 		},
 		data => $model } );
