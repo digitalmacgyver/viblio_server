@@ -550,6 +550,15 @@ sub new_user :Local {
 	    $pending_user->delete;
 	    $pending_user->update;
 	}
+       
+	# Contact records consist of an email address and an optional pointer
+	# to a real viblio user.  A person registering as the result of a email
+	# share will be a contact, but the viblio user pointer is currently NULL.
+	# Lets fix that now.
+	#
+	my $update_rs = $c->model( 'RDS::Contact' )->search({ contact_email => $user->email });
+	$update_rs->update({ contact_viblio_id => $user->id });
+
 	# Send a SQS message for this new account creation
 	try {
 	    $c->log->debug( 'Sending SQS message for new account' );
