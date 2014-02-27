@@ -29,17 +29,32 @@ $c = VA->new;
 $c->{server_override} = $servers->{$ENV{'VA_CONFIG_LOCAL_SUFFIX'}};
 
 while( 1 ) {
-    my $message = $c->model( 'SQS', $c->config->{sqs}->{email} )->ReceiveMessage(
-	MaxNumberOfMessages => 1,
-	WaitTimeSeconds => 10,
-	VisibilityTimeout => 30 );
+    my $message;
+    try {
+	$message = $c->model( 'SQS', $c->config->{sqs}->{email} )->ReceiveMessage(
+	    MaxNumberOfMessages => 1,
+	    WaitTimeSeconds => 10,
+	    VisibilityTimeout => 30 );
+    } catch {
+	$c->log->error( 'SQS ReceiveMessage bombed: ' . $_ );
+	$c->log->_flush;
+	undef $message;
+    };
     next unless( $message );
 
     my $msg;
     try {
 	$msg = decode_json( $message->MessageBody() );
     } catch {
-	$c->log->error( 'Emailer: Could not decode: ' . $message->MessageBody() . ': ' . $_ );
+	if ( $message->can( 'MessageBody' ) ) {
+	    $c->log->error( 'Emailer: Could not decode: ' . 
+			    $message->MessageBody() . ': ' . $_ );
+	}
+	else {
+	    $c->log->error( 'Emailer: No MessageBody: ' . $_ );
+	}
+	$c->log->_flush;
+	next;
     };
 
     #
