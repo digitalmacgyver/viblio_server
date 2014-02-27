@@ -6,10 +6,11 @@
 
   user:  The JSON object for a Viblio user, the one who shared the album
   album: The published album data
+  url:   The link user should click on to go view the album
 %]
 
 [% user.displayname %] has shared an album named &quot;[% album.title %]&quot; to you.  Enjoy the heck out of it, ok?
 <p/>
-Debug: server: [% c.server %]
+<a href="[% url %]">Click Here To View</a>
 
 [% INCLUDE email/bottom.tt %]

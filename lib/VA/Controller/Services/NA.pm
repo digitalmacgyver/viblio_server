@@ -1319,7 +1319,7 @@ sub find_share_info_for_pending :Local {
 	    my $mediafile = $share->media;
 	    my $owner = $mediafile->user;
 	    $self->status_ok( $c, {
-		media => VA::MediaFile->publish( $c, $mediafile ),
+		media => VA::MediaFile->publish( $c, $mediafile, { views => ['poster'] } ),
 		owner => $owner->TO_JSON });
 	}
     }

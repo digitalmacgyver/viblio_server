@@ -2,6 +2,7 @@ package VA::Controller::Services::Album;
 use Moose;
 use namespace::autoclean;
 use JSON::XS ();
+use URI::Escape;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -12,6 +13,78 @@ my $encoder = JSON::XS
     ->indent(1)
     ->allow_blessed(1)
     ->convert_blessed(1);
+
+sub notify :Private {
+    my( $self, $c, $album, $_to ) = @_;
+
+    # Prepare message model
+    my $model = {
+	user => $c->user->obj->TO_JSON,
+	album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ),
+    };
+    my $urls = {};
+    # Send them to the message queue
+    foreach my $to ( @$_to ) {
+	if ( $to->{user} ) {
+	    $c->model( 'MQ' )->post( '/enqueue', {
+		uid => $to->{user}->uuid,
+		type => 'new_shared_album',
+		send_event => {
+		    event => 'album:new_shared_album',
+		    data  => { aid => $album->uuid }
+		},
+		data => $model } );
+
+	    # This is the url in the email for an existing user
+	    $urls->{ $to->{email} } = sprintf( "%s#viewAlbum?aid=%s", $c->server, $album->uuid );
+
+	    # remove user element, so we can use to for sending emails
+	    delete $to->{user};
+	}
+	else {
+	    # This user does not yet exist.  Like a private-share video, create
+	    # a pending user and add them to the white list.  Add a share record
+	    # so we can deal with it when the user registers.
+	    #
+	    my $pending_user = $c->model( 'RDS::User' )->find_or_create({
+		displayname => $to->{email},
+		provider_id => 'pending' });
+	    unless( $pending_user ) {
+		$self->status_bad_request
+		    ( $c, $c->loc( "Failed to create a pending user for for [_1]", $to->{email} ) );
+	    }
+	    my $share = $album->find_or_create_related( 'media_shares', { 
+		share_type => 'private',
+		user_id => $pending_user->id });
+	    unless( $share ) {
+		$self->status_bad_request
+		    ( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $album->uuid ) );
+	    }
+	    if ( $c->config->{in_beta} ) {
+		my $wl = $c->model( 'RDS::EmailUser' )->find_or_create({
+		    email => $to->{email},
+		    status => 'whitelist' });
+		unless( $wl ) {
+		    $c->log->error( "Failed to add $to->{email} to whitelist for album share." );
+		}
+	    }
+	    $urls->{ $to->{email} } = sprintf( "%s#register?email=%s&url=%s",
+					       $c->server,
+					       uri_escape( $to->{email} ),
+					       uri_escape( '#viewAlbum?aid=' . $album->uuid ) );
+	}
+    }
+    # Send the email.  
+    foreach my $to ( @$_to ) {
+	$model->{url} = $urls->{$to->{email}};
+	$self->send_email( $c, {
+	    subject => $c->loc( '[_1] shared an album with you', $c->user->displayname ),
+	    to => [ $to ],
+	    template => 'email/albumSharedToYou.tt',
+	    stash => $model } );
+    }
+
+}
 
 sub list :Local {
     my( $self, $c ) = @_;
@@ -148,8 +221,10 @@ sub add_media :Local {
 	    user => $c->user->obj->TO_JSON,
 	    album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ),
 	    video => VA::MediaFile->new->publish( $c, $media, { views => ['poster'] } ),
+	    url => sprintf( "%s#web_player?mid=%s", $c->server, $media->uuid ),
 	};
 	# Send them to the message queue
+	my @real_users = ();
 	foreach my $to ( @to ) {
 	    if ( $to->{user} ) {
 		$c->model( 'MQ' )->post( '/enqueue', {
@@ -162,12 +237,14 @@ sub add_media :Local {
 		    data => $model } );
 		# remove user element, so we can use to for sending emails
 		delete $to->{user};
+		push( @real_users, $to );
 	    }
 	}
-	# Send the email.  Let's try a group email ...
+	# Send the email.  NOTE that we are only sending email to user's who
+	# have already registered if sent a shared album notification.
 	$self->send_email( $c, {
 	    subject => $c->loc( '[_1] added a new video to [_2]', $c->user->displayname, $album->title ),
-	    to => \@to,
+	    to => \@real_users,
 	    template => 'email/newVideoAddedToAlbum.tt',
 	    stash => $model } );
     }
@@ -320,13 +397,34 @@ sub share_album :Local {
     # list of members.
     #
     my $com = $album->community;
+    my @to = ();
     if ( $com ) {
 	# Already exists
+	my @old_members = $com->members->contacts;
 	$com->members->add_contacts( $members );
+	my $hash = {};
+	$hash->{ $_->contact_email } = $_ foreach( $com->members->contacts );
+	foreach my $member ( @old_members ) {
+	    if ( $hash->{ $member->contact_email } ) {
+		delete $hash->{ $member->contact_email } 
+	    }
+	}
+	foreach my $email ( keys %$hash ) {
+	    push( @to, {
+		email => $hash->{$email}->contact_email,
+		name  => $hash->{$email}->contact_name,
+		user  => $hash->{$email}->contact_viblio });
+	}
     }
     else {
 	# Create a new shared album
 	$com = $c->user->create_shared_album( $album, $members );
+	if ( $com ) {
+	    @to = map {{
+		email => $_->contact_email,
+		name  => $_->contact_name,
+		user  => $_->contact_viblio }} $com->members->contacts;
+	}
     }
     unless( $com ) {
 	$self->status_bad_request(
@@ -335,37 +433,7 @@ sub share_album :Local {
 
     # We have some notifications to send!
     #
-    my @to = map {{
-	email => $_->contact_email,
-	name  => $_->contact_name,
-	user  => $_->contact_viblio }} $com->members->contacts;
-    # Prepare message model
-    my $model = {
-	user => $c->user->obj->TO_JSON,
-	album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ),
-    };
-    # Send them to the message queue
-    foreach my $to ( @to ) {
-	if ( $to->{user} ) {
-	    $c->model( 'MQ' )->post( '/enqueue', {
-		uid => $to->{user}->uuid,
-		type => 'new_shared_album',
-		send_event => {
-		    event => 'album:new_shared_album',
-		    data  => { aid => $album->uuid }
-		},
-		data => $model } );
-	    # remove user element, so we can use to for sending emails
-	    delete $to->{user};
-	}
-    }
-    # Send the email.  Let's try a group email ...
-    $self->send_email( $c, {
-	subject => $c->loc( '[_1] shared an album with you', $c->user->displayname ),
-	to => \@to,
-	template => 'email/albumSharedToYou.tt',
-	stash => $model } );
-
+    $self->notify( $c, $album, \@to );
     $self->status_ok( $c, {} );    
 }
 
@@ -384,7 +452,27 @@ sub add_members_to_shared :Local {
 	$self->status_bad_request(
 	    $c, $c->loc( 'Could not find community container for album' ) );
     }
+
+    # Have to determine the new people actually added, so we can notify them
+    #
+    my @old_members = $community->members->contacts;
     $community->members->add_contacts( $members );
+    my $hash = {};
+    $hash->{ $_->contact_email } = $_ foreach( $community->members->contacts );
+    foreach my $member ( @old_members ) {
+	if ( $hash->{ $member->contact_email } ) {
+	    delete $hash->{ $member->contact_email } 
+	}
+    }
+    my @to = ();
+    foreach my $email ( keys %$hash ) {
+	push( @to, {
+	    email => $hash->{$email}->contact_email,
+	    name  => $hash->{$email}->contact_name,
+	    user  => $hash->{$email}->contact_viblio });
+    }
+
+    $self->notify( $c, $album, \@to );
     $self->status_ok( $c, {} );        
 }
 
@@ -451,10 +539,10 @@ sub delete_shared_album :Local {
 sub shared_with :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
-    my $album = $c->user->albums->find({ uuid => $aid });
+    my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid });
     unless( $album ) {
 	$self->status_bad_request(
-	    $c, $c->loc( 'Could not delete this album' ) );
+	    $c, $c->loc( 'Could not find shared with info for this album' ) );
     }
     my $community = $album->community;
     unless( $community ) {
