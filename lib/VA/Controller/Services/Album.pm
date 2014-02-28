@@ -14,6 +14,19 @@ my $encoder = JSON::XS
     ->allow_blessed(1)
     ->convert_blessed(1);
 
+sub send_event_to_members :Private {
+    my( $self, $c, $members, $type, $event, $data ) = @_;
+    foreach my $member ( @$members ) {
+	if ( $member->contact_viblio ) {
+	    $c->model( 'MQ' )->post( '/enqueue', {
+		uid => $member->contact_viblio->uuid,
+		type => $type,
+		send_event => $event,
+		data => $data } );
+	}
+    }
+}
+
 sub notify :Private {
     my( $self, $c, $album, $_to ) = @_;
 
@@ -267,6 +280,15 @@ sub remove_media :Local {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
     }
 
+    my $com = $album->community;
+    if ( $com ) {
+	$self->send_event_to_members(
+	    $c, [ $com->members->contacts->all ],
+	    'delete_shared_album_video',
+	    { event => 'album:delete_shared_album_video', data => {
+		aid => $album->uuid, mid => $media->uuid } } );
+    }
+
     my $rel = $c->model( 'RDS::MediaAlbum' )->find({ album_id => $album->id, media_id => $media->id });
     unless( $rel ) {
 	$self->status_bad_request( $c, $c->loc( 'Unable to find relationship between album and media' ) );
@@ -305,6 +327,11 @@ sub delete_album :Local {
 
     my $community = $album->community;
     if ( $community ) {
+	# Send an event to users in case they are viewing this share
+	$self->send_event_to_members(
+	    $c, [ $community->members->contacts->all ],
+	    'delete_shared_album',
+	    { event => 'album:delete_shared_album', data => { aid => $album->uuid } } );
 	$community->members->delete;
 	$community->delete;
     }
@@ -377,6 +404,21 @@ sub list_shared_by_sharer :Local {
             albums => \@as });
     }
     $self->status_ok( $c, { shared => \@data } );
+}
+
+# If the user has permission to see the passed in mid by virtue of
+# it being shred to him, then return the published content.
+sub get_shared_video :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    if ( $c->user->obj->can_view_video( $mid ) ) {
+	my $media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
+	$self->status_ok( $c, { media => VA::MediaFile->new->publish( $c, $media, { views => ['poster'] } ) } );
+    }
+    else {
+	$self->status_bad_request( 
+	    $c, $c->loc( 'User is not allowed to access this video' ) ); 
+    }
 }
 
 sub share_album :Local {
@@ -491,6 +533,13 @@ sub remove_members_from_shared :Local {
 	$self->status_bad_request(
 	    $c, $c->loc( 'Could not find community container for album' ) );
     }
+    my @removed = $community->members->contacts->search({
+	contact_email => { -in => $members } });
+    $self->send_event_to_members(
+	$c, \@removed,
+	'delete_shared_album',
+	{ event => 'album:delete_shared_album', data => { aid => $album->uuid } } );
+    
     $community->members->remove_contacts( $members );
     $self->status_ok( $c, {} );        
 }
@@ -526,6 +575,12 @@ sub delete_shared_album :Local {
 	$self->status_bad_request(
 	    $c, $c->loc( 'Could not find community container for album' ) );
     }
+    # Send an event to users in case they are viewing this share
+    $self->send_event_to_members(
+	$c, [ $community->members->contacts->all ],
+	'delete_shared_album',
+	{ event => 'album:delete_shared_album', data => { aid => $album->uuid } } );
+
     $community->members->delete;
     $community->delete;
     $self->status_ok( $c, {} );
