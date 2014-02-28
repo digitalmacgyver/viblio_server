@@ -439,7 +439,7 @@ sub send_email :Local {
 # looking for possible group names in the list.
 #
 sub expand_email_list :Private {
-    my( $self, $c, $list ) = @_;
+    my( $self, $c, $list, $except ) = @_;
     my $user = ( $c->user->can( 'obj' ) ? $c->user->obj : $c->user );
     my @list = @$list;
     my @clean = map { $_ =~ s/^\s+//g; $_ =~ s/\s+$//g; $_ } @list;
@@ -457,10 +457,16 @@ sub expand_email_list :Private {
 	    }
 	}
 	else {
-	    push( @addrs, $email );
+	    push( @addrs, $email ) if ( $self->is_email_valid( $email ) );
 	}
     }
     my %uniq = map { $_ => 1 } @addrs;
+
+    if ( $except ) {
+	foreach my $remove ( @$except ) {
+	    delete $uniq{$remove};
+	}
+    }
 
     return keys %uniq;
 }

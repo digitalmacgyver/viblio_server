@@ -647,7 +647,7 @@ sub add_share :Local {
     
     if ( $#list >=0 ) {
 	my $addrs = {};
-	my @clean = $self->expand_email_list( $c, \@list );
+	my @clean = $self->expand_email_list( $c, \@list, [ $c->user->email ] );
 	foreach my $email ( @clean ) {
 	    my $share;
 	    my $recip = $c->model( 'RDS::User' )->find({ email => $email });

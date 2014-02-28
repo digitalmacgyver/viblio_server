@@ -425,7 +425,8 @@ sub share_album :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
     my @members = $c->req->param( 'members[]' );
-    my $members = \@members;
+    my @clean = $self->expand_email_list( $c, \@members, [ $c->user->email ] );
+    my $members = \@clean;
     my $album = $c->user->albums->find({ uuid => $aid });
     unless( $album ) {
 	$self->status_bad_request(
@@ -483,7 +484,8 @@ sub add_members_to_shared :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
     my @members = $c->req->param( 'members[]' );
-    my $members = \@members;
+    my @clean = $self->expand_email_list( $c, \@members, [ $c->user->email ] );
+    my $members = \@clean;
     my $album = $c->user->albums->find({ uuid => $aid });
     unless( $album ) {
 	$self->status_bad_request(
@@ -522,7 +524,8 @@ sub remove_members_from_shared :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
     my @members = $c->req->param( 'members[]' );
-    my $members = \@members;
+    my @clean = $self->expand_email_list( $c, \@members, [ $c->user->email ] );
+    my $members = \@clean;
     my $album = $c->user->albums->find({ uuid => $aid });
     unless( $album ) {
 	$self->status_bad_request(

@@ -575,7 +575,7 @@ sub tell_a_friend :Local {
 	$self->status_ok( $c, {} );
     }
 
-    my @clean = $self->expand_email_list( $c, \@list );
+    my @clean = $self->expand_email_list( $c, \@list, [ $c->user->email ] );
 
     foreach my $recip ( @clean ) {
 	$self->send_email( $c, {
