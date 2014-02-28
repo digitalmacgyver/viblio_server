@@ -110,7 +110,7 @@ __PACKAGE__->config(
 
     'Plugin::Session' => {
 	dbic_class => 'RDS::Session',
-	expires    => 86400,
+	expires    => 94608000,
     },
 
 );
