@@ -17,8 +17,8 @@
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
                 <td cellspacing="0" cellpadding="0">
                     <a href='[% url %]'>
-                        <img class='videoThumb-Lrg' src="[% album.poster.uri %]" />
-                        <img class='videoThumb-Lrg' src="[% c.server %]s/ip/[% album.poster.uri %]" />
+                        <img class='videoThumb-Lrg' src="[% album.views.poster.uri %]" />
+                        <img class='videoThumb-Lrg' src="[% c.server %]s/ip/[% album.views.poster.uri %]" />
                     </a>
                 </td>
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
