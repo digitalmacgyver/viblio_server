@@ -636,6 +636,7 @@ sub add_share :Local {
     my @list = $c->req->param( 'list[]' );
     my $subject = $c->req->param( 'subject' );
     my $body = $c->req->param( 'body' );
+    my $title = $c->req->param( 'title' );
     my $disposition = $c->req->param( 'private' );
     $disposition = 'private' unless( $disposition );
 
@@ -643,6 +644,10 @@ sub add_share :Local {
     unless( $media ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+    }
+    if ( $title ) {
+	$media->title( $title );
+	$media->update;
     }
     
     if ( $#list >=0 ) {
