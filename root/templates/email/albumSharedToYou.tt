@@ -8,13 +8,7 @@
   album: The published album data
   url:   The link user should click on to go view the album
 %]
-
-<p>[% user.displayname %] just invited you to be part of an album - how cool is that!
-<p/>
-
-
-<a href="[% url %]">Click Here To View</a>
-
+    
     <div class="centered regSize darkText">
         <p style="text-align: left;">[% user.displayname %] just invited you to be part of an album - how cool is that!</p>
         <br />
@@ -24,7 +18,7 @@
                 <td cellspacing="0" cellpadding="0">
                     <a href='[% url %]'>
                         <img class='videoThumb-Lrg' src="[% album.poster.uri %]" />
-                        <img class='videoThumb-Lrg' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+                        <img class='videoThumb-Lrg' src="[% c.server %]s/ip/[% album.poster.uri %]" />
                     </a>
                 </td>
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
