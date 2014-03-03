@@ -10,13 +10,8 @@
   url:   The url to click on to view the new video
 %]
 
-[% user.displayname %] has added a new video titled &quot;[% video.title %]&quot;
-to the shared album named &quot;[% album.title %]&quot;.  Enjoy the heck out of it, ok?
-<p/>
-<a href="[% url %]">Click Here To View</a>
-
     <div class="centered regSize darkText">
-        <p style="text-align: left;">[% user.displayname %] just added the following video to your VIBLIO album called [% album.title %] - NICE!</p>
+        <p style="text-align: left;">[% user.displayname %] just added the following video to your VIBLIO album called &quot;[% album.title %]&quot; - NICE!</p>
         <br />
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
