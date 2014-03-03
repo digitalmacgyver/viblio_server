@@ -16,7 +16,7 @@ to the shared album named &quot;[% album.title %]&quot;.  Enjoy the heck out of 
 <a href="[% url %]">Click Here To View</a>
 
     <div class="centered regSize darkText">
-        <p style="text-align: left;">[% user.displayname %] just added the following video to your VIBLIO album - NICE!</p>
+        <p style="text-align: left;">[% user.displayname %] just added the following video to your VIBLIO album called [% album.title %] - NICE!</p>
         <br />
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
@@ -29,7 +29,7 @@ to the shared album named &quot;[% album.title %]&quot;.  Enjoy the heck out of 
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
             </tr>
         </table>
-        <span class="smallText">[% album.title %]</span>
+        <span class="smallText">Video: [% video.title %]</span>
         <br />
         <br />
         <table border="0" cellpadding="0" cellspacing="0" height="100" style="width:100%; height:100px;" width="100%">
