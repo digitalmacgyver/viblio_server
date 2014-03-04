@@ -90,6 +90,12 @@ authentication:
       store:
         class: DBIx::Class
         user_model: RDS::User
+    viblio:
+      credential:
+        class: ViblioToken
+      store:
+        class: DBIx::Class
+        user_model: RDS::User
     facebook:
       credential:
         class: FacebookToken
