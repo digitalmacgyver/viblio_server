@@ -6,39 +6,20 @@
         <span class='xLargeText'>Success!</span>
         <br />
         <br />
-        <span><strong>You're ready to start using VIBLIO's great features </strong></span>
+        <span><strong>I'm VIBLIO, your personal video assistant.  Here's how we can work together</strong></span>
         <br />
         <br />
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-            <tbody>
-                <tr>
-                    <td width="99" style="width:99px;"></td>
-                    <td class="button" width="302" height="33" align="center" style="width:302px;">
-                            <a class="noUnderline" href="[% c.server %]#getApp?from=account_created_from_share_email"><b><span class="buttonSpan">DOWNLOAD VIBLIO &raquo;</span></b></a>
-                    </td>
-                    <td width="99" style="width:99px;"></td>
-                </tr>
-            </tbody>
-        </table>
+        <ol>
+            <li><strong>You</strong> <a href="[% c.server %]#home?addVideos"><span class="tomato">UPLOAD</span></a> your videos to your private VIBLIO library.</li>
+            <li><strong>I'll</strong> go through them and find faces in your video.</li>
+            <li><strong>You</strong> let me know which faces you care about by naming them.</li>
+            <li><strong>I'll</strong> start looking for those faces in other videos you upload and over time I'll build up a video album for those people.</li>
+            <li><strong>I'll</strong> also put your videos on a map so you know where they were taken.</li>
+        </ol>
         <br />
-        <table border="0" cellpadding="0" cellspacing="0" height="100" style="width:100%; height:100px;" width="100%">
-            <tbody>
-                <tr height="100" style="width:100%; height:100px;" width="100%">
-                    <td height="100" style="width: 100px; height:100px; padding:0;" valign="middle" width="100"><img align="none" alt="Viblio logo" height="97" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 100px; height: 97px;" width="100" /></td>
-                    <td height="100" style="width:400px; height:100px; padding:0; padding-left:10px;" valign="middle" width="400">
-                        <p style="text-align: left;">&hellip;and build your own <strong>private space</strong> to safely <strong>store</strong> your personal videos and use our Magic Tagging&trade; to dynamically create albums to <strong>enjoy</strong> and <strong>share</strong>.</p>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <p>So start <a href="[% c.server %]#home?addVideos"><span class="tomato">UPLOADING</span></a> your videos today.</p>
         <br />
-        <p style="text-align:left;">VIBLIO gives videos the opportunity to show the value they can bring to our lives &ndash; the power to change the way we connect with family, friends and communities.</p>
-        <br />
-        <br />
-        If you've <strong>already downloaded</strong> Viblio, then
-        <br />
-            <a class="tomato" href="[% c.server %]#videos" ><span class="tomato">VISIT YOUR VIBLIO LIBRARY</span></a>
-        <br />
+        <p>I'll touch base with you soon and let you know how I can help you create video albums to share!</p>        
         <br />
         <span style="font-size:14px">You registered with: [% model.user.email %]
             <br />
