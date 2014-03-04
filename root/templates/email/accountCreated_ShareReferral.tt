@@ -2,8 +2,8 @@
     previewText = "Getting started with your new VIBLIO account"
 %]
 
-    <div class='centered regSize darkText'>
-        <span class='xLargeText'>Success!</span>
+    <div class='regSize darkText'>
+        <span class='centered xLargeText'>Success!</span>
         <br />
         <br />
         <span><strong>I'm VIBLIO, your personal video assistant.  Here's how we can work together</strong></span>
@@ -16,9 +16,7 @@
             <li><strong>I'll</strong> start looking for those faces in other videos you upload and over time I'll build up a video album for those people.</li>
             <li><strong>I'll</strong> also put your videos on a map so you know where they were taken.</li>
         </ol>
-        <br />
         <p>So start <a href="[% c.server %]#home?addVideos=true"><span class="tomato">UPLOADING</span></a> your videos today.</p>
-        <br />
         <p>I'll touch base with you soon and let you know how I can help you create video albums to share!</p>        
         <br />
         <span style="font-size:14px">You registered with: [% model.user.email %]
