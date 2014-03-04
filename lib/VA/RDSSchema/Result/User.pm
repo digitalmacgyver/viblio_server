@@ -114,6 +114,12 @@ __PACKAGE__->table("users");
   data_type: 'tinyint'
   is_nullable: 1
 
+=head2 access_token
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 256
+
 =head2 api_key
 
   data_type: 'varchar'
@@ -168,6 +174,8 @@ __PACKAGE__->add_columns(
   { data_type => "tinyint", is_nullable => 1 },
   "accepted_terms",
   { data_type => "tinyint", is_nullable => 1 },
+  "access_token",
+  { data_type => "varchar", is_nullable => 1, size => 256 },
   "api_key",
   { data_type => "varchar", is_nullable => 1, size => 128 },
   "metadata",
@@ -460,8 +468,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bK65PAD554nWisep7G9mWA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-03-04 09:52:52
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cPvqAS2yPIxbEa0xqnDuRQ
 use Email::AddressParser;
 use Email::Address;
 
@@ -591,8 +599,9 @@ sub can_view_video {
 
     my $rs2 = $self->result_source->schema->resultset( 'MediaAlbum' )->search
 	({'videos.uuid'=>$mid,
-	  'community.id' => {
-	      -in => $rs1->get_column('community.id')->as_query}},
+	  -or => [ 'album.user_id' => $self->id,
+		   'community.id' => {
+		       -in => $rs1->get_column('community.id')->as_query} ] },
 	 {prefetch=>['videos',{'album'=>'community'}]});
 
     return ( $rs2->count );

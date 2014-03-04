@@ -385,21 +385,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 media_workorders
-
-Type: has_many
-
-Related object: L<VA::RDSSchema::Result::MediaWorkorder>
-
-=cut
-
-__PACKAGE__->has_many(
-  "media_workorders",
-  "VA::RDSSchema::Result::MediaWorkorder",
-  { "foreign.media_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 user
 
 Type: belongs_to
@@ -415,19 +400,9 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
-=head2 workorders
 
-Type: many_to_many
-
-Composing rels: L</media_workorders> -> workorder
-
-=cut
-
-__PACKAGE__->many_to_many("workorders", "media_workorders", "workorder");
-
-
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:44
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:lou6RGhKxwhu6g9iERaGVw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-03-04 09:52:46
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:LAxAamK6di0lVdTLg6NJZw
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

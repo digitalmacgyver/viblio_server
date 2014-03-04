@@ -17,6 +17,8 @@ use LWP;
 use File::Basename;
 use Net::GitHub::V3;
 
+use Data::UUID;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 =head1 /services/na
@@ -122,9 +124,25 @@ sub authenticate :Local {
     elsif ( $realm =~ /community/ ) {
 	$creds = $c->req->params;
     }
+    elsif ( $realm =~ /viblio/ ) {
+	$creds = $c->req->params;
+    }
     
     $c->{no_autocreate} = 1;
     if ( $c->authenticate( $creds, $realm ) ) {
+
+	# If the user does not already have an access_token, generate one now.
+	# Normally this token is generated in new_user(), but that functionality was
+	# added after many user's already exist, so this is a way to get access_tokens
+	# into the system after-the-fact.
+	#
+	if ( ! $c->user->obj->access_token ) {
+	    # Create an access token for use with the 'viblio' authenticator
+	    $c->user->obj->access_token(
+		lc( Data::UUID->new->create_from_name_str( 'com.viblio', $c->user->obj->email ) ) );
+	    $c->user->obj->update;
+	}
+
 	$self->status_ok( $c, { user => $c->user->obj } );
 	return;
     } 
@@ -537,6 +555,11 @@ sub new_user :Local {
 
 	# Create a profile
 	$user->create_profile();
+
+	# Create an access token for use with the 'viblio' authenticator
+	$user->access_token(
+	    lc( Data::UUID->new->create_from_name_str( 'com.viblio', $user->email ) ) );
+	$user->update;
 
 	# There may be a "pending user" record corresponding to this email.
 	# If there is, in media_shares table, replace all 'private' shares
