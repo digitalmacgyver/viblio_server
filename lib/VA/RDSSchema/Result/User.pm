@@ -591,8 +591,9 @@ sub can_view_video {
 
     my $rs2 = $self->result_source->schema->resultset( 'MediaAlbum' )->search
 	({'videos.uuid'=>$mid,
-	  'community.id' => {
-	      -in => $rs1->get_column('community.id')->as_query}},
+	  -or => [ 'album.user_id' => $self->id,
+		   'community.id' => {
+		       -in => $rs1->get_column('community.id')->as_query} ] },
 	 {prefetch=>['videos',{'album'=>'community'}]});
 
     return ( $rs2->count );
