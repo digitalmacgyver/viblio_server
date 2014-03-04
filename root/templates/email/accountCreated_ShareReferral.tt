@@ -8,7 +8,7 @@
         <br />
         <br />
         <ol>
-            <li><strong>You</strong> <a href="[% c.server %]#home?addVideos=true"><span class="tomato">UPLOAD</span></a> your videos to your private VIBLIO library.</li>
+            <li><strong>You</strong> <a href="https://localhost/#home?addVideos=true"><span class="tomato">UPLOAD</span></a> your videos to your private VIBLIO library.</li>
             <li><strong>I'll</strong> go through them and find faces in your video.</li>
             <li><strong>You</strong> let me know which faces you care about by naming them.</li>
             <li><strong>I'll</strong> start looking for those faces in other videos you upload and over time I'll build up a video album for those people.</li>
