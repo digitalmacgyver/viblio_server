@@ -2,7 +2,7 @@
     previewText = "Getting started with your new VIBLIO account"
 %]
 
-    <div class='regSize darkText'>
+    <div class='regSize darkText' style='text-align: left;'>
         <span class='centered xLargeText'>Success!</span>
         <br />
         <br />
