@@ -3,7 +3,7 @@
 %]
 
     <div class='paddedDiv regSize darkText leftAligned'>
-        Hi [% user.displayname %],
+        Hi [% model.user.displayname %],
         <br />
         <br />
         I noticed you haven't uploaded videos to your VIBLIO library for a while.  I'm guessing you
