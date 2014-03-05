@@ -1,0 +1,37 @@
+[% INCLUDE email/top.tt 
+    previewText = "Manage your videos in VIBLIO!"
+%]
+
+    <div class='regSize darkText' style='text-align: left;'>
+        <p>I'm VIBLIO and I've been told I have some really great features! So get started with your new, free VIBLIO account!</p>
+        <ul>
+            <li>build your own <strong>private space</strong> to safely <strong>store</strong> your personal videos</li>
+            <li>use my Magic Tagging to dynamically create albums to <strong>enjoy</strong> and <strong>share</strong></li>
+        </ul>
+        <p>Don't let your videos just pile up.  Let me help you organize and use them!</p>
+        <table border="0" cellpadding="0" cellspacing="0" height="50" style="width:100%; height:50px;" width="100%">
+            <tbody>
+                <tr height="50" style="width:100%; height:50px;" width="100%">
+                    <td height="50" style="width: 50px; height:50px; padding:0;" valign="middle" width="50"><img align="none" alt="Viblio logo" height="47" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 50px; height: 47px;" width="50" /></td>
+                    <td height="50" style="width:450px; height:50px; padding:0; padding-left:10px;" valign="middle" width="450">
+                    <p style="margin:0;"><a href="[% c.server %]#home?addVideos=true"><strong><span class="tomato">UPLOAD SOME VIDEOS TODAY!</span></strong></a></p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <br />
+        <br />
+        <span style="font-size:14px"><strong>Browser support</strong> I've been around for only a year, so I'm still learning how to operate in this world. I work best with <span class="tomato">Chrome</span>, <span class="tomato">Firefox</span> and <span class="tomato">Safari</span>. If possible, please use one of those browsers over Internet Explorer.</span><br />
+        <br />
+        <br />
+        <span>Questions? Suggestions? I'm all ears! Email me at <u><a href="mailto:feedback@viblio.com" target="_blank"><span class="tomato">feedback@viblio.com</span></a></u>.</span>
+        <br />
+        <br />
+    </div>
+    <div class="centered">
+        <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
+    </div>
+    <br />
+    <br />
+
+[% INCLUDE email/bottom.tt %]
