@@ -4,12 +4,14 @@
 
     <div class='paddedDiv regSize darkText leftAligned'>
         Hi [% user.displayname %],
+        <br />
+        <br />
         I noticed you haven't uploaded videos to your VIBLIO library for a while.  I'm guessing you
         <ol>
-            <li><strong>haven’t had time</strong>:  If that's it, download my <u><a href=""><span class="tomato">iPhone App</span></a></u> and we'll get those videos into your VIBLIO library automatically.</li>
-            <li><strong>haven’t been taking videos</strong>:  Why don't you take the <span class="tomato">VIBLIO challenge</span>.  Take a 2-3 second video every 
+            <li><strong>haven't had time</strong>:  If that's it, download my <u><a href=""><span class="tomato">iPhone App</span></a></u> and we'll get those videos into your VIBLIO library automatically.</li>
+            <li><strong>haven't been taking videos</strong>:  Why don't you take the <span class="tomato">VIBLIO challenge</span>.  Take a 2-3 second video every 
                 day for the next 60 days and I'll stitch them together for you in a 2 month memory collage. Interested?  Write to us at 
-                <u><a style="font-size:14px;" href="mailto:challenge@viblio.com"><span class=""tomato">challenge@viblio.com</span></a></u>.</li>
+                <u><a href="mailto:challenge@viblio.com"><span class="tomato">challenge@viblio.com</span></a></u>.</li>
             <li><strong>don't know what to do with videos in your library</strong>: try creating a <u><a href="[% c.server %]#albums"><span class="tomato">video album</span></a></u>
                  and inviting people to join it. Unlike other sharing sites, everyone invited to your album can give the rest of the group (and no one else) access to a
                  video in their VIBLIO account making it easy to create video collections around ski trips, soccer games, weddings, performances, and more.</li>
