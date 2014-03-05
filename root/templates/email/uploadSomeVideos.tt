@@ -3,66 +3,18 @@
 %]
 
     <div class='paddedDiv regSize darkText leftAligned'>
-        We've noticed you haven't uploaded videos to your VIBLIO library for a while.
-        <br />
-        <br />
-        <strong><em>Have a bunch of videos you want to keep safe &amp; organized?</em></strong>
-        <br />
-        Use your VIBLIO video uploader to upload them to your VIBLIO library.
-        <div style='text-align: center;'>
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                <tbody>
-                    <tr>
-                        <td width="500" style="width:500px;">
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                                <tbody>
-                                    <tr>
-                                        <td width="94" style="width:94px;"></td>
-                                        <td class="button" width="312" height="33" align="center" style="width:312px;">
-                                                <a class="noUnderline" href="[% c.server %]#tutorial"><b><span class="buttonSpan">NEED INSTRUCTIONS? &raquo;</span></b></a>
-                                        </td>
-                                        <td width="94" style="width:94px;"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <br />
-        <strong><em>Haven't downloaded VIBLIO yet?</em></strong>
-        <div style='text-align: center;'>
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                <tbody>
-                    <tr>
-                        <td width="500" style="width:500px;">
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                                <tbody>
-                                    <tr>
-                                        <td width="94" style="width:94px;"></td>
-                                        <td class="button" width="312" height="33" align="center" style="width:312px;">
-                                                <a class="noUnderline" href="[% c.server %]#getApp?from=upload_some_videos_email"><b><span class="buttonSpan">GET VIBLIO NOW &raquo;</span></b></a>
-                                        </td>
-                                        <td width="94" style="width:94px;"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <br />
-        <strong><em>Haven't taken any videos in a while?</em></strong>
-        <br />
-        &hellip;Well we can't do that for you!
-        <br />
-        <br />
-        But we can help you with almost everything else!
-        <br />
-        <br />
-        So capture some of those memories with video this weekend &ndash; and we'll help you organize them into a video log of <em>your memories in motion</em>!
+        Hi [% user.displayname %],
+        I noticed you haven't uploaded videos to your VIBLIO library for a while.  I'm guessing you
+        <ol>
+            <li><strong>haven’t had time</strong>:  If that's it, download my <u><a href=""><span class="tomato">iPhone App</span></a></u> and we'll get those videos into your VIBLIO library automatically.</li>
+            <li><strong>haven’t been taking videos</strong>:  Why don't you take the <span class="tomato">VIBLIO challenge</span>.  Take a 2-3 second video every 
+                day for the next 60 days and I'll stitch them together for you in a 2 month memory collage. Interested?  Write to us at 
+                <u><a style="font-size:14px;" href="mailto:challenge@viblio.com"><span class=""tomato">challenge@viblio.com</span></a></u>.</li>
+            <li><strong>don't know what to do with videos in your library</strong>: try creating a <u><a href="[% c.server %]#albums"><span class="tomato">video album</span></a></u>
+                 and inviting people to join it. Unlike other sharing sites, everyone invited to your album can give the rest of the group (and no one else) access to a
+                 video in their VIBLIO account making it easy to create video collections around ski trips, soccer games, weddings, performances, and more.</li>
+        </ol>
+        Questions? Suggestions? I'm all ears! Email me at <u><a href="mailto:feedback@viblio.com" target="_blank"><span class="tomato">feedback@viblio.com</span></a></u>.
         <p class="share" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
     </div>
 
