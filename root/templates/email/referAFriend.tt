@@ -6,7 +6,7 @@
         <span style="text-align:left;" class="largeText">Congratulations <span class="tomato">[% model.user.displayname %]</span>!</span>
         <br />
         <br />
-        <span style="text-align:left;">Your friend <span class="tomato">[% from.displayname %]</span> wants to help you build and organize your own video private video library.</span>
+        <span style="text-align:left;">Your friend <span class="tomato">[% from.displayname %]</span> wants to help you build and organize your own private video library so you can share videos together.</span>
         <br />
         <br />
         <span style="text-align:left;">Here's their private message:</span><br />
@@ -27,29 +27,42 @@
                 <tr>
                     <td width="99" style="width:99px;"></td>
                     <td class="button" width="302" height="33" align="center" style="width:302px;">
-                            <a class="noUnderline" href="[% c.server %]#getApp?from=friendReferral_email"><b><span class="buttonSpan">DOWNLOAD VIBLIO &raquo;</span></b></a>
+                        <a class="noUnderline" href="[% c.server %]#login?orsignup=true"><b><span class="buttonSpan">CREATE YOUR VIBLIO ACCOUNT &raquo;</span></b></a>
                     </td>
                     <td width="99" style="width:99px;"></td>
                 </tr>
             </tbody>
         </table>
         <br />
-        <table border="0" cellpadding="0" cellspacing="0" height="100" style="width:100%; height:100px;" width="100%">
-            <tbody>
-                <tr height="100" style="width:100%; height:100px;" width="100%">
-                    <td height="100" style="width: 100px; height:100px; padding:0;" valign="middle" width="100"><img align="none" alt="Viblio logo" height="97" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 100px; height: 97px;" width="100" /></td>
-                    <td height="100" style="width:400px; height:100px; padding:0; padding-left:10px;" valign="middle" width="400">
-                        <p style="text-align: left;">&hellip;and build your own <strong>private space</strong> to safely <strong>store</strong> your personal videos and use our Magic Tagging&trade; to dynamically create albums to <strong>enjoy</strong> and <strong>share</strong>.</p>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <span>I'm VIBLIO and I'm here to be your personal video librarian</span>
         <br />
+        <ol>
+            <li>I'm really good with faces</li>
+            <li>I'm really organized</li>
+            <li>I know how to share</li>
+            <li>I can keep things private</li>
+        </ol>
+        <br />
+        Get to know me by creating your <a class="noUnderline" href="[% c.server %]#login?orsignup=true"><b><span class="tomato">free personal account</span></b></a>.
+        <br />
+        <span style="font-size:14px"><strong>Browser support</strong> I've been around for only a year, so I'm still learning how to operate in this world. I work best with <span class="tomato">Chrome</span>, <span class="tomato">Firefox</span> and <span class="tomato">Safari</span>. If possible, please use one of those browsers over Internet Explorer.</span><br />
+        
         <p style="text-align:left;">VIBLIO gives videos the opportunity to show the value they can bring to our lives &ndash; the power to change the way we connect with family, friends and communities.</p><br />
         <span class="centered">
             <p class="share darkText" style="font-size:14px; text-align: center;">Today, VIBLIO is available on a Windows PC. Don't have a PC?<br />
             We're working on a MAC and iOS app so stay tuned.</p>
         </span>
+        <br />
+        <table border="0" cellpadding="0" cellspacing="0" height="50" style="width:100%; height:50px;" width="100%">
+            <tbody>
+                <tr height="50" style="width:100%; height:50px;" width="100%">
+                    <td height="50" style="width: 50px; height:50px; padding:0;" valign="middle" width="50"><img align="none" alt="Viblio logo" height="47" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 50px; height: 47px;" width="50" /></td>
+                    <td height="50" style="width:450px; height:50px; padding:0; padding-left:10px;" valign="middle" width="450">
+                        <p style="margin:0;">If you have questions or suggestions for me, please email me at <u><a href="mailto:feedback@viblio.com" target="_blank"><span class="tomato">feedback@viblio.com</span></a></u>.</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
         <br />
         <div class="centered">
             <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
