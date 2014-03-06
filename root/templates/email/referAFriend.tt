@@ -25,11 +25,11 @@
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
             <tbody>
                 <tr>
-                    <td width="99" style="width:99px;"></td>
-                    <td class="button" width="302" height="33" align="center" style="width:302px;">
+                    <td width="105" style="width:105px;"></td>
+                    <td class="button" width="290" height="33" align="center" style="width:302px;">
                         <a class="noUnderline" href="[% c.server %]#login?orsignup=true"><b><span class="buttonSpan">CREATE YOUR VIBLIO ACCOUNT &raquo;</span></b></a>
                     </td>
-                    <td width="99" style="width:99px;"></td>
+                    <td width="105" style="width:105px;"></td>
                 </tr>
             </tbody>
         </table>
@@ -42,17 +42,17 @@
             <li>I know how to share</li>
             <li>I can keep things private</li>
         </ul>
-        <br />
         Get to know me by creating your <a class="noUnderline" href="[% c.server %]#login?orsignup=true"><b><span class="tomato">free personal account</span></b></a>.
         <br />
         <br />
         <span style="font-size:14px"><strong>Browser support</strong> I've been around for only a year, so I'm still learning how to operate in this world. I work best with <span class="tomato">Chrome</span>, <span class="tomato">Firefox</span> and <span class="tomato">Safari</span>. If possible, please use one of those browsers over Internet Explorer.</span><br />
         <br />
-        <table border="0" cellpadding="0" cellspacing="0" height="100" style="width:100%; height:100px;" width="100%">
+        <br />
+        <table border="0" cellpadding="0" cellspacing="0" height="70" style="width:100%; height:70px;" width="100%">
             <tbody>
-                <tr height="100" style="width:100%; height:100px;" width="100%">
-                    <td height="100" style="width: 100px; height:100px; padding:0;" valign="middle" width="100"><img align="none" alt="Viblio logo" height="97" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 100px; height: 97px;" width="100" /></td>
-                    <td height="100" style="width:400px; height:100px; padding:0; padding-left:10px;" valign="middle" width="400">
+                <tr height="70" style="width:100%; height:70px;" width="100%">
+                    <td height="70" style="width: 70px; height:70px; padding:0;" valign="middle" width="70"><img align="none" alt="Viblio logo" height="70" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 70px; height: 70px;" width="70" /></td>
+                    <td height="70" style="width:430px; height:70px; padding:0; padding-left:10px;" valign="middle" width="30">
                         <p style="margin:0;">If you have questions or suggestions for me, please email me at <u><a href="mailto:feedback@viblio.com" target="_blank"><span class="tomato">feedback@viblio.com</span></a></u>.</p>
                     </td>
                 </tr>
