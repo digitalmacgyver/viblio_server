@@ -804,5 +804,64 @@ sub create_shared_album {
     return $community;
 }
 
+# Used to create the pulldown menu of possible filters; find all
+# unique activities in the user's videos.  This method returns an
+# array of activities found across all videos, NOT a searchable rs.
+sub video_filters {
+    my( $self ) = @_;
+    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
+	{ 'media.user_id' => $self->id,
+	  "media.is_album" => 0,
+	  -or => [ "media.status" => "visible",
+		   "media.status" => "complete" ],
+	  'me.feature_type' => 'activity' },
+	{ prefetch => { 'media_asset' => 'media' },
+	  group_by => ['coordinates'] } );
+    my @feats = $rs->all;
+    my @filters = map { $_->coordinates } @feats;
+    # how about faces?
+    $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
+	{ 'media.user_id' => $self->id,
+	  "media.is_album" => 0,
+	  -or => [ "media.status" => "visible",
+		   "media.status" => "complete" ],
+	  'me.feature_type' => 'face' },
+	{ prefetch => { 'media_asset' => 'media' } } );
+    if ( $rs->count ) {
+	push( @filters, 'people' );
+    }
+    return @filters;
+}
+
+# Return the list of videos that contain one of the activities passed
+# in as a list.
+sub videos_with_activities {
+    my( $self, $act_list ) = @_;
+    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
+	{ 'media.user_id' => $self->id,
+	  "media.is_album" => 0,
+	  -or => [ "media.status" => "visible",
+		   "media.status" => "complete" ],
+	  'me.feature_type' => 'activity',
+	  'me.coordinates' => { -in => $act_list } },
+	{ prefetch => { 'media_asset' => 'media' },
+	  group_by => ['media.id'] } );
+    return map { $_->media_asset->media } $rs->all;
+}
+
+# Return the list of videos that contain faces
+sub videos_with_people {
+    my( $self ) = @_;
+    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
+	{ 'media.user_id' => $self->id,
+	  "media.is_album" => 0,
+	  -or => [ "media.status" => "visible",
+		   "media.status" => "complete" ],
+	  'me.feature_type' => 'face' },
+	{ prefetch => { 'media_asset' => 'media' },
+	  group_by => ['media.id'] } );
+    return map { $_->media_asset->media } $rs->all;
+}    
+
 __PACKAGE__->meta->make_immutable;
 1;

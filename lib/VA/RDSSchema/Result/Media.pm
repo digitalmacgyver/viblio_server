@@ -542,5 +542,51 @@ sub is_community_member_of {
     }
 }
 
+# Return the list of MediaAssetFeatures that represent
+# activities (feature_type=activity, coordinates=(baseball).
+# This method returns only the unique ones.
+sub unique_activities {
+    my( $self ) = @_;
+    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
+	{ 'media.id' => $self->id,
+	  'me.feature_type' => 'activity' },
+	{ prefetch => { 'media_asset' => 'media' },
+	  group_by => ['coordinates'] } );
+    return $rs;
+}
+
+# Same as above, but returns the complete list, say if baseball
+# occurs more than once in the video.
+sub activities {
+    my( $self ) = @_;
+    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
+	{ 'media.id' => $self->id,
+	  'me.feature_type' => 'activity' },
+	{ prefetch => { 'media_asset' => 'media' } } );
+    return $rs;
+}
+
+# Same as the two "activities' above, but throws in faces as well,
+# in case you want to treat a face as being an activity, such as
+# "this video contains soccer, and this video contains faces"
+sub unique_faces_or_activities {
+    my( $self ) = @_;
+    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
+	{ 'media.id' => $self->id,
+	  'me.feature_type' => { -in => ['face', 'activity'] } },
+	{ prefetch => { 'media_asset' => 'media' },
+	  group_by => ['coordinates'] } );
+    return $rs;
+}
+
+sub faces_or_activities {
+    my( $self ) = @_;
+    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
+	{ 'media.id' => $self->id,
+	  'me.feature_type' => { -in => ['face', 'activity'] } },
+	{ prefetch => { 'media_asset' => 'media' } } );
+    return $rs;
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
