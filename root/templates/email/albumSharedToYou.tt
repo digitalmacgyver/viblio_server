@@ -37,10 +37,12 @@
             </tbody>
         </table>
         <br />
+        <br />
         <div class="leftAligned">
             <span>Movingly yours,</span><br />
             <span>VIBLIO, your personal video librarian</span><br />
         </div>
+        <br />
         <br />
         <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
         <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
