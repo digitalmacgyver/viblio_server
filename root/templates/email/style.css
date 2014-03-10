@@ -368,6 +368,11 @@
                             height: 271px;
                         }
                         
+                        .videoThumb-Sm {
+                            width: 100px;
+                            height: 75px;
+                        }
+                        
                         .line {
                             height: 0;
                             width: 100%;

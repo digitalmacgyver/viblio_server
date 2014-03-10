@@ -1,0 +1,110 @@
+[% INCLUDE email/top.tt 
+    previewText = "See your weekly VIBLIO activity summary."
+%]
+    <div class="regSize darkText">
+        <span>Hi [% user.displayname %]!</span><br />
+        <br />
+        <span>Here are the videos you took this week ready to <u><a href="[% c.server  %]#home"><span class="tomato">share</span></a></u></span>
+        
+        <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
+            <tbody>
+                [% FOREACH media IN model.media -%]
+                    [% LAST IF loop.count > 8 %]
+                    [%- "<tr>\n" IF loop.first || loop.count == 5 || loop.count == 9 %]
+                        <td class="face" valign="top">
+                            <table cellspacing="0">
+                                <tbody>
+                                    <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+                                        <td cellspacing="0" cellpadding="0">
+                                            <a href='[% c.server  %]#new_player?mid=[% media.uuid %]'>
+                                                <img class='videoThumb-Sm' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table> 
+                        </td>   
+                    [%- "</tr>\n" IF loop.last || loop.count == 4 || loop.count == 8 %]
+                [% END %]
+            </tbody>
+        </table>
+
+        [% IF model.media.size > 8 %]
+        <span>&#8230; and [% model.media.size - 8 %] more</span>
+            <br />
+            <br />
+        [% END %]        
+
+        [% IF model.albums.size > 0 %]
+            <span>I've been organizing your videos for you into albums.</span><br />
+            <span>You have albums for&#8230;</span>
+            <br />
+            <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
+                <tbody>
+                    [% FOREACH album IN model.albums -%]
+                        [% LAST IF loop.count > 8 %]
+                        [%- "<tr>\n" IF loop.first || loop.count == 5 || loop.count == 9 %]
+                            <td class="face" valign="top">
+                                <table cellspacing="0">
+                                    <tbody>
+                                        <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+                                            <td cellspacing="0" cellpadding="0">
+                                                <img class='videoThumb-Sm' src="[% c.server %]s/ip/[% album.views.poster.uri %]" />
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table> 
+                            </td>   
+                        [%- "</tr>\n" IF loop.last || loop.count == 4 || loop.count == 8 %]
+                    [% END %]
+                </tbody>
+            </table>
+	    [% IF model.albums.size > 8 %]
+                <span><strong>&#8230; and [% model.albums.size - 8 %] more!</strong></span><br />
+	    [% END %]
+            <br />
+            <br />
+        [% END %]
+        <div style='text-align: center;'>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tbody>
+                    <tr>
+                        <td width="500" style="width:500px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                                <tbody>
+                                    <tr>
+                                        <td width="94" style="width:94px;"></td>
+                                        <td class="button" width="312" height="33" align="center" style="width:312px;">
+                                            <a class="noUnderline" href="[% c.server %]#home?last_selected=yv-albums"><b><span class="buttonSpan">SHARE AN ALBUM &raquo;</span></b></a>
+                                        </td>
+                                        <td width="94" style="width:94px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <br />
+        <p>You take the videos - I'll keep them safe and organized for you to enjoy and share.</p>
+        <br />
+        <span>movingly yours,</span><br />
+        <span>VIBLIO, <em>your personal video assistant</em></span>
+        <br />
+        <br />
+        <div class="centered">
+            <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
+            <span class="smallPrivacy">
+                Privacy is important to you - and to us too. We do not sell, rent, barter for beads, or otherwise share your name or address. At any point, you can select the link at the bottom of any email to unsubscribe or change your email preferences.
+                <br />
+                <br />
+                Questions? Suggestions?  I’m all ears! Email me at <a class="tomato" href="mailto:feedback@support.viblio.com"><span class="tomato">feedback@viblio.com</span></a>.
+                <br />
+                <br />
+                Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.
+            </span>
+        </div>
+    </div>
+
+[% INCLUDE email/bottom.tt %]
