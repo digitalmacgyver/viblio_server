@@ -1,7 +1,7 @@
 [% INCLUDE email/top.tt 
     previewText = "See your weekly VIBLIO activity summary."
 %]
-    <div class="regSize darkText">
+    <div class="leftAligned regSize darkText">
         <span>Hi [% user.displayname %]!</span><br />
         <br />
         <span>Here are the videos you took this week ready to <u><a href="[% c.server  %]#home"><span class="tomato">share</span></a></u></span>
@@ -99,7 +99,7 @@
                 Privacy is important to you - and to us too. We do not sell, rent, barter for beads, or otherwise share your name or address. At any point, you can select the link at the bottom of any email to unsubscribe or change your email preferences.
                 <br />
                 <br />
-                Questions? Suggestions?  I’m all ears! Email me at <a class="tomato" href="mailto:feedback@support.viblio.com"><span class="tomato">feedback@viblio.com</span></a>.
+                Questions? Suggestions?  I'm all ears! Email me at <a class="tomato" href="mailto:feedback@support.viblio.com"><span class="tomato">feedback@viblio.com</span></a>.
                 <br />
                 <br />
                 Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.
