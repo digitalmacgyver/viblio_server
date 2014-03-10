@@ -836,14 +836,23 @@ sub video_filters {
 # Return the list of videos that contain one of the activities passed
 # in as a list.
 sub videos_with_activities {
-    my( $self, $act_list ) = @_;
+    my( $self, $act_list, $from, $to ) = @_;
+
+    my $where = { 'media.user_id' => $self->id,
+		  "media.is_album" => 0,
+		  -or => [ "media.status" => "visible",
+			   "media.status" => "complete" ],
+		  'me.feature_type' => 'activity',
+		  'me.coordinates' => { -in => $act_list } };
+    if ( $from && $to ) {
+	my $dtf = $self->result_source->schema->storage->datetime_parser;
+	$where->{ 'media.recording_date' } = { 
+	    -between => [
+		 $dtf->format_datetime( $from ),
+		 $dtf->format_datetime( $to ) ] };
+    }
     my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
-	{ 'media.user_id' => $self->id,
-	  "media.is_album" => 0,
-	  -or => [ "media.status" => "visible",
-		   "media.status" => "complete" ],
-	  'me.feature_type' => 'activity',
-	  'me.coordinates' => { -in => $act_list } },
+	$where,
 	{ prefetch => { 'media_asset' => 'media' },
 	  group_by => ['media.id'] } );
     return map { $_->media_asset->media } $rs->all;
@@ -851,13 +860,23 @@ sub videos_with_activities {
 
 # Return the list of videos that contain faces
 sub videos_with_people {
-    my( $self ) = @_;
+    my( $self, $from, $to ) = @_;
+    
+    my $where = { 'media.user_id' => $self->id,
+		  "media.is_album" => 0,
+		  -or => [ "media.status" => "visible",
+			   "media.status" => "complete" ],
+		  'me.feature_type' => 'face' };
+
+    if ( $from && $to ) {
+	my $dtf = $self->result_source->schema->storage->datetime_parser;
+	$where->{ 'media.recording_date' } = { 
+	    -between => [
+		 $dtf->format_datetime( $from ),
+		 $dtf->format_datetime( $to ) ] };
+    }
     my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
-	{ 'media.user_id' => $self->id,
-	  "media.is_album" => 0,
-	  -or => [ "media.status" => "visible",
-		   "media.status" => "complete" ],
-	  'me.feature_type' => 'face' },
+	$where,
 	{ prefetch => { 'media_asset' => 'media' },
 	  group_by => ['media.id'] } );
     return map { $_->media_asset->media } $rs->all;

@@ -2,6 +2,8 @@ package VA::Controller::Services::Filters;
 use Moose;
 use VA::MediaFile;
 use namespace::autoclean;
+use Data::Page;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 # Return an array of possible video filters that the user has on
@@ -14,7 +16,13 @@ sub video_filters :Local {
 
 sub filter_by :Local {
     my( $self, $c ) = @_;
-    my @filters = $c->req->param( 'filters[]' );
+
+    my @filters = $c->req->param( 'filters[]' );   # required
+    my $page = $c->req->param( 'page' ) || 1;      # optional
+    my $rows = $c->req->param( 'rows' ) || 10000;
+    my $month = $c->req->param( 'month' );
+    my $year  = $c->req->param( 'year' );
+
     my @activities = ();
     my $with_people = 0;
     foreach my $f ( @filters ) {
@@ -25,12 +33,15 @@ sub filter_by :Local {
 	    push( @activities, $f );
 	}
     }
+
+    my( $from, $to ) = between( $month, $year );
+
     my @a = ();  my @b = ();
     if ( $#activities >= 0 ) {
-	@a = $c->user-->videos_with_activities( \@activities );
+	@a = $c->user->videos_with_activities( \@activities, $from, $to );
     }
     if ( $with_people ) {
-	@b = $c->user->videos_with_people();
+	@b = $c->user->videos_with_people( $from, $to );
     }
     my @all = ( @a, @b );
     if ( $#all == -1 ) {
@@ -38,9 +49,78 @@ sub filter_by :Local {
     }
 
     # Now sort them by recording date, decending
-    
-    # and convert them to media files
+    my @sorted = sort{ $b->recording_date->epoch <=> $a->recording_date->epoch } @all;
 
+    # Slice out the portion requested with page, rows
+    my $pager = new Data::Page( $#sorted + 1, $rows, $page );
+    my @slice = ();
+    if ( $#sorted >= 0 ) {
+	@slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
+    }
+
+    # and convert them to media files
+    my @media = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ] } ) } @slice;
+
+    $self->status_ok( $c, { media => \@media, pager => $self->pagerToJson( $pager ) } );
+}
+
+sub tags_for_video :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $video = $c->user->videos->find({ uuid => $mid });
+    unless( $video ) {
+	$self->status_bad_request($c, $c->loc('Cannot find video for [_1]', $mid ) );
+    }
+    my @feats = $video->unique_faces_or_activities->all;
+    my $hash  = {};
+    foreach my $feat ( @feats ) {
+	my $atype = $feat->{_column_data}->{feature_type};
+	if ( $atype eq 'face' ) { $hash->{people} = 1; }
+	else { $hash->{$feat->coordinates} = 1; }
+    }
+    my @tags = keys %$hash;
+    $self->status_ok( $c, { tags => \@tags } );
+}
+
+sub between :Private {
+    my( $month, $year ) = @_;
+    my( $from, $to );
+
+    my @month_names = ( 'NA',
+			'January', 'February', 'March',
+			'April', 'May', 'June',
+			'July', 'August', 'September',
+			'October', 'November', 'December' );
+
+    if ( ! ( $month || $year ) ) {
+	# for all time
+	$from = DateTime->from_epoch( epoch => 0 );
+	$to   = DateTime->now();
+    }
+    elsif ( $year && ! $month ) {
+	$from = DateTime->new(
+	    year => $year,
+	    month => 1, day => 1, 
+	    hour => 0, minute => 0 );
+	$to = DateTime->new(
+	    year => $year,
+	    month => 12, day => 31,
+	    hour => 23, second => 59 );
+    }
+    elsif ( $year && $month ) {
+	my $mo = 0;
+        for( $mo = 0; $mo <= $#month_names; $mo++ ) {
+            last if ( $month_names[$mo] eq $month );
+        }
+        $from = DateTime->new(
+            year => $year,
+            month => $mo, day => 1, 
+            hour => 0, minute => 0 );
+        $to = $from->clone;
+        $to->add( months => 1 )->subtract( days => 1 );
+    }
+
+    return( $from, $to );
 }
 
 __PACKAGE__->meta->make_immutable;
