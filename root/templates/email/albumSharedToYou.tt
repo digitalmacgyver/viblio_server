@@ -1,5 +1,5 @@
 [% INCLUDE email/top.tt 
-    previewText = "An album of videos has been shared to you."
+    previewText = "Your friend has invited you to a video album on VIBLIO"
 %]
 
 [%# The data model that this template expects:
