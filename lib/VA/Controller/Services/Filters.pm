@@ -51,11 +51,22 @@ sub filter_by :Local {
     # Now sort them by recording date, decending
     my @sorted = sort{ $b->recording_date->epoch <=> $a->recording_date->epoch } @all;
 
+    # Since we had to do two fetches here, a video could be duplicated; having people
+    # in one array and an activity in the other array.  Sigh ...
+    my %seen = ();
+    my @uniq = ();
+    foreach my $mf ( @sorted ) {
+	unless( $seen{$mf->uuid} ) {
+	    push( @uniq, $mf );
+	    $seen{$mf->uuid} = 1;
+	}
+    }
+
     # Slice out the portion requested with page, rows
-    my $pager = new Data::Page( $#sorted + 1, $rows, $page );
+    my $pager = new Data::Page( $#uniq + 1, $rows, $page );
     my @slice = ();
-    if ( $#sorted >= 0 ) {
-	@slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
+    if ( $#uniq >= 0 ) {
+	@slice = @uniq[ $pager->first - 1 .. $pager->last - 1 ];
     }
 
     # and convert them to media files
