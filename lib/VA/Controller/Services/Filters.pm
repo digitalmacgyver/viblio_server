@@ -72,7 +72,21 @@ sub filter_by :Local {
     # and convert them to media files
     my @media = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ] } ) } @slice;
 
-    $self->status_ok( $c, { media => \@media, pager => $self->pagerToJson( $pager ) } );
+    # And gather the "calander" data
+    my $bin = {};
+    my @months = ();
+    foreach my $mf ( @slice ) {
+	my $label = $mf->recording_date->month_name . ' ' . $mf->recording_date->year;
+	if ( $mf->recording_date->epoch == 0 ) {
+	    $label = $c->loc( 'Missing dates' );
+	}
+	if ( ! defined( $bin->{$label} ) ) {
+	    $bin->{$label} = 1;
+	    push( @months, $label );
+	}
+    }
+
+    $self->status_ok( $c, { media => \@media, pager => $self->pagerToJson( $pager ), months => \@months } );
 }
 
 sub tags_for_video :Local {
