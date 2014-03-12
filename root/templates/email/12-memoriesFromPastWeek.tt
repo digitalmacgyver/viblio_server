@@ -75,7 +75,7 @@
                                     <tr>
                                         <td width="94" style="width:94px;"></td>
                                         <td class="button" width="312" height="33" align="center" style="width:312px;">
-                                            <a class="noUnderline" href="https://localhost/#home?last_selected=yv-albums"><b><span class="buttonSpan">SHARE AN ALBUM &raquo;</span></b></a>
+                                            <a class="noUnderline" href="[% c.server %]#home?last_selected=yv-albums"><b><span class="buttonSpan">SHARE AN ALBUM &raquo;</span></b></a>
                                         </td>
                                         <td width="94" style="width:94px;"></td>
                                     </tr>

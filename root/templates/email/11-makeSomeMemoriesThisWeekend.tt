@@ -1,0 +1,85 @@
+[% INCLUDE email/top.tt 
+    previewText = "Make some memories this weekend"
+%]
+    <div class="leftAligned regSize darkText">
+        <span>Hi, it's me VIBLIO, your personal video assistant.</span><br />
+        <br />
+        <span>Whatever you decide to do this weekend, you're going to want to remember it later.  So take a few short videos - and I'll help you organize them into a video log of <em>your memories in motion<em>!</span><br />
+        <br />
+                
+        [% IF model.faces.size > 0 %]
+
+            [% IF model.faces.size == 1 %]
+                <span>Recognize this face?  I found it in videos you have already taken.<span><br /><br />
+            [% ELSE %]
+                <span>Recognize these faces?  I found them in videos you have already taken.<span><br /><br />
+            [% END %]
+            
+            <div style='text-align: center;'>
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                    <tbody>
+                        <tr>
+                            <td width="500" style="width:500px;">
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                                    <tbody>
+                                        <tr>
+                                            <td width="94" style="width:94px;"></td>
+                                            <td class="button" width="312" height="33" align="center" style="width:312px;">
+                                                <a class="noUnderline" href="[% c.server %]#people"><b><span class="buttonSpan">NAME THESE FACES &raquo;</span></b></a>
+                                            </td>
+                                            <td width="94" style="width:94px;"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <span>to create VIBLIO albums of people you know.</span>
+            </div>
+
+            <table border="0" cellpadding="0" cellspacing="0" style="width:100%;" width="100%">
+                <tbody>
+                        <tr style="width:100%;" width="100%">
+                                <td style="width: 100px; padding:0;" valign="middle" width="100"><img align="none" alt="Viblio logo" height="97" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 100px; height: 97px;" width="100" /></td>
+                                <td style="width:400px; padding:0; padding-left:10px;" valign="middle" width="400">
+                                    <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
+                                        <tbody>
+                                            [% FOREACH face IN model.faces -%]
+                                                [% LAST IF loop.count > 8 %]
+                                                [%- "<tr>\n" IF loop.first || loop.count == 5 || loop.count == 9 %]
+                                                    <td class="face" valign="top">
+                                                        <table cellspacing="0">
+                                                            <tbody>
+                                                                <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+                                                                    <td cellspacing="0" cellpadding="0">
+                                                                        <a href='[% c.server %]#faces'>
+                                                                            <img class="boxShadowed" width="80" height="80" src="[% c.server %]s/ip/[% face.uri %]" alt="face image" style="width: 80px;height: 80px;">
+                                                                        </a>    
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table> 
+                                                    </td>   
+                                                [%- "</tr>\n" IF loop.last || loop.count == 4 || loop.count == 8 %]
+                                            [% END %]
+                                        </tbody>
+                                    </table>    
+                                </td>
+                        </tr>
+                </tbody>
+            </table>
+	    [% IF model.faces.size > 8 %]
+	      <span><strong>... and [% model.faces.size - 8 %] more!</strong></span><br />
+	    [% END %]
+            
+        [% END %]
+        
+        <br />
+        <br />
+        <div class="centered">
+            <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
+        </div>
+    </div>
+
+[% INCLUDE email/bottom.tt %]
