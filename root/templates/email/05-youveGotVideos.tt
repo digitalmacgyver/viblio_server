@@ -48,7 +48,7 @@
             <br />
         [% END %]
         
-        [% IF model.faces.size > 0 %]
+        [% IF model.unnamedfaces.size > 0 %]
             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
                 <tbody>
                     <tr>
@@ -58,7 +58,7 @@
                                     <tr>
                                         <td width="99" style="width:99px;"></td>
                                         <td class="button" width="302" height="33" align="center" style="width:302px;">
-                                            <a class="noUnderline" href="[% c.server  %]#people"><b><span class="buttonSpan">NAME [% IF model.faces.size == 1 %]THIS FACE [% ELSE %] THESE FACES [% END %] &raquo;</span></b></a>
+                                            <a class="noUnderline" href="[% c.server  %]#people"><b><span class="buttonSpan">NAME [% IF model.unnamedfaces.size == 1 %]THIS FACE [% ELSE %] THESE FACES [% END %] &raquo;</span></b></a>
                                         </td>
                                         <td width="99" style="width:99px;"></td>
                                     </tr>
@@ -80,7 +80,7 @@
                                 <td style="width:400px; padding:0; padding-left:10px;" valign="middle" width="400">
                                     <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
                                         <tbody>
-                                            [% FOREACH face IN model.faces -%]
+                                            [% FOREACH face IN model.unnamedfaces -%]
                                                 [% LAST IF loop.count > 8 %]
                                                 [%- "<tr>\n" IF loop.first || loop.count == 5 || loop.count == 9 %]
                                                     <td class="face" valign="top">
