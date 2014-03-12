@@ -34,6 +34,12 @@ sub filter_by :Local {
 	}
     }
 
+    if ( $month && ! $year ) {
+	if ( $month =~ /(\S+)\s+(\d+)/ ) {
+	    $month = $1; $year = $2;
+	}
+    }
+
     my( $from, $to ) = between( $month, $year );
 
     my @a = ();  my @b = ();
