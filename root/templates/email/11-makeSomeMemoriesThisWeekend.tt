@@ -7,9 +7,9 @@
         <span>Whatever you decide to do this weekend, you're going to want to remember it later.  So take a few short videos - and I'll help you organize them into a video log of <em>your memories in motion<em>!</span><br />
         <br />
                 
-        [% IF model.faces.size > 0 %]
+        [% IF model.unnamedfaces.size > 0 %]
 
-            [% IF model.faces.size == 1 %]
+            [% IF model.unnamedfaces.size == 1 %]
                 <span>Recognize this face?  I found it in videos you have already taken.<span><br /><br />
             [% ELSE %]
                 <span>Recognize these faces?  I found them in videos you have already taken.<span><br /><br />
@@ -47,7 +47,7 @@
                                 <td style="width:400px; padding:0; padding-left:10px;" valign="middle" width="400">
                                     <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
                                         <tbody>
-                                            [% FOREACH face IN model.faces -%]
+                                            [% FOREACH face IN model.unnamedfaces -%]
                                                 [% LAST IF loop.count > 8 %]
                                                 [%- "<tr>\n" IF loop.first || loop.count == 5 || loop.count == 9 %]
                                                     <td class="face" valign="top">
@@ -71,8 +71,8 @@
                         </tr>
                 </tbody>
             </table>
-	    [% IF model.faces.size > 8 %]
-	      <span><strong>... and [% model.faces.size - 8 %] more!</strong></span><br />
+	    [% IF model.unnamedfaces.size > 8 %]
+	      <span><strong>... and [% model.unnamedfaces.size - 8 %] more!</strong></span><br />
 	    [% END %]
             
         [% END %]
