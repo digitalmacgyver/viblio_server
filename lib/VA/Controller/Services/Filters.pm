@@ -99,17 +99,7 @@ sub tags_for_video :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
     my $video = $c->user->videos->find({ uuid => $mid });
-    unless( $video ) {
-	$self->status_bad_request($c, $c->loc('Cannot find video for [_1]', $mid ) );
-    }
-    my @feats = $video->unique_faces_or_activities->all;
-    my $hash  = {};
-    foreach my $feat ( @feats ) {
-	my $atype = $feat->{_column_data}->{feature_type};
-	if ( $atype eq 'face' ) { $hash->{people} = 1; }
-	else { $hash->{$feat->coordinates} = 1; }
-    }
-    my @tags = keys %$hash;
+    my @tags = $video->tags;
     $self->status_ok( $c, { tags => \@tags } );
 }
 

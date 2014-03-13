@@ -588,5 +588,20 @@ sub faces_or_activities {
     return $rs;
 }
 
+# This method returns a simple array of unique tags that can be used
+# when publishing a media file.
+sub tags {
+    my( $self ) = @_;
+    my @feats = $self->unique_faces_or_activities->all;
+    my $hash  = {};
+    foreach my $feat ( @feats ) {
+        my $atype = $feat->{_column_data}->{feature_type};
+        if ( $atype eq 'face' ) { $hash->{people} = 1; }
+        else { $hash->{$feat->coordinates} = 1; }
+    }
+    my @tags = keys %$hash;
+    return @tags;
+}
+
 __PACKAGE__->meta->make_immutable;
 1;

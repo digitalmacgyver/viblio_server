@@ -194,6 +194,10 @@ sub publish {
 	$mf_json->{views}->{face} = \@data;
     }
 
+    # Attach an array of unique tag names
+    my @tags = $mediafile->tags;
+    $mf_json->{tags} = \@tags;
+
     return $mf_json;
 }
 
