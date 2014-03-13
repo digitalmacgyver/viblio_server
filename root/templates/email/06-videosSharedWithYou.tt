@@ -2,6 +2,20 @@
     subject = "A Video has been Shared with you on Viblio."
     previewText = "Your friend has shared a video with you on Viblio!"
 %]
+
+[%# The trigger that is expected to send email:
+
+  When someone shares a video with you
+%]
+
+[%# The data model that this template expects:
+
+  from: The JSON object for a Viblio user, the one who shared the video
+  body: The text body of the message sent along with the share
+  media: An array of mediafiles that are being shared (should only contain one mf object)
+  url: The url needed to register and login to watch the shared video 
+%]
+
     <div class="centered regSize darkText">
         <p style="text-align: left;"><span>[% from.displayname %] says: </span><span>"[% body %]"</span></p>
         <br />

@@ -2,6 +2,11 @@
     previewText = "A new video has been added to a shared album."
 %]
 
+[%# The trigger that is expected to send email:
+
+  To album owner when someone adds a new video
+%]
+
 [%# The data model that this template expects:
 
   user:  The JSON object for a Viblio user, the one who added the video

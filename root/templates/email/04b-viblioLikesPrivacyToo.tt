@@ -2,6 +2,15 @@
     previewText = "Learn about privacy on VIBLIO"
 %]
 
+[%# The trigger that is expected to send email:
+
+  Send 2 days after any new account creation
+%]
+
+[%# The data model that this template expects:
+
+  user:  The JSON object for a Viblio user, the one who is receiving the email
+%]
     <div class='regSize darkText' style='text-align: left;'>
         <span>Hi [% model.user.displayname %],</span>
         <br />

@@ -2,6 +2,16 @@
     previewText = "Make some memories this weekend"
 %]
 
+[%# The trigger that is expected to send email:
+
+  After new account creation if 2 weeks go by and the user has not uploaded any videos yet
+%]
+
+[%# The data model that this template expects:
+
+  user: The JSON object for a Viblio user, the one who is receiving the email
+%]
+
     <div class='paddedDiv regSize darkText leftAligned'>
         Hi [% user.displayname %],
         <br />

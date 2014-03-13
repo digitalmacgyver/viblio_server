@@ -1,9 +1,22 @@
 [% INCLUDE email/top.tt 
     previewText = "Your friend wants you to try Viblio"
 %]
+
+[%# The trigger that is expected to send email:
+
+  auto send when 'tell a friend' is invoked
+%]
+
+[%# The data model that this template expects:
+
+  name: The text name OR email address (which ever we have access to) of the person receiving the email
+  from: The JSON object for a Viblio user, the one who is sending the email
+  message: The text body of the message sent along from the 'from' user when invoking 'tell a friend'
+%]
+
     <div class="regSize darkText" style="text-align: left;">
         [%- META no_wrapper = 1 -%]
-        <span style="text-align:left;" class="largeText">Congratulations <span class="tomato">[% model.user.displayname %]</span>!</span>
+        <span style="text-align:left;" class="largeText">Congratulations <span class="tomato">[% name %]</span>!</span>
         <br />
         <br />
         <span style="text-align:left;">Your friend <span class="tomato">[% from.displayname %]</span> wants to help you build and organize your own private video library so you can share videos together.</span>

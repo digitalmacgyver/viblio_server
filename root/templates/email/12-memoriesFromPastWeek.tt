@@ -1,6 +1,19 @@
 [% INCLUDE email/top.tt 
     previewText = "See your weekly VIBLIO activity summary."
 %]
+
+[%# The trigger that is expected to send email:
+
+  Weekly digest (Sun 7pm?) of last week's activities - only sent to users who actually did something
+%]
+
+[%# The data model that this template expects:
+
+  user: The JSON object for a Viblio user, the one who is receiving the email
+  media: An array of new mediafiles that were uploaded over the last week
+  albums: an array of new albums that were created over the last week 
+%]
+
     <div class="leftAligned regSize darkText">
         <span>Hi [% user.displayname %]!</span><br />
         <br />

@@ -2,6 +2,15 @@
     previewText = "Getting started with your new VIBLIO account"
 %]
 
+[%# The trigger that is expected to send email:
+
+  Auto send on new account creation
+%]
+
+[%# The data model that this template expects:
+
+  user:  The JSON object for a Viblio user, the one who is receiving the email
+%]
     <div class='regSize darkText' style='text-align: left;'>
         <p class='xLargeText' style='text-align: center;'>Success!</p>
         <span><strong>I'm VIBLIO, your personal video assistant.  Here's how we can work together</strong></span>

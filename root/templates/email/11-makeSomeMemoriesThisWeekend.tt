@@ -1,6 +1,17 @@
 [% INCLUDE email/top.tt 
     previewText = "Make some memories this weekend"
 %]
+
+[%# The trigger that is expected to send email:
+
+  Send weekly on Friday (7pm?) to any user that has done anything over the past week
+%]
+
+[%# The data model that this template expects:
+
+  unnamedfaces: An array of unnamed faces in the receiving user's account
+%]
+
     <div class="leftAligned regSize darkText">
         <span>Hi, it's me VIBLIO, your personal video assistant.</span><br />
         <br />

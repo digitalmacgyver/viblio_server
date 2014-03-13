@@ -2,6 +2,11 @@
     previewText = "Your friend has invited you to a video album on VIBLIO"
 %]
 
+[%# The trigger that is expected to send email:
+
+  On sharing an album to all who have been shared with
+%]
+
 [%# The data model that this template expects:
 
   user:  The JSON object for a Viblio user, the one who shared the album

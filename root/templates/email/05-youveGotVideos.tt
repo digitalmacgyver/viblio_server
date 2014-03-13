@@ -2,6 +2,17 @@
     subject = "You've got Videos"
     previewText = "You've got Videos!"
 %]
+
+[%# The trigger that is expected to send email:
+
+  Daily summary (7pm?) of new videos uploaded and processed
+%]
+
+[%# The data model that this template expects:
+
+  media: An array of new media files that the user is being email about
+  unnamedfaces: An array of unnamed faces in the receiving user's account
+%]
     <div class="centered regSize darkText">
         <span>You've got [% model.media.size %] new [% IF model.media.size == 1 %]video [% ELSE %]videos [% END %] in your VIBLIO account.</span>
         <br />
