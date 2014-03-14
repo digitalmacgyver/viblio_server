@@ -5,6 +5,7 @@ use namespace::autoclean;
 use JSON;
 use URI::Escape;
 use DateTime::Format::Flexible;
+use CGI;
 
 use Geo::Distance;
 
@@ -515,7 +516,7 @@ sub sanitize :Private {
     if ( length( $txt ) > 2048 ) {
 	$txt = substr( $txt, 0, 2047 );
     }
-    return $txt;
+    return CGI::escapeHTML( $txt );
 }
 
 sub add_comment :Local {
