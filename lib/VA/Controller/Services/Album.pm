@@ -236,8 +236,7 @@ sub add_media :Local {
 	    video => VA::MediaFile->new->publish( $c, $media, { views => ['poster'] } ),
 	    url => sprintf( "%s#web_player?mid=%s", $c->server, $media->uuid ),
 	};
-	# Send them to the message queue
-	my @real_users = ();
+	# Send them to the message queue and send email
 	foreach my $to ( @to ) {
 	    if ( $to->{user} ) {
 		$c->model( 'MQ' )->post( '/enqueue', {
@@ -250,16 +249,14 @@ sub add_media :Local {
 		    data => $model } );
 		# remove user element, so we can use to for sending emails
 		delete $to->{user};
-		push( @real_users, $to );
+
+		$self->send_email( $c, {
+		    subject => $c->loc( '[_1] added a new video to [_2]', $c->user->displayname, $album->title ),
+		    to => [ $to ],
+		    template => 'email/newVideoAddedToAlbum.tt',
+		    stash => $model } );
 	    }
 	}
-	# Send the email.  NOTE that we are only sending email to user's who
-	# have already registered if sent a shared album notification.
-	$self->send_email( $c, {
-	    subject => $c->loc( '[_1] added a new video to [_2]', $c->user->displayname, $album->title ),
-	    to => \@real_users,
-	    template => 'email/newVideoAddedToAlbum.tt',
-	    stash => $model } );
     }
 
     $self->status_ok( $c, {} );
