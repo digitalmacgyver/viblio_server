@@ -96,6 +96,8 @@ sub posters_for_user :Private {
     my $rs = $c->model( 'RDS::MediaAsset' )->
 	search({ 'me.asset_type' => 'poster',
 		 'me.user_id' => $c->user->id,
+		 'media.is_album' => 0,
+		 -or => [ 'media.status' => 'visible', 'media.status' => 'complete' ], 
 		 'media.recording_date' => {
 		     -between => [
 			  $dtf->format_datetime( $from ),
@@ -218,6 +220,8 @@ sub videos_for_year :Local {
 	    $db->{$month} = ();
 	}
 	my $hash = $poster->media->TO_JSON;
+	my @tags = $poster->media->tags;
+	$hash->{tags} = \@tags;
 	my $klass = $c->config->{mediafile}->{$poster->location};
 	my $fp = new $klass;
 	my $url = $fp->uri2url( $c, $poster->uri );
@@ -324,6 +328,8 @@ sub videos_for_month :Local {
     my @data = ();
     foreach my $poster ( @posters ) {
 	my $hash = $poster->media->TO_JSON;
+	my @tags = $poster->media->tags;
+	$hash->{tags} = \@tags;
 	my $klass = $c->config->{mediafile}->{$poster->location};
 	my $fp = new $klass;
 	my $url = $fp->uri2url( $c, $poster->uri );
