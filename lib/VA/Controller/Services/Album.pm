@@ -91,9 +91,9 @@ sub notify :Private {
     foreach my $to ( @$_to ) {
 	$model->{url} = $urls->{$to->{email}};
 	$self->send_email( $c, {
-	    subject => $c->loc( '[_1] shared an album with you', $c->user->displayname ),
+	    subject => $c->loc( '[_1] has invited you to a video album', $c->user->displayname ),
 	    to => [ $to ],
-	    template => 'email/albumSharedToYou.tt',
+	    template => 'email/19-albumSharedToYou.tt',
 	    stash => $model } );
     }
 
@@ -256,9 +256,9 @@ sub add_media :Local {
 	# Send the email.  NOTE that we are only sending email to user's who
 	# have already registered if sent a shared album notification.
 	$self->send_email( $c, {
-	    subject => $c->loc( '[_1] added a new video to [_2]', $c->user->displayname, $album->title ),
+	    subject => $c->loc( '[_1] has just added a video to your video album: [_2]', $c->user->displayname, $album->title ),
 	    to => \@real_users,
-	    template => 'email/newVideoAddedToAlbum.tt',
+	    template => 'email/20-newVideoAddedToAlbum.tt',
 	    stash => $model } );
     }
 

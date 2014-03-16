@@ -563,8 +563,8 @@ sub add_comment :Local {
     $hash->{who} = $comment->user->displayname;
 
     ### MONA WANTS TO TURN THIS OFF BECAUSE SHE IS WORRIED ABOUT SPAMMING
-
-    $self->status_ok( $c, { comment => $hash } );
+    ### And now she wants it back on
+    ### $self->status_ok( $c, { comment => $hash } );
 
     #################################################################################
 
@@ -588,7 +588,7 @@ sub add_comment :Local {
 		subject => $c->loc( 'Someone has commented on one of your videos.' ),
 		to => [{ email => $mf->user->email,
 			 name  => $mf->user->displayname }],
-		template => 'email/commentsOnYourVid.tt',
+		template => 'email/16-commentsOnYourVid.tt',
 		stash => {
 		    from => $c->user->obj,
 		    commentText => $comment->comment,
@@ -599,7 +599,7 @@ sub add_comment :Local {
 	}
     }
 
-    # Now see if the mediafile has private shares, and send email to those
+    # Now see if the mediafile has private shares, and send notifications to those
     # people
     #
     my @shares = $mf->media_shares->search({ share_type => 'private', user_id => { '!=', undef }});
@@ -729,10 +729,10 @@ sub add_share :Local {
 	# If we're here, then everything is ok so far and we can send emails
 	foreach my $addr ( keys %$addrs ) {
 	    my $email = {
-		subject => $subject || $c->loc( "Check out this video on viblio.com" ),
+		subject => $subject || $c->loc( "[_1] has shared a video with you", $c->user->obj->displayname ),
 		to => [{
 		    email => $addr }],
-		template => 'email/videosSharedWithYou.tt',
+		template => 'email/06-videosSharedWithYou.tt',
 		stash => {
 		    body => $body,
 		    from => $c->user->obj,

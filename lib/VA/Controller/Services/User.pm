@@ -582,7 +582,7 @@ sub tell_a_friend :Local {
 	    subject    => $c->loc( "Invitation to join Viblio" ),
 	    to => [{
 		email => $recip}],
-	    template => 'email/referAFriend.tt',
+	    template => 'email/15-inviteToShare.tt',
 	    stash => {
 		from => $user,
 		message => $message,
