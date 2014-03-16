@@ -41,12 +41,12 @@ while( my $arg = shift( @ARGV ) ) {
 
 # The email template to use.
 #
-my $email_template = 'email/youveGotVideos.tt';
-my $subject        = 'Videos uploaded today';
+my $email_template = 'email/05-youveGotVideos.tt';
+my $subject        = "You've got videos";
 unless( $force1 ) {
     if ( $days_ago > 1 ) {
-	$email_template = 'email/weeklyDigest.tt';
-	$subject        = 'Videos uploaded last week';
+	$email_template = 'email/12-memoriesFromPastWeek.tt';
+	$subject        = 'Your weekly video summary';
     }
 }
 
@@ -93,7 +93,7 @@ else {
 }
 
 if ( $report ) {
-    print sprintf( "%-30s %-7s %-7s %-7s\n", "User", "Total", "Found", "Viewed" );
+    print sprintf( "%-30s %-7s %-7s %-7s %-7s\n", "User", "Videos", "Albums", "Faces", "Unamed" );
 }
 
 foreach my $user ( @users ) {
@@ -105,17 +105,33 @@ foreach my $user ( @users ) {
     my @media = $user->videos->search(
 	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) }},
 	{prefetch => 'assets' } );
+    my @albums = $user->albums->search(
+	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) }},
+	{prefetch => 'assets' } );
     my @ids = map{ $_->id } @media;
     my @feat = $c->model( 'RDS::MediaAssetFeature' )
 	->search({'me.media_id' => { -in => \@ids }, 
-		  'contact.id' => { '!=', undef }, 
+		  'me.contact_id' => { '!=', undef },
+		  'contact.contact_name' => { '!=', undef }, 
 		  'me.feature_type'=>'face'}, 
 		 {prefetch=>['contact','media_asset'], 
-		  group_by=>['media_asset.media_id','contact.id'] });
-    my @faces = ();
+		  group_by=>['contact.id'] });
+    my @named_faces = ();
     foreach my $feat ( @feat ) {
-	push( @faces, { uri => $feat->media_asset->uri,
+	push( @named_faces, { uri => $feat->media_asset->uri,
 			name => $feat->contact->contact_name
+	      });
+    }
+    @feat = $c->model( 'RDS::MediaAssetFeature' )
+	->search({'me.media_id' => { -in => \@ids }, 
+		  'me.contact_id' => { '!=', undef },
+		  'contact.contact_name' => { '=', undef }, 
+		  'me.feature_type'=>'face'}, 
+		 {prefetch=>['contact','media_asset'], 
+		  group_by=>['contact.id'] });
+    my @unnamed_faces = ();
+    foreach my $feat ( @feat ) {
+	push( @unnamed_faces, { uri => $feat->media_asset->uri,
 	      });
     }
 
@@ -126,47 +142,122 @@ foreach my $user ( @users ) {
 	$view_count += $m->view_count;
     }
 
+    my @apublished = ();
+    foreach my $m ( @albums ) {
+	push( @apublished, VA::MediaFile->new->publish( $c, $m ) );
+    }
+
     # Only send email if there was some activity
     #
-    next if ( $#published == -1 );
+    next if ( ($#published == -1) && ($#apublished == -1) );
 
     if ( $report ) {
 	# Just print a report
-	print sprintf( "%-30s %-7s %-7s %-7s\n", 
-		       $user->email, $total, ($#published + 1), $view_count );
+	print sprintf( "%-30s %-7s %-7s %-7s %-7s\n", 
+		       $user->email, ($#published + 1), ($#apublished + 1), ($#named_faces + 1), ($#unnamed_faces + 1) );
     }
     else {
 	# Send the email
-	if ( send_mail( $c, $user, $total, ($#published + 1), $view_count, \@published, \@faces ) ) {
+	my $res  = VA::Controller::Services->send_email( $c, {
+	    subject => $c->loc( $subject ),
+	    to => [{ email => $user->email,
+		     name  => $user->displayname }],
+	    template => $email_template,
+	    stash => {
+		model => {
+		    user => $user,
+		    media => \@published,
+		    albumns => \@albums,
+		    faces => \@named_faces,
+		    unnamedfaces => \@unnamed_faces,
+		}
+	    } });
+	if ( $res ) {
 	    $c->log->error( "Failed to send ($days_ago) email to " . $user->email );
 	}
     }
 }
 
-exit 0;
+if ( $days_ago >= 7 ) {
+    # This is kind of a hack, but its not easy to change the cron script that
+    # fires this thing.  We have two more checks to perform:
+    # 1.  If a user creates an account, but does not upload videos in a week, send them a reminder
+    # 2.  If they haven't uploaded videos in two weeks, send them a different reminder.
+    #
+    # So, once a week, find all user accounts created between 1 and 2 weeks ago, and if they don't
+    # have videos, send the first email.  For any user accounts created between 2 and 3 weeks ago and
+    # no videos, send the send email.
+    #
+    my $one_week_ago = DateTime->from_epoch( epoch => ($NOW->epoch - 60*60*24*($days_ago)) );
+    my $two_weeks_ago = DateTime->from_epoch( epoch => ($NOW->epoch - 60*60*24*($days_ago+7)) );
+    my $three_weeks_ago = DateTime->from_epoch( epoch => ($NOW->epoch - 60*60*24*($days_ago+14)) );
 
-sub send_mail {
-    my( $c, $user, $total, $found, $view_count, $media, $faces ) = @_;
-
-    my $res  = VA::Controller::Services->send_email( $c, {
-	subject => $c->loc( $subject ),
-	to => [{ email => $user->email,
-		 name  => $user->displayname }],
-	template => $email_template,
-	stash => {
-	    model => {
-		user => $user,
-		media => $media,
-		faces => $faces,
-		vars => {
-		    totalVideosInAccount => $total,
-		    numVideosUploadedLastWeek => $found,
-		    numVideosViewedLastWeek => $view_count,
+    my @users = $c->model( 'RDS::User' )->search(
+	{ created_date => {
+	    -between => [
+		 $dtf->format_datetime( $two_weeks_ago ),
+		 $dtf->format_datetime( $one_week_ago ) 
+		]
+	  },
+		email => { '!=', undef }
+	});
+    if ( $report ) {
+	print( "There are " . ($#users + 1 ) . " users who created accounts between 1 and 2 weeks ago.\n" );
+	foreach my $user ( @users ) {
+	    print sprintf( "%-30s %-20s : video count: %d\n", $user->email, $user->created_date, $user->videos->count );
+	}
+    }
+    else {
+	foreach my $user ( @users ) {
+	    if ( $user->videos->count == 0 || $email_addr eq $user->email ) {
+		my $res  = VA::Controller::Services->send_email( $c, {
+		    subject => $c->loc( "Get started with your new VIBLIO account" ),
+		    to => [{ email => $user->email,
+			     name  => $user->displayname }],
+		    template => 'email/08-dontForgetViblio.tt' });
+		if ( $res ) {
+		    $c->log->error( "Failed to send one-week upload reminder email to " . $user->email );
 		}
 	    }
-	} });
-    return $res;
+	}
+    }
+	
+    my @users = $c->model( 'RDS::User' )->search(
+	{ created_date => {
+	    -between => [
+		 $dtf->format_datetime( $three_weeks_ago ),
+		 $dtf->format_datetime( $two_weeks_ago ) 
+		]
+	  },
+		email => { '!=', undef }
+	});
+    if ( $report ) {
+	print( "There are " . ($#users + 1 ) . " users who created accounts between 2 and 3 weeks ago.\n" );
+	foreach my $user ( @users ) {
+	    print sprintf( "%-30s %-20s : video count: %d\n", $user->email, $user->created_date, $user->videos->count );
+	}
+    }
+    else {
+	foreach my $user ( @users ) {
+	    if ( $user->videos->count == 0 || $email_addr eq $user->email ) {
+		$c->log->debug( 'Sending email to ' . $user->email );
+		my $res  = VA::Controller::Services->send_email( $c, {
+		    subject => $c->loc( "VIBLIO wants to help"  ),
+		    to => [{ email => $user->email,
+			     name  => $user->displayname }],
+		    template => 'email/10-uploadSomeVideos-DRAFT.tt',
+		    stash => {
+			user => $user,
+		    } });
+		if ( $res ) {
+		    $c->log->error( "Failed to send two-week upload reminder email to " . $user->email );
+		}
+	    }
+	}
+    }
 }
+
+exit 0;
 
 END {
     # Without this, c->log output does not go out!

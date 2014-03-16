@@ -1,0 +1,50 @@
+[% INCLUDE email/top.tt 
+    previewText = "Your friend wants you to try Viblio"
+%]
+
+[%# The trigger that is expected to send email:
+
+  auto send when 'Invite to share' is invoked
+%]
+
+[%# The data model that this template expects:
+
+  name: The text name OR email address (which ever we have access to) of the person receiving the email
+  from: The JSON object for a Viblio user, the one who is sending the email
+  message: The text body of the message sent along from the 'from' user when invoking 'tell a friend'
+%]
+
+    <div class="regSize darkText" style="text-align: left;">
+        [%- META no_wrapper = 1 -%]
+        <span style="text-align:left;" class="largeText">Congratulations <span class="tomato">[% name %]</span>!</span>
+        <br />
+        <br />
+        <span style="text-align:left;">Your friend <span class="tomato">[% from.displayname %]</span> wants to help you collect, organize and share your videos easily from one private location. See their private message below:</span>
+        <br />
+        <br />
+        <table cellspacing="0" cellpadding="0" style="margin-right: auto;margin-left: auto;">
+            <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+                <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
+                <td cellspacing="0" cellpadding="0">
+                    <span style="text-align:left; font-size:14px;"><em>[% message %]</em></span>
+                </td>
+                <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
+            </tr>
+        </table>
+        <br />
+        <br />
+        <p style="text-align:left;">By creating your own Viblio account, you'll be able to do that, AND you and <span class="tomato">[% from.displayname %]</span> will be able to share the videos you want to share with each other privately through Viblio.</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+            <tbody>
+                <tr>
+                    <td width="105" style="width:105px;"></td>
+                    <td class="button" width="290" height="33" align="center" style="width:302px;">
+                        <a class="noUnderline" href="[% c.server %]#login?orsignup=true"><b><span class="buttonSpan">Sign Up for VIBLIO now &raquo;</span></b></a>
+                    </td>
+                    <td width="105" style="width:105px;"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+[% INCLUDE email/bottom.tt %]                                                        

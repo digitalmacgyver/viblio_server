@@ -2,6 +2,16 @@
     previewText = "Please confirm your Viblio account registration."
 %]
 
+[%# The trigger that is expected to send email:
+
+  Request to confirm email address. Only send to new accounts created by 1) a private share 2) Tell a friend or 3) invite to share
+%]
+
+[%# The data model that this template expects:
+
+  url:   link to the registration confirmation page
+%]
+
     <div class='paddedDiv regSize darkText leftAligned'>
         <span>Your account is almost active. To protect your privacy and security, we need to verify your registration.</span>
         <br />

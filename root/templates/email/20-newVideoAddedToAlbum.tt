@@ -1,22 +1,35 @@
-[% INCLUDE email/top.tt
-    subject = "A Video has been Shared with you on Viblio."
-    previewText = "Your friend has shared a video with you on Viblio!"
+[% INCLUDE email/top.tt 
+    previewText = "A new video has been added to a shared album."
 %]
+
+[%# The trigger that is expected to send email:
+
+  To album owner when someone adds a new video
+%]
+
+[%# The data model that this template expects:
+
+  user:  The JSON object for a Viblio user, the one who added the video
+  album: The published album data
+  video: The published video data
+  url:   The url to click on to view the new video
+%]
+
     <div class="centered regSize darkText">
-        <p style="text-align: left;"><span>[% from.displayname %] says: </span><span>"[% body %]"</span></p>
+        <p style="text-align: left;">[% user.displayname %] just added the following video to your VIBLIO album called &quot;[% album.title %]&quot; - NICE!</p>
         <br />
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
                 <td cellspacing="0" cellpadding="0">
                     <a href='[% url %]'>
-                        <img class='videoThumb-Lrg' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
+                        <img class='videoThumb-Lrg' src="[% c.server %]s/ip/[% video.views.poster.uri %]" />
                     </a>
                 </td>
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
             </tr>
         </table>
-        <span class="smallText">Video: [% model.media.0.title %]</span>
+        <span class="smallText">Video: [% video.title %]</span>
         <br />
         <br />
         <table border="0" cellpadding="0" cellspacing="0" height="100" style="width:100%; height:100px;" width="100%">
@@ -24,7 +37,7 @@
                 <tr height="100" style="width:100%; height:100px;" width="100%">
                     <td height="100" style="width: 100px; height:100px; padding:0;" valign="middle" width="100"><img align="none" alt="Viblio logo" height="97" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 100px; height: 97px;" width="100" /></td>
                     <td height="100" style="width:400px; height:100px; padding:0; padding-left:10px;" valign="middle" width="400">
-                        <p style="text-align: left;"><span><a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> to watch [% from.displayname %]'s video online, and share private comments with [% from.displayname %].</span></p>
+                        <p style="text-align: left;"><span><a class="tomato" href="[% url %]"><span class="tomato">LOGIN TO VIBLIO</span></a> to check out this new video and show [% user.displayname %] some appreciation!</span></p>
                     </td>
                 </tr>
             </tbody>
@@ -34,4 +47,4 @@
         <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
     </div>
 
-[% INCLUDE email/bottom.tt %]                                                            
+[% INCLUDE email/bottom.tt %]

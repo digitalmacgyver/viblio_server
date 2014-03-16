@@ -2,6 +2,15 @@
     previewText = "Getting started with your new VIBLIO account"
 %]
 
+[%# The trigger that is expected to send email:
+
+  Auto send on new account creation
+%]
+
+[%# The data model that this template expects:
+
+  user:  The JSON object for a Viblio user, the one who is receiving the email
+%]
     <div class='regSize darkText' style='text-align: left;'>
         <p class='xLargeText' style='text-align: center;'>Success!</p>
         <span><strong>I'm VIBLIO, your personal video assistant.  Here's how we can work together</strong></span>
@@ -28,10 +37,10 @@
             Privacy is important to you - and to us too. We do not sell, rent, barter for beads, or otherwise share your name or address. At any point, you can select the link at the bottom of any email to unsubscribe or change your email preferences.
             <br />
             <br />
-            If you have questions about our service or suggestions for making it better, please contact us at <a class="tomato" href="mailto:feedback@support.viblio.com"><span class="tomato">feedback@viblio.com</span></a>.
+            If you have questions about our service or suggestions for making it better, please contact us at <u><a class="tomato" href="mailto:feedback@support.viblio.com"><span class="tomato">feedback@viblio.com</span></a></u>.
             <br />
             <br />
-            Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.
+            Follow our <u><a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a></u>.
         </span>
     </div>
     <br />

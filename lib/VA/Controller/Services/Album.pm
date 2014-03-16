@@ -91,9 +91,9 @@ sub notify :Private {
     foreach my $to ( @$_to ) {
 	$model->{url} = $urls->{$to->{email}};
 	$self->send_email( $c, {
-	    subject => $c->loc( '[_1] shared an album with you', $c->user->displayname ),
+	    subject => $c->loc( '[_1] has invited you to a video album', $c->user->displayname ),
 	    to => [ $to ],
-	    template => 'email/albumSharedToYou.tt',
+	    template => 'email/19-albumSharedToYou.tt',
 	    stash => $model } );
     }
 

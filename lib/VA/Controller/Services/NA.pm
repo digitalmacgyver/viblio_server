@@ -595,23 +595,25 @@ sub new_user :Local {
 
 	# And finally, send them a nice welcome email
 	#
-	my $headers = {
+	$self->send_email( $c, {
 	    subject => $c->loc( "Viblio Account Confirmation" ),
 	    to => [{
 		email => $user->email,
 		name  => $user->displayname }],
+	    template => 'email/03-accountConfirmation.tt',
 	    stash => {
 		url => $c->server . '#confirmed?uuid=' . $user->uuid,
-	    }
-	};
-
-	if ( $args->{via} eq 'trayapp' ) {
-	    $headers->{template} = 'email/accountConfirmation.tt';
-	}
-	else {
-	    $headers->{template} = 'email/accountCreated_ShareReferral.tt';
-	}
-	$self->send_email( $c, $headers );
+	    }});
+	# Send an instructional email too.
+	$self->send_email( $c, {
+	    subject => $c->loc( "I'm VIBLIO and I'm here to help!" ),
+	    to => [{
+		email => $user->email,
+		name  => $user->displayname }],
+	    template => 'email/04-07-accountCreated.tt',
+	    stash => {
+		model => { user => $user }
+	    }});
 	$self->status_ok( $c, { user => $c->user->obj } );
     }
     else {
@@ -712,7 +714,7 @@ sub forgot_password_request :Local {
 	subject  => $c->loc( "Reset your password on Viblio" ),
 	to => [{
 	    email => $args->{email} }],
-	template => 'email/forgotPassword.tt',
+	template => 'email/18-forgotPassword.tt',
 	stash => {
 	    new_password => $code,
 	    user => $user,
@@ -1019,7 +1021,7 @@ sub mediafile_create :Local {
 		to => [{
 		    email => $user->email,
 		    name  => $user->displayname }],
-		template => 'email/firstVideosUploaded.tt',
+		template => 'email/05-youveGotVideos.tt',
 		stash => {
 		    user => $user,
 		    media => $mf,

@@ -1,6 +1,20 @@
 [% INCLUDE email/top.tt 
     previewText = "Someone has commented on your video!"
 %]
+
+[%# The trigger that is expected to send email:
+
+  When a comment is posted on your video
+%]
+
+[%# The data model that this template expects:
+
+  from: The JSON object for a Viblio user, the one who left the comment
+  commentText: The text body of the comment left of the video
+  url: The url for the video that had the comment left on it
+  media: An array of mediafiles that were commented on (should only contain one mf object - the actual video that was commented on)
+%]
+
     <div class="regSize darkText" style="text-align: left;">
         <span><span class="tomato">[% from.displayname %]</span> has commented on your video.</span><br />
         <br />

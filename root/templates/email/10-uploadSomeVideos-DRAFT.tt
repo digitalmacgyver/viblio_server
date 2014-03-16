@@ -2,6 +2,16 @@
     previewText = "Make some memories this weekend"
 %]
 
+[%# The trigger that is expected to send email:
+
+  After new account creation if 2 weeks go by and the user has not uploaded any videos yet
+%]
+
+[%# The data model that this template expects:
+
+  user: The JSON object for a Viblio user, the one who is receiving the email
+%]
+
     <div class='paddedDiv regSize darkText leftAligned'>
         Hi [% user.displayname %],
         <br />
@@ -16,7 +26,9 @@
                  and inviting people to join it. Unlike other sharing sites, everyone invited to your album can give the rest of the group (and no one else) access to a
                  video in their VIBLIO account making it easy to create video collections around ski trips, soccer games, weddings, performances, and more.</li>
         </ol>
+        <br />
         Questions? Suggestions? I'm all ears! Email me at <u><a href="mailto:feedback@viblio.com" target="_blank"><span class="tomato">feedback@viblio.com</span></a></u>.
+        <br />
         <p class="share" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
     </div>
 

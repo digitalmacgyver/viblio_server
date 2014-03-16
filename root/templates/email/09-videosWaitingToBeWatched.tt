@@ -2,6 +2,21 @@
     subject = "A Video has been Shared with you on Viblio."
     previewText = "Your friend has shared a video with you on Viblio!"
 %]
+
+[%# The trigger that is expected to send email:
+
+  3 days after email #06 if the user has not logged in and watched the video
+%]
+
+[%# The data model that this template expects:
+
+  from: The JSON object for a Viblio user, the one who shared the video
+  numDays: An integer value of the number of days passed since the initial email 06-videosSharedWithYou.tt was sent  
+  url: The url needed to register and login to watch the shared video
+  body: the text body of the message sent along with the share from the initial email 06-videosSharedWithYou.tt
+  media: An array of mediafiles that were being shared from the initial email 06-videosSharedWithYou.tt (should only contain one mf object) 
+%]
+
     <div class="centered regSize darkText">
         <p style="text-align: left;">[% from.displayname %] shared a video with you [% numDays %] days ago.</p>
         <br />
