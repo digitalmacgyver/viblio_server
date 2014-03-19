@@ -85,7 +85,7 @@
                                     <tbody>
                                         <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td cellspacing="0" cellpadding="0">
-                                                <a href='[% c.server %]#faces'>
+                                                <a href='[% c.server %]#people'>
                                                     <img class="boxShadowed" width="100" height="100" src="[% c.server %]s/ip/[% face.uri %]" alt="" style="width: 100px;height: 100px;">
                                                 </a>    
                                             </td>
