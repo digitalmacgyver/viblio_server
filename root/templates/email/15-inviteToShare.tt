@@ -1,5 +1,5 @@
 [% INCLUDE email/top.tt 
-    previewText = "Your friend wants you to try Viblio"
+    previewText = "Your friend wants you to try VIBLIO"
 %]
 
 [%# The trigger that is expected to send email:
@@ -33,7 +33,7 @@
         </table>
         <br />
         <br />
-        <p style="text-align:left;">By creating your own Viblio account, you'll be able to do that, AND you and <span class="tomato">[% from.displayname %]</span> will be able to share the videos you want to share with each other privately through Viblio.</p>
+        <p style="text-align:left;">By creating your own VIBLIO account, you'll be able to do that, AND you and <span class="tomato">[% from.displayname %]</span> will be able to share the videos you want to share with each other privately through VIBLIO.</p>
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
             <tbody>
                 <tr>
