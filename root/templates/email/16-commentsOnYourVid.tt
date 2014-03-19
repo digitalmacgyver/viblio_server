@@ -51,7 +51,7 @@
                 <tr height="70" style="width:100%; height:70px;" width="100%">
                     <td height="70" style="width: 70px; height:70px; padding:0;" valign="middle" width="70"><img align="none" alt="Viblio logo" height="70" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 70px; height: 70px;" width="70" /></td>
                     <td height="70" style="width:430px; height:70px; padding:0; padding-left:10px;" valign="middle" width="30">
-                        <span><a class="tomato" href='[% c.server %]#new_player?mid=[% model.media.0.uuid %]'><span class="tomato">See the comment</span></a> in your VIBLIO library and comment back.
+                        <span><a class="tomato" href='[% c.server %]#new_player?mid=[% model.media.0.uuid %]'><span class="tomato">See the comment</span></a> in your VIBLIO library and comment back.</span>
                     </td>
                 </tr>
             </tbody>
