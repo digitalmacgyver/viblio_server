@@ -31,7 +31,6 @@
             </tbody>
         </table>
         <br />
-        <br />
         <p>And you'll be able to organize your videos using VIBLIO's Magic Tagging&trade; and also privately share them with [% from.displayname %].</p>
         <br />
         [% from.displayname %]'s message:
