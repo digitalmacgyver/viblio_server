@@ -23,21 +23,21 @@
         
         <div class="line"></div>
 
-        <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
+        <table cellspacing="0" cellpadding="0" width="100%" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px; width:100%">
             <tbody>
                 <tr>
                 [% FOREACH media IN model.media %]
                     [% LAST IF loop.count > 2 %]
                         <td class="video" valign="bottom">
-                            <table cellspacing="0">
+                            <table cellspacing="0" width="50%" style="width:50%">
                                 <tbody>
                                     <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                        <td class="name" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                            Title: [% media.title %]
+                                        <td class="name" cellspacing="0" cellpadding="0" width="100%" style="margin: 0; width:100%">
+                                            [% IF media.title != 'Untitled' %] Title: [% media.title %] [% END %]
                                         </td>
                                     </tr>
                                     <tr cellspacing="0" cellpadding="0" style="margin: 0;">
-                                        <td cellspacing="0" cellpadding="0">
+                                        <td cellspacing="0" cellpadding="0" width="100%" style="margin: 0; width:100%">
                                             <a href='[% c.server  %]#new_player?mid=[% media.uuid %]'>
                                                 <img class='videoThumb boxShadowed' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
                                             </a>
@@ -99,7 +99,7 @@
                                                             <tbody>
                                                                 <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                                                     <td cellspacing="0" cellpadding="0">
-                                                                        <a href='[% c.server %]#faces'>
+                                                                        <a href='[% c.server %]#people'>
                                                                             <img class="boxShadowed" width="80" height="80" src="[% c.server %]s/ip/[% face.uri %]" alt="face image" style="width: 80px;height: 80px;">
                                                                         </a>    
                                                                     </td>
