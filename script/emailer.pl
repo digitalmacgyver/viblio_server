@@ -30,7 +30,38 @@ $c->{server_override} = $servers->{$ENV{'VA_CONFIG_LOCAL_SUFFIX'}};
 
 # Change the logger so it does not clobber viblio's
 $c->log( Log::Dispatch->new );
-$c->log->add( Log::Dispatch::File->new( name => 'emailer', min_level => 'debug', filename => '/tmp/emailer.log' ) );
+
+$c->log->add( Log::Dispatch::File->new( 
+		  name => 'emailer', 
+		  min_level => 'debug', 
+		  filename => '/tmp/emailer.log' ) );
+
+$c->log->add( Log::Dispatch::Syslog->new( 
+		  name => 'syslog', 
+		  min_level => 'info',
+		  format_o => '%m %X',
+		  ident =>  => 'emailer' ) );
+
+$c->log->add( Log::Dispatch::Screen::Color->new( 
+    name => 'screen',
+    min_level => 'debug',
+    format => '[%p] %m at %F line %L%n',
+    newline => 1,
+    color => {
+      debug => {
+        text => 'green' },
+      info => {
+        text => 'red' },
+      error => {
+        background => 'red' },
+      alert => {
+        text => 'red',
+        background => 'white' },
+      warning => {
+        text => 'red',
+        background => 'white',
+        bold => 1 }
+}));
 
 while( 1 ) {
     my $message;
