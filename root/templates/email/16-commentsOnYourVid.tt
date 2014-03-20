@@ -36,13 +36,15 @@
                 </td>
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
             </tr>
-            <tr cellspacing="0" cellpadding="0" style="margin: 0;">
-                <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
-                <td cellspacing="0" cellpadding="0">
-                    <span class="smallText">Video: [% model.media.0.title %]</span>
-                </td>
-                <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
-            </tr>
+            [% IF model.media.0.title != 'Untitled' %]
+                <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+                    <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
+                    <td cellspacing="0" cellpadding="0">
+                        <span class="smallText">Video: [% model.media.0.title %]</span>
+                    </td>
+                    <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
+                </tr>
+            [% END %]
         </table>
         <br />
         <br />
