@@ -567,6 +567,7 @@ sub tell_a_friend :Local {
     my( $self, $c ) = @_;
     my @list = $c->req->param( 'list[]' );
     my $message = $c->req->param( 'message' );
+    my $tnum = $c->req->param( 'emailTemplate' ) || 15;
 
     my $user = $c->user->obj;
 
@@ -578,12 +579,25 @@ sub tell_a_friend :Local {
     my @clean = $self->expand_email_list( $c, \@list, [ $c->user->email ] );
 
     foreach my $recip ( @clean ) {
+	my $to_name = $recip;
+	my $u = $c->model( 'RDS::User' )->find({ email => $recip });
+	if ( $u ) {
+	    $to_name = $u->displayname;
+	}
+	else {
+	    my $addr = $c->user->is_email_valid( $recip );
+	    if ( $addr ) {
+		$to_name = $addr->name;
+	    }
+	}
 	$self->send_email( $c, {
 	    subject    => $c->loc( "Invitation to join Viblio" ),
 	    to => [{
+		name  => $to_name,
 		email => $recip}],
-	    template => 'email/15-inviteToShare.tt',
+	    template => ( $tnum == 15 ? 'email/15-inviteToShare.tt' : 'email/14-referAFriend.tt' ),
 	    stash => {
+		name => $to_name,
 		from => $user,
 		message => $message,
 	    } });
