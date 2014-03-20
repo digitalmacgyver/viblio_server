@@ -14,7 +14,7 @@
   message: The text body of the message sent along from the 'from' user when invoking 'tell a friend'
 %]
 
-    <div class="centered regSize darkText">
+    <div class="leftAligned regSize darkText">
         <span class="largeText">Congratulations <span class="tomato">[% name %]</span>!</span>
         <br />
         <br />
