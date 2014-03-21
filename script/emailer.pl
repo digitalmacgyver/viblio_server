@@ -28,6 +28,41 @@ unless( $ENV{'VA_CONFIG_LOCAL_SUFFIX'} ) {
 $c = VA->new;
 $c->{server_override} = $servers->{$ENV{'VA_CONFIG_LOCAL_SUFFIX'}};
 
+# Change the logger so it does not clobber viblio's
+$c->log( Log::Dispatch->new );
+
+$c->log->add( Log::Dispatch::File->new( 
+		  name => 'emailer', 
+		  min_level => 'debug', 
+		  filename => '/tmp/emailer.log' ) );
+
+$c->log->add( Log::Dispatch::Syslog->new( 
+		  name => 'syslog', 
+		  min_level => 'info',
+		  format_o => '%m %X',
+		  ident =>  => 'emailer' ) );
+
+$c->log->add( Log::Dispatch::Screen::Color->new( 
+    name => 'screen',
+    min_level => 'debug',
+    format => '[%p] %m at %F line %L%n',
+    newline => 1,
+    color => {
+      debug => {
+        text => 'green' },
+      info => {
+        text => 'red' },
+      error => {
+        background => 'red' },
+      alert => {
+        text => 'red',
+        background => 'white' },
+      warning => {
+        text => 'red',
+        background => 'white',
+        bold => 1 }
+}));
+
 while( 1 ) {
     my $message;
     try {
@@ -36,8 +71,8 @@ while( 1 ) {
 	    WaitTimeSeconds => 10,
 	    VisibilityTimeout => 30 );
     } catch {
-	$c->log->error( 'SQS ReceiveMessage bombed: ' . $_ );
-	$c->log->_flush;
+	$c->log->error( 'SQS ReceiveMessage bombed: ' . $_ . "\n" );
+	# $c->log->_flush;
 	undef $message;
     };
     next unless( $message );
@@ -48,12 +83,12 @@ while( 1 ) {
     } catch {
 	if ( $message->can( 'MessageBody' ) ) {
 	    $c->log->error( 'Emailer: Could not decode: ' . 
-			    $message->MessageBody() . ': ' . $_ );
+			    $message->MessageBody() . ': ' . $_ . "\n" );
 	}
 	else {
-	    $c->log->error( 'Emailer: No MessageBody: ' . $_ );
+	    $c->log->error( 'Emailer: No MessageBody: ' . $_ . "\n" );
 	}
-	$c->log->_flush;
+	# $c->log->_flush;
 	next;
     };
 
@@ -84,22 +119,22 @@ while( 1 ) {
     # performing email sends, which can be time expensive.
     #
     if ( send_email( $c, $msg ) ) {
-	$c->log->error( 'Emailer: Could not send email! ' . $message->MessageBody() );
+	$c->log->error( 'Emailer: Could not send email! ' . $message->MessageBody() . "\n" );
     }
     else {
 	$c->log->info( 
-	    sprintf( "Emailer: Sent email: Subject: '%s': To: %s",
+	    sprintf( "Emailer: Sent email: Subject: '%s': To: %s\n",
 		     ( $msg->{subject} || 'Unknown' ),
 		     ( $msg->{to} ? encode_json( $msg->{to} ) : 'Unknown' ) ));
     }
 
     my $res = $c->model( 'SQS', $c->config->{sqs}->{email} )->DeleteMessage( $message->ReceiptHandle() );
     if ( ! ( $res && $res->{ResponseMetadata} && $res->{ResponseMetadata}->{RequestId} ) ) {
-	$c->log->error( 'Emailer: Trouble deleting message: ' . $message->ReceiptHandle() );
+	$c->log->error( 'Emailer: Trouble deleting message: ' . $message->ReceiptHandle() . "\n" );
 	sleep 3;
     }
     # Without this, c->log output does not go out!
-    $c->log->_flush;
+    # $c->log->_flush;
 }
 
 sub send_email {
@@ -131,13 +166,18 @@ sub send_email {
 	$headers->{html} = $opts->{body};
     }
     else {
-	$headers->{html} = $c->view( 'HTML' )->render( $c, $opts->{template} );
+	try {
+	    $headers->{html} = $c->view( 'HTML' )->render( $c, $opts->{template} );
+	} catch {
+	    $c->log->error( "Could not render $opts->{template}: $_\n" );
+	    return 1;
+	};
     }
     my $res = $c->model( 'Mandrill' )->send( $headers );
     if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	$c->log->error( "Emailer: Error using Mailchimp to send" );
-	$c->logdump( $res );
-	$c->logdump( $headers );
+	$c->log->error( "Emailer: Error using Mailchimp to send\n" );
+	# $c->logdump( $res );
+	# $c->logdump( $headers );
     }
     return ( $res && $res->{status} && $res->{status} eq 'error' );
 }

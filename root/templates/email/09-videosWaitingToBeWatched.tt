@@ -1,6 +1,6 @@
 [% INCLUDE email/top.tt
-    subject = "A Video has been Shared with you on Viblio."
-    previewText = "Your friend has shared a video with you on Viblio!"
+    subject = "A Video has been Shared with you on VIBLIO."
+    previewText = "Your friend has shared a video with you on VIBLIO!"
 %]
 
 [%# The trigger that is expected to send email:
@@ -46,7 +46,7 @@
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
             </tr>
         </table>
-        <span class="smallText">Video: [% model.media.0.title %]</span>
+        [% IF model.media.0.title != 'Untitled' %] <span class="smallText">Video: [% model.media.0.title %]</span> [% END %]
         <br />
         <br />
         <table border="0" cellpadding="0" cellspacing="0" height="50" style="width:100%; height:50px;" width="100%">
@@ -54,7 +54,7 @@
                 <tr height="50" style="width:100%; height:50px;" width="100%">
                     <td height="50" style="width: 50px; height:50px; padding:0;" valign="middle" width="50"><img align="none" alt="Viblio logo" height="47" src="https://gallery.mailchimp.com/e046498448d5b3dac186f629b/images/logo_color_300.3.png" style="width: 50px; height: 47px;" width="50" /></td>
                     <td height="50" style="width:450px; height:50px; padding:0; padding-left:10px;" valign="middle" width="450">
-                        <p style="text-align: left;"><a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.</p>
+                        <p style="text-align: left;"><a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about VIBLIO.</p>
                     </td>
                 </tr>
             </tbody>

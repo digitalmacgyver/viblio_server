@@ -1,6 +1,6 @@
 [% INCLUDE email/top.tt
-    subject = "A Video has been Shared with you on Viblio."
-    previewText = "Your friend has shared a video with you on Viblio!"
+    subject = "A Video has been Shared with you on VIBLIO."
+    previewText = "Your friend has shared a video with you on VIBLIO!"
 %]
 
 [%# The trigger that is expected to send email:
@@ -30,7 +30,7 @@
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
             </tr>
         </table>
-        <span class="smallText">Video: [% model.media.0.title %]</span>
+        [% IF model.media.0.title != 'Untitled' %] <span class="smallText">Video: [% model.media.0.title %]</span> [% END %]
         <br />
         <br />
         <table border="0" cellpadding="0" cellspacing="0" height="100" style="width:100%; height:100px;" width="100%">
@@ -44,7 +44,7 @@
             </tbody>
         </table>
         <br />
-        <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about Viblio.
+        <a class="tomato" href='[% c.server %]'><span class="tomato">Learn more</span></a> about VIBLIO.
         <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
     </div>
 

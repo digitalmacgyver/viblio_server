@@ -650,7 +650,7 @@ sub account_confirm :Local {
 	to => [{
 	    email => $user->email,
 	    name  => $user->displayname }],
-	template => 'email/accountCreated_trayApp.tt',
+	template => 'email/03-accountConfirmation.tt',
 	stash => {
 	    to => $user,
 	    url => $c->server,

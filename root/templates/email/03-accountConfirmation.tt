@@ -1,5 +1,5 @@
 [% INCLUDE email/top.tt 
-    previewText = "Please confirm your Viblio account registration."
+    previewText = "Please confirm your VIBLIO account registration."
 %]
 
 [%# The trigger that is expected to send email:
@@ -54,7 +54,7 @@
                 </tbody>
         </table>
         <br />
-        <span>Thanks for choosing to be part of the Viblio community.</span>
+        <span>Thanks for choosing to be part of the VIBLIO community.</span>
         <br />
         <br />
         <span style="font-size:14px;"><em>If you didn't create an account with us, please let us know by forwarding this email to <a style="font-size:14px;" href="mailto:notifications@viblio.com">notifications@viblio.com</a></em></span>

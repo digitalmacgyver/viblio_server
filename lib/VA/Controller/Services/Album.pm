@@ -253,7 +253,7 @@ sub add_media :Local {
 		$self->send_email( $c, {
 		    subject => $c->loc( '[_1] added a new video to [_2]', $c->user->displayname, $album->title ),
 		    to => [ $to ],
-		    template => 'email/newVideoAddedToAlbum.tt',
+		    template => 'email/20-newVideoAddedToAlbum.tt',
 		    stash => $model } );
 	    }
 	}

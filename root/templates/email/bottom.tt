@@ -25,7 +25,7 @@
                                                         <td width="45" style="width:45px"></td>
                                                         <td width="500" style="width:500px" valign="bottom" id="utility">
                                                             <div mc:edit="std_utility">
-                                                                <span>Viblio sent you this email because you signed up for our service.</span><br />
+                                                                <span>VIBLIO sent you this email because you signed up for our service.</span><br />
                                                                 <span>If you no longer want to receive these updates, you may edit your preferences <a href="[% c.server %]#settings" style="text-decoration:underline;">here</a>.</span><br />
                                                             </div>
                                                         </td>
