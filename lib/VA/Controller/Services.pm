@@ -5,6 +5,7 @@ use JSON::XS ();
 use Email::AddressParser;
 use Email::Address;
 use Net::Nslookup;
+use Try::Tiny;
 
 # My own 'REST' controller.  Catalyst::Controller::REST was just too restrictive
 # on the inputs and input methods.  I want my user's to be able to use get, put 
@@ -430,8 +431,12 @@ sub send_email :Local {
 
     # This now off loads to a Amazon SQS queue.  The emailer.pl server pops the
     # queue and does the actual sending of email.
-    my $res = $c->model( 'SQS', $c->config->{sqs}->{email} )
-	->SendMessage( $compact_encoder->encode( $opts ) );
+    try {
+	my $res = $c->model( 'SQS', $c->config->{sqs}->{email} )
+	    ->SendMessage( $compact_encoder->encode( $opts ) );
+    } catch {
+	$c->log->error( "send_email: error: $_" );
+    };
     return undef;
 }
 
