@@ -630,6 +630,66 @@ sub shared_with :Local {
     $self->status_ok( $c, { displayname => $displayname, members => \@data } );
 }
 
+sub create_face_album :Local {
+    my( $self, $c ) = @_;
+    my $title = $c->req->param( 'title' );
+    my $contact_uuid = $c->req->param( 'contact_id' );
+
+    my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $contact_uuid });
+    unless( $contact ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find contact' ) );
+    }
+
+    unless( $title ) {
+	$title = $contact->contact_name;
+    }
+
+    my $rs = $c->model( 'RDS::MediaAssetFeature' )
+	->search(
+	{ contact_id => $contact->id, 'me.user_id' => $c->user->id },
+	{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
+
+    my @mediafiles = map { $_->media_asset->media } $rs->all;
+
+    my $album = $c->user->create_related( 'media', {
+	is_album => 1,
+	recording_date => DateTime->now,
+	media_type => 'original',
+	title => $title });
+
+    unless( $album ) {
+	$c->status_bad_request( $c, $c->loc( 'Unable to create album' ) );
+    }
+
+    # Add all the media
+    foreach my $media ( @mediafiles ) {
+	my $rel = $c->model( 'RDS::MediaAlbum' )->create({ album_id => $album->id, media_id => $media->id });
+	unless( $rel ) {
+	    $self->status_bad_request( 
+		$c, $c->loc( 'Unable to establish relationship between new album and media' ) );
+	}
+    }
+
+    # The poster for this album is obtained from the first mediafile
+    my $media = $mediafiles[0];
+    my $poster = $media->assets->find({ asset_type => 'poster' });
+    $album->create_related( 'media_assets', {
+	user_id => $c->user->obj->id,
+	asset_type => 'poster',
+	mimetype => $poster->mimetype,
+	uri => $poster->uri,
+	location => $poster->location,
+	bytes => $poster->bytes,
+	width => $poster->width,
+	height => $poster->height,
+	provider => $poster->provider,
+	provider_id => $poster->provider_id });
+
+
+    my $hash = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+    $hash->{owner} = $album->user->TO_JSON;
+    $self->status_ok( $c, { album => $hash } );
+}
 
 __PACKAGE__->meta->make_immutable;
 
