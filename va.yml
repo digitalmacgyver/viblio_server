@@ -29,7 +29,7 @@ sqs:
 
 # Set to 1 when in beta.  This activates whitelist checking
 # for authentication and sharing.
-in_beta: 1
+in_beta: 0
 
 # for cloudfront signed urls
 cloudfront:
