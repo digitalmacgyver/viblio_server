@@ -151,6 +151,11 @@ foreach my $user ( @users ) {
     #
     next if ( ($#published == -1) && ($#apublished == -1) );
 
+    if ( $days_ago == 1 ) {
+	# The daily report should not include albums
+	next if ($#published == -1);
+    }
+
     if ( $report ) {
 	# Just print a report
 	print sprintf( "%-30s %-7s %-7s %-7s %-7s\n", 
@@ -167,7 +172,7 @@ foreach my $user ( @users ) {
 		model => {
 		    user => $user,
 		    media => \@published,
-		    albumns => \@albums,
+		    albums => \@apublished,
 		    faces => \@named_faces,
 		    unnamedfaces => \@unnamed_faces,
 		}

@@ -434,10 +434,12 @@ sub send_email :Local {
     try {
 	my $res = $c->model( 'SQS', $c->config->{sqs}->{email} )
 	    ->SendMessage( $compact_encoder->encode( $opts ) );
+	return undef;
     } catch {
 	$c->log->error( "send_email: error: $_" );
+	$c->log->debug( $encoder->encode( $opts ) );
+	return $_;
     };
-    return undef;
 }
 
 # Takes an array of email addresses and resolves it

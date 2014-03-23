@@ -15,8 +15,10 @@
 %]
 
     <div class="leftAligned regSize darkText">
-        <span>Hi [% user.displayname %]!</span><br />
+        <span>Hi [% model.user.displayname %]!</span><br />
         <br />
+
+        [% IF model.media.size > 0 %]
         <span>Here are the videos you took this week ready to <u><a href="[% c.server  %]#home"><span class="tomato">share</span></a></u></span>
         
         <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
@@ -47,6 +49,7 @@
             <br />
             <br />
         [% END %]        
+	[% END %]
 
         [% IF model.albums.size > 0 %]
             <span>I've been organizing your videos for you into albums.</span><br />
@@ -77,7 +80,7 @@
 	    [% END %]
             <br />
             <br />
-        [% END %]
+
         <div style='text-align: center;'>
             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
                 <tbody>
@@ -99,6 +102,8 @@
                 </tbody>
             </table>
         </div>
+        [% END %]
+
         <br />
         <p>You take the videos - I'll keep them safe and organized for you to enjoy and share.</p>
         <br />
