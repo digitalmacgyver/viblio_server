@@ -157,6 +157,9 @@ sub authenticate {
 	    # Get the facebook profile photo for our profile pic, 
 	    # if we don't already have one.
 	    #
+	    if ( ! $user->get_object->profile ) {
+		$user->get_object->create_profile();
+	    }
 	    if ( ! $user->get_object->profile->image ) {
 		my $uri = URI->new( 'https://graph.facebook.com/me/picture' );
 		$uri->query_form({ access_token => $code, width => 128, height => 128 });
