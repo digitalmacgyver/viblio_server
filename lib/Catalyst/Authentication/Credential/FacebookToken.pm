@@ -132,6 +132,7 @@ sub authenticate {
 	    # User's email must already exist ... no auto creates here!!
 	    if ( ! $ctx->model( 'RDS::User' )->find({email=>$fb_user->{email}}) ) {
 		$ctx->{authfail_code} = "NOLOGIN_EMAIL_NOT_FOUND";
+		$ctx->log->debug( 'Facebook user lookup failed: no db record for ' . $fb_user->{email} );
 		return undef;
 	    }
 	}
