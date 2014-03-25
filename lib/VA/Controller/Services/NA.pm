@@ -593,6 +593,7 @@ sub new_user :Local {
 	    $c->log->error( "Failed to send welcome_video SQS message: $_" );
 	};
 
+=perl
 	# And finally, send them a nice welcome email
 	#
 	$self->send_email( $c, {
@@ -604,6 +605,7 @@ sub new_user :Local {
 	    stash => {
 		url => $c->server . '#confirmed?uuid=' . $user->uuid,
 	    }});
+=cut
 	# Send an instructional email too.
 	$self->send_email( $c, {
 	    subject => $c->loc( "I'm VIBLIO and I'm here to help!" ),
