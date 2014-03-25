@@ -831,7 +831,7 @@ sub all_shared :Local {
     if ( $cid ) {
 	my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $cid });
 	if ( $contact ) {
-	    my @shares = $user->media_shares->search( {},{prefetch=>{ media => 'user'}} );
+	    my @shares = $user->media_shares->search({'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
 	    my @media_ids = map { $_->media->id } @shares;
 	    my @feats = $c->model( 'RDS::MediaAssetFeature' )
 		->search({ 'me.contact_id' => $contact->id,
@@ -842,7 +842,7 @@ sub all_shared :Local {
 	}
     }
     else {
-	my @shares = $user->media_shares->search( {},{prefetch=>{ media => 'user'}} );
+	my @shares = $user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
 	@media = map { $_->media } @shares;
     }
     
