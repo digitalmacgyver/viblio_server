@@ -616,7 +616,11 @@ sub avatar_for_name :Local {
 	else {
 	    $url = '/css/images/avatar.png';
 	}
-	$self->status_ok( $c, { url => $url, provider => $contact->provider || 'user supplied' } );
+        my $provider = 'user-supplied';
+        if ( $contact && $contact->{_column_data}->{provider} ) {
+            $provider = $contact->{_column_data}->{provider};
+        }
+        $self->status_ok( $c, { url => $url, provider => $provider  } );
     }
     else {
 	$self->status_ok( $c, {} );
