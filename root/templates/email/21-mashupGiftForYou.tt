@@ -16,9 +16,7 @@
     
     <div class="leftAligned regSize darkText">
         <p style="text-align: left;">Hi [% user.displayname %],</p>
-        <br />
         <p>I'm sending a little thank you gift your way to show you my appreciation for trying me out!</p>
-        <br />
         <p class="centered">Check out this fun mashup I made for you.</p>
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
