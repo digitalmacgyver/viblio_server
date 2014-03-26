@@ -29,7 +29,7 @@
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
             </tr>
         </table>
-        <p class="centered">Like it? <a href=""><span class='tomato'>SHARE IT!</span></a></p>
+        <p class="centered">Like it? <a href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><strong><span class='tomato'>SHARE IT!</span></strong></a></p>
         <br />
         <span>Your personal video assistant,</span><br />
         <span>VIBLIO</span>      
