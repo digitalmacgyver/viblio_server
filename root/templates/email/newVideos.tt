@@ -75,7 +75,7 @@
             [% ELSE %]
                 <span><strong>We found these new faces in your videos:</strong><span><br /><br />
             [% END %]
-            <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
+            <table cellspacing="0" cellpadding="0" style="text-align: left;margin-bottom: 20px;">
                 <tbody>
                     [% FOREACH face IN model.faces -%]
                         [% LAST IF loop.count > 8 %]
