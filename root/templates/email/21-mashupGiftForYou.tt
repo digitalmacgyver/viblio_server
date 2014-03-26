@@ -23,7 +23,7 @@
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
                 <td cellspacing="0" cellpadding="0">
-                    <a href='[% url %]'>
+                    <a href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]">
                         <img class='videoThumb-Lrg' src="[% c.server %]s/ip/[% model.media.0.views.poster.uri %]" />
                     </a>
                 </td>
