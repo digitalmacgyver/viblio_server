@@ -226,6 +226,12 @@ sub delete :Local {
     #       set picture_uri to some other video
     #
 
+    # This array will contain the list of contact uuids that fall
+    # into the "identified, only in this video" case.  This will
+    # be returned to the UI, so any contacts visible on the screen
+    # can be removed if the video file they are in is removed.
+    my @contacts_in_video = ();
+
     # Leverage the publish routine to obtain faces for
     # this mediafile.
     my $mediafile = VA::MediaFile->new->publish( $c, $mf, { assets => [], include_contact_info => 1 } );
@@ -280,6 +286,8 @@ sub delete :Local {
 			# so unset the picture_uri.
 			$c->log->debug( "  -> UNSET picture_uri " . $face->{contact}->{uuid} );
 			$contact->picture_uri( undef ); $contact->update;
+
+			push( @contacts_in_video, $contact->uuid ); # will be returned from this call
 		    }
 		}
 	    }
@@ -314,7 +322,7 @@ sub delete :Local {
 
     # Finally, delete record from the database
     $mf->delete;
-    $self->status_ok( $c, {} );
+    $self->status_ok( $c, { contacts => \@contacts_in_video } );
 }
 
 =head2 /services/mediafile/list
