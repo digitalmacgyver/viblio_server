@@ -141,7 +141,7 @@ sub send_email {
     my( $c, $opts ) = @_;
 
     my $from_email = 'reply@' . $c->config->{viblio_return_email_domain};
-    my $from_name  = 'Viblio';
+    my $from_name  = 'VIBLIO';
 
     if ( $opts->{from} ) {
 	$from_email = $opts->{from}->{email} || $from_email;
