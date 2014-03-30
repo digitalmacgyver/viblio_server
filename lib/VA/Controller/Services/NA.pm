@@ -1559,6 +1559,19 @@ sub form_feedback :Local {
     $self->status_ok( $c, {} );
 }
 
+# Sending email from the client using JSON in the body
+#
+sub emailer :Local {
+    my( $self, $c ) = @_;
+    if ( $c->{data} && $c->{data}->{subject} && $c->{data}->{to} ) {
+	$self->send_email( $c, $c->{data} );
+    }
+    else {
+	$self->status_bad_request( $c, $c->loc( 'Badly formed JSON body' ) );
+    }
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
