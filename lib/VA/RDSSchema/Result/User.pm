@@ -866,6 +866,7 @@ sub videos_with_people {
 		  "media.is_album" => 0,
 		  -or => [ "media.status" => "visible",
 			   "media.status" => "complete" ],
+		  'me.contact_id' => { '!=', undef },
 		  'me.feature_type' => 'face' };
 
     if ( $from && $to ) {

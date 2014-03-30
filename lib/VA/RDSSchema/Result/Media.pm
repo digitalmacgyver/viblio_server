@@ -569,21 +569,23 @@ sub activities {
 # Same as the two "activities' above, but throws in faces as well,
 # in case you want to treat a face as being an activity, such as
 # "this video contains soccer, and this video contains faces"
-sub unique_faces_or_activities {
+sub unique_people {
     my( $self ) = @_;
     my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
 	{ 'media.id' => $self->id,
-	  'me.feature_type' => { -in => ['face', 'activity'] } },
+	  'me.contact_id' => { '!=', undef },
+	  'me.feature_type' => 'face' },
 	{ prefetch => { 'media_asset' => 'media' },
-	  group_by => ['coordinates'] } );
+	  group_by => ['me.contact_id'] } );
     return $rs;
 }
 
-sub faces_or_activities {
+sub people {
     my( $self ) = @_;
     my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
 	{ 'media.id' => $self->id,
-	  'me.feature_type' => { -in => ['face', 'activity'] } },
+	  'me.contact_id' => { '!=', undef },
+	  'me.feature_type' => 'face' },
 	{ prefetch => { 'media_asset' => 'media' } } );
     return $rs;
 }
@@ -592,7 +594,7 @@ sub faces_or_activities {
 # when publishing a media file.
 sub tags {
     my( $self ) = @_;
-    my @feats = $self->unique_faces_or_activities->all;
+    my @feats = ( $self->unique_people->all, $self->unique_activities->all );
     my $hash  = {};
     foreach my $feat ( @feats ) {
         my $atype = $feat->{_column_data}->{feature_type};
