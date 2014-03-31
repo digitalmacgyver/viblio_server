@@ -118,6 +118,9 @@ sub publish {
     my %include;
     if ( $params->{views} ) {
 	%include = map { $_ => 1 } @{$params->{views}};
+	if ( $include{poster} ) {
+	    $include{poster_animated} = 1;
+	}
     }
     foreach my $view ( @views ) {
 	my $type = $view->{_column_data}->{asset_type};
