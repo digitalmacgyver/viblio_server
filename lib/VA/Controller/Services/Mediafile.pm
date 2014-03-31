@@ -1021,10 +1021,7 @@ sub related :Local {
 	'media.is_album' => 0,
 	-and => [ -or => ['media.user_id' => $user->id, 
 			  'media_shares.user_id' => $user->id], 
-		  -or => ['media.status' => 'TranscodeComplete',
-			  'media.status' => 'FaceDetectComplete',
-			  'media.status' => 'FaceRecognizeComplete',
-			  'media.status' => 'visible',
+		  -or => ['media.status' => 'visible',
 			  'media.status' => 'complete' ]
 	    ]}, {prefetch=>{'media' => 'media_shares'}, group_by=>['media.id']});
 
