@@ -197,9 +197,17 @@ sub publish {
 	$mf_json->{views}->{face} = \@data;
     }
 
-    # Attach an array of unique tag names
-    my @tags = $mediafile->tags;
-    $mf_json->{tags} = \@tags;
+    if ( $params->{include_tags} ) {
+	# Attach an array of unique tag names
+	my @tags = $mediafile->tags;
+	$mf_json->{tags} = \@tags;
+    }
+
+    if ( $params->{include_shared} ) {
+	$mf_json->{shared} = $c->model( 'RDS::MediaShare' )->search(
+	    { 'media.uuid' => $mediafile->uuid },
+	    { prefetch => 'media' })->count;
+    }
 
     return $mf_json;
 }

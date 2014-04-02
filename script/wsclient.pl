@@ -74,7 +74,7 @@ exit 1 unless( $result );
 # Grab any service args
 while (( my $arg = shift @ARGV )) {
     my( $k, $v ) = split( /=/, $arg, 2 );
-    if ( $k && $v ) {
+    if ( $k && defined($v) ) {
 	if ( $k =~ /\[\]$/ ) {
 	    my @v = split(/,/,$v);
 	    $v = \@v;

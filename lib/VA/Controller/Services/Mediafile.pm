@@ -384,12 +384,16 @@ sub list :Local {
         [ page => 1,
           rows => 10000,
 	  include_contact_info => 0,
+	  include_tags => 1,
+	  include_shared => 0,
 	  'views[]' => undef
         ],
         @_ );
-
+    $DB::single=1;
     my $params = {
 	include_contact_info => $args->{include_contact_info},
+	include_tags => $args->{include_tags},
+	include_shared => $args->{include_shared},
 	views => $args->{'views[]'}
     };
 
@@ -399,8 +403,11 @@ sub list :Local {
 	  page => $args->{page}, rows => $args->{rows},
 	  order_by => { -desc => 'me.id' } } );
     my @media = ();
-    push( @media, VA::MediaFile->new->publish( $c, $_, $params ) )
-	foreach( $rs->all );
+    foreach my $m ( $rs->all ) {
+	my @a = $m->assets;
+	$params->{assets} = \@a;
+	push( @media, VA::MediaFile->new->publish( $c, $m, $params ) )
+    }
     $self->status_ok(
 	$c,
 	{ media => \@media,
@@ -1198,12 +1205,12 @@ sub media_exists :Local {
     $self->status_ok( $c, { count => $count } );
 }
 
-# see if a particular mediafile has ever been shared by the user
+# see if a particular mediafile has ever been shared
 sub has_been_shared :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
     my @shared = $c->model( 'RDS::MediaShare' )->search(
-	{ 'media.uuid' => $mid, 'me.user_id' => $c->user->obj->id },
+	{ 'media.uuid' => $mid },
 	{ prefetch => 'media' });
     $self->status_ok( $c, { count => ( $#shared + 1 ) } );
 }

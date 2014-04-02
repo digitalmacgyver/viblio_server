@@ -590,11 +590,24 @@ sub people {
     return $rs;
 }
 
+# Lumps activities and people into one fetch.  Must be unniqueified by
+# the caller. 
+sub people_or_activities {
+    my( $self ) = @_;
+    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
+	{ 'media.id' => $self->id,
+	  -or => [ 'me.feature_type' => 'activity',
+		   -and => [ 'me.feature_type' => 'face',
+			     'me.contact_id' => { '!=', undef } ] ] },
+	{ prefetch => { 'media_asset' => 'media' } } );
+    return $rs;
+}
+
 # This method returns a simple array of unique tags that can be used
 # when publishing a media file.
 sub tags {
     my( $self ) = @_;
-    my @feats = ( $self->unique_people->all, $self->unique_activities->all );
+    my @feats = $self->people_or_activities->all ;
     my $hash  = {};
     foreach my $feat ( @feats ) {
         my $atype = $feat->{_column_data}->{feature_type};
