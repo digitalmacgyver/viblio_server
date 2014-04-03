@@ -139,6 +139,12 @@ __PACKAGE__->table("media");
   is_nullable: 1
   size: 32
 
+=head2 is_viblio_created
+
+  data_type: 'tinyint'
+  default_value: 0
+  is_nullable: 0
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -186,6 +192,8 @@ __PACKAGE__->add_columns(
   { data_type => "decimal", is_nullable => 1, size => [11, 8] },
   "status",
   { data_type => "varchar", is_nullable => 1, size => 32 },
+  "is_viblio_created",
+  { data_type => "tinyint", default_value => 0, is_nullable => 0 },
   "created_date",
   {
     data_type => "datetime",
@@ -400,9 +408,27 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+=head2 viblio_added_contents
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-03-04 09:52:46
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:LAxAamK6di0lVdTLg6NJZw
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::ViblioAddedContent>
+
+=cut
+
+__PACKAGE__->has_many(
+  "viblio_added_contents",
+  "VA::RDSSchema::Result::ViblioAddedContent",
+  {
+    "foreign.media_id"      => "self.id",
+    "foreign.media_user_id" => "self.user_id",
+  },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-04-02 23:10:28
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:oi9BLq8OIW51bhs3t3URwA
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

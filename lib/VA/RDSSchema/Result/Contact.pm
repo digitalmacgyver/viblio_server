@@ -283,8 +283,8 @@ __PACKAGE__->belongs_to(
   {
     is_deferrable => 1,
     join_type     => "LEFT",
-    on_delete     => "NO ACTION",
-    on_update     => "NO ACTION",
+    on_delete     => "SET NULL",
+    on_update     => "SET NULL",
   },
 );
 
@@ -369,8 +369,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Q3aF+qGodj/RUc+DqUDJZA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-04-02 23:10:26
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:MWVJ0udmFy4gRpjNyyIYdA
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

@@ -412,6 +412,21 @@ __PACKAGE__->belongs_to(
   },
 );
 
+=head2 user_devices
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::UserDevice>
+
+=cut
+
+__PACKAGE__->has_many(
+  "user_devices",
+  "VA::RDSSchema::Result::UserDevice",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 user_roles
 
 Type: has_many
@@ -442,6 +457,21 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+=head2 viblio_added_contents
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::ViblioAddedContent>
+
+=cut
+
+__PACKAGE__->has_many(
+  "viblio_added_contents",
+  "VA::RDSSchema::Result::ViblioAddedContent",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 workorders
 
 Type: has_many
@@ -468,8 +498,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-03-04 09:52:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cPvqAS2yPIxbEa0xqnDuRQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-04-02 23:10:33
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:TUbybQJuLdxdtThUwzZerA
 use Email::AddressParser;
 use Email::Address;
 
