@@ -1048,17 +1048,18 @@ sub mediafile_create :Local {
 
     # Mobile push notifications
     foreach my $dev ( $user->user_devices->all ) {
+	$dev->badge_count( $dev->badge_count + 1 );
 	my $options = {
 	    network => $dev->network,
 	    message => 'A new video is ready to share!',
 	    badge => $dev->badge_count,
+	    sound => 'default',
 	    custom => {
 		type => 'NEWVIDEO',
 		uuid => $mediafile->uuid,
 	    }
 	};
 	$self->push_notification( $c, $dev->device_id, $options );
-	$dev->badge_count( $dev->badge_count + 1 );
 	$dev->update;
     }
 
@@ -1585,6 +1586,33 @@ sub emailer :Local {
     else {
 	$self->status_bad_request( $c, $c->loc( 'Badly formed JSON body' ) );
     }
+    $self->status_ok( $c, {} );
+}
+
+# Send a push notification to a user
+sub send_push_notification :Local {
+    my( $self, $c ) = @_;
+    my $uid     = $c->req->param( 'uid' );
+    my $network = $c->req->param( 'network' );
+    my $message = $c->req->param( 'message' );
+    my $badge   = $c->req->param( 'badge' );
+
+    my $user = $c->model( 'RDS::User' )->find({ uuid => $uid });
+    unless( $user ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find user for [_1]', $uid ) );
+    }
+
+    my $options = { network => $network };
+    if ( $message ) { $options->{message} = $message; }
+    if ( $badge   ) { $options->{badge} = $badge; }
+
+    $options->{custom} = {
+	type => 'MESSAGE' };
+
+    foreach my $dev ( $user->user_devices->all ) {
+	$self->push_notification( $c, $dev->device_id, $options );
+    }
+
     $self->status_ok( $c, {} );
 }
 
