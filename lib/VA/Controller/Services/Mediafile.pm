@@ -454,8 +454,13 @@ sub get :Local {
     $include_contact_info = $c->req->param( 'include_contact_info' ) unless( $include_contact_info );
     $include_contact_info = 0 unless( $include_contact_info );
 
+    my $include_shared = $c->req->param( 'include_shared' ) || 0;
+    my $include_tags = $c->req->param( 'include_tags' ) || 1;
+
     my $params = {
 	include_contact_info => $include_contact_info,
+	include_shared => $include_shared,
+	include_tags => $include_tags,
     };
     if ( $c->req->param( 'views[]' ) ) {
 	my @views = $c->req->param( 'views[]' );

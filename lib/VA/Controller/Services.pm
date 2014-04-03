@@ -7,6 +7,8 @@ use Email::Address;
 use Net::Nslookup;
 use Try::Tiny;
 
+use Net::APNS;
+
 # My own 'REST' controller.  Catalyst::Controller::REST was just too restrictive
 # on the inputs and input methods.  I want my user's to be able to use get, put 
 # and post freely, and to be able to pass params as uri args, form inputs or json
@@ -476,6 +478,35 @@ sub expand_email_list :Private {
     }
 
     return keys %uniq;
+}
+
+sub push_notification :Private {
+    my( $self, $c, $token, $options ) = @_;
+    if ( $options->{network} eq 'APNS' ) {
+	try {
+	    my $APNS = Net::APNS->new;
+	    my $notifier = $APNS->notify({
+		cert   => $c->config->{push}->{apns}->{cert},
+		key    => $c->config->{push}->{apns}->{key},
+		passwd => $c->config->{push}->{apns}->{password} });
+	    $notifier->devicetoken( $token );
+	    if ( $options->{message} ) {
+		$notifier->message( $options->{message} );
+	    }
+	    if ( $options->{badge} ) {
+		$notifier->badge( $options->{badge} );
+	    }
+	    if ( $options->{sound} ) {
+		$notifier->sound( $options->{sound} );
+	    }
+	    if ( $options->{custom} ) {
+		$notifier->custom( $options->{custom} );
+	    }
+	    $notifier->write;
+	} catch {
+	    $c->log->error( "Push notification: $_" );
+	};
+    }
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -638,12 +638,31 @@ sub clear_badge :Local {
     my $dev = $c->user->user_devices->find({ 
 	network => $network, device_id => $deviceid });
     if ( $dev ) {
-	#$dev->count( 0 );
-	#$dev->update;
+	$dev->badge_count( 0 );
+	$dev->update;
     }
     $self->status_ok( $c, {} );
 }
 
+sub send_push_notification :Local {
+    my( $self, $c ) = @_;
+    my $network = $c->req->param( 'network' );
+    my $message = $c->req->param( 'message' );
+    my $badge = $c->req->param( 'badge' );
+
+    my $options = { network => $network };
+    if ( $message ) { $options->{message} = $message; }
+    if ( $badge   ) { $options->{badge} = $badge; }
+
+    $options->{custom} = {
+	type => 'MESSAGE' };
+
+    foreach my $dev ( $c->user->user_devices->all ) {
+	$self->push_notification( $c, $dev->device_id, $options );
+    }
+
+    $self->status_ok( $c, {} );
+}
 
 __PACKAGE__->meta->make_immutable;
 

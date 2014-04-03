@@ -1046,6 +1046,20 @@ sub mediafile_create :Local {
 	$c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
     }
 
+    # Mobile push notifications
+    foreach my $dev ( $user->user_devices->all ) {
+	my $options = {
+	    network => $dev->network,
+	    message => 'A new video is ready to share!',
+	    badge => $dev->badge_count,
+	    custom => {
+		type => 'NEWVIDEO',
+		uuid => $mediafile->uuid,
+	    }
+	};
+	$self->push_notification( $c, $dev->device_id, $options );
+    }
+
     $self->status_ok( $c, {} );
 }
 

@@ -43,4 +43,4 @@ VA-0.01.tar.gz
 ^ssl/
 ^notes/
 ^package.tar.gz
-^push-notifications/
+^root/push/

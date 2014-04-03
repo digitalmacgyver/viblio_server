@@ -27,6 +27,12 @@ sqs:
   recognition: arn:aws:sqs:us-west-2:442359467480:recognition_local
   email: arn:aws:sqs:us-west-2:442359467480:email_local
 
+push:
+  apns:
+    cert: __path_to(root,push,apns,APNS-cert.pem)__
+    key:  __path_to(root,push,apns,APNS-private.pem)__
+    password: Viblio1234$$
+
 # Set to 1 when in beta.  This activates whitelist checking
 # for authentication and sharing.
 in_beta: 0

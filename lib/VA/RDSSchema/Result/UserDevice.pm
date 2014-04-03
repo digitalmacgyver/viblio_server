@@ -79,6 +79,12 @@ __PACKAGE__->table("user_devices");
   is_nullable: 0
   size: 1024
 
+=head2 badge_count
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -102,6 +108,8 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 0, size => 64 },
   "device_id",
   { data_type => "varchar", is_nullable => 0, size => 1024 },
+  "badge_count",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
   "created_date",
   {
     data_type => "datetime",
@@ -146,8 +154,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-04-02 23:10:32
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ImWLjS1qqqo5JfMqusPOmQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-04-03 13:18:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:KGRBqsPaWZN2RdhJerUxrQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
