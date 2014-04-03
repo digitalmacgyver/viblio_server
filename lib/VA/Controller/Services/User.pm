@@ -606,6 +606,27 @@ sub tell_a_friend :Local {
     $self->status_ok( $c, {} );
 }
 
+sub add_device :Local {
+    my( $self, $c ) = @_;
+    my $network = $c->req->param( 'network' );
+    my $deviceid = $c->req->param( 'deviceid' );
+    unless( $network && $deviceid ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Missing network and/or deviceid params' ) );
+    }
+    my $o = $c->user->find_or_create_related(
+	'user_devices', { network => $network,
+			  device_id => $deviceid } );
+    unless( $o ) {
+	$c->log->error( 'Failed to create device id record',
+			$c->user->uuid, $network, $deviceid );
+	$self->status_bad_request(
+	    $c, $c->loc( 'Failed to create device id record' ) );
+    }
+
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
