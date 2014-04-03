@@ -82,6 +82,7 @@ requires 'Crypt::OpenSSL::RSA';
 requires 'Net::GitHub::V3';
 requires 'Amazon::SQS::Simple';
 requires 'Geo::Distance::XS';
+requires 'Net::APNS';
 
 test_requires 'Test::More' => '0.88';
 catalyst;

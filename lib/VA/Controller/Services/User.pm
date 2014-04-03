@@ -627,6 +627,24 @@ sub add_device :Local {
     $self->status_ok( $c, {} );
 }
 
+sub clear_badge :Local {
+    my( $self, $c ) = @_;
+    my $network = $c->req->param( 'network' );
+    my $deviceid = $c->req->param( 'deviceid' );
+    unless( $network && $deviceid ) {
+	$self->status_bad_request(
+	    $c, $c->loc( 'Missing network and/or deviceid params' ) );
+    }
+    my $dev = $c->user->user_devices->find({ 
+	network => $network, device_id => $deviceid });
+    if ( $dev ) {
+	#$dev->count( 0 );
+	#$dev->update;
+    }
+    $self->status_ok( $c, {} );
+}
+
+
 __PACKAGE__->meta->make_immutable;
 
 1;
