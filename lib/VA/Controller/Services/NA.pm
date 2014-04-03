@@ -1058,6 +1058,8 @@ sub mediafile_create :Local {
 	    }
 	};
 	$self->push_notification( $c, $dev->device_id, $options );
+	$dev->badge_count( $dev->badge_count + 1 );
+	$dev->update;
     }
 
     $self->status_ok( $c, {} );
