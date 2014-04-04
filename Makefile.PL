@@ -83,6 +83,7 @@ requires 'Net::GitHub::V3';
 requires 'Amazon::SQS::Simple';
 requires 'Geo::Distance::XS';
 requires 'Net::APNS';
+requires 'CatalystX::DebugFilter';
 
 test_requires 'Test::More' => '0.88';
 catalyst;

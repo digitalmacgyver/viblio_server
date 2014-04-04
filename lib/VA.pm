@@ -61,6 +61,7 @@ our $VERSION = '0.01';
 # details given here can function as a default configuration,
 # with an external configuration file acting as an override for
 # local deployment.
+with 'CatalystX::DebugFilter';
 
 __PACKAGE__->config(
     name => 'VA',
@@ -69,6 +70,10 @@ __PACKAGE__->config(
     enable_catalyst_header => 1, # Send X-Catalyst header
 
     default_view => 'HTML',
+
+    'CatalystX::DebugFilter' => {
+        Request => { params => [ 'password' ] },
+    },
 
     'Model::File' => {
 	root_dir => __PACKAGE__->path_to( 'root', 'static', 'images' ),
