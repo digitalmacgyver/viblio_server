@@ -1220,6 +1220,21 @@ sub has_been_shared :Local {
     $self->status_ok( $c, { count => ( $#shared + 1 ) } );
 }
 
+# Search by title or description
+sub search_by_title_or_description :Local {
+    my( $self, $c ) = @_;
+    my $q = $c->req->param( 'q' );
+    my $page = $c->req->param( 'page' ) || 1;
+    my $rows = $c->req->param( 'rows' ) || 10000;
+    my $rs = $c->user->videos->search(
+	{ -or => [ 'LOWER(title)' => { 'like', '%'.lc($q).'%' },
+		   'LOWER(description)' => { 'like', '%'.lc($q).'%' } ] },
+	{ order_by => 'recording_date desc',
+	  page => $page, rows => $rows } );
+    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
+    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
