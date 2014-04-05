@@ -93,7 +93,7 @@ else {
 }
 
 if ( $report ) {
-    print sprintf( "%-30s %-7s %-7s %-7s %-7s\n", "User", "Videos", "Albums", "Faces", "Unamed" );
+    print sprintf( "%-30s %-7s %-7s %-7s %-7s %-7s\n", "User", "Videos", "Albums", "Faces", "Unamed", "Tagged" );
 }
 
 foreach my $user ( @users ) {
@@ -108,6 +108,11 @@ foreach my $user ( @users ) {
     my @albums = $user->albums->search(
 	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) }},
 	{prefetch => 'assets' } );
+    my @tagged_faces = $user->contacts->search(
+	{ updated_date => { '>', $dtf->format_datetime( $TARGET ) },
+	  picture_uri  => { '!=', undef },
+	  contact_name => { '!=', undef } });
+    my @tf = map {{ uuid => $_->uuid, picture_uri => $_->picture_uri }} @tagged_faces;
     my @ids = map{ $_->id } @media;
     my @feat = $c->model( 'RDS::MediaAssetFeature' )
 	->search({'me.media_id' => { -in => \@ids }, 
@@ -158,8 +163,8 @@ foreach my $user ( @users ) {
 
     if ( $report ) {
 	# Just print a report
-	print sprintf( "%-30s %-7s %-7s %-7s %-7s\n", 
-		       $user->email, ($#published + 1), ($#apublished + 1), ($#named_faces + 1), ($#unnamed_faces + 1) );
+	print sprintf( "%-30s %-7s %-7s %-7s %-7s %-7s\n", 
+		       $user->email, ($#published + 1), ($#apublished + 1), ($#named_faces + 1), ($#unnamed_faces + 1), ($#tagged_faces + 1) );
     }
     else {
 	# Send the email
@@ -175,6 +180,7 @@ foreach my $user ( @users ) {
 		    albums => \@apublished,
 		    faces => \@named_faces,
 		    unnamedfaces => \@unnamed_faces,
+		    tagged_faces => \@tf,
 		}
 	    } });
 	if ( $res ) {

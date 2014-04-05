@@ -3,6 +3,7 @@ use Moose;
 use namespace::autoclean;
 use JSON;
 use Try::Tiny;
+use DateTime;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -119,6 +120,15 @@ sub template_test :Local {
               });
     }
 
+    my $NOW    = DateTime->now;
+    my $TARGET = DateTime->from_epoch( epoch => ($NOW->epoch - 60*60*24*7) );
+    my $dtf    = $c->model( 'RDS' )->schema->storage->datetime_parser;
+    my @tagged_faces = $c->user->contacts->search(
+	{ updated_date => { '>', $dtf->format_datetime( $TARGET ) },
+	  picture_uri  => { '!=', undef },
+	  contact_name => { '!=', undef } });
+    my @tf = map {{ uuid => $_->uuid, picture_uri => $_->picture_uri }} @tagged_faces;
+
     my $headers = {
 	subject => $c->loc( "This is a test" ),
 	to => [{
@@ -130,6 +140,7 @@ sub template_test :Local {
 		user  => $c->user,
 		media => \@media_array,
 		faces => \@faces,
+		tagged_faces => \@tf,
 		vars => {
 		    shareType => 'private',
 		    user => $c->user->obj,

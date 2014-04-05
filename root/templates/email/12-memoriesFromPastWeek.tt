@@ -51,13 +51,13 @@
         [% END %]        
 	[% END %]
 
-        [% IF model.albums.size > 0 %]
+        [% IF model.tagged_faces.size > 0 %]
             <span>I've been organizing your videos for you into albums.</span><br />
             <span>You have albums for&#8230;</span>
             <br />
             <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
                 <tbody>
-                    [% FOREACH album IN model.albums -%]
+                    [% FOREACH face IN model.tagged_faces -%]
                         [% LAST IF loop.count > 8 %]
                         [%- "<tr>\n" IF loop.first || loop.count == 5 || loop.count == 9 %]
                             <td class="face" valign="top">
@@ -65,7 +65,9 @@
                                     <tbody>
                                         <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td cellspacing="0" cellpadding="0">
-                                                <img class='videoThumb-Sm' src="[% c.server %]s/ip/[% album.views.poster.uri %]" />
+					      <a href="[% c.server %]#videosof?uuid=[% face.uuid %]">
+                                                <img class='videoThumb-Sm' src="[% c.server %]s/ip/[% face.picture_uri %]" />
+					      </a>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -75,33 +77,12 @@
                     [% END %]
                 </tbody>
             </table>
-	    [% IF model.albums.size > 8 %]
-                <span><strong>&#8230; and [% model.albums.size - 8 %] more!</strong></span><br />
+	    [% IF model.tagged_faces.size > 8 %]
+                <span><strong>&#8230; and [% model.tagged_faces.size - 8 %] more!</strong></span><br />
 	    [% END %]
             <br />
             <br />
 
-        <div style='text-align: center;'>
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                <tbody>
-                    <tr>
-                        <td width="500" style="width:500px;">
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                                <tbody>
-                                    <tr>
-                                        <td width="94" style="width:94px;"></td>
-                                        <td class="button" width="312" height="33" align="center" style="width:312px;">
-                                            <a class="noUnderline" href="[% c.server %]#home?last_selected=yv-albums"><b><span class="buttonSpan">SHARE AN ALBUM &raquo;</span></b></a>
-                                        </td>
-                                        <td width="94" style="width:94px;"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
         [% END %]
 
         <br />
