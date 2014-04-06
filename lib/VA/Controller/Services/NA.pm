@@ -971,6 +971,17 @@ sub workorder_done :Private {
     }
 }
 
+sub test_secure_token :Local {
+    my( $self, $c, $uid, $mid, $site_token ) = @_;
+    $uid = $c->req->param( 'uid' ) unless( $uid );
+    $site_token = $c->req->param( 'site-token' ) unless( $site_token );
+    if ( $c->secure_token( $uid ) ne $site_token ) {
+	$c->log->error( "mediafile_create() authentication failure: calculated(" . $c->secure_token( $uid ) . ") does not match $site_token" );
+	$self->status_bad_request( $c, 'mediafile_create() authentication failure.' );
+    }
+    $self->status_ok( $c, {} );
+}
+
 # This is the endpoint called by the video processor when a new
 # video has been uploaded and processed.  We need to notify the 
 # web gui and the tray app that this event has occured.  
