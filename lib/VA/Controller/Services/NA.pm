@@ -1613,12 +1613,15 @@ sub send_push_notification :Local {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find user for [_1]', $uid ) );
     }
 
-    my $options = { network => $network };
+    unless( $network ) {
+	$self->status_bad_request( $c, $c->loc( 'Missing network param: use APNS for Apple' ) );
+    }
+
+    my $options = { network => $network, sound => 'default' };
     if ( $message ) { $options->{message} = $message; }
     if ( $badge   ) { $options->{badge} = $badge; }
 
-    $options->{custom} = {
-	type => 'MESSAGE' };
+    $options->{custom} = { type => 'MESSAGE' };
 
     foreach my $dev ( $user->user_devices->all ) {
 	$self->push_notification( $c, $dev->device_id, $options );
