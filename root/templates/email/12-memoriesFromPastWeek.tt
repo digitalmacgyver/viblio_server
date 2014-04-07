@@ -36,11 +36,6 @@
                                             </a>
                                         </td>
                                     </tr>
-                                    <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                        <td class="name" cellspacing="0" cellpadding="0" width="100%" style="margin: 0; width:100%">
-                                            [% face.displayname %]
-                                        </td>
-                                    </tr>
                                 </tbody>
                             </table> 
                         </td>   
@@ -73,6 +68,11 @@
 					      <a href="[% c.server %]#videosof?uuid=[% face.uuid %]">
                                                 <img class="boxShadowed" width="80" height="80" src="[% c.server %]s/ip/[% face.picture_uri %]" alt="face image" style="width: 80px;height: 80px;">
 					      </a>
+                                            </td>
+                                        </tr>
+                                        <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
+                                            <td class="name" cellspacing="0" cellpadding="0" width="80" style="margin: 0; width:80px">
+                                                [% face.displayname %]
                                             </td>
                                         </tr>
                                     </tbody>
