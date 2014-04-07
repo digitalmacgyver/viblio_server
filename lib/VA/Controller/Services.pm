@@ -490,16 +490,16 @@ sub push_notification :Private {
 		key    => $c->config->{push}->{apns}->{key},
 		passwd => $c->config->{push}->{apns}->{password} });
 	    $notifier->devicetoken( $token );
-	    if ( $options->{message} ) {
+	    if ( defined( $options->{message} ) ) {
 		$notifier->message( $options->{message} );
 	    }
-	    if ( $options->{badge} ) {
+	    if ( defined( $options->{badge} ) ) {
 		$notifier->badge( $options->{badge} );
 	    }
-	    if ( $options->{sound} ) {
+	    if ( defined( $options->{sound} ) ) {
 		$notifier->sound( $options->{sound} );
 	    }
-	    if ( $options->{custom} ) {
+	    if ( defined( $options->{custom} ) ) {
 		$notifier->custom( $options->{custom} );
 	    }
 	    $notifier->write;

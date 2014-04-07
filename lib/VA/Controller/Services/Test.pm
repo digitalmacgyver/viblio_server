@@ -127,7 +127,7 @@ sub template_test :Local {
 	{ updated_date => { '>', $dtf->format_datetime( $TARGET ) },
 	  picture_uri  => { '!=', undef },
 	  contact_name => { '!=', undef } });
-    my @tf = map {{ uuid => $_->uuid, picture_uri => $_->picture_uri }} @tagged_faces;
+    my @tf = map {{ uuid => $_->uuid, picture_uri => $_->picture_uri, contact_name => $_->contact_name }} @tagged_faces;
 
     my $headers = {
 	subject => $c->loc( "This is a test" ),

@@ -1,0 +1,87 @@
+use DateTime::Format::HTTP;
+
+$USER = '4A96A71A-BCE8-11E3-8AE7-A13878924A9C';
+
+sub htime {
+    my $secs = shift;
+    if ( $secs > ( 60 * 60 ) ) {
+	return sprintf( 'about %d hours', int( $secs/(60*60) ) );
+    }
+    elsif ( $secs > 60 ) {
+	return sprintf( 'about %d mins', int( $secs/60 ) );
+    }
+    else {
+	return sprintf( "about $secs secs" );
+    }
+}
+
+while(<>) {
+    chomp;
+    if ( /^pcol   ([^:]+): (.+)/ ) {
+	( $k, $v ) = ( $1, $2 );
+	$headers->{ $k } = $v;
+	if ( $k eq 'user-agent' && $v =~ /iPhone/ ) {
+	    $headers->{device} = 'iphone';
+	}
+	elsif ( $k eq 'user-agent' && $v =~ /iPad/ ) {
+	    $headers->{device} = 'ipad';
+	}
+	elsif ( $k eq 'user-agent' ) {
+	    $headers->{device} = 'browser';
+	}
+	next;
+    }
+    if ( /^(\S+) - info: \S+ \S+ method=(\S+), fileId=(\S+), uid=(\S+)/ ) {
+	( $date, $method, $fid, $uid ) = ( $1, $2, $3, $4 );
+
+	$last_known_date = DateTime::Format::HTTP->parse_datetime( $date );
+
+	if ( $method eq 'POST' && $uid eq $USER ) {
+	    $uploads->{$fid} = {
+	      started =>  DateTime::Format::HTTP->parse_datetime( $date ),
+	      headers => $headers };
+	    next;
+	}
+
+	if ( $method eq 'PATCH' && $uid eq $USER ) {
+	    my $len = $headers->{offset} + $headers->{'content-length'};
+	    $uploads->{$fid}->{progress} = $len;
+	    $last = $uploads->{$fid}->{updated} || $uploads->{$fid}->{started};
+	    $uploads->{$fid}->{updated} = DateTime::Format::HTTP->parse_datetime( $date );
+	    $delta = $uploads->{$fid}->{updated}->epoch - $last->epoch;
+	    push( @{$uploads->{$fid}->{deltas}}, $delta );
+	    if ( $len == $uploads->{$fid}->{headers}->{'final-length'} ) {
+		print sprintf( "%s on %s is done. (%d)  Took %s\n",
+			       $fid, $uploads->{$fid}->{headers}->{device},
+			       $uploads->{$fid}->{headers}->{'final-length'},
+			       htime( $uploads->{$fid}->{updated}->epoch -
+				      $uploads->{$fid}->{started}->epoch) );
+		print "  => " . $uploads->{$fid}->{started}, "\n";
+		print "  => " . join( ', ', @{$uploads->{$fid}->{deltas}} ), "\n";
+		delete $uploads->{$fid};
+	    }
+	}
+
+	$headers = {};
+    }
+}
+
+foreach my $fid ( keys( %$uploads ) ) {
+    $last = $uploads->{$fid}->{updated} || $uploads->{$fid}->{started};
+    $uploads->{$fid}->{updated} = DateTime::Format::HTTP->parse_datetime( $last_known_date );
+    $delta = $uploads->{$fid}->{updated}->epoch - $last->epoch;
+    push( @{$uploads->{$fid}->{deltas}}, $delta );
+
+    my $u = $uploads->{$fid};
+    #print $u->{headers}->{'final-length'}, ' ', $u->{progress}, "\n";
+
+    print sprintf( "%s on %s is in progress: %d/%d: at %s\n",
+		   $fid, $u->{headers}->{device},
+		   $u->{progress}, $u->{headers}->{'final-length'},
+		   htime( $uploads->{$fid}->{updated}->epoch -
+			  $uploads->{$fid}->{started}->epoch) );
+    print "  => " . $uploads->{$fid}->{started}, "\n";
+    print "  => " . join( ', ', @{$uploads->{$fid}->{deltas}} ), "\n";
+}
+
+print "Final log time: " . $last_known_date, "\n";

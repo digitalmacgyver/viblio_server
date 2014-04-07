@@ -112,7 +112,7 @@ foreach my $user ( @users ) {
 	{ updated_date => { '>', $dtf->format_datetime( $TARGET ) },
 	  picture_uri  => { '!=', undef },
 	  contact_name => { '!=', undef } });
-    my @tf = map {{ uuid => $_->uuid, picture_uri => $_->picture_uri }} @tagged_faces;
+    my @tf = map {{ uuid => $_->uuid, picture_uri => $_->picture_uri, contact_name => $_->contact_name }} @tagged_faces;
     my @ids = map{ $_->id } @media;
     my @feat = $c->model( 'RDS::MediaAssetFeature' )
 	->search({'me.media_id' => { -in => \@ids }, 
