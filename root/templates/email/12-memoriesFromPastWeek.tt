@@ -72,7 +72,7 @@
                                         </tr>
                                         <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td class="name" cellspacing="0" cellpadding="0" width="80" style="margin: 0; width:80px">
-                                                [% face.name %]
+                                                [% face %]
                                             </td>
                                         </tr>
                                     </tbody>
