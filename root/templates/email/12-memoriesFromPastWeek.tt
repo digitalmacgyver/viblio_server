@@ -36,6 +36,11 @@
                                             </a>
                                         </td>
                                     </tr>
+                                    <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
+                                        <td class="name" cellspacing="0" cellpadding="0" width="100%" style="margin: 0; width:100%">
+                                            [% face.name %]
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table> 
                         </td>   
@@ -66,7 +71,7 @@
                                         <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td cellspacing="0" cellpadding="0">
 					      <a href="[% c.server %]#videosof?uuid=[% face.uuid %]">
-                                                <img class='videoThumb-Sm' src="[% c.server %]s/ip/[% face.picture_uri %]" />
+                                                <img class="boxShadowed" width="80" height="80" src="[% c.server %]s/ip/[% face.picture_uri %]" alt="face image" style="width: 80px;height: 80px;">
 					      </a>
                                             </td>
                                         </tr>
