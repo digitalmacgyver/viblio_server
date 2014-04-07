@@ -85,12 +85,8 @@
 	    [% IF model.tagged_faces.size > 8 %]
                 <span><strong>&#8230; and [% model.tagged_faces.size - 8 %] more!</strong></span><br />
 	    [% END %]
-            <br />
-            <br />
 
         [% END %]
-
-        <br />
         <p>You take the videos - I'll keep them safe and organized for you to enjoy and share.</p>
         <br />
         <span>movingly yours,</span><br />
