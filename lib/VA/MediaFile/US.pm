@@ -143,10 +143,10 @@ sub uri2url {
     my $url = $aws_generator->get( $aws_bucket_name, $s3key );
     $url =~ s/\/$aws_bucket_name\//\//g;
 
-    $c->log->debug( sprintf( "key=%s, secret=%s, https=%s, endpoint=%s, uri=%s, url=%s",
-			     $aws_key, $aws_secret, $aws_use_https, $aws_endpoint,
-			     $s3key, $url ) );
-
+    #$c->log->debug( sprintf( "key=%s, secret=%s, https=%s, endpoint=%s, uri=%s, url=%s",
+    #			     $aws_key, $aws_secret, $aws_use_https, $aws_endpoint,
+    #			     $s3key, $url ) );
+    #
     return $url;
 }
 
