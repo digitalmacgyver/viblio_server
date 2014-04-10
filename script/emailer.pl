@@ -173,11 +173,14 @@ sub send_email {
 	    return 1;
 	};
     }
-    my $res = $c->model( 'Mandrill' )->send( $headers );
-    if ( $res && $res->{status} && $res->{status} eq 'error' ) {
-	$c->log->error( "Emailer: Error using Mailchimp to send\n" );
-	# $c->logdump( $res );
-	# $c->logdump( $headers );
-    }
-    return ( $res && $res->{status} && $res->{status} eq 'error' );
+    try {
+	my $res = $c->model( 'Mandrill' )->send( $headers );
+	if ( $res && $res->{status} && $res->{status} eq 'error' ) {
+	    $c->log->error( "Emailer: Error using Mailchimp to send\n" );
+	}
+	return ( $res && $res->{status} && $res->{status} eq 'error' );
+    } catch {
+	$c->log->error( "Emailer: Exception calling Mandrill: $_" );
+	return 1;
+    };
 }
