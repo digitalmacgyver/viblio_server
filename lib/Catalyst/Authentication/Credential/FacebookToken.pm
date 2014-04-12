@@ -111,7 +111,8 @@ sub authenticate {
 	$ctx->log->debug( "FB Extended Token: " . $code );
 	$oauth->access_token( $code );
 	my $fb_user = $oauth->fetch( 'me' );
-	unless( $fb_user ) { 
+	$ctx->logdump( $fb_user );
+	unless( $fb_user && $fb_user->{email} ) { 
 	    $ctx->{authfail_code} = "NOLOGIN_OAUTH_FAILURE";
 	    return undef;
 	}
