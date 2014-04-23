@@ -1,8 +1,13 @@
 # Timezone
 sudo dpkg-reconfigure tzdata
-sudo echo "#!/bin/sh" > /etc/cron.daily/ntpdate
-sudo echo "ntpdate ntp.ubuntu.com" >> /etc/cron.daily/ntpdate
+sudo sh -c "echo '#!/bin/sh' > /etc/cron.daily/ntpdate"
+sudo sh -c "echo 'ntpdate ntp.ubuntu.com' >> /etc/cron.daily/ntpdate"
 sudo chmod 755 /etc/cron.daily/ntpdate
+
+# also:
+sudo apt-get install -y ntp
+sudo sh -c "echo 'server ntp.ubuntu.com' >> /etc/ntp.conf"
+sudo sh -c "echo 'server pool.ntp.org' >> /etc/ntp.conf"
 
 sudo apt-get update
 
