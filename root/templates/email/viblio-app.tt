@@ -1,0 +1,38 @@
+[% INCLUDE email/top.tt 
+    previewText = "Install VIBLIO iPhone APP"
+%]
+<div class='paddedDiv regSize darkText leftAligned'>
+  <span>You understand and agree that VIBLIO is providing this iPhone video uploader app to you so that you can beta test the app for VIBLIO and provide us with your feedback so that we may finalize our development efforts.  You can provide feedback directly in the app.</span>
+  <br />
+  <br />
+  <div style='text-align: center;'>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+      <tbody>
+        <tr>
+          <td width="500" style="width:500px;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+              <tbody>
+                <tr>
+                  <td width="94" style="width:94px;"></td>
+                  <td class="button" width="312" height="33" align="center" style="width:312px;">
+                    <a class="noUnderline" href="itms-services://?url=https%3A%2F%2Fviblio.com%2Fbuilds%2FViblio_v2_04_23_v2_production.plist&action=download-manifest"><b><span class="buttonSpan">Download and Install &raquo;</span></b></a>
+                  </td>
+                  <td width="94" style="width:94px;"></td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <br />
+  <span>Thanks for choosing to be part of the VIBLIO community.</span>
+  <br />
+  <br />
+  <span style="font-size:14px;"><em>If you didn't create an account with us, please let us know by forwarding this email to <a style="font-size:14px;" href="mailto:notifications@viblio.com">notifications@viblio.com</a></em></span>
+  <br />
+  <p class="share" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
+</div>
+
+[% INCLUDE email/bottom.tt %]                                                            
