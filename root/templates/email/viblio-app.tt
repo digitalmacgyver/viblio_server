@@ -15,7 +15,7 @@
                 <tr>
                   <td width="94" style="width:94px;"></td>
                   <td class="button" width="312" height="33" align="center" style="width:312px;">
-                    <a class="noUnderline" href="itms-services://?url=https%3A%2F%2Fviblio.com%2Fbuilds%2FViblio_v2_04_23_v2_production.plist&action=download-manifest"><b><span class="buttonSpan">Download and Install &raquo;</span></b></a>
+                    <a class="noUnderline" href="itms-services://?url=https%3A%2F%2Fviblio.com%2Fbuilds%2FViblio_production.plist&action=download-manifest"><b><span class="buttonSpan">Download and Install &raquo;</span></b></a>
                   </td>
                   <td width="94" style="width:94px;"></td>
                 </tr>
