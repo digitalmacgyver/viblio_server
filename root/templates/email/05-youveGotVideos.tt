@@ -54,7 +54,7 @@
         <div class="line"></div>
 
         [% IF model.media.size > 2 %]
-        <span>... and [% model.media.size %] more new releases!</span>
+        <span>... and [% model.media.size - 2 %] more new releases!</span>
             <br />
             <br />
         [% END %]
