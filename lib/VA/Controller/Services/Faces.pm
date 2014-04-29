@@ -350,7 +350,8 @@ sub contact :Local {
 
     my $klass = $c->config->{mediafile}->{'us'};
     my $fp = new $klass;
-    my $url = $fp->uri2url( $c, $contact->picture_uri );
+    my $url = $contact->picture_uri ? $fp->uri2url( $c, $contact->picture_uri ) : 
+	'css/images/avatar-nobd.png';
 
     my $hash = $contact->TO_JSON;
     $hash->{url} = $url;
