@@ -1,6 +1,6 @@
 [% INCLUDE email/top.tt
     subject = "You've got Videos"
-    previewText = "You've got Videos!"
+    previewText = "VIBLIO Daily Digest"
 %]
 
 [%# The trigger that is expected to send email:
@@ -54,36 +54,13 @@
         <div class="line"></div>
 
         [% IF model.media.size > 2 %]
-        <span>... and more videos uploaded today.</span>
+        <span>... and [% model.media.size - 2 %] more new releases!</span>
             <br />
             <br />
         [% END %]
         
         [% IF model.unnamedfaces.size > 0 %]
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                <tbody>
-                    <tr>
-                        <td width="500" style="width:500px;">
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-                                <tbody>
-                                    <tr>
-                                        <td width="99" style="width:99px;"></td>
-                                        <td class="button" width="302" height="33" align="center" style="width:302px;">
-                                            <a class="noUnderline" href="[% c.server  %]#people"><b><span class="buttonSpan">NAME [% IF model.unnamedfaces.size == 1 %]THIS FACE [% ELSE %] THESE FACES [% END %] &raquo;</span></b></a>
-                                        </td>
-                                        <td width="99" style="width:99px;"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <br />
-            <span>to create VIBLIO albums of people you know.</span>
-            <br />
-            <br />
-
+            <span>Introducing the stars of these new releases...</span>
             <table border="0" cellpadding="0" cellspacing="0" style="width:100%;" width="100%">
                 <tbody>
                         <tr style="width:100%;" width="100%">
@@ -115,6 +92,29 @@
                         </tr>
                 </tbody>
             </table>
+            <br />
+            <br />
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                <tbody>
+                    <tr>
+                        <td width="500" style="width:500px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+                                <tbody>
+                                    <tr>
+                                        <td width="99" style="width:99px;"></td>
+                                        <td class="button" width="302" height="33" align="center" style="width:302px;">
+                                            <a class="noUnderline" href="[% c.server  %]#people"><b><span class="buttonSpan">NAME [% IF model.unnamedfaces.size == 1 %]THIS FACE [% ELSE %] THESE FACES [% END %] &raquo;</span></b></a>
+                                        </td>
+                                        <td width="99" style="width:99px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <br />
+            <span>to create VIBLIO albums of people you know.</span>
             <br />
             <br />
         [% END %]

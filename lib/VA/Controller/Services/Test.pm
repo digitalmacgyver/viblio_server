@@ -120,6 +120,20 @@ sub template_test :Local {
               });
     }
 
+    @feats = $c->model( 'RDS::MediaAssetFeature' )
+	->search({ 'me.user_id' => $c->user->obj->id,
+		   'contact.id' => { '!=', undef }, 
+		   'contact.contact_name' => { '=', undef },
+		   'me.feature_type'=>'face'}, 
+                 {prefetch=>['contact','media_asset'], 
+		  page=>1, rows=>4,
+                  group_by=>['media_asset.media_id','contact.id'] });
+    my @unnamed_faces = ();
+    foreach my $feat ( @feats ) {
+        push( @unnamed_faces, { uri => $feat->media_asset->uri,
+              });
+    }
+
     my $NOW    = DateTime->now;
     my $TARGET = DateTime->from_epoch( epoch => ($NOW->epoch - 60*60*24*7) );
     my $dtf    = $c->model( 'RDS' )->schema->storage->datetime_parser;
@@ -140,6 +154,7 @@ sub template_test :Local {
 		user  => $c->user,
 		media => \@media_array,
 		faces => \@faces,
+		unnamedfaces => \@unnamed_faces,
 		tagged_faces => \@tf,
 		vars => {
 		    shareType => 'private',
