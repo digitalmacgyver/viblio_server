@@ -27,6 +27,12 @@ sqs:
   recognition: arn:aws:sqs:us-west-2:442359467480:recognition_local
   email: arn:aws:sqs:us-west-2:442359467480:email_local
 
+geodata:
+  geonames:
+    username: viblio
+  google:
+    key:
+
 push:
   apns:
     cert: __path_to(root,push,apns,APNS-cert.pem)__

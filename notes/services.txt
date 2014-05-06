@@ -6,3 +6,4 @@ Loggly:      viblio / 578M2cAVyaN&UVRl
 Google GA:   (andrew's google creds) https://www.google.com/analytics/web
 mapbox:      admin@viblio.com / j3TtvjIYjrN5Ro
 corp site:   ssh -i ~/va-services.pem bitnami@corp.viblio.com
+Geonames.org admin@viblio.com / Viblio2013 ( username: viblio )

@@ -84,6 +84,7 @@ requires 'Amazon::SQS::Simple';
 requires 'Geo::Distance::XS';
 requires 'Net::APNS';
 requires 'CatalystX::DebugFilter';
+requires 'Geo::GeoNames';
 
 test_requires 'Test::More' => '0.88';
 catalyst;
