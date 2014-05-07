@@ -133,6 +133,18 @@ __PACKAGE__->table("media");
   is_nullable: 1
   size: [11,8]
 
+=head2 geo_address
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 256
+
+=head2 geo_city
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 128
+
 =head2 status
 
   data_type: 'varchar'
@@ -190,6 +202,10 @@ __PACKAGE__->add_columns(
   { data_type => "decimal", is_nullable => 1, size => [11, 8] },
   "lng",
   { data_type => "decimal", is_nullable => 1, size => [11, 8] },
+  "geo_address",
+  { data_type => "varchar", is_nullable => 1, size => 256 },
+  "geo_city",
+  { data_type => "varchar", is_nullable => 1, size => 128 },
   "status",
   { data_type => "varchar", is_nullable => 1, size => 32 },
   "is_viblio_created",
@@ -427,8 +443,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-04-02 23:10:28
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:oi9BLq8OIW51bhs3t3URwA
+# Created by DBIx::Class::Schema::Loader v0.07036 @ 2014-05-06 16:57:33
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FFlLX+pZg6jOMfQwWZ7yHw
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
