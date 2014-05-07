@@ -1,6 +1,8 @@
 package VA::Controller::Services::Geo;
 use Moose;
 use VA::MediaFile;
+use GeoData;
+
 use namespace::autoclean;
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -56,8 +58,15 @@ sub change_latlng :Local {
 
     $m->lat( $lat );
     $m->lng( $lng );
+
+    my $info = GeoData::get_data( $c, $lat, $lng );
+    if ( $info->{city} && $info->{address} ) {
+	$m->geo_address( $info->{address} );
+	$m->geo_city( $info->{city} );
+    }
+
     $m->update();
-    $self->status_ok( $c, {} );
+    $self->status_ok( $c, { address => $info->{address} } );
 }
 
 __PACKAGE__->meta->make_immutable;

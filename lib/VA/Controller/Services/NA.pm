@@ -18,6 +18,7 @@ use File::Basename;
 use Net::GitHub::V3;
 
 use Data::UUID;
+use GeoData;
 
 BEGIN { extends 'VA::Controller::Services' }
 
@@ -1015,6 +1016,18 @@ sub mediafile_create :Local {
 	$self->status_bad_request( $c, 'Cannot find media for $mid' );
     }
 
+    ## Do the geo location stuff here, as the videos arrive
+    my $lat = $mediafile->lat;
+    my $lng = $mediafile->lng;
+    if ( $lat && $lng && $lat != 0 && $lng != 0 ) {
+	my $info = GeoData::get_data( $c, $lat, $lng );
+	if ( $info->{city} && $info->{address} ) {
+	    $mediafile->geo_address( $info->{address} );
+	    $mediafile->geo_city( $info->{city} );
+	    $mediafile->update;
+	}
+    }
+
     my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_contact_info => 1, expires => (60*60*24*365) } );
 
     ### FOR NOW, LIMIT ANY EMAILS TO THE FIRST FEW VIDEOS UPLOADED
@@ -1552,7 +1565,11 @@ sub geo_loc :Local {
     my $lng = $c->req->param( 'lng' );
 
     my $latlng = "$lat,$lng";
-    my $res = $c->model( 'GoogleMap' )->get( "/maps/api/geocode/json?latlng=$latlng&sensor=true" );
+    my $keystr = '';
+    if ( $c->config->{geodata}->{google}->{key} ) {
+	$keystr = '&key=' + $c->config->{geodata}->{google}->{key};
+    }
+    my $res = $c->model( 'GoogleMap' )->get( "/maps/api/geocode/json?latlng=$latlng&sensor=true$keystr" );
 
     $self->status_ok( $c, $res->data->{results} );
 }

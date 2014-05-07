@@ -9,21 +9,27 @@ use Geo::GeoNames;
 #
 sub get_data {
     my ( $c, $lat, $lng ) = @_;
+    my $res;
+=perl
+    BOO!  The geonames reverse lookup sucks!
 
     my $gn = Geo::GeoNames->new( username => $c->config->{geodata}->{geonames}->{username} );
-    my $res = $gn->find_nearest_address( lat => $lat, lng => $lng );
-    if ( $#{$res} >= 0 ) {
+    $res = $gn->find_nearest_address( lat => $lat, lng => $lng );
+    if ( $#{$res} >= 0 && 
+	 ! ( ref @$res[0]->{streetNumber} || ref @$res[0]->{street} ||
+	     ref @$res[0]->{adminName2} || ref @$res[0]->{adminCode1} || ref @$res[0]->{adminName1} ) ) {
 	return {
 	    address => join( ' ', 
 			     @$res[0]->{streetNumber}, 
 			     @$res[0]->{street},
-			     @$res[0]->{placename},
+			     @$res[0]->{adminName2},
 			     @$res[0]->{adminCode1} || @$res[0]->{adminName1} ),
-	    city => @$res[0]->{placename},
+	    city => @$res[0]->{adminName2},
 	    source => 'geonames'
 	};
     }
     else {
+=cut
 	my $keystr = '';
 	if ( $c->config->{geodata}->{google}->{key} ) {
 	    $keystr = '&key=' + $c->config->{geodata}->{google}->{key};
@@ -40,7 +46,7 @@ sub get_data {
 	else {
 	    return {};
 	}
-    }
+#    }
 }
 
 # This is a helper function to obtain the nearest city
