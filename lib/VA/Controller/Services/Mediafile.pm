@@ -1235,6 +1235,56 @@ sub search_by_title_or_description :Local {
     $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
+# Return all the unique cities that a user's video apepars in
+sub cities :Local {
+    my( $self, $c ) = @_;
+    my @media = $c->user->videos->search
+	({ geo_city => { '!=' => undef } },
+	 { group_by => ['geo_city'] });
+    my @cities = sort map { $_->geo_city } @media;
+    $self->status_ok( $c, { cities => \@cities } );
+}
+
+# Return all videos taken in the passed in city
+sub taken_in_city :Local {
+    my( $self, $c ) = @_;
+    my $q = $c->req->param( 'q' );
+    my $page = $c->req->param( 'page' ) || 1;
+    my $rows = $c->req->param( 'rows' ) || 10000;
+    my $rs = $c->user->videos->search(
+	{ geo_city => $q },
+	{ order_by => 'recording_date desc',
+	  page => $page, rows => $rows } );
+    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
+    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+}
+
+# Return all videos recently uploaded.  Pass in a number of days
+# to include.  Defaults to 7 days.
+sub recently_uploaded :Local {
+    my( $self, $c ) = @_;
+    my $days = $c->req->param( 'days' ) || 7;
+    my $page = $c->req->param( 'page' ) || 1;
+    my $rows = $c->req->param( 'rows' ) || 10000;
+
+    my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+
+    my $from = DateTime->now;
+    my $to   = $from->clone;
+    $to->subtract( days => $days );
+
+    my $rs = $c->user->videos->search
+	({ 'me.created_date' => {
+	    -between => [
+		 $dtf->format_datetime( $to ),
+		 $dtf->format_datetime( $from ) ]}},
+	 { order_by => 'me.created_date desc',
+	   page => $page, rows => $rows });
+    
+    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
+    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
