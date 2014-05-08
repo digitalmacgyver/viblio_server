@@ -918,8 +918,18 @@ sub list_all :Local {
     if ( $#sorted >= 0 ) {
         @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
     }
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1, include_shared => 1 } ) } @slice;
-    foreach my $d ( @data ) { if ( $shared_uuids->{$d->{uuid}} ) { $d->{is_shared} = 1; } else { $d->{is_shared} = 0; } }
+    my @data = ();
+    foreach my $m ( @slice ) {
+	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1 } );
+	if ( $shared_uuids->{$d->{uuid}} ) {
+	    $d->{is_shared} = 1; 
+	    $d->{owner} = $m->user->TO_JSON;
+	}
+	else {
+	    $d->{is_shared} = 0;
+	}
+	push( @data, $d );
+    }
     $self->status_ok( $c, { albums => \@data, 
                             pager  => $self->pagerToJson( $pager ) });
 }

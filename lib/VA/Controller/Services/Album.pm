@@ -112,7 +112,7 @@ sub list :Local {
     foreach my $album ( @albums ) {
 	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
 	my @m = ();
-	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos->search({},{rows=>4}) );
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
 	$a->{is_shared} = ( $album->community ? 1 : 0 );
@@ -399,7 +399,7 @@ sub list_shared :Local {
     foreach my $album ( @albums ) {
 	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
 	my @m = ();
-	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos->search({},{rows=>4}) );
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
 	$a->{is_shared} = 1;
@@ -427,7 +427,7 @@ sub list_all :Local {
     foreach my $album ( @albums ) {
 	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
 	my @m = ();
-	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos->search({},{rows=>4}) );
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
 	$a->{is_shared} = 1;
@@ -438,7 +438,7 @@ sub list_all :Local {
     foreach my $album ( @albums ) {
 	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
 	my @m = ();
-	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos->search({},{rows=>4}) );
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
 	$a->{is_shared} = 0;
