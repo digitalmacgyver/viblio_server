@@ -112,7 +112,7 @@ sub list :Local {
     foreach my $album ( @albums ) {
 	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
 	my @m = ();
-	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos->search({},{rows=>4}) );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
 	$a->{is_shared} = ( $album->community ? 1 : 0 );
@@ -122,10 +122,18 @@ sub list :Local {
     $self->status_ok( $c, { albums => \@data, pager => $self->pagerToJson( $pager ) } );
 }
 
+sub album_names :Local {
+    my( $self, $c ) = @_;
+    my @a = $c->user->albums->search({},{order_by=>'title'});
+    my @n = sort map { $_->title() } @a;
+    $self->status_ok( $c, { albums => \@n } );
+}
+
 sub create :Local {
     my( $self, $c ) = @_;
     my $name = $c->req->param( 'name' ) || 'unnamed';
     my $initial_mid = $c->req->param( 'initial_mid' );
+    my @list = $c->req->param( 'list[]' );
 
     my $album = $c->user->create_related( 'media', {
 	is_album => 1,
@@ -135,6 +143,10 @@ sub create :Local {
 
     unless( $album ) {
 	$self->status_bad_request( $c, $c->loc( 'Failed to create a new album' ) );
+    }
+
+    if ( $#list >= 0 ) {
+	$initial_mid = shift @list unless ( $initial_mid );
     }
 
     if ( $initial_mid ) {
@@ -162,6 +174,17 @@ sub create :Local {
     }
     else {
 	# Set the poster of the new album to a canned image
+    }
+
+    foreach my $vid ( @list ) {
+	my $media = $c->user->videos->find({ uuid => $vid });
+	unless( $media ) {
+	    $self->status_bad_request( $c, $c->loc( 'Bad media uuid' ) );
+	}
+	my $rel = $c->model( 'RDS::MediaAlbum' )->create({ album_id => $album->id, media_id => $media->id });
+	unless( $rel ) {
+	    $self->status_bad_request( $c, $c->loc( 'Unable to establish relationship between new album and media' ) );
+	}
     }
 
     my $hash = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
@@ -364,7 +387,7 @@ sub list_shared :Local {
     foreach my $album ( @albums ) {
 	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
 	my @m = ();
-	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos->search({},{rows=>4}) );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
 	$a->{is_shared} = 1;
@@ -372,6 +395,53 @@ sub list_shared :Local {
     }
 
     $self->status_ok( $c, { albums => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+}
+
+# This lists all albums, owned by the user and shared to the user.
+sub list_all :Local {
+    my( $self, $c ) = @_;
+    my $page = $c->req->param( 'page' ) || 1;
+    my $rows = $c->req->param( 'rows' ) || 100000;
+
+    my $rs = $c->model( 'RDS::ContactGroup' )->search
+	({'contact.contact_email'=>$c->user->email},
+	 { page => $page, rows => $rows,
+	   prefetch=>['contact',{'cgroup'=>'community'}]});
+
+    my @communities = map { $_->cgroup->community } $rs->all;
+    my @albums = map { $_->album } @communities;
+
+    my @data = ();
+    foreach my $album ( @albums ) {
+	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+	my @m = ();
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos->search({},{rows=>4}) );
+	$a->{media} = \@m;
+	$a->{owner} = $album->user->TO_JSON; 
+	$a->{is_shared} = 1;
+	push( @data, $a );
+    }
+
+    @albums = $c->user->albums->all;
+    foreach my $album ( @albums ) {
+	my $a = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+	my @m = ();
+	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos->search({},{rows=>4}) );
+	$a->{media} = \@m;
+	$a->{owner} = $album->user->TO_JSON; 
+	$a->{is_shared} = 0;
+	push( @data, $a );
+    }
+
+    # resort based on title
+    my @sorted = sort { $a->{title} cmp $b->{title} } @data;
+    my $pager = Data::Page->new( $#sorted + 1, $rows, $page );
+    my @slice = ();
+    if ( $#sorted >= 0 ) {
+	@slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
+    }
+    $self->status_ok( $c, { albums => \@slice, 
+			    pager  => $self->pagerToJson( $pager ) });
 }
 
 # Similar to list_shared() but organized by sharer.  No paging because of this.
@@ -394,7 +464,7 @@ sub list_shared_by_sharer :Local {
 	foreach my $album ( sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }} ) {
 	    my $a = VA::MediaFile->publish( $c, $album, { views => ['poster' ] } );
 	    my @m = ();
-	    push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
+	    push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos->search({},{rows=>4}) );
 	    $a->{media} = \@m;
 	    $a->{is_shared} = 1;
 	    push( @as, $a );

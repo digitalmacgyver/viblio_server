@@ -389,7 +389,7 @@ sub list :Local {
 	  'views[]' => undef
         ],
         @_ );
-    $DB::single=1;
+
     my $params = {
 	include_contact_info => $args->{include_contact_info},
 	include_tags => $args->{include_tags},
@@ -899,6 +899,29 @@ sub all_shared :Local {
     }
     
     $self->status_ok( $c, { shared => \@data } );
+}
+
+## List all videos, owned by and shared to the user
+sub list_all :Local {
+    my( $self, $c ) = @_;
+    my $page = $c->req->param( 'page' ) || 1;
+    my $rows = $c->req->param( 'rows' ) || 100000;
+
+    my @shares = $c->user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
+    my @media = map { $_->media } @shares;
+    my $shared_uuids = {};
+    foreach my $v ( @media ) { $shared_uuids->{ $v->uuid } = 1; }
+    my @videos = $c->user->videos->all;
+    my @sorted = sort { $b->recording_date <=> $a->recording_date } ( @media, @videos );
+    my $pager = Data::Page->new( $#sorted + 1, $rows, $page );
+    my @slice = ();
+    if ( $#sorted >= 0 ) {
+        @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
+    }
+    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1, include_shared => 1 } ) } @slice;
+    foreach my $d ( @data ) { if ( $shared_uuids->{$d->{uuid}} ) { $d->{is_shared} = 1; } else { $d->{is_shared} = 0; } }
+    $self->status_ok( $c, { albums => \@data, 
+                            pager  => $self->pagerToJson( $pager ) });
 }
 
 =head2 /services/mediafile/delete_share
