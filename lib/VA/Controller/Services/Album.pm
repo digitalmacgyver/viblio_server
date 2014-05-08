@@ -132,13 +132,21 @@ sub album_names :Local {
 sub create :Local {
     my( $self, $c ) = @_;
     my $name = $c->req->param( 'name' ) || 'unnamed';
+    my $aid = $c->req->param( 'aid' );
     my $initial_mid = $c->req->param( 'initial_mid' );
     my @list = $c->req->param( 'list[]' );
 
-    my $album = $c->user->find_or_create_related( 'media', {
+    my $where = {
 	is_album => 1,
 	media_type => 'original',
-	title => $name });
+    };
+    if ( $aid ) {
+	$where->{uuid} = $aid;
+    }
+    else {
+	$where->{title} = $name;
+    }
+    my $album = $c->user->find_or_create_related( 'media', $where );
 
     unless( $album ) {
 	$self->status_bad_request( $c, $c->loc( 'Failed to create a new album' ) );
