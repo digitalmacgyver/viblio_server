@@ -135,14 +135,18 @@ sub create :Local {
     my $initial_mid = $c->req->param( 'initial_mid' );
     my @list = $c->req->param( 'list[]' );
 
-    my $album = $c->user->create_related( 'media', {
+    my $album = $c->user->find_or_create_related( 'media', {
 	is_album => 1,
-	recording_date => DateTime->now,
 	media_type => 'original',
 	title => $name });
 
     unless( $album ) {
 	$self->status_bad_request( $c, $c->loc( 'Failed to create a new album' ) );
+    }
+
+    unless ( $album->recording_date && $album->recording_date->epoch != 0 ) {
+	$album->recording_date( DateTime->now );
+	$album->update;
     }
 
     if ( $#list >= 0 ) {
