@@ -154,13 +154,13 @@ sub create :Local {
 	unless( $media ) {
 	    $self->status_bad_request( $c, $c->loc( 'Bad initial media uuid' ) );
 	}
-	my $rel = $c->model( 'RDS::MediaAlbum' )->create({ album_id => $album->id, media_id => $media->id });
+	my $rel = $c->model( 'RDS::MediaAlbum' )->find_or_create({ album_id => $album->id, media_id => $media->id });
 	unless( $rel ) {
 	    $self->status_bad_request( $c, $c->loc( 'Unable to establish relationship between new album and initial media' ) );
 	}
 	# Set the poster of the new album to the poster of the video file just added
 	my $poster = $media->assets->find({ asset_type => 'poster' });
-	$album->create_related( 'media_assets', {
+	$album->find_or_create_related( 'media_assets', {
 	    user_id => $c->user->obj->id,
 	    asset_type => 'poster',
 	    mimetype => $poster->mimetype,
@@ -181,7 +181,7 @@ sub create :Local {
 	unless( $media ) {
 	    $self->status_bad_request( $c, $c->loc( 'Bad media uuid' ) );
 	}
-	my $rel = $c->model( 'RDS::MediaAlbum' )->create({ album_id => $album->id, media_id => $media->id });
+	my $rel = $c->model( 'RDS::MediaAlbum' )->find_or_create({ album_id => $album->id, media_id => $media->id });
 	unless( $rel ) {
 	    $self->status_bad_request( $c, $c->loc( 'Unable to establish relationship between new album and media' ) );
 	}
