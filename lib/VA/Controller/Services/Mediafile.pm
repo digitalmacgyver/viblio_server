@@ -1292,7 +1292,13 @@ sub recently_uploaded :Local {
 
     my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
 
-    my $from = DateTime->now;
+    # Find the most recent one
+    my @recent = $c->user->videos->search({},{order_by => 'me.created_date desc', rows => 1});
+    unless( $#recent >= 0 ) {
+	$self->status_ok( $c, { media => [], pager => { next_page => undef } } );
+    }
+
+    my $from = $recent[0]->created_date;
     my $to   = $from->clone;
     $to->subtract( days => $days );
 

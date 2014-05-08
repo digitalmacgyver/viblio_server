@@ -125,7 +125,7 @@ sub list :Local {
 sub album_names :Local {
     my( $self, $c ) = @_;
     my @a = $c->user->albums->search({},{order_by=>'title'});
-    my @n = sort map { $_->title() } @a;
+    my @n = sort map { {title => $_->title(), uuid => $_->uuid()} } @a;
     $self->status_ok( $c, { albums => \@n } );
 }
 
