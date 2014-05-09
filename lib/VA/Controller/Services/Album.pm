@@ -433,7 +433,7 @@ sub list_all :Local {
 	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
-	$a->{is_shared} = 1;
+	$a->{shared_to_me} = 1;
 	push( @data, $a );
     }
 
@@ -444,7 +444,7 @@ sub list_all :Local {
 	push( @m, VA::MediaFile->new->publish( $c, $_, { views => ['poster'] } ) ) foreach( $album->videos );
 	$a->{media} = \@m;
 	$a->{owner} = $album->user->TO_JSON; 
-	$a->{is_shared} = 0;
+	$a->{is_shared} = ( $album->community ? 1 : 0 );
 	push( @data, $a );
     }
 
