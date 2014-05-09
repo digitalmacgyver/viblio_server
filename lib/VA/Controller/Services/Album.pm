@@ -171,18 +171,21 @@ sub create :Local {
 	    $self->status_bad_request( $c, $c->loc( 'Unable to establish relationship between new album and initial media' ) );
 	}
 	# Set the poster of the new album to the poster of the video file just added
-	my $poster = $media->assets->find({ asset_type => 'poster' });
-	$album->find_or_create_related( 'media_assets', {
-	    user_id => $c->user->obj->id,
-	    asset_type => 'poster',
-	    mimetype => $poster->mimetype,
-	    uri => $poster->uri,
-	    location => $poster->location,
-	    bytes => $poster->bytes,
-	    width => $poster->width,
-	    height => $poster->height,
-	    provider => $poster->provider,
-	    provider_id => $poster->provider_id });
+	my $has_a_poster = $album->find_related( 'media_assets', { asset_type => 'poster' } );
+	if ( ! $has_a_poster ) {
+	    my $poster = $media->assets->find({ asset_type => 'poster' });
+	    $album->find_or_create_related( 'media_assets', {
+		user_id => $c->user->obj->id,
+		asset_type => 'poster',
+		mimetype => $poster->mimetype,
+		uri => $poster->uri,
+		location => $poster->location,
+		bytes => $poster->bytes,
+		width => $poster->width,
+		height => $poster->height,
+		provider => $poster->provider,
+		provider_id => $poster->provider_id });
+	}
     }
     else {
 	# Set the poster of the new album to a canned image
