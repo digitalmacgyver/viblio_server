@@ -101,12 +101,13 @@ foreach my $user ( @users ) {
 	print sprintf( "%-30s %s\n", $user->email, "does not want email" ) if ( $report );
 	next;
     }
-    my $total = $user->videos->count();
     my @media = $user->videos->search(
-	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) }},
+	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
+	  'me.is_viblio_created' => 0 },
 	{prefetch => 'assets' } );
     my @albums = $user->albums->search(
-	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) }},
+	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) }
+	  'me.is_viblio_created' => 0 },
 	{prefetch => 'assets' } );
     my @tagged_faces = $user->contacts->search(
 	{ updated_date => { '>', $dtf->format_datetime( $TARGET ) },
