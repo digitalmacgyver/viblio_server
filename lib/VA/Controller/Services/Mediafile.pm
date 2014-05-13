@@ -1324,6 +1324,22 @@ sub recently_uploaded :Local {
     $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
+# Add a tag to a video
+sub add_tag :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $tagname = $c->req->param( 'tag' );
+    my $video = $c->user->videos->find({ uuid => $mid });
+    unless( $video ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+    }
+    my $tag = $video->add_tag( $tagname );
+    unless( $tag ) {
+	$self->status_bad_request( $c, $c->loc( 'Failed to add tag [_1]', $tagname ) );
+    }
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
