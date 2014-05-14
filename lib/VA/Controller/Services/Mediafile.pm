@@ -1340,6 +1340,22 @@ sub add_tag :Local {
     $self->status_ok( $c, {} );
 }
 
+# Remove a tag from a video
+sub rm_tag :Local {
+    my( $self, $c ) = @_;
+    my $mid = $c->req->param( 'mid' );
+    my $tagname = $c->req->param( 'tag' );
+    my $video = $c->user->videos->find({ uuid => $mid });
+    unless( $video ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+    }
+    my $tag = $video->rm_tag( $tagname );
+    unless( $tag ) {
+	$self->status_bad_request( $c, $c->loc( 'Failed to remove tag [_1]', $tagname ) );
+    }
+    $self->status_ok( $c, {} );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

@@ -596,6 +596,21 @@ sub add_tag {
     return $feature;
 }
 
+# Remove a simple tag from a video or album
+sub rm_tag {
+    my( $self, $tag ) = @_;
+    my $asset = $self->assets->find({ asset_type => 'main' });
+    my $feature = $asset->find_related( 'media_asset_features', {
+	media_id => $asset->media_id,
+	user_id => $asset->user_id,
+	feature_type => 'activity',
+	coordinates => $tag });
+    if ( $feature ) {
+	$feature->delete;
+    }
+    return $feature;
+}
+
 # Return the list of MediaAssetFeatures that represent
 # activities (feature_type=activity, coordinates=(baseball).
 # This method returns only the unique ones.
