@@ -1201,7 +1201,7 @@ sub related :Local {
     # we know the assets already, and are sure we know how the media file will be
     # consumed on the client.
     # $_->media->assets->find({ asset_type=>'main'})
-    push( @media, VA::MediaFile->new->publish( $c, $_->media, { assets => [$_] } ) ) foreach( @data );
+    push( @media, VA::MediaFile->new->publish( $c, $_->media, { assets => [$_], include_tags => 1, include_shared => 1 } ) ) foreach( @data );
     $self->status_ok( $c, { media => \@media, pager => $pager } );
 }
 
