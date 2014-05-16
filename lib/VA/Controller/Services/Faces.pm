@@ -70,6 +70,8 @@ sub media_face_appears_in :Local {
 	my $asset = $c->model( 'RDS::MediaAsset' )
 	    ->find(
 	    { 'media.user_id' => $user->id, 
+	      -or => [ "media.status" => "visible",
+		       "media.status" => "complete" ],
 	      'me.uuid' => $asset_id },
 	    { join => 'media', prefetch => 'media', group_by => ['media.id'] } );
 	unless( $asset ) {
@@ -86,7 +88,10 @@ sub media_face_appears_in :Local {
 	my $pager;
 	my $rs = $c->model( 'RDS::MediaAssetFeature' )
 	    ->search(
-	    { contact_id => $contact_id, 'me.user_id' => $user->id },
+	    { contact_id => $contact_id, 
+	      -or => [ "media.status" => "visible",
+		       "media.status" => "complete" ],
+	      'me.user_id' => $user->id },
 	    { prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
 	my $features = ();
 	if ( $args->{page} ) {
@@ -130,7 +135,10 @@ sub contact_mediafile_count :Local {
     }
     my $count =  $c->model( 'RDS::MediaAssetFeature' )
 	->search(
-	{ contact_id => $contact->id, 'me.user_id' => $c->user->id },
+	{ contact_id => $contact->id, 
+	  -or => [ "media.status" => "visible",
+		   "media.status" => "complete" ],
+	  'me.user_id' => $c->user->id },
 	{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } )->count;
     $self->status_ok( $c, { count => $count } );
 }
@@ -185,7 +193,11 @@ sub contacts :Local {
 	}
 	$hash->{asset_id} = $asset->uuid;
 	$hash->{appears_in} = $c->model( 'RDS::MediaAssetFeature' )->
-	    search({contact_id=>$feat->contact_id},{prefetch => { 'media_asset' => 'media' }, group_by => ['media.id']})->count;
+	    search({
+		contact_id=>$feat->contact_id,
+		-or => [ "media.status" => "visible",
+			 "media.status" => "complete" ],
+		   },{prefetch => { 'media_asset' => 'media' }, group_by => ['media.id']})->count;
 
 	push( @data, $hash );
     }
