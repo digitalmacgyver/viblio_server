@@ -856,7 +856,7 @@ sub all_shared :Local {
 	    my @feats = $c->model( 'RDS::MediaAssetFeature' )
 		->search({ 'me.contact_id' => $contact->id,
 			   'me.feature_type' => 'face',
-			   'media.id', { '-in', \@media_ids } },
+			   'media.id' => { '-in', \@media_ids } },
 			 { prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] });
 	    @media = map { $_->media_asset->media } @feats;
 	}
@@ -1253,18 +1253,30 @@ sub has_been_shared :Local {
     $self->status_ok( $c, { count => ( $#shared + 1 ) } );
 }
 
-# Search by title or description
+# Search by title or description OR TAG
+# Returns media owned by and shared to user that matches the
+# search criterion.
 sub search_by_title_or_description :Local {
     my( $self, $c ) = @_;
     my $q = $c->req->param( 'q' );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
-    my $rs = $c->user->videos->search(
-	{ -or => [ 'LOWER(title)' => { 'like', '%'.lc($q).'%' },
-		   'LOWER(description)' => { 'like', '%'.lc($q).'%' } ] },
-	{ order_by => 'recording_date desc',
+
+    # get uuids of all media shared to this user
+    my @shares = $c->user->media_shares->search({ 'media.is_album' => 0 },{prefetch=>'media'});
+    my @mids = map { $_->media->id } @shares;
+
+    my $rs = $c->model( 'RDS::MediaAssetFeature' )->search(
+	{ -and => [ -or => [ 'media.user_id' => $c->user->id,
+			     'media.id' => { -in => \@mids } ],
+		    -or => [ 'LOWER(media.title)' => { 'like', '%'.lc($q).'%' },
+			     'LOWER(media.description)' => { 'like', '%'.lc($q).'%' },
+			     'LOWER(me.coordinates)' => { 'like', '%'.lc($q).'%' } ] ] },
+	{ prefetch => { 'media_asset' => 'media' },
+	  order_by => 'recording_date desc',
 	  page => $page, rows => $rows } );
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
+
+    my @data = map { VA::MediaFile->publish( $c, $_->media_asset->media, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
     $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
