@@ -47,6 +47,7 @@ sub change_latlng :Local {
     my( $self, $c ) = @_;
     my $lat = $c->req->param( 'lat' );
     my $lng = $c->req->param( 'lng' );
+    my $addr = $c->req->param( 'addr' );
 
     my $mid = $c->req->param( 'mid' );
     my $m = $c->user->media->find({uuid=>$mid});
@@ -58,6 +59,7 @@ sub change_latlng :Local {
 
     $m->lat( $lat );
     $m->lng( $lng );
+    $m->geo_address( $addr ) if ( $addr );
 
     my $info = GeoData::get_data( $c, $lat, $lng );
     if ( $info->{city} && $info->{address} ) {
