@@ -482,7 +482,7 @@ sub photos_of :Local {
 	search({ contact_id => $contact->id,
 		 'media_asset.uri' => { '!=' => undef },
 		 'me.user_id' => $c->user->id },
-	       { prefetch => 'media_asset' });
+	       { prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] });
     my @data = ();
     foreach my $feat ( @features ) {
 	my $url = new VA::MediaFile::US()->uri2url( $c, $feat->media_asset->uri );
