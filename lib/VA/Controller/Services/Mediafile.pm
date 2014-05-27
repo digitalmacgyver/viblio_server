@@ -1266,18 +1266,48 @@ sub search_by_title_or_description :Local {
     my @shares = $c->user->media_shares->search({ 'media.is_album' => 0 },{prefetch=>'media'});
     my @mids = map { $_->media->id } @shares;
 
-    my $rs = $c->model( 'RDS::MediaAssetFeature' )->search(
-	{ -and => [ -or => [ 'media.user_id' => $c->user->id,
-			     'media.id' => { -in => \@mids } ],
-		    -or => [ 'LOWER(media.title)' => { 'like', '%'.lc($q).'%' },
-			     'LOWER(media.description)' => { 'like', '%'.lc($q).'%' },
-			     'LOWER(me.coordinates)' => { 'like', '%'.lc($q).'%' } ] ] },
-	{ prefetch => { 'media_asset' => 'media' },
-	  order_by => 'recording_date desc',
-	  page => $page, rows => $rows } );
+    # Videos owned or shared to user where title or description match
+    my @tord = $c->model( 'RDS::Media' )->search({
+	-and => [
+	     'me.is_album' => 0,
+	     -or => [ 'me.user_id' => $c->user->id,
+		      'me.id' => { -in => \@mids } ],
+	     -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+		      'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
+	     -or => [ 'me.status' => 'visible',
+		      'me.status' => 'complete' ] ] });
+    
+    # Videos owned or shared to user which are tagged with the expression
+    my @features = $c->model( 'RDS::MediaAssetFeature' )->search(
+	{ -and => [ 
+	       -or => [ 'media.user_id' => $c->user->id,
+			'media.id' => { -in => \@mids } ],
+	       'LOWER(me.coordinates)' => { 'like', '%'.lc($q).'%' } ] },
+	{ prefetch => { 'media_asset' => 'media' } });
 
-    my @data = map { VA::MediaFile->publish( $c, $_->media_asset->media, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+    # We will have dups.  De-dup, then page.
+    my $seen = {};
+    my @tagged = ();
+
+    foreach my $a ( @features ) {
+	my $media = $a->media_asset->media;
+	if ( ! $seen->{$media->id} ) {
+	    $seen->{$media->id} = 1;
+	    push( @tagged, $media );
+	}
+    }
+
+    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tord, @tagged );
+
+    my $pager = Data::Page->new( $#media + 1, $rows, $page );
+    my @sliced = ();
+    if ( $#media >= 0 ) { 
+	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
+    }
+
+    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } @sliced;
+
+    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $pager ) } );
 }
 
 # Return all the unique cities that a user's video apepars in
