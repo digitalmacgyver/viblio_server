@@ -1222,7 +1222,7 @@ sub media_shared :Local {
     # FOR TESTING
     if ( $c->req->param( 'share_type' ) && $c->req->param( 'secret' ) ) {
 	if ( $c->req->param( 'secret' ) eq 'Viblio2013' ) {
-	    my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+	    my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_tags => 1 } );
 	    $self->status_ok( $c, { share_type => $c->req->param( 'share_type' ),
 				    media => $mf, owner => $mediafile->user->TO_JSON } );
 	}
@@ -1235,7 +1235,7 @@ sub media_shared :Local {
     if ( $user && $mediafile->user_id == $user->id ) {
 	# They own it
 	$c->log->debug( "SHARE: OWNED BY USER" );
-	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+	my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_tags => 1 } );
 	$self->status_ok( $c, { share_type => "owned_by_user", 
 				media => $mf, owner => $mediafile->user->TO_JSON } );
     }
@@ -1246,7 +1246,7 @@ sub media_shared :Local {
 	# increment the view count
 	$mediafile->view_count( $mediafile->view_count + 1 ) unless( $preview );
 	$mediafile->update;
-	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+	my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_tags => 1 } );
 	$self->status_ok( $c, { share_type => 'private', 
 				media => $mf, 
 				owner => $mediafile->user->TO_JSON } );
@@ -1335,7 +1335,7 @@ sub media_shared :Local {
 	$mediafile->view_count( $mediafile->view_count + 1 ) unless( $preview );
 	$mediafile->update;
 
-	my $mf = VA::MediaFile->new->publish( $c, $mediafile );
+	my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_tags => 1 } );
 	$self->status_ok( $c, { share_type => $share_type, media => $mf, owner => $mediafile->user->TO_JSON } );
     }
     else {
