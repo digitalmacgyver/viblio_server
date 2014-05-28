@@ -211,6 +211,18 @@ sub create :Local {
 sub get :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
+
+    my $include_contact_info = $c->req->param( 'include_contact_info' );
+    $include_contact_info = 0 unless( $include_contact_info );
+    my $include_tags = $c->req->param( 'include_tags' );
+    $include_tags = 0 unless( $include_tags );
+
+    my $params = {
+	views => ['poster'],
+	include_contact_info => $include_contact_info,
+	include_tags => $include_tags,
+    };
+
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
@@ -220,7 +232,7 @@ sub get :Local {
     my @m = ();
     push( @m, VA::MediaFile->new->publish( 
 	      $c, $_, 
-	      { views => ['poster'] } ) ) 
+	      $params ) ) 
 	foreach( $album->media->search({},{order_by => 'recording_date desc'}) );
     $hash->{media} = \@m;
     $hash->{owner} = $album->user->TO_JSON; 
