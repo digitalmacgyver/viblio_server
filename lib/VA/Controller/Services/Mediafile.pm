@@ -1285,11 +1285,31 @@ sub search_by_title_or_description :Local {
 	       'LOWER(me.coordinates)' => { 'like', '%'.lc($q).'%' } ] },
 	{ prefetch => { 'media_asset' => 'media' } });
 
+    # Videos owned or shared to user which have the passed in person's name
+    # associated with them
+    my @faces = $c->model( 'RDS::MediaAssetFeature' )->search(
+	{ -and => [ 
+	       -or => [ 'media.user_id' => $c->user->id,
+			'media.id' => { -in => \@mids } ],
+	       'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } ] },
+	{ prefetch => [ 'contact', { 'media_asset' => 'media' } ] });
+
+    $DB::single = 1;
+
+
     # We will have dups.  De-dup, then page.
     my $seen = {};
     my @tagged = ();
 
     foreach my $a ( @features ) {
+	my $media = $a->media_asset->media;
+	if ( ! $seen->{$media->id} ) {
+	    $seen->{$media->id} = 1;
+	    push( @tagged, $media );
+	}
+    }
+
+    foreach my $a ( @faces ) {
 	my $media = $a->media_asset->media;
 	if ( ! $seen->{$media->id} ) {
 	    $seen->{$media->id} = 1;
