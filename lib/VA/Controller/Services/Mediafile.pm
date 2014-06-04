@@ -1294,8 +1294,78 @@ sub search_by_title_or_description :Local {
 	       'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } ] },
 	{ prefetch => [ 'contact', { 'media_asset' => 'media' } ] });
 
-    $DB::single = 1;
+    # We will have dups.  De-dup, then page.
+    my $seen = {};
+    my @tagged = ();
 
+    foreach my $a ( @features ) {
+	my $media = $a->media_asset->media;
+	if ( ! $seen->{$media->id} ) {
+	    $seen->{$media->id} = 1;
+	    push( @tagged, $media );
+	}
+    }
+
+    foreach my $a ( @faces ) {
+	my $media = $a->media_asset->media;
+	if ( ! $seen->{$media->id} ) {
+	    $seen->{$media->id} = 1;
+	    push( @tagged, $media );
+	}
+    }
+
+    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tord, @tagged );
+
+    my $pager = Data::Page->new( $#media + 1, $rows, $page );
+    my @sliced = ();
+    if ( $#media >= 0 ) { 
+	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
+    }
+
+    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1, include_shared => 1 } ) } @sliced;
+
+    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $pager ) } );
+}
+
+# IN ALBUM : Search by title or description OR TAG
+# Returns media owned by and shared to user that matches the
+# search criterion.
+sub search_by_title_or_description_in_album :Local {
+    my( $self, $c ) = @_;
+    my $q = $c->req->param( 'q' );
+    my $page = $c->req->param( 'page' ) || 1;
+    my $rows = $c->req->param( 'rows' ) || 10000;
+    my $aid = $c->req->param( 'aid' );
+
+    my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
+    unless( $album ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+    }
+
+    my @mids = map { $_->id } $album->videos;
+
+    # Videos owned or shared to user where title or description match
+    my @tord = $c->model( 'RDS::Media' )->search({
+	-and => [
+	     'me.is_album' => 0,
+	     'me.id' => { -in => \@mids },
+	     -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+		      'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
+	     -or => [ 'me.status' => 'visible',
+		      'me.status' => 'complete' ] ] });
+    
+    # Videos owned or shared to user which are tagged with the expression
+    my @features = $c->model( 'RDS::MediaAssetFeature' )->search(
+	{ 'media.id' => { -in => \@mids },
+	  'LOWER(me.coordinates)' => { 'like', '%'.lc($q).'%' } },
+	{ prefetch => { 'media_asset' => 'media' } });
+
+    # Videos owned or shared to user which have the passed in person's name
+    # associated with them
+    my @faces = $c->model( 'RDS::MediaAssetFeature' )->search(
+	{ 'media.id' => { -in => \@mids },
+	  'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } },
+	{ prefetch => [ 'contact', { 'media_asset' => 'media' } ] });
 
     # We will have dups.  De-dup, then page.
     my $seen = {};
@@ -1325,7 +1395,7 @@ sub search_by_title_or_description :Local {
 	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
 
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } @sliced;
+    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1, include_shared => 1 } ) } @sliced;
 
     $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $pager ) } );
 }
