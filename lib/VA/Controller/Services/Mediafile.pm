@@ -1322,7 +1322,20 @@ sub search_by_title_or_description :Local {
 	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
 
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1, include_shared => 1 } ) } @sliced;
+    my @data = ();
+    my $shared;
+    foreach my $m ( @mids ) { $shared->{$m} = 1; }
+    foreach my $m ( @sliced ) {
+	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1 } );
+	if ( $shared->{ $m->id } ) {
+	    $d->{is_shared} = 1;
+	    $d->{owner} = $m->user->TO_JSON;
+	}
+	else {
+	    $d->{is_shared} = 0;
+	}
+	push( @data, $d );
+    }
 
     $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $pager ) } );
 }
@@ -1395,7 +1408,19 @@ sub search_by_title_or_description_in_album :Local {
 	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
 
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1, include_shared => 1 } ) } @sliced;
+    my @data = ();
+    foreach my $m ( @sliced ) {
+	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1 } );
+	if ( $m->user_id != $c->user->id ) {
+	    # This must be shared because the album is shared
+	    $d->{is_shared} = ( $album->community ? 1 : 0 );
+	    $d->{owner}     = $album->user->TO_JSON;
+	}
+	else {
+	    $d->{is_shared} = 0;
+	}
+	push( @data, $d );
+    }
 
     $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $pager ) } );
 }
