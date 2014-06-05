@@ -230,10 +230,14 @@ sub get :Local {
     my $hash  = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
     $hash->{is_shared} = ( $album->community ? 1 : 0 );
     my @m = ();
-    push( @m, VA::MediaFile->new->publish( 
-	      $c, $_, 
-	      $params ) ) 
-	foreach( $album->media->search({},{order_by => 'recording_date desc'}) );
+    foreach my $med ( $album->media->search({},{order_by => 'recording_date desc'}) ) {
+	my $data = VA::MediaFile->new->publish( 
+	    $c, $med, 
+	    $params );
+	$data->{owner} = $med->user->TO_JSON;
+	push( @m, $data );
+    } 
+	
     $hash->{media} = \@m;
     $hash->{owner} = $album->user->TO_JSON; 
 
