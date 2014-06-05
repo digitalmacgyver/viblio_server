@@ -1326,7 +1326,7 @@ sub search_by_title_or_description :Local {
     my $shared;
     foreach my $m ( @mids ) { $shared->{$m} = 1; }
     foreach my $m ( @sliced ) {
-	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1 } );
+	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1 } );
 	if ( $shared->{ $m->id } ) {
 	    $d->{is_shared} = 1;
 	    $d->{owner} = $m->user->TO_JSON;
@@ -1410,7 +1410,7 @@ sub search_by_title_or_description_in_album :Local {
 
     my @data = ();
     foreach my $m ( @sliced ) {
-	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1 } );
+	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1 } );
 	if ( $m->user_id != $c->user->id ) {
 	    # This must be shared because the album is shared
 	    $d->{is_shared} = ( $album->community ? 1 : 0 );
