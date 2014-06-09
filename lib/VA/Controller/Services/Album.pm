@@ -122,10 +122,34 @@ sub list :Local {
     $self->status_ok( $c, { albums => \@data, pager => $self->pagerToJson( $pager ) } );
 }
 
-sub album_names :Local {
+# Return a list of album titles for the albums the user owns
+sub album_names_no_shared :Local {
     my( $self, $c ) = @_;
     my @a = $c->user->albums->search({},{order_by=>'title'});
     my @n = sort map { {title => $_->title(), uuid => $_->uuid()} } @a;
+    $self->status_ok( $c, { albums => \@n } );
+}
+
+# Return a list of album titles for the albums the user owns and have
+# been shared to the user.
+sub album_names :Local {
+    my( $self, $c ) = @_;
+#    my @a = $c->user->albums->search({},{order_by=>'title'});
+#    my @n = sort map { {title => $_->title(), uuid => $_->uuid()} } @a;
+
+    my $rs = $c->model( 'RDS::ContactGroup' )->search
+        ({'contact.contact_email'=>$c->user->email},
+         { prefetch=>['contact',{'cgroup'=>'community'}]});
+
+    my @communities = map { $_->cgroup->community } $rs->all;
+    my @albums = map { $_->album } @communities;
+
+    foreach my $album ( $c->user->albums->all ) {
+	push( @albums, $album );
+    }
+
+    my @n = sort map { {title => $_->title(), uuid => $_->uuid()} } @albums;
+
     $self->status_ok( $c, { albums => \@n } );
 }
 
