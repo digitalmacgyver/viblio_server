@@ -134,21 +134,19 @@ sub album_names_no_shared :Local {
 # been shared to the user.
 sub album_names :Local {
     my( $self, $c ) = @_;
-#    my @a = $c->user->albums->search({},{order_by=>'title'});
-#    my @n = sort map { {title => $_->title(), uuid => $_->uuid()} } @a;
 
     my $rs = $c->model( 'RDS::ContactGroup' )->search
         ({'contact.contact_email'=>$c->user->email},
          { prefetch=>['contact',{'cgroup'=>'community'}]});
 
     my @communities = map { $_->cgroup->community } $rs->all;
-    my @albums = map { $_->album } @communities;
+    my @albums = map { {title => $_->album->title(), uuid => $_->album->uuid(), is_shared => 1} } @communities;
 
     foreach my $album ( $c->user->albums->all ) {
-	push( @albums, $album );
+	push( @albums, { title => $album->title(), uuid => $album->uuid(), is_shared => 0 } );
     }
 
-    my @n = sort map { {title => $_->title(), uuid => $_->uuid()} } @albums;
+    my @n = sort { $a->{title} cmp $b->{title} } @albums;
 
     $self->status_ok( $c, { albums => \@n } );
 }
