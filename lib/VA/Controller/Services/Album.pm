@@ -290,20 +290,51 @@ sub add_media :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
     my $mid = $c->req->param( 'mid' );
+    my @list = $c->req->param( 'list[]' );
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
-    my $media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
     
     unless( $album ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
     }
-    unless( $media ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
-    }
 
-    my $rel = $c->model( 'RDS::MediaAlbum' )->create({ album_id => $album->id, media_id => $media->id });
-    unless( $rel ) {
-	$self->status_bad_request( $c, $c->loc( 'Unable to establish relationship between album and media' ) );
+    my $media;
+    my $template;
+    my $subject;
+
+    $template = 'email/20-newVideoAddedToAlbum.tt';
+    $subject = $c->loc( '[_1] added a new video to [_2]', $c->user->displayname, $album->title );
+
+    if ( $mid ) {
+	$media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
+	unless( $media ) {
+	    $self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+	}
+
+	my $rel = $c->model( 'RDS::MediaAlbum' )->find_or_create({ album_id => $album->id, media_id => $media->id });
+	unless( $rel ) {
+	    $self->status_bad_request( $c, $c->loc( 'Unable to establish relationship between album and media' ) );
+	}
+    }
+    elsif ( $#list >= 0 ) {
+	foreach $mid ( @list ) {
+	    $media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
+	    unless( $media ) {
+		$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+	    }
+
+	    my $rel = $c->model( 'RDS::MediaAlbum' )->find_or_create({ album_id => $album->id, media_id => $media->id });
+	    unless( $rel ) {
+		$self->status_bad_request( $c, $c->loc( 'Unable to establish relationship between album and media' ) );
+	    }
+	}
+	if ( $#list > 0 ) {
+	    $template = 'email/20-newVideosAddedToAlbum.tt';
+	    $subject = $c->loc( '[_1] added some new videos to [_2]', $c->user->displayname, $album->title );
+	}
+    }
+    else {
+	$self->status_bad_request( $c, $c->loc( 'No media files specified to add!' ) );
     }
 
     # If this is a shared album, we have some notifications to send!
@@ -334,6 +365,7 @@ sub add_media :Local {
 	    album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ),
 	    video => VA::MediaFile->new->publish( $c, $media, { views => ['poster'] } ),
 	    url => sprintf( "%s#web_player?mid=%s", $c->server, $media->uuid ),
+	    num => ( $#list + 1 ),
 	};
 	# Send them to the message queue and send email
 	foreach my $to ( @to ) {
@@ -350,9 +382,9 @@ sub add_media :Local {
 		delete $to->{user};
 
 		$self->send_email( $c, {
-		    subject => $c->loc( '[_1] added a new video to [_2]', $c->user->displayname, $album->title ),
+		    subject => $subject,
 		    to => [ $to ],
-		    template => 'email/20-newVideoAddedToAlbum.tt',
+		    template => $template,
 		    stash => $model } );
 	    }
 	}
