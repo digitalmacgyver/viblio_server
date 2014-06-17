@@ -249,6 +249,26 @@ sub get :Local {
     unless( $album ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
     }
+
+    # Is this album viewable by the user?
+    if ( $album->user_id != $c->user->id ) {
+	# check shared albums
+	my $rs = $c->model( 'RDS::ContactGroup' )->search
+	    ({'contact.contact_email'=>$c->user->email},
+	     { prefetch=>['contact',{'cgroup'=>'community'}]});
+	my @communities = map { $_->cgroup->community } $rs->all;
+	my @albums = map { $_->album } @communities;
+	my $found = 0;
+	foreach my $sa ( @albums ) {
+	    if ( $sa->id == $album->id ) {
+		$found = 1;
+	    }
+	}
+	if ( ! $found ) {
+	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to view this album.' ) );
+	}
+    }
+
     my $hash  = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
     $hash->{is_shared} = ( $album->community ? 1 : 0 );
     my @m = ();
