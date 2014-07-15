@@ -96,17 +96,47 @@ if ( $report ) {
     print sprintf( "%-30s %-7s %-7s %-7s %-7s %-7s\n", "User", "Videos", "Albums", "Faces", "Unamed", "Tagged" );
 }
 
+# Handle updates to shared albums seperately from the normal email
+# updates.
+sub send_shared_album_updates {
+    my $users = shift;
+
+    # First get a list of all album entries created in the last day.
+    #my @videos = $c->model( 'RDS::MediaAlbum' )
+    #->search( { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) } },
+    #{ join => { 'media' => 'community' } } );
+
+    my @videos = $c->model( 'RDS::Media' )
+	->search( { 'mediaalbum.created_date' => { '>', $dtf->format_datetime( $TARGET ) } },
+		  { join => [ 'mediaalbum', 'community' ] } );
+
+    foreach my $video ( @videos ) {
+	print( $video->album_id, " ", $video->media->filename, " ", $video->members_id, "\n" );
+    }
+
+    # Find any album the user is a member of that had videos added to it.
+    # For each album get a list of [ video_uploader, [ vid1, vid2, ... ] ]
+    # For each item in the above list, if video_uploader != user, send an email.
+
+    
+    # DEBUG - for testing we only want to do this.
+    exit 0;
+}
+
+send_shared_album_updates( \@users );
+
 foreach my $user ( @users ) {
     unless ( $user->profile->setting( 'email_notifications' ) && $user->profile->setting( 'email_upload' ) ) {
 	print sprintf( "%-30s %s\n", $user->email, "does not want email" ) if ( $report );
 	next;
     }
+    
     my @media = $user->videos->search(
 	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
 	  'me.is_viblio_created' => 0 },
 	{prefetch => 'assets' } );
     my @albums = $user->albums->search(
-	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) }
+	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
 	  'me.is_viblio_created' => 0 },
 	{prefetch => 'assets' } );
     my @tagged_faces = $user->contacts->search(
