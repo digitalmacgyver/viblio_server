@@ -16,7 +16,7 @@
 %]
 
     <div class="centered regSize darkText">
-        <p style="text-align: left;">[% user.displayname %] just added the following video to your VIBLIO album called &quot;[% album.title %]&quot; - NICE!</p>
+        <p style="text-align: left;">[% user.displayname %] just added the following video to your shared VIBLIO album called &quot;[% album.title %]&quot; - NICE!</p>
         <br />
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
