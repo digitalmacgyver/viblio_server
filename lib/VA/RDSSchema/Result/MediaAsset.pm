@@ -111,6 +111,29 @@ __PACKAGE__->table("media_assets");
   is_nullable: 1
   size: [14,6]
 
+=head2 timecode
+
+  data_type: 'decimal'
+  is_nullable: 1
+  size: [14,6]
+
+=head2 face_score
+
+  data_type: 'decimal'
+  is_nullable: 1
+  size: [14,6]
+
+=head2 blur_score
+
+  data_type: 'decimal'
+  is_nullable: 1
+  size: [14,6]
+
+=head2 cv_metrics
+
+  data_type: 'text'
+  is_nullable: 1
+
 =head2 bytes
 
   data_type: 'integer'
@@ -187,6 +210,14 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", default_value => "us", is_nullable => 0, size => 28 },
   "duration",
   { data_type => "decimal", is_nullable => 1, size => [14, 6] },
+  "timecode",
+  { data_type => "decimal", is_nullable => 1, size => [14, 6] },
+  "face_score",
+  { data_type => "decimal", is_nullable => 1, size => [14, 6] },
+  "blur_score",
+  { data_type => "decimal", is_nullable => 1, size => [14, 6] },
+  "cv_metrics",
+  { data_type => "text", is_nullable => 1 },
   "bytes",
   { data_type => "integer", is_nullable => 1 },
   "width",
@@ -322,8 +353,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-04-02 23:10:28
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ltgf5Bv/d3i4YHgXGWfbxw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-07-15 14:44:23
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:RoffjneqYk9wzouoH5v8GQ
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

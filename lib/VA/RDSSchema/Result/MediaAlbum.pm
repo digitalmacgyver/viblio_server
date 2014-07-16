@@ -163,6 +163,14 @@ __PACKAGE__->belongs_to(
     { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+# Put in a mapping for album_id as well.
+__PACKAGE__->belongs_to(
+    "album",
+    "VA::RDSSchema::Result::Media",
+    { id => "album_id" },
+    { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
 1;

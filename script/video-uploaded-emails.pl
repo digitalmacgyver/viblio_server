@@ -102,17 +102,23 @@ sub send_shared_album_updates {
     my $users = shift;
 
     # First get a list of all album entries created in the last day.
-    #my @videos = $c->model( 'RDS::MediaAlbum' )
-    #->search( { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) } },
-    #{ join => { 'media' => 'community' } } );
+    my @albums = $c->model( 'RDS::MediaAlbum' )
+	->search( { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) } },
+		  { prefetch => { 'album' => 'community' } } );
 
-    my @videos = $c->model( 'RDS::Media' )
-	->search( { 'mediaalbum.created_date' => { '>', $dtf->format_datetime( $TARGET ) } },
-		  { join => [ 'mediaalbum', 'community' ] } );
+    #my @videos = $c->model( 'RDS::Media' )
+	#->search( { 'media_albums_medias.created_date' => { '>', $dtf->format_datetime( $TARGET ) } },
+	#	  { prefetch => [ 'media_albums_medias', 'community' ] } );
 
-    foreach my $video ( @videos ) {
-	print( $video->album_id, " ", $video->media->filename, " ", $video->members_id, "\n" );
+    # Build up a set of album, uploader, ( media1, media2, ... ) structures.
+    my $album_uploaders = {}
+    foreach my $video ( @albums ) {
+	print( $video->album_id, " ", $video->media_id, " ", $video->album->title, "\n" );
+	my $uploader = $video->album->user_id;
+	my $upload_uuid = $video->album->uuid;
     }
+    # From this list I can break it down into:
+    # UPLOADER, ALBUM, [ MEDIA ] and then use the existing logic from Album.pm.
 
     # Find any album the user is a member of that had videos added to it.
     # For each album get a list of [ video_uploader, [ vid1, vid2, ... ] ]
