@@ -609,7 +609,7 @@ sub new_user :Local {
 =cut
 	# Send an instructional email too.
 	$self->send_email( $c, {
-	    subject => $c->loc( "I'm VIBLIO and I'm here to help!" ),
+	    subject => $c->loc( "Welcome to VIBLIO" ),
 	    to => [{
 		email => $user->email,
 		name  => $user->displayname }],
