@@ -15,7 +15,7 @@
 %]
 
     <div class="leftAligned regSize darkText">
-        <span class="largeText">Congratulations <span class="tomato">[% name %]</span>!</span>
+        <span class="largeText">Congratulations <span class="tomato">[% to_name %]</span>!</span>
         <br />
         <br />
         <p>Your friend <span class="tomato">[% from.displayname %]</span> wants to help you build and organize your own private video library so you can share videos together.</p>
