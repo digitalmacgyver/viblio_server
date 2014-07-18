@@ -19,7 +19,7 @@
         <em>Someone you know is dying to see this.</em>
         <br />
         <br />
-        <span><a class="tomato" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><strong><span class="tomato">SHARE YOUR VIDEOS</span></strong></a><em> privately</em> through VIBLIO</span> 
+        <span><a class="tomato" href="[% c.server  %]#home?recent=true"><strong><span class="tomato">SHARE YOUR VIDEOS</span></strong></a><em> privately</em> through VIBLIO</span> 
         
         <div class="line"></div>
 

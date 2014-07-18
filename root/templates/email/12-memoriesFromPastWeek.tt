@@ -19,7 +19,7 @@
         <br />
 
         [% IF model.media.size > 0 %]
-        <span>Here are the videos you took this week ready to <u><a href="[% c.server  %]#home"><span class="tomato">share</span></a></u></span>
+        <span>Here are the videos you took this week ready to <u><a href="[% c.server  %]#home?recent=true"><span class="tomato">share</span></a></u></span>
         
         <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
             <tbody>
@@ -65,7 +65,7 @@
                                     <tbody>
                                         <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                                             <td cellspacing="0" cellpadding="0">
-					      <a href="[% c.server %]#videosof?uuid=[% face.uuid %]">
+					      <a href="[% c.server %]#home?fid=[% face.uuid %]">
                                                 <img class="boxShadowed" width="80" height="80" src="[% c.server %]s/ip/[% face.picture_uri %]" alt="face image" style="width: 80px;height: 80px;">
 					      </a>
                                             </td>
