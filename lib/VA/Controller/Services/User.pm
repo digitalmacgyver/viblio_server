@@ -597,7 +597,7 @@ sub tell_a_friend :Local {
 		email => $recip}],
 	    template => ( $tnum == 15 ? 'email/15-inviteToShare.tt' : 'email/14-referAFriend.tt' ),
 	    stash => {
-		name => $to_name,
+		to_name => $to_name,
 		from => $user,
 		message => $message,
 	    } });

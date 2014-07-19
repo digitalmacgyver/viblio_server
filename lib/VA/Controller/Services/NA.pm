@@ -554,8 +554,11 @@ sub new_user :Local {
 	my $user = $c->user->obj;
 	$user->provider( ( $args->{realm} eq 'db' ? 'local' : $args->{realm}) ); $user->update;
 
-	# Create a profile
-	$user->create_profile();
+	# Create a profile - note authentication may have already
+	# created a profile if the user came in via facebook.
+	if ( ! $user->profile ) {
+	    $user->create_profile();
+	}
 
 	# Create an access token for use with the 'viblio' authenticator
 	$user->access_token(
@@ -609,7 +612,7 @@ sub new_user :Local {
 =cut
 	# Send an instructional email too.
 	$self->send_email( $c, {
-	    subject => $c->loc( "I'm VIBLIO and I'm here to help!" ),
+	    subject => $c->loc( "Welcome to VIBLIO" ),
 	    to => [{
 		email => $user->email,
 		name  => $user->displayname }],

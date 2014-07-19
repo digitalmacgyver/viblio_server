@@ -204,7 +204,30 @@ foreach my $user ( @users ) {
 		       $user->email, ($#published + 1), ($#apublished + 1), ($#named_faces + 1), ($#unnamed_faces + 1), ($#tagged_faces + 1) );
     }
     else {
-	# Send the email
+	# Send the email.  This sends a message via Amazon SQS, which
+	# is limited to 64 KB per message, so we may have to truncate
+	# some of the data here.
+
+	# Boil down the media object to the few fields the template
+	# cares about to save space.
+	#
+	# All we really need in the template for daily emails is:
+	#
+	# model.media - an array of 1 or more elements
+	# model.media.0.uuid
+	# The first two elements of model.media are used.
+	#  + media.title
+	#  + media.uuid
+        #  + media.views.poster.uri
+	# The total number of new movies is listed based on length of the array
+	my @sent_media = ();
+	foreach my $media ( @published ) {
+	    push( @sent_media, { 
+		title => $media->{title}, 
+		uuid => $media->{uuid}, 
+		views => { poster => { uri => $media->{views}->{poster}->{uri} } } } );
+	}
+
 	my $res  = VA::Controller::Services->send_email( $c, {
 	    subject => $c->loc( $subject ),
 	    to => [{ email => $user->email,
@@ -213,7 +236,7 @@ foreach my $user ( @users ) {
 	    stash => {
 		model => {
 		    user => $user,
-		    media => \@published,
+		    media => \@sent_media,
 		    albums => \@apublished,
 		    faces => \@named_faces,
 		    unnamedfaces => \@unnamed_faces,

@@ -49,7 +49,7 @@ sub notify :Private {
 		data => $model } );
 
 	    # This is the url in the email for an existing user
-	    $urls->{ $to->{email} } = sprintf( "%s#viewAlbum?aid=%s", $c->server, $album->uuid );
+	    $urls->{ $to->{email} } = sprintf( "%s#home?aid=%s", $c->server, $album->uuid );
 
 	    # remove user element, so we can use to for sending emails
 	    delete $to->{user};
@@ -84,7 +84,7 @@ sub notify :Private {
 	    $urls->{ $to->{email} } = sprintf( "%s#register?email=%s&url=%s",
 					       $c->server,
 					       uri_escape( $to->{email} ),
-					       uri_escape( '#viewAlbum?aid=' . $album->uuid ) );
+					       uri_escape( '#home?aid=' . $album->uuid ) );
 	}
     }
     # Send the email.  
