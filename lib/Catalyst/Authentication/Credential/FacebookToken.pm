@@ -129,13 +129,15 @@ sub authenticate {
 	    return undef;
 	}
 
-	if ( $ctx->{no_autocreate} ) {
-	    # User's email must already exist ... no auto creates here!!
-	    if ( ! $ctx->model( 'RDS::User' )->find({email=>$fb_user->{email}}) ) {
-		$ctx->{authfail_code} = "NOLOGIN_EMAIL_NOT_FOUND";
-		$ctx->log->debug( 'Facebook user lookup failed: no db record for ' . $fb_user->{email} );
-		return undef;
-	    }
+	my $new_user = 0;
+	if ( ! $ctx->model( 'RDS::User' )->find({email=>$fb_user->{email}}) ) {
+	    $new_user = 1;
+	}
+
+	if ( $new_user && $ctx->{no_autocreate} ) {
+	    $ctx->{authfail_code} = "NOLOGIN_EMAIL_NOT_FOUND";
+	    $ctx->log->debug( 'Facebook user lookup failed: no db record for ' . $fb_user->{email} );
+	    return undef;
 	}
 
 	my $attributes = {
@@ -214,7 +216,7 @@ sub authenticate {
 		};
 	    }
 
-	    return $user;
+	    return [ $user, $new_user ];
 	}
 	else {
 	    die 'Error: Realm did not auto-create user';

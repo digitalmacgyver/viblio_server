@@ -121,6 +121,8 @@ sub authenticate :Local {
     }
     elsif ( $realm =~ /facebook/ ) {
 	$creds = {};
+	# Turn on auto creation of Facebook accounts on login.
+	$c->{no_autocreate} = 0;
     }
     elsif ( $realm =~ /community/ ) {
 	$creds = $c->req->params;
@@ -129,8 +131,15 @@ sub authenticate :Local {
 	$creds = $c->req->params;
     }
     
-    $c->{no_autocreate} = 0;
-    if ( $c->authenticate( $creds, $realm ) ) {
+    if ( my $user_created = $c->authenticate( $creds, $realm ) ) {
+	# Facebook just calls one endpoint: services/na/authenticate.
+	# Here we handle the case where.
+	if ( $realm =~ /facebook/ ) {
+	    if ( scalar( @$user_created ) == 2 and $user_created->[1] ) {
+		# In this case we have just authenticated a new facebook user.
+		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email } );
+	    }
+	}
 
 	# If the user does not already have an access_token, generate one now.
 	# Normally this token is generated in new_user(), but that functionality was
@@ -551,52 +560,69 @@ sub new_user :Local {
     }
 
     if ($c->authenticate( $creds, $args->{realm} ) ) {
-	my $user = $c->user->obj;
-	$user->provider( ( $args->{realm} eq 'db' ? 'local' : $args->{realm}) ); $user->update;
+	$self->new_user_helper( $c, $args );
+	$self->status_ok( $c, { user => $c->user->obj } );
+    }
+    else {
+	$dbuser->delete if ( $dbuser );
+	$c->log->error( "new_user: Failed to create new user for $args->{email}" );
+	my $code = "NOLOGIN_DB_FAILED";
+	$self->status_bad_request
+	    ( $c, $self->authfailure_response( $c, $code ), $code );
+    }
+}
 
-	# Create a profile - note authentication may have already
-	# created a profile if the user came in via facebook.
-	if ( ! $user->profile ) {
-	    $user->create_profile();
+sub new_user_helper :Private {
+    my $self = shift;
+    my $c    = shift;
+    my $args = shift;
+
+    my $user = $c->user->obj;
+    $user->provider( ( $args->{realm} eq 'db' ? 'local' : $args->{realm}) ); $user->update;
+    
+    # Create a profile - note authentication may have already
+    # created a profile if the user came in via facebook.
+    if ( ! $user->profile ) {
+	$user->create_profile();
+    }
+    
+    # Create an access token for use with the 'viblio' authenticator
+    $user->access_token(
+	lc( Data::UUID->new->create_from_name_str( 'com.viblio', $user->email ) ) );
+    $user->update;
+    
+    # There may be a "pending user" record corresponding to this email.
+    # If there is, in media_shares table, replace all 'private' shares
+    # with pending user id with this new user's id.
+    my $pending_user = $c->model( 'RDS::User' )->find({ provider_id => 'pending', displayname => $args->{email} });
+    if ( $pending_user ) {
+	foreach my $share ( $c->model( 'RDS::MediaShare' )->search({ share_type => 'private', user_id => $pending_user->id }) ) {
+	    $share->user_id( $user->id );
+	    $share->update;
 	}
-
-	# Create an access token for use with the 'viblio' authenticator
-	$user->access_token(
-	    lc( Data::UUID->new->create_from_name_str( 'com.viblio', $user->email ) ) );
-	$user->update;
-
-	# There may be a "pending user" record corresponding to this email.
-	# If there is, in media_shares table, replace all 'private' shares
-	# with pending user id with this new user's id.
-	my $pending_user = $c->model( 'RDS::User' )->find({ provider_id => 'pending', displayname => $args->{email} });
-	if ( $pending_user ) {
-	    foreach my $share ( $c->model( 'RDS::MediaShare' )->search({ share_type => 'private', user_id => $pending_user->id }) ) {
-		$share->user_id( $user->id );
-		$share->update;
-	    }
-	    $pending_user->delete;
-	    $pending_user->update;
-	}
-       
-	# Contact records consist of an email address and an optional pointer
-	# to a real viblio user.  A person registering as the result of a email
-	# share will be a contact, but the viblio user pointer is currently NULL.
-	# Lets fix that now.
-	#
-	my $update_rs = $c->model( 'RDS::Contact' )->search({ contact_email => $user->email });
-	$update_rs->update({ contact_viblio_id => $user->id });
-
-	# Send a SQS message for this new account creation
-	try {
-	    $c->log->debug( 'Sending SQS message for new account' );
-	    my $sqs = $c->model( 'SQS', $c->config->{sqs}->{new_account_creation} )
-		->SendMessage( to_json({
-		    user_uuid => $user->uuid,
-		    action => 'welcome_video' }) );
-	} catch {
-	    $c->log->error( "Failed to send welcome_video SQS message: $_" );
-	};
-
+	$pending_user->delete;
+	$pending_user->update;
+    }
+    
+    # Contact records consist of an email address and an optional pointer
+    # to a real viblio user.  A person registering as the result of a email
+    # share will be a contact, but the viblio user pointer is currently NULL.
+    # Lets fix that now.
+    #
+    my $update_rs = $c->model( 'RDS::Contact' )->search({ contact_email => $user->email });
+    $update_rs->update({ contact_viblio_id => $user->id });
+    
+    # Send a SQS message for this new account creation
+    try {
+	$c->log->debug( 'Sending SQS message for new account' );
+	my $sqs = $c->model( 'SQS', $c->config->{sqs}->{new_account_creation} )
+	    ->SendMessage( to_json({
+		user_uuid => $user->uuid,
+		action => 'welcome_video' }) );
+    } catch {
+	$c->log->error( "Failed to send welcome_video SQS message: $_" );
+    };
+    
 =perl
 	# And finally, send them a nice welcome email
 	#
@@ -610,26 +636,19 @@ sub new_user :Local {
 		url => $c->server . '#confirmed?uuid=' . $user->uuid,
 	    }});
 =cut
-	# Send an instructional email too.
-	$self->send_email( $c, {
-	    subject => $c->loc( "Welcome to VIBLIO" ),
-	    to => [{
-		email => $user->email,
-		name  => $user->displayname }],
-	    template => 'email/04-07-accountCreated.tt',
-	    stash => {
-		model => { user => $user }
-	    }});
-	$self->status_ok( $c, { user => $c->user->obj } );
-    }
-    else {
-	$dbuser->delete if ( $dbuser );
-	$c->log->error( "new_user: Failed to create new user for $args->{email}" );
-	my $code = "NOLOGIN_DB_FAILED";
-	$self->status_bad_request
-	    ( $c, $self->authfailure_response( $c, $code ), $code );
-    }
+
+    # Send an instructional email too.
+    $self->send_email( $c, {
+	subject => $c->loc( "Welcome to VIBLIO" ),
+	to => [{
+	    email => $user->email,
+	    name  => $user->displayname }],
+	template => 'email/04-07-accountCreated.tt',
+	stash => {
+	    model => { user => $user }
+	}});
 }
+
 
 =head2 /services/na/account_confirm
 
