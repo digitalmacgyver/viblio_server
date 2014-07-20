@@ -175,8 +175,8 @@ sub publish {
     # If faces were requested ...
     if ( $params->{include_contact_info} ) {
 	my @feat = ();
-	if ( exists( $params->{features}->{$mediafile->id} ) ) {
-	    @feat = @{$params->{features}->{$mediafile->id}};
+	if ( exists( $params->{features} ) ) {
+	    @feat = @{$params->{features}};
 	} else {
 	    @feat = $c->model( 'RDS::MediaAssetFeature' )
 		->search({'me.media_id'=>$mediafile->id,
@@ -207,11 +207,7 @@ sub publish {
     if ( $params->{include_tags} ) {
 	# Attach an array of unique tag names
 	if ( exists( $params->{media_tags} ) ) {
-	    if ( exists( $params->{media_tags}->{$mediafile->id} ) ) {
-		$mf_json->{tags} = [ keys( %{$params->{media_tags}->{$mediafile->id}} ) ]
-	    } else {
-		$mf_json->{tags} = []
-	    }
+	    $mf_json->{tags} = [ keys( %{$params->{media_tags}} ) ];
 	} else {
 	    my @tags = $mediafile->tags;
 	    $mf_json->{tags} = \@tags;
