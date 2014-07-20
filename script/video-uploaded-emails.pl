@@ -11,6 +11,7 @@ use strict;
 use lib "lib";
 use Data::Dumper;
 use DateTime;
+use Try::Tiny;
 use VA;
 
 my $Usage = "VA_CONFIG_LOCAL_SUFFIX=staging|prod|local $0 --days-ago N [--page N --rows M] [--report] [--user test-email] [--force-one-day]";
@@ -96,156 +97,139 @@ if ( $report ) {
     print sprintf( "%-30s %-7s %-7s %-7s %-7s %-7s\n", "User", "Videos", "Albums", "Faces", "Unamed", "Tagged" );
 }
 
-# Handle updates to shared albums seperately from the normal email
-# updates.
-sub send_shared_album_updates {
-    my $users = shift;
-
-    # First get a list of all album entries created in the last day.
-    my @albums = $c->model( 'RDS::MediaAlbum' )
-	->search( { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) } },
-		  { prefetch => { 'album' => 'community' } } );
-
-    #my @videos = $c->model( 'RDS::Media' )
-	#->search( { 'media_albums_medias.created_date' => { '>', $dtf->format_datetime( $TARGET ) } },
-	#	  { prefetch => [ 'media_albums_medias', 'community' ] } );
-
-    # Build up a set of album, uploader, ( media1, media2, ... ) structures.
-    my $album_uploaders = {}
-    foreach my $video ( @albums ) {
-	print( $video->album_id, " ", $video->media_id, " ", $video->album->title, "\n" );
-	my $uploader = $video->album->user_id;
-	my $upload_uuid = $video->album->uuid;
-    }
-    # From this list I can break it down into:
-    # UPLOADER, ALBUM, [ MEDIA ] and then use the existing logic from Album.pm.
-
-    # Find any album the user is a member of that had videos added to it.
-    # For each album get a list of [ video_uploader, [ vid1, vid2, ... ] ]
-    # For each item in the above list, if video_uploader != user, send an email.
-
-    
-    # DEBUG - for testing we only want to do this.
-    exit 0;
-}
-
-send_shared_album_updates( \@users );
-
 foreach my $user ( @users ) {
-    unless ( $user->profile->setting( 'email_notifications' ) && $user->profile->setting( 'email_upload' ) ) {
-	print sprintf( "%-30s %s\n", $user->email, "does not want email" ) if ( $report );
-	next;
-    }
-    
-    my @media = $user->videos->search(
-	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
-	  'me.is_viblio_created' => 0 },
-	{prefetch => 'assets' } );
-    my @albums = $user->albums->search(
-	{ 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
-	  'me.is_viblio_created' => 0 },
-	{prefetch => 'assets' } );
-    my @tagged_faces = $user->contacts->search(
-	{ updated_date => { '>', $dtf->format_datetime( $TARGET ) },
-	  picture_uri  => { '!=', undef },
-	  contact_name => { '!=', undef } });
-    my @tf = map {{ uuid => $_->uuid, picture_uri => $_->picture_uri, contact_name => $_->contact_name }} @tagged_faces;
-    my @ids = map{ $_->id } @media;
-    my @feat = $c->model( 'RDS::MediaAssetFeature' )
-	->search({'me.media_id' => { -in => \@ids }, 
-		  'me.contact_id' => { '!=', undef },
-		  'contact.contact_name' => { '!=', undef }, 
-		  'me.feature_type'=>'face'}, 
-		 {prefetch=>['contact','media_asset'], 
-		  group_by=>['contact.id'] });
-    my @named_faces = ();
-    foreach my $feat ( @feat ) {
-	push( @named_faces, { uri => $feat->media_asset->uri,
-			name => $feat->contact->contact_name
-	      });
-    }
-    @feat = $c->model( 'RDS::MediaAssetFeature' )
-	->search({'me.media_id' => { -in => \@ids }, 
-		  'me.contact_id' => { '!=', undef },
-		  'contact.contact_name' => { '=', undef }, 
-		  'me.feature_type'=>'face'}, 
-		 {prefetch=>['contact','media_asset'], 
-		  group_by=>['contact.id'] });
-    my @unnamed_faces = ();
-    foreach my $feat ( @feat ) {
-	push( @unnamed_faces, { uri => $feat->media_asset->uri,
-	      });
-    }
-
-    my @published = ();
-    my $view_count = 0;
-    foreach my $m ( @media ) {
-	push( @published, VA::MediaFile->new->publish( $c, $m ) );
-	$view_count += $m->view_count;
-    }
-
-    my @apublished = ();
-    foreach my $m ( @albums ) {
-	push( @apublished, VA::MediaFile->new->publish( $c, $m ) );
-    }
-
-    # Only send email if there was some activity
-    #
-    next if ( ($#published == -1) && ($#apublished == -1) );
-
-    if ( $days_ago == 1 ) {
-	# The daily report should not include albums
-	next if ($#published == -1);
-    }
-
-    if ( $report ) {
-	# Just print a report
-	print sprintf( "%-30s %-7s %-7s %-7s %-7s %-7s\n", 
-		       $user->email, ($#published + 1), ($#apublished + 1), ($#named_faces + 1), ($#unnamed_faces + 1), ($#tagged_faces + 1) );
-    }
-    else {
-	# Send the email.  This sends a message via Amazon SQS, which
-	# is limited to 64 KB per message, so we may have to truncate
-	# some of the data here.
-
-	# Boil down the media object to the few fields the template
-	# cares about to save space.
-	#
-	# All we really need in the template for daily emails is:
-	#
-	# model.media - an array of 1 or more elements
-	# model.media.0.uuid
-	# The first two elements of model.media are used.
-	#  + media.title
-	#  + media.uuid
-        #  + media.views.poster.uri
-	# The total number of new movies is listed based on length of the array
-	my @sent_media = ();
-	foreach my $media ( @published ) {
-	    push( @sent_media, { 
-		title => $media->{title}, 
-		uuid => $media->{uuid}, 
-		views => { poster => { uri => $media->{views}->{poster}->{uri} } } } );
+    try {
+	unless ( $user->profile->setting( 'email_notifications' ) && $user->profile->setting( 'email_upload' ) ) {
+	    print sprintf( "%-30s %s\n", $user->email, "does not want email" ) if ( $report );
+	    next;
 	}
 
-	my $res  = VA::Controller::Services->send_email( $c, {
-	    subject => $c->loc( $subject ),
-	    to => [{ email => $user->email,
-		     name  => $user->displayname }],
-	    template => $email_template,
-	    stash => {
-		model => {
-		    user => $user,
-		    media => \@sent_media,
-		    albums => \@apublished,
-		    faces => \@named_faces,
-		    unnamedfaces => \@unnamed_faces,
-		    tagged_faces => \@tf,
-		}
-	    } });
-	if ( $res ) {
-	    $c->log->error( "Failed to send ($days_ago) email to " . $user->email );
+	$DB::single = 1;
+
+	my $user_uuid = $user->uuid;
+
+	my @media = $user->videos->search(
+	    { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
+	      'me.is_viblio_created' => 0 },
+	    {prefetch => 'assets' } );
+	my @albums = $user->albums->search(
+	    { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
+	      'me.is_viblio_created' => 0 },
+	    {prefetch => 'assets' } );
+
+	# Move on unless there is something to report for this user.
+	unless ( scalar( @media ) or scalar( @albums ) ) {
+	    if ( $report ) {
+		print sprintf( "%-30s %-7s %-7s %-7s %-7s %-7s\n", 
+			       $user->email, 0, 0, 0, 0, 0 );
+	    }
+	    next;
 	}
+
+	my @tagged_faces = $user->contacts->search(
+	    { updated_date => { '>', $dtf->format_datetime( $TARGET ) },
+	      picture_uri  => { '!=', undef },
+	      contact_name => { '!=', undef } });
+	my @tf = map {{ uuid => $_->uuid, picture_uri => $_->picture_uri, contact_name => $_->contact_name }} @tagged_faces;
+	my @ids = map{ $_->id } @media;
+	my @feat = $c->model( 'RDS::MediaAssetFeature' )
+	    ->search({'me.media_id' => { -in => \@ids }, 
+		      'me.contact_id' => { '!=', undef },
+		      'contact.contact_name' => { '!=', undef }, 
+		      'me.feature_type'=>'face'}, 
+		     {prefetch=>['contact','media_asset'], 
+		      group_by=>['contact.id'] });
+	my @named_faces = ();
+	foreach my $feat ( @feat ) {
+	    push( @named_faces, { uri => $feat->media_asset->uri,
+				  name => $feat->contact->contact_name
+		  });
+	}
+	@feat = $c->model( 'RDS::MediaAssetFeature' )
+	    ->search({'me.media_id' => { -in => \@ids }, 
+		      'me.contact_id' => { '!=', undef },
+		      'contact.contact_name' => { '=', undef }, 
+		      'me.feature_type'=>'face'}, 
+		     {prefetch=>['contact','media_asset'], 
+		      group_by=>['contact.id'] });
+	my @unnamed_faces = ();
+	foreach my $feat ( @feat ) {
+	    push( @unnamed_faces, { uri => $feat->media_asset->uri,
+		  });
+	}
+	
+	my @published = ();
+	my $view_count = 0;
+	foreach my $m ( @media ) {
+	    push( @published, VA::MediaFile->new->publish( $c, $m, { owner_uuid => $user_uuid } ) );
+	    $view_count += $m->view_count;
+	}
+	
+	my @apublished = ();
+	foreach my $m ( @albums ) {
+	    push( @apublished, VA::MediaFile->new->publish( $c, $m, { owner_uuid => $user_uuid } ) );
+	}
+	
+	# Only send email if there was some activity
+	#
+	next if ( ($#published == -1) && ($#apublished == -1) );
+	
+	if ( $days_ago == 1 ) {
+	    # The daily report should not include albums
+	    next if ($#published == -1);
+	}
+	
+	if ( $report ) {
+	    # Just print a report
+	    print sprintf( "%-30s %-7s %-7s %-7s %-7s %-7s\n", 
+			   $user->email, ($#published + 1), ($#apublished + 1), ($#named_faces + 1), ($#unnamed_faces + 1), ($#tagged_faces + 1) );
+	}
+	else {
+	    # Send the email.  This sends a message via Amazon SQS, which
+	    # is limited to 64 KB per message, so we may have to truncate
+	    # some of the data here.
+	    
+	    # Boil down the media object to the few fields the template
+	    # cares about to save space.
+	    #
+	    # All we really need in the template for daily emails is:
+	    #
+	    # model.media - an array of 1 or more elements
+	    # model.media.0.uuid
+	    # The first two elements of model.media are used.
+	    #  + media.title
+	    #  + media.uuid
+	    #  + media.views.poster.uri
+	    # The total number of new movies is listed based on length of the array
+	    my @sent_media = ();
+	    foreach my $media ( @published ) {
+		push( @sent_media, { 
+		    title => $media->{title}, 
+		    uuid => $media->{uuid}, 
+		    views => { poster => { uri => $media->{views}->{poster}->{uri} } } } );
+	    }
+
+	    my $res  = VA::Controller::Services->send_email( $c, {
+		subject => $c->loc( $subject ),
+		to => [{ email => $user->email,
+			 name  => $user->displayname }],
+		template => $email_template,
+		stash => {
+		    model => {
+			user => $user,
+			media => \@sent_media,
+			albums => \@apublished,
+			faces => \@named_faces,
+			unnamedfaces => \@unnamed_faces,
+			tagged_faces => \@tf,
+		    }
+		} });
+	    if ( $res ) {
+		$c->log->error( "Failed to send ($days_ago) email to " . $user->email );
+	    }
+	}
+    } catch {
+	$c->log->error( "Error: ", $_, " sending message to user: ", $user->email );
     }
 }
 
@@ -280,15 +264,19 @@ if ( $days_ago >= 7 ) {
     }
     else {
 	foreach my $user ( @users ) {
-	    if ( $user->videos->count == 0 || $email_addr eq $user->email ) {
-		my $res  = VA::Controller::Services->send_email( $c, {
-		    subject => $c->loc( "Get started with your new VIBLIO account" ),
-		    to => [{ email => $user->email,
-			     name  => $user->displayname }],
-		    template => 'email/08-dontForgetViblio.tt' });
-		if ( $res ) {
-		    $c->log->error( "Failed to send one-week upload reminder email to " . $user->email );
+	    try {
+		if ( $user->videos->count == 0 || $email_addr eq $user->email ) {
+		    my $res  = VA::Controller::Services->send_email( $c, {
+			subject => $c->loc( "Get started with your new VIBLIO account" ),
+			to => [{ email => $user->email,
+				 name  => $user->displayname }],
+			template => 'email/08-dontForgetViblio.tt' });
+		    if ( $res ) {
+			$c->log->error( "Failed to send one-week upload reminder email to " . $user->email );
+		    }
 		}
+	    } catch {
+		$c->log->error( "Error: ", $_, " sending one-week upload reminder email to user: ", $user->email );
 	    }
 	}
     }
@@ -310,19 +298,23 @@ if ( $days_ago >= 7 ) {
     }
     else {
 	foreach my $user ( @users ) {
-	    if ( $user->videos->count == 0 || $email_addr eq $user->email ) {
-		$c->log->debug( 'Sending email to ' . $user->email );
-		my $res  = VA::Controller::Services->send_email( $c, {
-		    subject => $c->loc( "VIBLIO wants to help"  ),
-		    to => [{ email => $user->email,
-			     name  => $user->displayname }],
-		    template => 'email/10-uploadSomeVideos-DRAFT.tt',
-		    stash => {
-			user => $user,
-		    } });
-		if ( $res ) {
-		    $c->log->error( "Failed to send two-week upload reminder email to " . $user->email );
+	    try {
+		if ( $user->videos->count == 0 || $email_addr eq $user->email ) {
+		    $c->log->debug( 'Sending email to ' . $user->email );
+		    my $res  = VA::Controller::Services->send_email( $c, {
+			subject => $c->loc( "VIBLIO wants to help"  ),
+			to => [{ email => $user->email,
+				 name  => $user->displayname }],
+			template => 'email/10-uploadSomeVideos-DRAFT.tt',
+			stash => {
+			    user => $user,
+			} });
+		    if ( $res ) {
+			$c->log->error( "Failed to send two-week upload reminder email to " . $user->email );
+		    }
 		}
+	    } catch {
+		$c->log->error( "Error: ", $_, " sending two-week upload reminder email to user: ", $user->email );
 	    }
 	}
     }

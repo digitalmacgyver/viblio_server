@@ -450,10 +450,25 @@ __PACKAGE__->uuid_columns( 'uuid' );
 
 sub TO_JSON {
     my $self = shift;
+    my $params = shift;
     my $hash = { %{$self->{_column_data}} };
     delete $hash->{id};
     delete $hash->{user_id};
-    $hash->{owner_uuid} = $self->user->uuid;
+    # If our caller already knows who owns this media, they can tell
+    # us to avoid doing a DB query.
+    #
+    # A more elegant solution would probably be to have a global
+    # user.id to user.uuid cache and resolve this off the cache with
+    # the hash->{user_id} value as the key.
+    # 
+    # Maybe we'll do that if we go to memcached and/or this code shows
+    # up lots of places.
+    if ( defined( $params ) && $params->{owner_uuid} ) {
+	$hash->{owner_uuid} = $params->{owner_uuid};
+    } else {
+	# This results in a database query.
+	$hash->{owner_uuid} = $self->user->uuid;
+    }
     return $hash;
 }
 

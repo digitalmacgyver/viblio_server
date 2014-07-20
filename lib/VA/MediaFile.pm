@@ -105,7 +105,9 @@ sub metadata {
 #
 sub publish {
     my( $self, $c, $mediafile, $params ) = @_;
-    my $mf_json = $mediafile->TO_JSON;
+    # If our caller was kind enough to pass us the owner_uuid of the
+    # mediafile in question, pass it on down.
+    my $mf_json = $mediafile->TO_JSON( $params );
     $mf_json->{'views'} = {}; 
     my @views;
     if ( $params->{assets} ) {
@@ -199,8 +201,16 @@ sub publish {
 
     if ( $params->{include_tags} ) {
 	# Attach an array of unique tag names
-	my @tags = $mediafile->tags;
-	$mf_json->{tags} = \@tags;
+	if ( exists( $params->{media_tags} ) ) {
+	    if ( exists( $params->{media_tags}->{$mediafile->id} ) ) {
+		$mf_json->{tags} = [ keys( %{$params->{media_tags}->{$mediafile->id}} ) ]
+	    } else {
+		$mf_json->{tags} = []
+	    }
+	} else {
+	    my @tags = $mediafile->tags;
+	    $mf_json->{tags} = \@tags;
+	}
     }
 
     if ( $params->{include_shared} ) {

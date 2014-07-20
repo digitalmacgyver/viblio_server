@@ -394,7 +394,9 @@ sub list :Local {
 	include_contact_info => $args->{include_contact_info},
 	include_tags => $args->{include_tags},
 	include_shared => $args->{include_shared},
-	views => $args->{'views[]'}
+	views => $args->{'views[]'},
+	# Avoid the need to do a seperate DB lookup to get the owner_uuid.
+	owner_uuid => $c->user->uuid
     };
 
     my $rs = $c->user->videos->search(
@@ -403,6 +405,44 @@ sub list :Local {
 	  page => $args->{page}, rows => $args->{rows},
 	  order_by => { -desc => 'me.id' } } );
     my @media = ();
+
+    # We want to avoid doing 1 DB query per media, so we compute some
+    # stuff here and pass it down.  The callees check for the computed
+    # data and use it, or generate it there is no computed data.
+    #
+    # First off we want the set of unique tags for each media if
+    # necessary.
+    #
+    # Media tags maps media.id to an hash ref keyed with tags for that
+    # media.
+
+    my $media_tags = {};
+    if ( $args->{include_tags} ) {
+	# Get all tags for this user.
+	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search(
+	    { 'me.user_id' => $c->user->id,
+	      -or => [ 'me.feature_type' => 'activity',
+		       -and => [ 'me.feature_type' => 'face',
+				 'me.contact_id' => { '!=', undef } ] ] } )->all();
+
+	for my $m ( @mafs ) {
+	    my $tag = undef;
+	    # Prevent the ORM from trying to resolve the
+	    # 'feature_type' domain table and just go with the value
+	    # of the column.
+	    if ( $m->{_column_data}->{feature_type} eq 'face' ) {
+		$tag = 'people';
+	    } else {
+		$tag = $m->coordinates;
+	    }
+	    if ( defined( $tag ) ) {
+		$media_tags->{$m->media_id}->{$tag} = 1;
+	    }
+	}
+
+	$params->{media_tags} = $media_tags;
+    }
+
     foreach my $m ( $rs->all ) {
 	my @a = $m->assets;
 	$params->{assets} = \@a;
