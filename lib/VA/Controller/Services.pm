@@ -537,6 +537,10 @@ sub publish_mediafiles :Private {
     my $media = shift;
     my $params = shift;
 
+    if ( scalar( $media ) == 0 ) {
+	return [];
+    }
+
     # media.id -> { tag1 => 1, tag2 => 2, ... }
     my $media_tags = {};
     
@@ -545,6 +549,9 @@ sub publish_mediafiles :Private {
     
     # media.id -> [ list of requested assets ]
     my $assets = {};
+
+    # media.id -> # of media share rows that exist for this media.
+    my $shared = {};
 
     # user_id -> { uuid => user_uuid, json => RDS::User->TO_JSON }
     my $people = {};
@@ -609,6 +616,16 @@ sub publish_mediafiles :Private {
 	}
     }
     
+    if ( $params->{include_shared} ) {
+	my @shares = $c->model( 'RDS::MediaShare' )->search(
+	    { 'media_id' => $mids },
+	    { group_by => [ 'me.media_id' ],
+	      select => [ 'me.media_id', { count => 'me.id', -as => 'share_count' } ] } );
+	foreach my $share ( @shares ) {
+	    $shared->{$share->{_column_data}->{media_id}} = $share->{_column_data}->{share_count};
+	}
+    }
+
     my $result = [];
     
     foreach my $m ( @$media ) {
@@ -631,6 +648,14 @@ sub publish_mediafiles :Private {
 	    }
 	}
 	
+	if ( $params->{include_shared} ) {
+	    if ( exists( $shared->{$m->id} ) ) {
+		$params->{shared} = $shared->{$m->id};
+	    } else {
+		$params->{shared} = 0;
+	    }
+	}
+
 	my $hash = VA::MediaFile->new->publish( $c, $m, $params );
 	if ( $params->{include_owner_json} ) {
 	    $hash->{owner} = $people->{$m->user_id}->{json};

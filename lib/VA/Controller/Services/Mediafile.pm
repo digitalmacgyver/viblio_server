@@ -1189,8 +1189,22 @@ sub related :Local {
 	@data = @results;
     }
 
-    my $media_results = $self->publish_mediafiles( $c, \@data, { include_tags => 1, include_shared => 1 } );
-    $self->status_ok( $c, { media => $media_results, pager => $pager } );
+
+    my @media = ();
+    # NOTE - We can't use publish_mediafiles here easily, as the
+    # contents of data are a list of media assets, not media.
+    #
+    # Building up a list of media probably doesn't do much good here,
+    # as we don't have a way to pass per-media assets down to
+    # publish_mediafiles.
+    #
+    # This form of publish, where we pass the mediafile and assets in an array is
+    # much faster, since the assets do not need to be fetched. We can do this if
+    # we know the assets already, and are sure we know how the media file will be
+    # consumed on the client.
+    # $_->media->assets->find({ asset_type=>'main'})
+    push( @media, VA::MediaFile->new->publish( $c, $_->media, { assets => [$_], include_tags => 1, include_shared => 1 } ) ) foreach( @data );
+    $self->status_ok( $c, { media => \@media, pager => $pager } );
 }
 
 sub change_recording_date :Local {

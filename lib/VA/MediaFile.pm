@@ -215,9 +215,13 @@ sub publish {
     }
 
     if ( $params->{include_shared} ) {
-	$mf_json->{shared} = $c->model( 'RDS::MediaShare' )->search(
-	    { 'media.uuid' => $mediafile->uuid },
-	    { prefetch => 'media' })->count;
+	if ( exists( $params->{shared} ) ) {
+	    $mf_json->{shared} = $params->{shared};
+	} else {
+	    $mf_json->{shared} = $c->model( 'RDS::MediaShare' )->search(
+		{ 'media.uuid' => $mediafile->uuid },
+		{ prefetch => 'media' })->count;
+	}
     }
 
     return $mf_json;

@@ -366,6 +366,23 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+
+=head2 user
+
+Type: belongs_to
+
+Related object: L<VA::RDSSchema::Result::User>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "user",
+  "VA::RDSSchema::Result::User",
+  { id => "user_id" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
+);
+
+
 sub TO_JSON {
     my $self = shift;
     my $hash = { %{$self->{_column_data}} };
