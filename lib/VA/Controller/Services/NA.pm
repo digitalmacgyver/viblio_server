@@ -129,7 +129,6 @@ sub authenticate :Local {
 	$creds = $c->req->params;
     }
     
-    $c->{no_autocreate} = 0;
     if ( $c->authenticate( $creds, $realm ) ) {
 
 	# If the user does not already have an access_token, generate one now.
