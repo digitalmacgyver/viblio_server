@@ -898,6 +898,51 @@ sub all_shared :Local {
     $self->status_ok( $c, { shared => \@data } );
 }
 
+# Return an very simple structure listing the status of videos owned
+# by this user.
+#
+# The interpretation of the status are:
+# pending - The video has been fully uploaded, but processing has not yet begin
+# visible - The video may be viewed, but further processing is ongoing
+# complete - The video has completed all processing
+# failed - There was a problem processing the video, it can not be viewed
+#
+# { stats : { pending : 1, visible : 19, complete : 119, failed : 0 },
+#   details : [ { uuid : the uuid of the video, status : pending }, { uuid : uuid-sdf-23, status : complete }, ...
+sub list_status :Local {
+    my ( $self, $c ) = @_;
+    my @media = $c->model( 'RDS::Media' )->search( 
+	{ 'me.user_id' => $c->user->id,
+	  'me.is_album' => 0 } )->all();
+
+    my $valid_status = { 
+	pending  => 1,
+	visible  => 1,
+	complete => 1,
+	failed   => 1
+    };
+
+    my $result = { 
+	stats => { 
+	    pending  => 0,
+	    visible  => 0,
+	    complete => 0,
+	    failed   => 0
+	},
+		details => [] 
+    };
+
+    foreach my $m ( @media ) {
+	if ( exists( $valid_status->{$m->status} ) ) {
+	    $result->{stats}->{$m->status}++;
+	    push( @{$result->{details}}, { uuid => $m->uuid, status => $m->status } );
+	} else {
+	    $c->log->warning( "Error, invalid status of: ", $m->status, " for media: ", $m->id, "\n" );
+	}
+    }
+    $self->status_ok( $c, $result );
+}
+
 ## List all videos, owned by and shared to the user
 sub list_all :Local {
     my( $self, $c ) = @_;
@@ -1028,18 +1073,15 @@ sub related :Local {
 	'me.is_album' => 0,
 	-and => [ -or => ['me.user_id' => $user->id, 
 			  'media_shares.user_id' => $user->id], 
-		  -or => [status => 'TranscodeComplete',
-			  status => 'FaceDetectComplete',
-			  status => 'FaceRecognizeComplete',
-			  status => 'visible',
+		  -or => [status => 'visible',
 			  status => 'complete' ]
 	    ]}, {prefetch=>'media_shares'});
     unless( $media ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find mediafile for [_1]', $mid ) );
     }
 
-    # Array of mediafile objects to return
-    my @results = ();
+    # Array of media objects to publish and return.
+    my @media_results = ();
     # Hash of media uuid's already added to results (to prevent dups in results)
     my $seen = {};
     $seen->{ $media->uuid } = $media; # DO NOT SHOW MYSELF IN RELATED
@@ -1094,7 +1136,7 @@ sub related :Local {
 		     $dtf->format_datetime( $to )
 		    ]} }, { order_by => 'media.recording_date desc' } );
 	foreach my $a ( @taken_on_same_day ) {
-	    push( @results, $a ) unless( $seen->{ $a->media->uuid } );
+	    push( @media_results, $a->media ) unless ( $seen->{$a->media->uuid} );
 	    $seen->{ $a->media->uuid } = $a;
 	}
 
@@ -1112,7 +1154,7 @@ sub related :Local {
 		     $dtf->format_datetime( $to )
 		    ]} }, { order_by => 'media.recording_date desc' } );
 	foreach my $a ( @taken_in_same_month ) {
-	    push( @results, $a ) unless( $seen->{ $a->media->uuid } );
+	    push( @media_results, $a->media ) unless ( $seen->{$a->media->uuid} );
 	    $seen->{ $a->media->uuid } = $a;
 	}
     }
@@ -1149,7 +1191,7 @@ sub related :Local {
 	    foreach my $feat ( @feats ) {
 		unless( $seen->{ $feat->media_asset->media->uuid } ) {
 		    # $c->log->error( $feat->media_asset->media->title );
-		    push( @results, $feat->media_asset->media->assets->find({ asset_type => 'poster' }) );
+		    push( @media_results, $feat->media_asset->media );
 		    $seen->{ $feat->media_asset->media->uuid } = $feat->media_asset->media;
 		}
 	    }
@@ -1169,7 +1211,7 @@ sub related :Local {
 	}
 	my @sorted = sort { $a->{distance} <=> $b->{distance} } @geodata;
 	foreach my $sd ( @sorted ) {
-	    push( @results, $sd->{asset} ) unless( defined( $seen->{ $sd->{asset}->media->uuid } ) );
+	    push( @media_results, $sd->{asset}->media ) unless ( defined( $seen->{ $sd->{asset}->media->uuid } ) );
 	    $seen->{ $sd->{asset}->media->uuid } = $sd->{asset}->media;
 	}
     }
@@ -1179,32 +1221,19 @@ sub related :Local {
     my @data  = ();
     my $pager = {};
     if ( $page ) {
-	my $data_pager = Data::Page->new( $#results + 1, $rows, $page );
-	if ( $#results >= 0 ) {
-	    @data = @results[ $data_pager->first - 1 .. $data_pager->last - 1 ];
+	my $data_pager = Data::Page->new( $#media_results + 1, $rows, $page );
+	if ( $#media_results >= 0 ) {
+	    @data = @media_results[ $data_pager->first - 1 .. $data_pager->last - 1 ];
 	}
 	$pager = $self->pagerToJson( $data_pager );
     }
     else {
-	@data = @results;
+	@data = @media_results;
     }
 
+    my $media = $self->publish_mediafiles( $c, \@media_results, { include_tags=>1, include_shared=>1, 'views[]' => 'poster' } );
 
-    my @media = ();
-    # NOTE - We can't use publish_mediafiles here easily, as the
-    # contents of data are a list of media assets, not media.
-    #
-    # Building up a list of media probably doesn't do much good here,
-    # as we don't have a way to pass per-media assets down to
-    # publish_mediafiles.
-    #
-    # This form of publish, where we pass the mediafile and assets in an array is
-    # much faster, since the assets do not need to be fetched. We can do this if
-    # we know the assets already, and are sure we know how the media file will be
-    # consumed on the client.
-    # $_->media->assets->find({ asset_type=>'main'})
-    push( @media, VA::MediaFile->new->publish( $c, $_->media, { assets => [$_], include_tags => 1, include_shared => 1 } ) ) foreach( @data );
-    $self->status_ok( $c, { media => \@media, pager => $pager } );
+    $self->status_ok( $c, { media => $media, pager => $pager } );
 }
 
 sub change_recording_date :Local {

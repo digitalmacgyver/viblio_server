@@ -571,7 +571,7 @@ sub publish_mediafiles :Private {
 	push( @$mids, $m->id );
     }
 
-    my @mas = $c->model( 'RDS::MediaAsset' )->search( { 'me.media_id' => $mids } );
+    my @mas = $c->model( 'RDS::MediaAsset' )->search( { 'me.media_id' => { -in => $mids } } );
     foreach my $ma ( @mas ) {
 	if ( exists( $assets->{$ma->media_id} ) ) {
 	    push( @{$assets->{$ma->media_id}}, $ma );
@@ -582,7 +582,7 @@ sub publish_mediafiles :Private {
 
     if ( $params->{include_tags} ) {
 	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( { 
-	    'me.media_id' => $mids,
+	    'me.media_id' => { -in => $mids },
 	    -or => [ 'me.feature_type' => 'activity',
 		     -and => [ 'me.feature_type' => 'face',
 			       'me.contact_id' => { '!=', undef } ] ] } );
@@ -602,7 +602,7 @@ sub publish_mediafiles :Private {
     if ( $params->{include_contact_info} ) {
 	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( 
 	    { 
-		'me.media_id' => $mids,
+		'me.media_id' => { -in => $mids },
 		'contact.id' => { '!=', undef },
 		'me.feature_type'=>'face' },
 	    { prefetch => ['contact', 'media_asset'],
@@ -618,7 +618,7 @@ sub publish_mediafiles :Private {
     
     if ( $params->{include_shared} ) {
 	my @shares = $c->model( 'RDS::MediaShare' )->search(
-	    { 'media_id' => $mids },
+	    { 'media_id' => { -in => $mids } },
 	    { group_by => [ 'me.media_id' ],
 	      select => [ 'me.media_id', { count => 'me.id', -as => 'share_count' } ] } );
 	foreach my $share ( @shares ) {
