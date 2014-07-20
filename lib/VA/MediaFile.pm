@@ -174,13 +174,18 @@ sub publish {
 
     # If faces were requested ...
     if ( $params->{include_contact_info} ) {
-	my @feat = $c->model( 'RDS::MediaAssetFeature' )
-	    ->search({'me.media_id'=>$mediafile->id,
-		      'contact.id' => { '!=', undef },
-		      'me.feature_type'=>'face'},
-		     {prefetch=>['contact','media_asset'],
-		      group_by=>['contact.id']
-		     });
+	my @feat = ();
+	if ( exists( $params->{features}->{$mediafile->id} ) ) {
+	    @feat = @{$params->{features}->{$mediafile->id}};
+	} else {
+	    @feat = $c->model( 'RDS::MediaAssetFeature' )
+		->search({'me.media_id'=>$mediafile->id,
+			  'contact.id' => { '!=', undef },
+			  'me.feature_type'=>'face'},
+			 {prefetch=>['contact','media_asset'],
+			  group_by=>['contact.id']
+			 });
+	}
 	my @data = ();
 	foreach my $feat ( @feat ) {
 	    my $hash = $feat->media_asset->TO_JSON;

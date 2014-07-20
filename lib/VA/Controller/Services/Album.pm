@@ -250,6 +250,8 @@ sub get :Local {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
     }
 
+    my $album_owner_uuid = undef;
+
     # Is this album viewable by the user?
     if ( $album->user_id != $c->user->id ) {
 	# check shared albums
@@ -267,16 +269,123 @@ sub get :Local {
 	if ( ! $found ) {
 	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to view this album.' ) );
 	}
+    } else {
+	$album_owner_uuid = $c->user->uuid;
     }
 
-    my $hash  = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+    my $poster_params = { views => ['poster'] };
+    if ( $album_owner_uuid ) {
+	$poster_params->{owner_uuid} = $album_owner_uuid;
+    }
+    my $hash = VA::MediaFile->new->publish( $c, $album, $poster_params );
     $hash->{is_shared} = ( $album->community ? 1 : 0 );
+
+    # We want to avoid doing 1 DB query per media, so we compute some
+    # stuff here and pass it down.  The callees check for the computed
+    # data and use it, or generate it if needed.
+    #
+    # First off we want the set of unique tags for each media if
+    # necessary.
+    #
+    # Media tags maps media.id to an hash ref keyed with tags for that
+    # media.
+    my $media_tags_by_owner_id = {};
+   
+    # Get all the feature information per owner.
+    my $contact_features_by_owner_id = {};
+
+    # Get all asset information per owner.
+    my $assets_by_owner_id = {};
+
+    my $owner_json_by_id = {};
+
+    # Build up a data structure of media_owner UUIDs so we only do one
+    # query per owner UUID in the album.
+    my $media_owners = {};
     my @m = ();
     foreach my $med ( $album->media->search({},{order_by => 'recording_date desc'}) ) {
+	my $owner_id = $med->user_id;
+	unless ( exists( $media_owners->{$owner_id} ) ) {
+	    $media_owners->{$owner_id} = $med->user->uuid;
+	}
+	$params->{owner_uuid} = $media_owners->{$owner_id};
+
+	unless ( exists( $owner_json_by_id->{$owner_id} ) ) {
+	    $owner_json_by_id->{$owner_id} = $med->user->TO_JSON();
+	}
+
+	unless ( exists( $assets_by_owner_id->{$owner_id} ) ) {
+	    my @user_assets = $c->model( 'RDS::MediaAsset' )->search(
+		{ 'me.user_id' => $owner_id } )->all();
+	    foreach my $ua ( @user_assets ) {
+		if ( exists( $assets_by_owner_id->{$owner_id}->{$ua->media_id} ) ) {
+		    push( @{$assets_by_owner_id->{$owner_id}->{$ua->media_id}}, $ua );
+		} else {
+		    $assets_by_owner_id->{$owner_id}->{$ua->media_id} = [ $ua ];
+		}
+	    }
+	    if ( exists( $assets_by_owner_id->{$owner_id}->{$med->id} ) ) {
+		$params->{assets} = $assets_by_owner_id->{$owner_id}->{$med->id};
+	    }
+	}
+
+	if ( $include_tags ) {
+	    unless ( exists( $media_tags_by_owner_id->{$owner_id} ) ) {
+		# Get all tags for the user.
+		my $media_tags = {};
+		my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search(
+		    { 'me.user_id' => $owner_id,
+		      -or => [ 'me.feature_type' => 'activity',
+			       -and => [ 'me.feature_type' => 'face',
+					 'me.contact_id' => { '!=', undef } ] ] } )->all();
+		foreach my $m ( @mafs ) {
+		    my $tag = undef;
+		    if ( $m->{_column_data}->{feature_type} eq 'face' ) {
+			$tag = 'people';
+		    } else {
+			$tag = $m->coordinates;
+		    }
+		    if ( defined( $tag ) ) {
+			$media_tags->{$m->media_id}->{$tag} = 1;
+		    }
+		    $media_tags_by_owner_id->{$owner_id}->{$m->media_id} = $media_tags;
+		}
+	    } 
+	    if ( exists( $media_tags_by_owner_id->{$owner_id}->{$med->id} ) ) {
+		$params->{media_tags} = $media_tags_by_owner_id->{$owner_id}->{$med->id};
+	    } else {
+		$params->{media_tags} = {};
+	    }
+	}
+
+	if ( $include_contact_info ) {
+	    unless ( exists( $contact_features_by_owner_id->{$owner_id} ) ) {
+		my @feats = $c->model( 'RDS::MediaAssetFeature' )
+		    ->search({'me.user_id' => $owner_id,
+			      'contact.id' => { '!=', undef },
+			      'me.feature_type'=>'face'},
+			     {prefetch=>['contact','media_asset'],
+			      group_by=>['contact.id']
+			     });
+		foreach my $feat ( @feats ) {
+		    if ( exists( $contact_features_by_owner_id->{$owner_id}->{$feat->media_id} ) ) {
+			push( @{$contact_features_by_owner_id->{$owner_id}->{$feat->media_id}},  $feat );
+		    } else {
+			$contact_features_by_owner_id->{$owner_id}->{$feat->media_id} = [ $feat ];
+		    }
+		}
+	    }
+	    if ( exists( $contact_features_by_owner_id->{$owner_id}->{$med->id} ) ) {
+		$params->{features} = $contact_features_by_owner_id->{$owner_id};
+	    } else {
+		$params->{features} = { $med->id => [] };
+	    }
+	}
+
 	my $data = VA::MediaFile->new->publish( 
 	    $c, $med, 
 	    $params );
-	$data->{owner} = $med->user->TO_JSON;
+	$data->{owner} = $owner_json_by_id->{$owner_id};
 	push( @m, $data );
     } 
 	

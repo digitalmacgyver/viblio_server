@@ -408,14 +408,13 @@ sub list :Local {
 
     # We want to avoid doing 1 DB query per media, so we compute some
     # stuff here and pass it down.  The callees check for the computed
-    # data and use it, or generate it there is no computed data.
+    # data and use it, or generate it if needed.
     #
     # First off we want the set of unique tags for each media if
     # necessary.
     #
     # Media tags maps media.id to an hash ref keyed with tags for that
     # media.
-
     my $media_tags = {};
     if ( $args->{include_tags} ) {
 	# Get all tags for this user.
