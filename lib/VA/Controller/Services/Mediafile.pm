@@ -399,6 +399,10 @@ sub list :Local {
 	include_images => $args->{include_images}
     };
 
+    if ( $params->{include_images} ) {
+	push( @{$params->{views}}, 'image' );
+    }
+
     my $rs = $c->user->videos->search(
 	{},
 	{ prefetch => 'assets',
