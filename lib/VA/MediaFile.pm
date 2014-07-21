@@ -83,16 +83,14 @@ sub metadata {
     }
 }
 
-# Standard way to "publish" a media file to
-# a client in JSON.  Convert the array of
-# views into a hash who's keys are the view
-# types.  This makes it easier for a client
-# to access the information they need, for example:
+# Standard way to "publish" a media file to a client in JSON.  Convert
+# the array of views into a hash whose keys are the view types.  This
+# makes it easier for a client to access the information they need,
+# for example:
 #
 #  <img src="{{ media.views.thumbnail.url }}" />
 #
-# This also transforms URIs to URLs in a view 
-# location -specific way
+# This also transforms URIs to URLs in a view location -specific way
 #
 # Params:
 # {
