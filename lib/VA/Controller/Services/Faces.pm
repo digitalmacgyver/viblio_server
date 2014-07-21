@@ -41,7 +41,10 @@ sub media_face_appears_in :Local {
           rows => 10,
 	  asset_id => undef,
 	  contact_uuid => undef,
-	  'views[]' => undef,
+	  'views[]' => ['poster'],
+	  include_contact_info => 0,
+	  include_images => 0,
+	  include_tags => 0
         ],
         @_ );
 
@@ -112,8 +115,11 @@ sub media_face_appears_in :Local {
 		push( @media_objs, $f->media_asset->media )
 	    }
 	}
-	
-	my $media = $self->publish_mediafiles( $c, \@media_objs, { views=>$args->{'views[]'} } );
+
+	if ( $args->{include_images} ) {
+	    push( @{$args->{'views[]'}}, 'image' );
+	}
+	my $media = $self->publish_mediafiles( $c, \@media_objs, { views=>$args->{'views[]'}, include_contact_info => $args->{include_contact_info}, include_images => $args->{include_images}, include_tags => $args->{include_tags} } );
 
 	if ( $pager ) {
 	    $self->status_ok( $c, { media => $media,

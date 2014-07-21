@@ -386,7 +386,8 @@ sub list :Local {
 	  include_contact_info => 0,
 	  include_tags => 1,
 	  include_shared => 0,
-	  'views[]' => undef
+	  'views[]' => ['poster'],
+	  include_images => 0
         ],
         @_ );
 
@@ -394,7 +395,8 @@ sub list :Local {
 	include_contact_info => $args->{include_contact_info},
 	include_tags => $args->{include_tags},
 	include_shared => $args->{include_shared},
-	views => $args->{'views[]'}
+	views => $args->{'views[]'},
+	include_images => $args->{include_images}
     };
 
     my $rs = $c->user->videos->search(
@@ -402,6 +404,10 @@ sub list :Local {
 	{ prefetch => 'assets',
 	  page => $args->{page}, rows => $args->{rows},
 	  order_by => { -desc => 'me.id' } } );
+
+    if ( $args->{include_images} ) {
+	push( @{$args->{'views[]'}}, 'image' );
+    }
 
     my $media = $self->publish_mediafiles( $c, [$rs->all], $params );
 
@@ -951,6 +957,14 @@ sub list_all :Local {
     my( $self, $c ) = @_;
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 100000;
+    my $include_images = $c->req->param( 'include_images' );
+    $include_images = 0 unless ( $include_images );
+    my $include_contact_info = $c->req->param( 'include_contact_info' );
+    $include_contact_info = 0 unless ( $include_contact_info );
+    my $include_tags = $c->req->param( 'include_tags' );
+    if ( !defined( $include_tags ) ) {
+	$include_tags = 1;
+    }
 
     my @shares = $c->user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
     my @media = map { $_->media } @shares;
@@ -964,7 +978,12 @@ sub list_all :Local {
         @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
     }
 
-    my $data = $self->publish_mediafiles( $c, \@slice, { views => ['poster' ], include_tags => 1, include_shared => 1, include_owner_json => 1 } );
+    my $views = ['poster'];
+    if ( $include_images ) {
+	push( @$views, 'image' );
+    }
+
+    my $data = $self->publish_mediafiles( $c, \@slice, { views => $views, include_tags => $include_tags, include_shared => 1, include_owner_json => 1, include_images=>$include_images, include_contact_info=>$include_contact_info } );
 
     foreach my $d ( @$data ) {
 	if ( $shared_uuids->{$d->{uuid}} ) {
@@ -1295,6 +1314,15 @@ sub search_by_title_or_description :Local {
     my $q = $c->req->param( 'q' );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
+    my $include_contact_info = $c->req->param( 'include_contact_info' );
+    if ( !defined( $include_contact_info ) ) {
+	$include_contact_info = 1;
+    }
+    my $include_images = $c->req->param( 'include_images' ) || 0;
+    my $include_tags = $c->req->param( 'include_tags' );
+    if ( !defined( $include_tags ) ) {
+	$include_tags = 1;
+    }
 
     # get uuids of all media shared to this user
     my @shares = $c->user->media_shares->search({ 'media.is_album' => 0 },{prefetch=>'media'});
@@ -1360,7 +1388,12 @@ sub search_by_title_or_description :Local {
     my $shared;
     foreach my $m ( @mids ) { $shared->{$m} = 1; }
 
-    my $data = $self->publish_mediafiles( $c, \@sliced, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1, include_owner_json => 1 } );
+    my $views = ['poster'];
+    if ( $include_images )  {
+	push( @{$views}, 'image' );
+    }
+
+    my $data = $self->publish_mediafiles( $c, \@sliced, { views => $views, include_tags => $include_tags, include_shared => 1, include_contact_info => $include_contact_info, include_owner_json => 1, include_images => $include_images } );
 
     foreach my $d ( @$data ) {
 	if ( $shared->{ $d->{id} } ) {
@@ -1382,10 +1415,20 @@ sub search_by_title_or_description_in_album :Local {
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
     my $aid = $c->req->param( 'aid' );
+    my $include_contact_info = $c->req->param( 'include_contact_info' );
+    if ( !defined( $include_contact_info ) ) {
+	$include_contact_info = 1;
+    }
+    my $include_images = $c->req->param( 'include_images' ) || 0;
+    my $include_tags = $c->req->param( 'include_tags' );
+    if ( !defined( $include_tags ) ) {
+	$include_tags = 1;
+    }
+
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_bad_request( $c, $c->loc( 'Cannot find album for "[_1]"', $aid ) );
     }
 
     my @mids = map { $_->id } $album->videos;
@@ -1441,7 +1484,12 @@ sub search_by_title_or_description_in_album :Local {
 	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
 
-    my $data = $self->publish_mediafiles( $c, \@sliced, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1 } );
+    my $views = ['poster'];
+    if ( $include_images )  {
+	push( @{$views}, 'image' );
+    }
+
+    my $data = $self->publish_mediafiles( $c, \@sliced, { views => $views, include_tags => $include_tags, include_shared => 1, include_contact_info => $include_contact_info, include_images => $include_images } );
 
     foreach my $d ( @$data ) {
 	if ( $d->{user_id} != $c->user->id ) {
@@ -1472,12 +1520,24 @@ sub taken_in_city :Local {
     my $q = $c->req->param( 'q' );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
+    my $include_contact_info = $c->req->param( 'include_contact_info' ) || 0;
+    my $include_images = $c->req->param( 'include_images' ) || 0;
+    my $include_tags = $c->req->param( 'include_tags' );
+    if ( !defined( $include_tags ) ) {
+	$include_tags = 1;
+    }
+
     my $rs = $c->user->videos->search(
 	{ geo_city => $q },
 	{ order_by => 'recording_date desc',
 	  page => $page, rows => $rows } );
     
-    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => ['poster' ], include_tags => 1 } );
+    my $views = ['poster'];
+    if ( $include_images ) {
+	push( @$views, 'image' );
+    }
+
+    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => $views, include_tags => $include_tags, include_contact_info => $include_contact_info, include_images => $include_images } );
 
      $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
 }
@@ -1489,6 +1549,12 @@ sub recently_uploaded :Local {
     my $days = $c->req->param( 'days' ) || 7;
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
+    my $include_contact_info = $c->req->param( 'include_contact_info' ) || 0;
+    my $include_images = $c->req->param( 'include_images' ) || 0;
+    my $include_tags = $c->req->param( 'include_tags' );
+    if ( !defined( $include_tags ) ) {
+	$include_tags = 1;
+    }
 
     my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
 
@@ -1510,8 +1576,12 @@ sub recently_uploaded :Local {
 	 { order_by => 'me.created_date desc',
 	   page => $page, rows => $rows });
     
+    my $views = ['poster'];
+    if ( $include_images ) {
+	push( @$views, 'image' );
+    }
 
-    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => ['poster' ], include_tags => 1 } );
+    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => $views, include_tags => $include_tags, include_contact_info => $include_contact_info, include_images => $include_images } );
 
     $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
 }

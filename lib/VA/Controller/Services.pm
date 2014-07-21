@@ -535,6 +535,11 @@ sub publish_mediafiles :Private {
     my $media = shift;
     my $params = shift;
 
+    my $include_images = 0;
+    if ( exists( $params->{include_images} ) ) {
+	$include_images = $params->{include_images};
+    }
+
     if ( scalar( $media ) == 0 ) {
 	return [];
     }
@@ -571,6 +576,7 @@ sub publish_mediafiles :Private {
 
     my @mas = $c->model( 'RDS::MediaAsset' )->search( { 'me.media_id' => { -in => $mids } } );
     foreach my $ma ( @mas ) {
+	next if ( !$include_images && ( $ma->{_column_data}->{asset_type} eq 'image' ) );
 	if ( exists( $assets->{$ma->media_id} ) ) {
 	    push( @{$assets->{$ma->media_id}}, $ma );
 	} else {

@@ -238,6 +238,8 @@ sub get :Local {
     $include_contact_info = 0 unless( $include_contact_info );
     my $include_tags = $c->req->param( 'include_tags' );
     $include_tags = 0 unless( $include_tags );
+    my $include_images = $c->req->param( 'include_images' );
+    $include_images = 0 unless ( $include_images );    
 
     my $params = {
 	views => ['poster'],
@@ -284,7 +286,8 @@ sub get :Local {
 
     my $m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
 							     include_contact_info => $include_contact_info,
-							     include_tags => $include_tags } ) );
+							     include_tags => $include_tags,
+							     include_images => $include_images } ) );
 
     $hash->{media} = $m;
     $hash->{owner} = $album->user->TO_JSON; 
@@ -881,13 +884,14 @@ sub search_by_title_or_description :Local {
     my $q = $c->req->param( 'q' );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
+
     my $rs = $c->user->albums->search(
 	{ -or => [ 'LOWER(title)' => { 'like', '%'.lc($q).'%' },
 		   'LOWER(description)' => { 'like', '%'.lc($q).'%' } ] },
 	{ order_by => 'recording_date desc',
 	  page => $page, rows => $rows } );
     
-    my $data = $self->publish_mediafiles( $c, $rs->all(), { include_tags => 1 } );
+    my $data = $self->publish_mediafiles( $c, [ $rs->all() ], { include_tags => 1 } );
     $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 

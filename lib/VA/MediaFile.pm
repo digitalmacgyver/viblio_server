@@ -122,11 +122,18 @@ sub publish {
 	    $include{poster_animated} = 1;
 	}
     }
+    my $include_images = 0;
+    if ( exists( $params->{include_images} ) ) {
+	$include_images = $params->{include_images};
+    }
     foreach my $view ( @views ) {
 	my $type = $view->{_column_data}->{asset_type};
 	
 	next if ( $type eq 'face' ); # We will do faces later if requested
 	next if ( $params->{views} && !defined($include{$type}) );
+	# Skip the new image asset type, of which there will be many,
+	# unless they have been specifically requested.
+	next if ( $type eq 'image' && !$include_images );
 
 	my $view_json = $view->TO_JSON;
 
