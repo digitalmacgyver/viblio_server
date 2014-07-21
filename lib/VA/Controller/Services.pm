@@ -170,12 +170,10 @@ sub user_media :Private {
     my $user = $c->user->obj;
     $terms = $terms || {};
     $terms->{is_album} = 0;
-    $terms->{-and} = [ -or => ['me.user_id' => $user->id, 
+    $terms->{-and} = [ 'me.media_type' => 'original',
+		       -or => ['me.user_id' => $user->id, 
 			       'media_shares.user_id' => $user->id], 
-		       -or => [status => 'TranscodeComplete',
-			       status => 'FaceDetectComplete',
-			       status => 'FaceRecognizeComplete',
-			       status => 'visible',
+		       -or => [status => 'visible',
 			       status => 'complete' ]
 	];
     my $rs = $c->model( 'RDS::Media' )->search( $terms, {prefetch=>'media_shares'} );

@@ -898,6 +898,8 @@ sub all_shared :Local {
     $self->status_ok( $c, { shared => \@data } );
 }
 
+# services/media/list_status
+#
 # Return an very simple structure listing the status of videos owned
 # by this user.
 #
@@ -913,7 +915,8 @@ sub list_status :Local {
     my ( $self, $c ) = @_;
     my @media = $c->model( 'RDS::Media' )->search( 
 	{ 'me.user_id' => $c->user->id,
-	  'me.is_album' => 0 } )->all();
+	  'me.is_album' => 0,
+	  'me.media_type' => 'original' } )->all();
 
     my $valid_status = { 
 	pending  => 1,
@@ -1301,6 +1304,7 @@ sub search_by_title_or_description :Local {
     my @tord = $c->model( 'RDS::Media' )->search({
 	-and => [
 	     'me.is_album' => 0,
+	     'me.media_type' => 'original',
 	     -or => [ 'me.user_id' => $c->user->id,
 		      'me.id' => { -in => \@mids } ],
 	     -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
