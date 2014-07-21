@@ -83,16 +83,14 @@ sub metadata {
     }
 }
 
-# Standard way to "publish" a media file to
-# a client in JSON.  Convert the array of
-# views into a hash who's keys are the view
-# types.  This makes it easier for a client
-# to access the information they need, for example:
+# Standard way to "publish" a media file to a client in JSON.  Convert
+# the array of views into a hash whose keys are the view types.  This
+# makes it easier for a client to access the information they need,
+# for example:
 #
 #  <img src="{{ media.views.thumbnail.url }}" />
 #
-# This also transforms URIs to URLs in a view 
-# location -specific way
+# This also transforms URIs to URLs in a view location -specific way
 #
 # Params:
 # {
@@ -174,13 +172,18 @@ sub publish {
 
     # If faces were requested ...
     if ( $params->{include_contact_info} ) {
-	my @feat = $c->model( 'RDS::MediaAssetFeature' )
-	    ->search({'me.media_id'=>$mediafile->id,
-		      'contact.id' => { '!=', undef },
-		      'me.feature_type'=>'face'},
-		     {prefetch=>['contact','media_asset'],
-		      group_by=>['contact.id']
-		     });
+	my @feat = ();
+	if ( exists( $params->{features} ) ) {
+	    @feat = @{$params->{features}};
+	} else {
+	    @feat = $c->model( 'RDS::MediaAssetFeature' )
+		->search({'me.media_id'=>$mediafile->id,
+			  'contact.id' => { '!=', undef },
+			  'me.feature_type'=>'face'},
+			 {prefetch=>['contact','media_asset'],
+			  group_by=>['contact.id']
+			 });
+	}
 	my @data = ();
 	foreach my $feat ( @feat ) {
 	    my $hash = $feat->media_asset->TO_JSON;
@@ -202,11 +205,7 @@ sub publish {
     if ( $params->{include_tags} ) {
 	# Attach an array of unique tag names
 	if ( exists( $params->{media_tags} ) ) {
-	    if ( exists( $params->{media_tags}->{$mediafile->id} ) ) {
-		$mf_json->{tags} = [ keys( %{$params->{media_tags}->{$mediafile->id}} ) ]
-	    } else {
-		$mf_json->{tags} = []
-	    }
+	    $mf_json->{tags} = [ keys( %{$params->{media_tags}} ) ];
 	} else {
 	    my @tags = $mediafile->tags;
 	    $mf_json->{tags} = \@tags;
@@ -214,9 +213,13 @@ sub publish {
     }
 
     if ( $params->{include_shared} ) {
-	$mf_json->{shared} = $c->model( 'RDS::MediaShare' )->search(
-	    { 'media.uuid' => $mediafile->uuid },
-	    { prefetch => 'media' })->count;
+	if ( exists( $params->{shared} ) ) {
+	    $mf_json->{shared} = $params->{shared};
+	} else {
+	    $mf_json->{shared} = $c->model( 'RDS::MediaShare' )->search(
+		{ 'media.uuid' => $mediafile->uuid },
+		{ prefetch => 'media' })->count;
+	}
     }
 
     return $mf_json;

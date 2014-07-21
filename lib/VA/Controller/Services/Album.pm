@@ -250,6 +250,8 @@ sub get :Local {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
     }
 
+    my $album_owner_uuid = undef;
+
     # Is this album viewable by the user?
     if ( $album->user_id != $c->user->id ) {
 	# check shared albums
@@ -267,20 +269,24 @@ sub get :Local {
 	if ( ! $found ) {
 	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to view this album.' ) );
 	}
+    } else {
+	$album_owner_uuid = $c->user->uuid;
     }
 
-    my $hash  = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+    my $poster_params = { views => ['poster'] };
+    if ( $album_owner_uuid ) {
+	$poster_params->{owner_uuid} = $album_owner_uuid;
+    }
+    my $hash = VA::MediaFile->new->publish( $c, $album, $poster_params );
     $hash->{is_shared} = ( $album->community ? 1 : 0 );
-    my @m = ();
-    foreach my $med ( $album->media->search({},{order_by => 'recording_date desc'}) ) {
-	my $data = VA::MediaFile->new->publish( 
-	    $c, $med, 
-	    $params );
-	$data->{owner} = $med->user->TO_JSON;
-	push( @m, $data );
-    } 
-	
-    $hash->{media} = \@m;
+
+    my @media_list = $album->media->search({},{order_by => 'recording_date desc'} )->all();
+
+    my $m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
+							     include_contact_info => $include_contact_info,
+							     include_tags => $include_tags } ) );
+
+    $hash->{media} = $m;
     $hash->{owner} = $album->user->TO_JSON; 
 
     $self->status_ok( $c, { album => $hash } );
@@ -880,8 +886,9 @@ sub search_by_title_or_description :Local {
 		   'LOWER(description)' => { 'like', '%'.lc($q).'%' } ] },
 	{ order_by => 'recording_date desc',
 	  page => $page, rows => $rows } );
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+    
+    my $data = $self->publish_mediafiles( $c, $rs->all(), { include_tags => 1 } );
+    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
 

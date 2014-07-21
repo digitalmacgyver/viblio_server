@@ -394,9 +394,7 @@ sub list :Local {
 	include_contact_info => $args->{include_contact_info},
 	include_tags => $args->{include_tags},
 	include_shared => $args->{include_shared},
-	views => $args->{'views[]'},
-	# Avoid the need to do a seperate DB lookup to get the owner_uuid.
-	owner_uuid => $c->user->uuid
+	views => $args->{'views[]'}
     };
 
     my $rs = $c->user->videos->search(
@@ -404,53 +402,12 @@ sub list :Local {
 	{ prefetch => 'assets',
 	  page => $args->{page}, rows => $args->{rows},
 	  order_by => { -desc => 'me.id' } } );
-    my @media = ();
 
-    # We want to avoid doing 1 DB query per media, so we compute some
-    # stuff here and pass it down.  The callees check for the computed
-    # data and use it, or generate it there is no computed data.
-    #
-    # First off we want the set of unique tags for each media if
-    # necessary.
-    #
-    # Media tags maps media.id to an hash ref keyed with tags for that
-    # media.
+    my $media = $self->publish_mediafiles( $c, [$rs->all], $params );
 
-    my $media_tags = {};
-    if ( $args->{include_tags} ) {
-	# Get all tags for this user.
-	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search(
-	    { 'me.user_id' => $c->user->id,
-	      -or => [ 'me.feature_type' => 'activity',
-		       -and => [ 'me.feature_type' => 'face',
-				 'me.contact_id' => { '!=', undef } ] ] } )->all();
-
-	for my $m ( @mafs ) {
-	    my $tag = undef;
-	    # Prevent the ORM from trying to resolve the
-	    # 'feature_type' domain table and just go with the value
-	    # of the column.
-	    if ( $m->{_column_data}->{feature_type} eq 'face' ) {
-		$tag = 'people';
-	    } else {
-		$tag = $m->coordinates;
-	    }
-	    if ( defined( $tag ) ) {
-		$media_tags->{$m->media_id}->{$tag} = 1;
-	    }
-	}
-
-	$params->{media_tags} = $media_tags;
-    }
-
-    foreach my $m ( $rs->all ) {
-	my @a = $m->assets;
-	$params->{assets} = \@a;
-	push( @media, VA::MediaFile->new->publish( $c, $m, $params ) )
-    }
     $self->status_ok(
 	$c,
-	{ media => \@media,
+	{ media => $media,
 	  pager => $self->pagerToJson( $rs->pager ),
 	} );
 }
@@ -472,11 +429,11 @@ sub popular :Local {
 					page => $args->{page},
 					rows => $args->{rows},
 					order_by => { -desc => 'me.view_count' } });
-    my @media;
-    push( @media, VA::MediaFile->new->publish( $c, $_, { views => $args->{'views[]'} } ) )
-	foreach( $rs->all );
+
+    my $media = $self->publish_mediafiles( $c, [$rs->all], { views => $args->{'views[]'} } );
+
     my $pager = $self->pagerToJson( $rs->pager );
-    $self->status_ok( $c, { media => \@media, pager => $pager } );
+    $self->status_ok( $c, { media => $media, pager => $pager } );
 }
 
 =head2 /services/mediafile/get
@@ -941,6 +898,54 @@ sub all_shared :Local {
     $self->status_ok( $c, { shared => \@data } );
 }
 
+# services/media/list_status
+#
+# Return an very simple structure listing the status of videos owned
+# by this user.
+#
+# The interpretation of the status are:
+# pending - The video has been fully uploaded, but processing has not yet begin
+# visible - The video may be viewed, but further processing is ongoing
+# complete - The video has completed all processing
+# failed - There was a problem processing the video, it can not be viewed
+#
+# { stats : { pending : 1, visible : 19, complete : 119, failed : 0 },
+#   details : [ { uuid : the uuid of the video, status : pending }, { uuid : uuid-sdf-23, status : complete }, ...
+sub list_status :Local {
+    my ( $self, $c ) = @_;
+    my @media = $c->model( 'RDS::Media' )->search( 
+	{ 'me.user_id' => $c->user->id,
+	  'me.is_album' => 0,
+	  'me.media_type' => 'original' } )->all();
+
+    my $valid_status = { 
+	pending  => 1,
+	visible  => 1,
+	complete => 1,
+	failed   => 1
+    };
+
+    my $result = { 
+	stats => { 
+	    pending  => 0,
+	    visible  => 0,
+	    complete => 0,
+	    failed   => 0
+	},
+		details => [] 
+    };
+
+    foreach my $m ( @media ) {
+	if ( exists( $valid_status->{$m->status} ) ) {
+	    $result->{stats}->{$m->status}++;
+	    push( @{$result->{details}}, { uuid => $m->uuid, status => $m->status } );
+	} else {
+	    $c->log->warning( "Error, invalid status of: ", $m->status, " for media: ", $m->id, "\n" );
+	}
+    }
+    $self->status_ok( $c, $result );
+}
+
 ## List all videos, owned by and shared to the user
 sub list_all :Local {
     my( $self, $c ) = @_;
@@ -958,19 +963,17 @@ sub list_all :Local {
     if ( $#sorted >= 0 ) {
         @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
     }
-    my @data = ();
-    foreach my $m ( @slice ) {
-	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1 } );
+
+    my $data = $self->publish_mediafiles( $c, \@slice, { views => ['poster' ], include_tags => 1, include_shared => 1, include_owner_json => 1 } );
+
+    foreach my $d ( @$data ) {
 	if ( $shared_uuids->{$d->{uuid}} ) {
 	    $d->{is_shared} = 1; 
-	    $d->{owner} = $m->user->TO_JSON;
-	}
-	else {
+	} else {
 	    $d->{is_shared} = 0;
 	}
-	push( @data, $d );
     }
-    $self->status_ok( $c, { albums => \@data, 
+    $self->status_ok( $c, { albums => $data, 
                             pager  => $self->pagerToJson( $pager ) });
 }
 
@@ -1073,18 +1076,15 @@ sub related :Local {
 	'me.is_album' => 0,
 	-and => [ -or => ['me.user_id' => $user->id, 
 			  'media_shares.user_id' => $user->id], 
-		  -or => [status => 'TranscodeComplete',
-			  status => 'FaceDetectComplete',
-			  status => 'FaceRecognizeComplete',
-			  status => 'visible',
+		  -or => [status => 'visible',
 			  status => 'complete' ]
 	    ]}, {prefetch=>'media_shares'});
     unless( $media ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find mediafile for [_1]', $mid ) );
     }
 
-    # Array of mediafile objects to return
-    my @results = ();
+    # Array of media objects to publish and return.
+    my @media_results = ();
     # Hash of media uuid's already added to results (to prevent dups in results)
     my $seen = {};
     $seen->{ $media->uuid } = $media; # DO NOT SHOW MYSELF IN RELATED
@@ -1139,7 +1139,7 @@ sub related :Local {
 		     $dtf->format_datetime( $to )
 		    ]} }, { order_by => 'media.recording_date desc' } );
 	foreach my $a ( @taken_on_same_day ) {
-	    push( @results, $a ) unless( $seen->{ $a->media->uuid } );
+	    push( @media_results, $a->media ) unless ( $seen->{$a->media->uuid} );
 	    $seen->{ $a->media->uuid } = $a;
 	}
 
@@ -1157,7 +1157,7 @@ sub related :Local {
 		     $dtf->format_datetime( $to )
 		    ]} }, { order_by => 'media.recording_date desc' } );
 	foreach my $a ( @taken_in_same_month ) {
-	    push( @results, $a ) unless( $seen->{ $a->media->uuid } );
+	    push( @media_results, $a->media ) unless ( $seen->{$a->media->uuid} );
 	    $seen->{ $a->media->uuid } = $a;
 	}
     }
@@ -1194,7 +1194,7 @@ sub related :Local {
 	    foreach my $feat ( @feats ) {
 		unless( $seen->{ $feat->media_asset->media->uuid } ) {
 		    # $c->log->error( $feat->media_asset->media->title );
-		    push( @results, $feat->media_asset->media->assets->find({ asset_type => 'poster' }) );
+		    push( @media_results, $feat->media_asset->media );
 		    $seen->{ $feat->media_asset->media->uuid } = $feat->media_asset->media;
 		}
 	    }
@@ -1214,7 +1214,7 @@ sub related :Local {
 	}
 	my @sorted = sort { $a->{distance} <=> $b->{distance} } @geodata;
 	foreach my $sd ( @sorted ) {
-	    push( @results, $sd->{asset} ) unless( defined( $seen->{ $sd->{asset}->media->uuid } ) );
+	    push( @media_results, $sd->{asset}->media ) unless ( defined( $seen->{ $sd->{asset}->media->uuid } ) );
 	    $seen->{ $sd->{asset}->media->uuid } = $sd->{asset}->media;
 	}
     }
@@ -1224,25 +1224,19 @@ sub related :Local {
     my @data  = ();
     my $pager = {};
     if ( $page ) {
-	my $data_pager = Data::Page->new( $#results + 1, $rows, $page );
-	if ( $#results >= 0 ) {
-	    @data = @results[ $data_pager->first - 1 .. $data_pager->last - 1 ];
+	my $data_pager = Data::Page->new( $#media_results + 1, $rows, $page );
+	if ( $#media_results >= 0 ) {
+	    @data = @media_results[ $data_pager->first - 1 .. $data_pager->last - 1 ];
 	}
 	$pager = $self->pagerToJson( $data_pager );
     }
     else {
-	@data = @results;
+	@data = @media_results;
     }
 
-    my @media = ();
-    #
-    # This form of publish, where we pass the mediafile and assets in an array is
-    # much faster, since the assets do not need to be fetched.  We can do this if
-    # we know the assets already, and are sure we know how the media file will be
-    # consumed on the client.
-    # $_->media->assets->find({ asset_type=>'main'})
-    push( @media, VA::MediaFile->new->publish( $c, $_->media, { assets => [$_], include_tags => 1, include_shared => 1 } ) ) foreach( @data );
-    $self->status_ok( $c, { media => \@media, pager => $pager } );
+    my $media = $self->publish_mediafiles( $c, \@media_results, { include_tags=>1, include_shared=>1, 'views[]' => 'poster' } );
+
+    $self->status_ok( $c, { media => $media, pager => $pager } );
 }
 
 sub change_recording_date :Local {
@@ -1310,6 +1304,7 @@ sub search_by_title_or_description :Local {
     my @tord = $c->model( 'RDS::Media' )->search({
 	-and => [
 	     'me.is_album' => 0,
+	     'me.media_type' => 'original',
 	     -or => [ 'me.user_id' => $c->user->id,
 		      'me.id' => { -in => \@mids } ],
 	     -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
@@ -1362,22 +1357,20 @@ sub search_by_title_or_description :Local {
 	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
 
-    my @data = ();
     my $shared;
     foreach my $m ( @mids ) { $shared->{$m} = 1; }
-    foreach my $m ( @sliced ) {
-	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1 } );
-	if ( $shared->{ $m->id } ) {
+
+    my $data = $self->publish_mediafiles( $c, \@sliced, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1, include_owner_json => 1 } );
+
+    foreach my $d ( @$data ) {
+	if ( $shared->{ $d->{id} } ) {
 	    $d->{is_shared} = 1;
-	    $d->{owner} = $m->user->TO_JSON;
-	}
-	else {
+	} else {
 	    $d->{is_shared} = 0;
 	}
-	push( @data, $d );
     }
 
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $pager ) } );
+    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $pager ) } );
 }
 
 # IN ALBUM : Search by title or description OR TAG
@@ -1448,21 +1441,19 @@ sub search_by_title_or_description_in_album :Local {
 	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
 
-    my @data = ();
-    foreach my $m ( @sliced ) {
-	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1 } );
-	if ( $m->user_id != $c->user->id ) {
+    my $data = $self->publish_mediafiles( $c, \@sliced, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1 } );
+
+    foreach my $d ( @$data ) {
+	if ( $d->{user_id} != $c->user->id ) {
 	    # This must be shared because the album is shared
 	    $d->{is_shared} = ( $album->community ? 1 : 0 );
 	    $d->{owner}     = $album->user->TO_JSON;
-	}
-	else {
+	} else {
 	    $d->{is_shared} = 0;
 	}
-	push( @data, $d );
     }
 
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $pager ) } );
+    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $pager ) } );
 }
 
 # Return all the unique cities that a user's video apepars in
@@ -1485,8 +1476,10 @@ sub taken_in_city :Local {
 	{ geo_city => $q },
 	{ order_by => 'recording_date desc',
 	  page => $page, rows => $rows } );
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+    
+    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => ['poster' ], include_tags => 1 } );
+
+     $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
 # Return all videos recently uploaded.  Pass in a number of days
@@ -1517,8 +1510,10 @@ sub recently_uploaded :Local {
 	 { order_by => 'me.created_date desc',
 	   page => $page, rows => $rows });
     
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+
+    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => ['poster' ], include_tags => 1 } );
+
+    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
 # Add a tag to a video

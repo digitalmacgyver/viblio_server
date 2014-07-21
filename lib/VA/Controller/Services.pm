@@ -170,12 +170,10 @@ sub user_media :Private {
     my $user = $c->user->obj;
     $terms = $terms || {};
     $terms->{is_album} = 0;
-    $terms->{-and} = [ -or => ['me.user_id' => $user->id, 
+    $terms->{-and} = [ 'me.media_type' => 'original',
+		       -or => ['me.user_id' => $user->id, 
 			       'media_shares.user_id' => $user->id], 
-		       -or => [status => 'TranscodeComplete',
-			       status => 'FaceDetectComplete',
-			       status => 'FaceRecognizeComplete',
-			       status => 'visible',
+		       -or => [status => 'visible',
 			       status => 'complete' ]
 	];
     my $rs = $c->model( 'RDS::Media' )->search( $terms, {prefetch=>'media_shares'} );
@@ -507,6 +505,163 @@ sub push_notification :Private {
 	    $c->log->error( "Push notification: $_" );
 	};
     }
+}
+
+# Helper function to speed up the publish operation on mediafiles.
+#
+# As background, publishing a single mediafile, depending on options,
+# can cause several database queries:
+#
+# A query to get the user_uuid of the owner
+# A query to get the assets associated with the media
+# A query to get the tags associated with the media
+# A query to get the faces associated with the media
+#
+# Often this method is called in a loop over a particular result set,
+# and often that result set has a small number of users and or media
+# files.
+# 
+# This method optimizes things by doing a small number of broad
+# queries to formulate a set of optional parameters to the publish
+# method that cause it to just use whatever we pass in, and not query
+# itself.
+#
+# Returns an array of results from VA::Mediafile->new->publish,
+# possible augmented with an owner key that has the JSON of the user
+# owning the JSON if the optional include_owner_json parameter is set.
+sub publish_mediafiles :Private {
+    my $self = shift;
+    my $c = shift;
+    my $media = shift;
+    my $params = shift;
+
+    if ( scalar( $media ) == 0 ) {
+	return [];
+    }
+
+    # media.id -> { tag1 => 1, tag2 => 2, ... }
+    my $media_tags = {};
+    
+    # media.id -> [ list of contact RDS::MediaAssetFeatures ]
+    my $contact_features = {};
+    
+    # media.id -> [ list of requested assets ]
+    my $assets = {};
+
+    # media.id -> # of media share rows that exist for this media.
+    my $shared = {};
+
+    # user_id -> { uuid => user_uuid, json => RDS::User->TO_JSON }
+    my $people = {};
+
+    # We also want a list of the media IDs we're going to publish.
+    my $mids = [];
+
+    foreach my $m ( @$media ) {
+	my $owner_id = $m->user_id;
+	unless ( exists( $people->{$owner_id} ) ) {
+	    $people->{$owner_id} = { uuid => $m->user->uuid };
+	    if ( $params->{include_owner_json} ) {
+		$people->{$owner_id}->{json} = $m->user->TO_JSON;
+	    }
+	}
+	
+	push( @$mids, $m->id );
+    }
+
+    my @mas = $c->model( 'RDS::MediaAsset' )->search( { 'me.media_id' => { -in => $mids } } );
+    foreach my $ma ( @mas ) {
+	if ( exists( $assets->{$ma->media_id} ) ) {
+	    push( @{$assets->{$ma->media_id}}, $ma );
+	} else {
+	    $assets->{$ma->media_id} = [ $ma ];
+	}
+    }
+
+    if ( $params->{include_tags} ) {
+	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( { 
+	    'me.media_id' => { -in => $mids },
+	    -or => [ 'me.feature_type' => 'activity',
+		     -and => [ 'me.feature_type' => 'face',
+			       'me.contact_id' => { '!=', undef } ] ] } );
+	foreach my $maf ( @mafs ) {
+	    my $tag = undef;
+	    if ( $maf->{_column_data}->{feature_type} eq 'face' ) {
+		$tag = 'people';
+	    } elsif ( $maf->{_column_data}->{feature_type} eq 'activity' ) {
+		$tag = $maf->coordinates;
+	    }
+	    if ( defined( $tag ) ) {
+		$media_tags->{$maf->media_id}->{$tag} = 1;
+	    }
+	}
+    }
+
+    if ( $params->{include_contact_info} ) {
+	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( 
+	    { 
+		'me.media_id' => { -in => $mids },
+		'contact.id' => { '!=', undef },
+		'me.feature_type'=>'face' },
+	    { prefetch => ['contact', 'media_asset'],
+	      group_by => ['contact.id'] } );
+	foreach my $maf ( @mafs ) {
+	    if ( exists( $contact_features->{$maf->media_id} ) ) {
+		push( @{$contact_features->{$maf->media_id}},  $maf );
+	    } else {
+		$contact_features->{$maf->media_id} = [ $maf ];
+	    }
+	}
+    }
+    
+    if ( $params->{include_shared} ) {
+	my @shares = $c->model( 'RDS::MediaShare' )->search(
+	    { 'media_id' => { -in => $mids } },
+	    { group_by => [ 'me.media_id' ],
+	      select => [ 'me.media_id', { count => 'me.id', -as => 'share_count' } ] } );
+	foreach my $share ( @shares ) {
+	    $shared->{$share->{_column_data}->{media_id}} = $share->{_column_data}->{share_count};
+	}
+    }
+
+    my $result = [];
+    
+    foreach my $m ( @$media ) {
+	$params->{assets} = $assets->{$m->id};
+	$params->{owner_uuid} = $people->{$m->user_id}->{uuid};
+	
+	if ( $params->{include_tags} ) {
+	    if ( exists( $media_tags->{$m->id} ) ) {
+		$params->{media_tags} = $media_tags->{$m->id};
+	    } else {
+		$params->{media_tags} = {};
+	    }
+	}
+	
+	if ( $params->{include_contact_info} ) {
+	    if ( exists( $contact_features->{$m->id} ) ) {
+		$params->{features} = $contact_features->{$m->id};
+	    } else {
+		$params->{features} = [];
+	    }
+	}
+	
+	if ( $params->{include_shared} ) {
+	    if ( exists( $shared->{$m->id} ) ) {
+		$params->{shared} = $shared->{$m->id};
+	    } else {
+		$params->{shared} = 0;
+	    }
+	}
+
+	my $hash = VA::MediaFile->new->publish( $c, $m, $params );
+	if ( $params->{include_owner_json} ) {
+	    $hash->{owner} = $people->{$m->user_id}->{json};
+	}
+	push( @$result, $hash );
+    }
+
+    return $result;
 }
 
 __PACKAGE__->meta->make_immutable;

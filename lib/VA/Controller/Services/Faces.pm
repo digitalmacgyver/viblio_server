@@ -52,9 +52,11 @@ sub media_face_appears_in :Local {
 
     if ( $args->{contact_uuid} ) {
 	my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$args->{contact_uuid}});
-	if ( ! $contact ) {
-	    $contact = $c->model( 'RDS::Contact' )->find({id=>$args->{contact_uuid}});
-	}
+	# DEBUG - what does this do - it shouldn't work unless
+	# somewhere in our system we're leaking out the contact id.
+	#if ( ! $contact ) {
+	#    $contact = $c->model( 'RDS::Contact' )->find({id=>$args->{contact_uuid}});
+	#}
 	if ( $contact ) {
 	    $contact_id = $contact->id;
 	}
@@ -63,7 +65,6 @@ sub media_face_appears_in :Local {
     # If this is an unidentified face, then only asset_id will be
     # defined.  If it is an identifed face, then contact_id will be defined as well.
     #
-
     if ( ! defined( $contact_id ) ) {
 	# This face is unidentifed, and so belongs to exactly one video, the
 	# one in which it was detected.
@@ -103,16 +104,23 @@ sub media_face_appears_in :Local {
 	    @features = $rs->all
 	}
 
-	my @media = ();
-	foreach my $feature ( @features ) {
-	    push( @media, VA::MediaFile->new->publish( $c, $feature->media_asset->media, { views=>$args->{'views[]'} } ) );
+	my $media_ids = {};
+	my @media_objs = ();
+	for my $f ( @features ) {
+	    unless ( exists( $media_ids->{$f->media_id} ) ) {
+		$media_ids->{$f->media_id} = 1;
+		push( @media_objs, $f->media_asset->media )
+	    }
 	}
+	
+	my $media = $self->publish_mediafiles( $c, \@media_objs, { views=>$args->{'views[]'} } );
+
 	if ( $pager ) {
-	    $self->status_ok( $c, { media => \@media,
+	    $self->status_ok( $c, { media => $media,
 				    pager => $self->pagerToJson( $pager ) } );
 	}
 	else {
-	    $self->status_ok( $c, { media => \@media } );
+	    $self->status_ok( $c, { media => $media } );
 	}
     }
 }
@@ -174,7 +182,31 @@ sub contacts :Local {
     };
     my @feats = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
 
+    my $contact_appearances = {};
+
+    my $feat_ids = [];
+    for my $f ( @feats ) {
+	push( @$feat_ids, $f->contact_id );
+	$contact_appearances->{$f->contact_id} = 0;
+    }
+
     my @data = ();
+
+    my @contact_appearance_data = $c->model( 'RDS::MediaAssetFeature' )->
+	search( {
+	    contact_id => $feat_ids,
+	    -or => [ "media.status" => "visible",
+		     "media.status" => "complete" ],
+	       }, 
+		{ prefetch => { 'media_asset' => 'media' },
+		  group_by => [ 'me.contact_id', 'media.id' ],
+		  select => [ 'contact_id', 'me.media_id', { count => 'media.id', -as => 'appearances' } ],
+		} )->all();
+
+    foreach my $ca ( @contact_appearance_data ) {
+	$contact_appearances->{$ca->{_column_data}->{contact_id}} = $ca->{_column_data}->{appearances};
+    }
+
     foreach my $feat ( @feats ) {
 
 	my $contact = $feat->contact;
@@ -192,12 +224,8 @@ sub contacts :Local {
 	    $hash->{nopic} = 1;  # in case UI needs to know
 	}
 	$hash->{asset_id} = $asset->uuid;
-	$hash->{appears_in} = $c->model( 'RDS::MediaAssetFeature' )->
-	    search({
-		contact_id=>$feat->contact_id,
-		-or => [ "media.status" => "visible",
-			 "media.status" => "complete" ],
-		   },{prefetch => { 'media_asset' => 'media' }, group_by => ['media.id']})->count;
+
+	$hash->{appears_in} = $contact_appearances->{$feat->{_column_data}->{contact_id}};
 
 	push( @data, $hash );
     }
