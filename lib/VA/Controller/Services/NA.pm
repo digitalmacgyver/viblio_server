@@ -131,11 +131,11 @@ sub authenticate :Local {
 	$creds = $c->req->params;
     }
     
-    if ( my $user_created = $c->authenticate( $creds, $realm ) ) {
+    if ( $c->authenticate( $creds, $realm ) ) {
 	# Facebook just calls one endpoint: services/na/authenticate.
 	# Here we handle the case where.
 	if ( $realm =~ /facebook/ ) {
-	    if ( scalar( @$user_created ) == 2 and $user_created->[1] ) {
+	    if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
 		# In this case we have just authenticated a new facebook user.
 		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email } );
 	    }

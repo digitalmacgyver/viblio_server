@@ -216,7 +216,12 @@ sub authenticate {
 		};
 	    }
 
-	    return [ $user, $new_user ];
+	    # The return value of here plugs into larger
+	    # authentication stuff and can't be messed with, but we
+	    # need a way of communicating whether this is a new user
+	    # elsewhere.  Put it in the stash.
+	    $ctx->stash->{new_user} = $new_user;
+	    return $user;
 	}
 	else {
 	    die 'Error: Realm did not auto-create user';

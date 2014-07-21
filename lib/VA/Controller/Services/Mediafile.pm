@@ -1234,9 +1234,9 @@ sub related :Local {
 	@data = @media_results;
     }
 
-    my $media = $self->publish_mediafiles( $c, \@media_results, { include_tags=>1, include_shared=>1, 'views[]' => 'poster' } );
+    my $media_hash = $self->publish_mediafiles( $c, \@media_results, { include_tags=>1, include_shared=>1, 'views[]' => 'poster' } );
 
-    $self->status_ok( $c, { media => $media, pager => $pager } );
+    $self->status_ok( $c, { media => $media_hash, pager => $pager } );
 }
 
 sub change_recording_date :Local {
