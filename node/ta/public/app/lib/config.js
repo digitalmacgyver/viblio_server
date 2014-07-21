@@ -9,6 +9,12 @@ define( function() {
 	'192.168.1.35': {
 	    facebook: '566096966734454',
 	},
+	'test.viblio.com': {
+	    facebook: '165824470255570',
+	},
+	'localhost': {
+	    facebook: '165824470255570',
+	}
     };
 
     function service( host, svc ) {
