@@ -166,6 +166,8 @@ sub contacts :Local {
 	'me.user_id' => $user->id,
 	contact_id => {'!=',undef},
 	'contact.contact_name' => { '!=',undef},
+	# Screen out faces that come from facebook or elsewhere.
+	'me.feature_type' => 'face'
     };
     my $where = {
 	select => ['contact_id', 'media_asset_id'],
