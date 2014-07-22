@@ -132,7 +132,7 @@ sub authenticate :Local {
     }
     
     if ( $c->authenticate( $creds, $realm ) ) {
-	# Facebook just calls one endpoint: services/na/authenticate.
+	# The website's facebook login only ever calls: services/na/authenticate.
 	# Here we handle the case where.
 	if ( $realm =~ /facebook/ ) {
 	    if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
@@ -154,7 +154,6 @@ sub authenticate :Local {
 	}
 
 	$self->status_ok( $c, { user => $c->user->obj } );
-	return;
     } 
     else {
 	# Lets try to create a more meaningful error message
