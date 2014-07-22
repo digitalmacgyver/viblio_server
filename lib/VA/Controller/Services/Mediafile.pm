@@ -1433,7 +1433,6 @@ sub search_by_title_or_description_in_album :Local {
 	$include_tags = 1;
     }
 
-
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for "[_1]"', $aid ) );
@@ -1501,7 +1500,7 @@ sub search_by_title_or_description_in_album :Local {
     my $data = $self->publish_mediafiles( $c, \@sliced, { views => $views, include_tags => $include_tags, include_shared => 1, include_contact_info => $include_contact_info, include_images => $include_images } );
 
     foreach my $d ( @$data ) {
-	if ( $d->{user_id} != $c->user->id ) {
+	if ( $d->{owner_uuid} ne $c->user->uuid ) {
 	    # This must be shared because the album is shared
 	    $d->{is_shared} = ( $album->community ? 1 : 0 );
 	    $d->{owner}     = $album->user->TO_JSON;
