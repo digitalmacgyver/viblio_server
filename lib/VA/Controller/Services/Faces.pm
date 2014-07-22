@@ -162,6 +162,10 @@ sub contact_mediafile_count :Local {
 Return all contacts for logged in user that appear in at
 least one video.
 
+Here a contact is defined to be:
+    * Someone who shows up in a video
+    * Who has been named
+
 =cut
 
 sub contacts :Local {
@@ -175,49 +179,37 @@ sub contacts :Local {
 
     my $user = $c->user->obj;
 
-    # Find all contacts for a user that appear in at least one video.
-    my $search = {
-	'me.user_id' => $user->id,
-	contact_id => {'!=',undef},
-	'contact.contact_name' => { '!=',undef},
-    };
-    my $where = {
-	select => ['contact_id', 'media_asset_id'],
-	prefetch=>['contact', 'media_asset'],
-	group_by => ['contact_id'],
-    };
-    my @feats = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
+    my @features = $c->model( 'RDS::MediaAssetFeature' )->search(
+	{ 'me.user_id' => $user->id,
+	  'contact_id' => { '!=', undef },
+	  'contact.contact_name' => { '!=', undef },
+	  # We don't want fb_face rows here - they may not appear in any videos.
+	  'me.feature_type' => 'face' },
+	{ prefetch => [ 'contact', 'media_asset' ] } )->all();
 
-    my $contact_appearances = {};
-
-    my $feat_ids = [];
-    for my $f ( @feats ) {
-	push( @$feat_ids, $f->contact_id );
-	$contact_appearances->{$f->contact_id} = 0;
+    # Build a hash of hash:
+    # contact_id-> hash of movies they are in
+    # We'll use the number of keys in the inner hash to compute appears_in.
+    my $contact_data = {};
+    my $contact_movies = {};
+    foreach my $f ( @features ) {
+	$contact_movies->{$f->contact_id}->{$f->media_id} = 1;
+	# For a given contact, just pick an arbitrary asset to
+	# represent them.
+	unless ( exists( $contact_data->{$f->contact_id} ) ) {
+	    $contact_data->{$f->contact_id} = { 
+		contact => $f->contact,
+		media_asset => $f->media_asset,
+		hash => $f->contact->TO_JSON
+	    }
+	}
     }
 
     my @data = ();
-
-    my @contact_appearance_data = $c->model( 'RDS::MediaAssetFeature' )->
-	search( {
-	    contact_id => $feat_ids,
-	    -or => [ "media.status" => "visible",
-		     "media.status" => "complete" ],
-	       }, 
-		{ prefetch => { 'media_asset' => 'media' },
-		  group_by => [ 'me.contact_id', 'media.id' ],
-		  select => [ 'contact_id', 'me.media_id', { count => 'media.id', -as => 'appearances' } ],
-		} )->all();
-
-    foreach my $ca ( @contact_appearance_data ) {
-	$contact_appearances->{$ca->{_column_data}->{contact_id}} = $ca->{_column_data}->{appearances};
-    }
-
-    foreach my $feat ( @feats ) {
-
-	my $contact = $feat->contact;
-	my $asset   = $feat->media_asset;
-	my $hash    = $contact->TO_JSON;
+    foreach my $contact_id ( keys( %$contact_data ) ) {
+	my $contact = $contact_data->{$contact_id}->{contact};
+	my $asset = $contact_data->{$contact_id}->{media_asset};
+	my $hash = $contact_data->{$contact_id}->{hash};
 
 	if ( $contact->picture_uri ) {
 	    my $klass = $c->config->{mediafile}->{$asset->location};
@@ -231,7 +223,7 @@ sub contacts :Local {
 	}
 	$hash->{asset_id} = $asset->uuid;
 
-	$hash->{appears_in} = $contact_appearances->{$feat->{_column_data}->{contact_id}};
+	$hash->{appears_in} = scalar( keys( %{$contact_movies->{$contact_id}} ) );
 
 	push( @data, $hash );
     }
