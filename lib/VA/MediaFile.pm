@@ -186,7 +186,7 @@ sub publish {
 	    @feat = $c->model( 'RDS::MediaAssetFeature' )
 		->search({'me.media_id'=>$mediafile->id,
 			  'contact.id' => { '!=', undef },
-			  'me.feature_type'=>'face'},
+			  'me.feature_type'=> [ 'face', 'fb_face'] },
 			 {prefetch=>['contact','media_asset'],
 			  group_by=>['contact.id']
 			 });

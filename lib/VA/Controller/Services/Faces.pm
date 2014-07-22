@@ -93,6 +93,7 @@ sub media_face_appears_in :Local {
 	my $rs = $c->model( 'RDS::MediaAssetFeature' )
 	    ->search(
 	    { contact_id => $contact_id, 
+	      feature_type => 'face',
 	      -or => [ "media.status" => "visible",
 		       "media.status" => "complete" ],
 	      'me.user_id' => $user->id },
@@ -150,6 +151,7 @@ sub contact_mediafile_count :Local {
     my $count =  $c->model( 'RDS::MediaAssetFeature' )
 	->search(
 	{ contact_id => $contact->id, 
+	  feature_type => 'face',
 	  -or => [ "media.status" => "visible",
 		   "media.status" => "complete" ],
 	  'me.user_id' => $c->user->id },
@@ -278,6 +280,7 @@ sub contacts_present_in_videos :Local {
 	prefetch=>['contact', 'media_asset'],
 	group_by => ['contact_id'],
     };
+    # Explicitly consider fb_face and face types here.
     my @feats = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
 
     my @data = ();
@@ -397,30 +400,6 @@ sub contact :Local {
     $self->status_ok( $c, { contact => $hash } );
 }
 
-sub fix_uploads :Private {
-    my( $self, $c ) = @_;
-    # find all media assert features of type face with contact_id == NULL,
-    # a case that happends with uploaded files from popeye, until popeye is
-    # fixed.
-    my @features = $c->model( 'RDS::MediaAssetFeature' )->
-	search({ feature_type => 'face',
-		 'me.user_id' => $c->user->obj->id,
-		 contact_id => undef },
-	       { prefetch => 'media_asset' });
-
-    foreach my $feat ( @features ) {
-	my $contact = $c->model( 'RDS::Contact' )->find_or_create(
-	    {
-		picture_uri => $feat->media_asset->uri,
-		user_id => $c->user->obj->id,
-	    });
-	if ( $contact ) {
-	    $feat->contact_id( $contact->id );
-	    $feat->update;
-	}
-    }
-}
-
 =head2 /services/faces/all_contacts
 
 Returns list of contacts that match the regular expression passed
@@ -432,8 +411,6 @@ sub all_contacts :Local {
     my( $self, $c ) = @_;
     my $q = $c->req->param( 'term' );
     my $editable = $c->req->param( 'editable' );
-
-    ## $self->fix_uploads( $c );  ## REMOVE ME WHEN POPEYE IS FIXED
 
     my $where = {};
     if ( $q ) {
@@ -504,6 +481,7 @@ sub photos_of :Local {
     $self->status_ok( $c, \@data );
 =cut
 
+    # Explicitly consider features of any type, face or fb_face.
     my @features = $c->model( 'RDS::MediaAssetFeature' )->
 	search({ contact_id => $contact->id,
 		 'media_asset.uri' => { '!=' => undef },
@@ -586,9 +564,10 @@ sub tag :Local {
 	], @_ );
 
     my $contact = $c->user->contacts->find({ uuid => $args->{uuid} });
-    unless( $contact ) {
-	$contact = $c->user->contacts->find({ id => $args->{uuid} });
-    }
+    # DEBUG - I don't think this can ever happen.
+    #unless( $contact ) {
+    #$contact = $c->user->contacts->find({ id => $args->{uuid} });
+    #}
     unless( $contact ) {
 	$self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ));
     }
@@ -617,6 +596,7 @@ sub tag :Local {
 	}
 
 	my @fids = ();
+	# Explicitly consider any type of face, fb_face or regular.
 	foreach my $feat ( $c->model( 'RDS::MediaAssetFeature' )->search({ contact_id => $contact->id }) ) {
 	    push( @fids, $feat->id );
 	    $feat->contact_id( $identified->id );
@@ -698,6 +678,7 @@ sub delete_contact :Local {
     unless( $contact ) {
 	$self->status_bad_request($c, $c->loc('Unable to find contact for [_1]', $cid ) );
     }
+    # Both fb_face and regular face.
     my @feats = $c->model( 'RDS::MediaAssetFeature' )->search({ contact_id => $contact->id });
     my @fids  = map { $_->id } @feats;
 
@@ -737,6 +718,7 @@ sub remove_false_positives :Local {
     my @ret = ();
 
     foreach my $id ( @ids ) {
+	# Any type of face here.
 	$feature = $c->model( 'RDS::MediaAssetFeature' )->find({id => $id, user_id => $c->user->obj->id});
 	unless( $feature ) {
 	    $c->log->error( 'remove false positives: cannot find ' + $id + ' in media asset features' );
@@ -764,7 +746,7 @@ sub remove_false_positives :Local {
 	    $main_contact = $feature->contact;
 	    my @features = $c->model( 'RDS::MediaAssetFeature' )->
 		search({ contact_id => $main_contact->id,
-			 feature_type => 'face',
+			 feature_type => [ 'face', 'fb_face' ],
 			 'me.user_id' => $c->user->id },
 		       { prefetch => 'media_asset' });
 	    my $found = 0;
@@ -818,7 +800,7 @@ sub remove_from_video :Local {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find media file for [_1]', $mid ) );
     }
 
-    # Is this person in one video or multiple videos?
+    # Is this the only occurence, fb_face or otherwise, of this person?
     my @feats = $c->model( 'RDS::MediaAssetFeature' )
 	->search(
 	{ contact_id => $contact->id, 'me.user_id' => $c->user->obj->id},

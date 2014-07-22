@@ -238,6 +238,8 @@ sub delete :Local {
     my @faces = @{$mediafile->{views}->{face}};
 
     # Generic resultset for finding other mediafiles (other than this one)
+    #
+    # Explicitly consider fb_face and face features here.
     my $rs = $c->model( 'RDS::MediaAssetFeature' )->search({
 	'media.id' => { '!=', $mf->id } }, {
 	    prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
@@ -1097,6 +1099,7 @@ sub related :Local {
     my $media = $c->model( 'RDS::Media' )->find({ 
 	'me.uuid' => $mid,
 	'me.is_album' => 0,
+	'me.media_type' => 'original'
 	-and => [ -or => ['me.user_id' => $user->id, 
 			  'media_shares.user_id' => $user->id], 
 		  -or => [status => 'visible',
@@ -1355,10 +1358,11 @@ sub search_by_title_or_description :Local {
     # Videos owned or shared to user which have the passed in person's name
     # associated with them
     my @faces = $c->model( 'RDS::MediaAssetFeature' )->search(
-	{ -and => [ 
-	       -or => [ 'media.user_id' => $c->user->id,
-			'media.id' => { -in => \@mids } ],
-	       'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } ] },
+	{ feature_type => 'face',
+	  -and => [ 
+	      -or => [ 'media.user_id' => $c->user->id,
+		       'media.id' => { -in => \@mids } ],
+	      'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } ] },
 	{ prefetch => [ 'contact', { 'media_asset' => 'media' } ] });
 
     # We will have dups.  De-dup, then page.
@@ -1456,7 +1460,8 @@ sub search_by_title_or_description_in_album :Local {
     # Videos owned or shared to user which have the passed in person's name
     # associated with them
     my @faces = $c->model( 'RDS::MediaAssetFeature' )->search(
-	{ 'media.id' => { -in => \@mids },
+	{ feature_type => 'face',
+	  'media.id' => { -in => \@mids },
 	  'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } },
 	{ prefetch => [ 'contact', { 'media_asset' => 'media' } ] });
 

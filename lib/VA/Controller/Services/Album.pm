@@ -833,7 +833,7 @@ sub create_face_album :Local {
 
     my $rs = $c->model( 'RDS::MediaAssetFeature' )
 	->search(
-	{ contact_id => $contact->id, 'me.user_id' => $c->user->id },
+	{ contact_id => $contact->id, 'me.user_id' => $c->user->id, feature_type => 'face' },
 	{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
 
     my @mediafiles = map { $_->media_asset->media } $rs->all;
