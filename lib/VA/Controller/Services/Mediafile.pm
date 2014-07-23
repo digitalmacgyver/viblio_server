@@ -901,6 +901,54 @@ sub all_shared :Local {
     $self->status_ok( $c, { shared => \@data } );
 }
 
+# services/media/list_status
+#
+# Return an very simple structure listing the status of videos owned
+# by this user.
+#
+# The interpretation of the status are:
+# pending - The video has been fully uploaded, but processing has not yet begin
+# visible - The video may be viewed, but further processing is ongoing
+# complete - The video has completed all processing
+# failed - There was a problem processing the video, it can not be viewed
+#
+# { stats : { pending : 1, visible : 19, complete : 119, failed : 0 },
+#   details : [ { uuid : the uuid of the video, status : pending }, { uuid : uuid-sdf-23, status : complete }, ...
+sub list_status :Local {
+    my ( $self, $c ) = @_;
+    my @media = $c->model( 'RDS::Media' )->search( 
+       { 'me.user_id' => $c->user->id,
+         'me.is_album' => 0,
+         'me.media_type' => 'original' } )->all();
+
+    my $valid_status = { 
+       pending  => 1,
+       visible  => 1,
+       complete => 1,
+       failed   => 1
+    };
+
+    my $result = { 
+       stats => { 
+           pending  => 0,
+           visible  => 0,
+           complete => 0,
+           failed   => 0
+       },
+               details => [] 
+    };
+
+    foreach my $m ( @media ) {
+       if ( exists( $valid_status->{$m->status} ) ) {
+           $result->{stats}->{$m->status}++;
+           push( @{$result->{details}}, { uuid => $m->uuid, status => $m->status } );
+       } else {
+           $c->log->warning( "Error, invalid status of: ", $m->status, " for media: ", $m->id, "\n" );
+       }
+    }
+    $self->status_ok( $c, $result );
+}
+
 ## List all videos, owned by and shared to the user
 sub list_all :Local {
     my( $self, $c ) = @_;

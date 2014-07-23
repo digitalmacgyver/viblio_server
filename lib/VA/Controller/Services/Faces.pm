@@ -248,6 +248,7 @@ sub contacts_present_in_videos :Local {
     my $search = {
 	'me.user_id' => $user->id,
 	contact_id => {'!=',undef},
+	'me.feature_type' => 'face'
     };
     my $where = {
 	select => ['contact_id', 'media_asset_id'],
