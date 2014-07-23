@@ -274,13 +274,14 @@ sub contacts_present_in_videos :Local {
     my $search = {
 	'me.user_id' => $user->id,
 	contact_id => {'!=',undef},
+	# Screen out FB faces.
+	'me.feature_type' => 'face'
     };
     my $where = {
 	select => ['contact_id', 'media_asset_id'],
 	prefetch=>['contact', 'media_asset'],
 	group_by => ['contact_id'],
     };
-    # Explicitly consider fb_face and face types here.
     my @feats = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
 
     my @data = ();
