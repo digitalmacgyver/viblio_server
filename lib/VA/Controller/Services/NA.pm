@@ -1053,7 +1053,7 @@ sub mediafile_create :Local {
 
     ### FOR NOW, LIMIT ANY EMAILS TO THE FIRST FEW VIDEOS UPLOADED
     ### TO THE ACCOUNT
-    my $rs = $user->media->search( $self->where_valid_mediafile() );
+    my $rs = $user->media->search( $self->where_valid_mediafile( undef, undef, 1, 1 ) );
     if ( $rs->count == 5 ) {
 
 	if ( $user->profile->setting( 'email_notifications' ) &&

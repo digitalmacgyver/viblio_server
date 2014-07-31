@@ -184,7 +184,7 @@ sub create :Local {
     }
 
     if ( $initial_mid ) {
-	my $media = $c->user->videos->find({ uuid => $initial_mid });
+	my $media = $c->user->videos->find( { uuid => $initial_mid } );
 	unless( $media ) {
 	    $self->status_bad_request( $c, $c->loc( 'Bad initial media uuid' ) );
 	}

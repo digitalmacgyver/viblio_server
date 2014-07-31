@@ -389,7 +389,9 @@ sub list :Local {
 	  include_tags => 1,
 	  include_shared => 0,
 	  'views[]' => ['poster'],
-	  include_images => 0
+	  include_images => 0,
+	  only_visible => 1,
+	  only_videos => 1
         ],
         @_ );
 
@@ -405,8 +407,16 @@ sub list :Local {
 	push( @{$params->{views}}, 'image' );
     }
 
+    my $where = {};
+    if ( $args->{only_visible} ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( $args->{only_videos} ) {
+	$where->{'me.media_type'} = 'original';
+    }
+
     my $rs = $c->user->videos->search(
-	{},
+	$where,
 	{ prefetch => 'assets',
 	  page => $args->{page}, rows => $args->{rows},
 	  order_by => { -desc => 'me.id' } } );
@@ -430,11 +440,13 @@ sub popular :Local {
       ( $c,
         [ page => 1,
           rows => 10000,
-	  'views[]' => undef
+	  'views[]' => undef,
+	  only_visible => 1,
+	  only_videos => 1
         ],
         @_ );
     
-    my $where = $self->where_valid_mediafile();
+    my $where = $self->where_valid_mediafile( undef, undef, $args->{only_visible}, $args->{only_videos} );
     $where->{ 'me.view_count' } = { '!=', 0 };
     my $rs = $c->user->media->search( $where, 
 				      { prefetch => 'assets',
@@ -816,9 +828,11 @@ Simply return the total number of mediafiles owned by the logged in user.
 sub count :Local {
     my( $self, $c ) = @_;
     my $uid = $c->req->param( 'uid' );
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
     my $count = 0;
 
-    my $where = $self->where_valid_mediafile();
+    my $where = $self->where_valid_mediafile( undef, undef, $only_visible, $only_videos );
 
     if ( $uid ) {
 	my $user = $c->model( 'RDS::User' )->find({uuid => $uid });
@@ -963,20 +977,25 @@ sub list_all :Local {
     my( $self, $c ) = @_;
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 100000;
-    my $include_images = $c->req->param( 'include_images' );
-    $include_images = 0 unless ( $include_images );
-    my $include_contact_info = $c->req->param( 'include_contact_info' );
-    $include_contact_info = 0 unless ( $include_contact_info );
-    my $include_tags = $c->req->param( 'include_tags' );
-    if ( !defined( $include_tags ) ) {
-	$include_tags = 1;
-    }
+    my $include_images = $self->boolean( $c->req->param( 'include_images' ), 0 );
+    my $include_contact_info = $self->boolean( $c->req->param( 'include_contact_info' ), 0 );
+    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
     my @shares = $c->user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
     my @media = map { $_->media } @shares;
     my $shared_uuids = {};
     foreach my $v ( @media ) { $shared_uuids->{ $v->uuid } = 1; }
-    my @videos = $c->user->videos->all;
+
+    my $where = {};
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+    my @videos = $c->user->videos->search( $where )->all();
     my @sorted = sort { $b->recording_date <=> $a->recording_date } ( @media, @videos );
     my $pager = Data::Page->new( $#sorted + 1, $rows, $page );
     my @slice = ();
@@ -1078,7 +1097,6 @@ poppy seed, barleycorn, rod, pole, perch, chain, furlong, league, fathom.
 sub related :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-
     my $page = $c->req->param( 'page' );
     my $rows = $c->req->param( 'rows' ) || 10;
 
@@ -1089,6 +1107,9 @@ sub related :Local {
     my $geo_unit = $c->req->param( 'geo_unit' ) || 'meter';
     my $geo_distance = $c->req->param( 'geo_distance' ) || '100';
 
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+
     unless( $mid ) {
 	$self->status_bad_request( $c, $c->loc( 'Missing param [_1]', 'mid' ) );
     }
@@ -1096,15 +1117,27 @@ sub related :Local {
 
     # The passed in uuid might be from a shared video
     #
-    my $media = $c->model( 'RDS::Media' )->find({ 
-	'me.uuid' => $mid,
-	'me.is_album' => 0,
-	'me.media_type' => 'original'
-	-and => [ -or => ['me.user_id' => $user->id, 
-			  'media_shares.user_id' => $user->id], 
-		  -or => [status => 'visible',
-			  status => 'complete' ]
-	    ]}, {prefetch=>'media_shares'});
+    my $where = undef;
+    
+    if ( $only_visible ) {
+	$where = { 'me.uuid' => $mid,
+		   'me.is_album' => 0,
+		       -and => [ -or => ['me.user_id' => $user->id, 
+					 'media_shares.user_id' => $user->id], 
+				 -or => [status => 'visible',
+					 status => 'complete' ] ] };
+    } else {
+	$where = { 'me.uuid' => $mid,
+		   'me.is_album' => 0,
+		   -and => [ -or => ['me.user_id' => $user->id, 
+				     'media_shares.user_id' => $user->id] ] };
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+
+    my $media = $c->model( 'RDS::Media' )->find( $where, {prefetch=>'media_shares'} );
+
     unless( $media ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find mediafile for [_1]', $mid ) );
     }
@@ -1127,14 +1160,27 @@ sub related :Local {
     # This prefetch into a resultset makes subsequent search queries
     # easier.
     #
-    my $rs = $c->model( 'RDS::MediaAsset' )->search({ 
-	'me.asset_type' => 'poster',
-	'media.is_album' => 0,
-	-and => [ -or => ['media.user_id' => $user->id, 
-			  'media_shares.user_id' => $user->id], 
-		  -or => ['media.status' => 'visible',
-			  'media.status' => 'complete' ]
-	    ]}, {prefetch=>{'media' => 'media_shares'}, group_by=>['media.id']});
+    if ( $only_visible ) {
+	$where = { 'me.asset_type' => 'poster',
+		   'media.is_album' => 0,
+		   -and => [ -or => ['media.user_id' => $user->id, 
+				     'media_shares.user_id' => $user->id], 
+			     -or => ['media.status' => 'visible',
+				     'media.status' => 'complete' ] ] };
+    } else {
+	$where = { 'me.asset_type' => 'poster',
+		   'media.is_album' => 0,
+		   -and => [ -or => ['media.user_id' => $user->id, 
+				     'media_shares.user_id' => $user->id] ] };
+    }
+    if ( $only_videos ) {
+	$where->{'media.media_type'} = 'original';
+    }
+
+    my $rs = $c->model( 'RDS::MediaAsset' )->search(
+	$where, 
+	{ prefetch => { 'media' => 'media_shares' }, 
+	  group_by => [ 'media.id' ] } );
 
     # Return:
     #
@@ -1321,32 +1367,43 @@ sub search_by_title_or_description :Local {
     my $q = $c->req->param( 'q' );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
-    my $include_contact_info = $c->req->param( 'include_contact_info' );
-    if ( !defined( $include_contact_info ) ) {
-	$include_contact_info = 1;
-    }
+
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+
+    my $include_contact_info = $self->boolean( $c->req->param( 'include_contact_info' ), 1 );
     my $include_images = $c->req->param( 'include_images' ) || 0;
-    my $include_tags = $c->req->param( 'include_tags' );
-    if ( !defined( $include_tags ) ) {
-	$include_tags = 1;
-    }
+    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
 
     # get uuids of all media shared to this user
     my @shares = $c->user->media_shares->search({ 'media.is_album' => 0 },{prefetch=>'media'});
     my @mids = map { $_->media->id } @shares;
 
     # Videos owned or shared to user where title or description match
-    my @tord = $c->model( 'RDS::Media' )->search({
-	-and => [
-	     'me.is_album' => 0,
-	     'me.media_type' => 'original',
-	     -or => [ 'me.user_id' => $c->user->id,
-		      'me.id' => { -in => \@mids } ],
-	     -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
-		      'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
-	     -or => [ 'me.status' => 'visible',
-		      'me.status' => 'complete' ] ] });
-    
+    my $where = undef;
+
+    if ( $only_visible ) {
+	$where = { -and => [
+			'me.is_album' => 0,
+			-or => [ 'me.user_id' => $c->user->id,
+				 'me.id' => { -in => \@mids } ],
+			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
+			-or => [ 'me.status' => 'visible',
+				 'me.status' => 'complete' ] ] };
+    } else {
+	$where = { -and => [
+			'me.is_album' => 0,
+			-or => [ 'me.user_id' => $c->user->id,
+				 'me.id' => { -in => \@mids } ],
+			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+    my @tord = $c->model( 'RDS::Media' )->search( $where );
+
     # Videos owned or shared to user which are tagged with the expression
     my @features = $c->model( 'RDS::MediaAssetFeature' )->search(
 	{ -and => [ 
@@ -1369,6 +1426,14 @@ sub search_by_title_or_description :Local {
     my $seen = {};
     my @tagged = ();
 
+    foreach my $a ( @tord ) {
+	my $media = $a;
+	if ( ! $seen->{$media->id} ) {
+	    $seen->{$media->id} = 1;
+	    push( @tagged, $media );
+	}
+    }
+
     foreach my $a ( @features ) {
 	my $media = $a->media_asset->media;
 	if ( ! $seen->{$media->id} ) {
@@ -1385,7 +1450,7 @@ sub search_by_title_or_description :Local {
 	}
     }
 
-    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tord, @tagged );
+    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tagged );
 
     my $pager = Data::Page->new( $#media + 1, $rows, $page );
     my @sliced = ();
@@ -1423,15 +1488,11 @@ sub search_by_title_or_description_in_album :Local {
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
     my $aid = $c->req->param( 'aid' );
-    my $include_contact_info = $c->req->param( 'include_contact_info' );
-    if ( !defined( $include_contact_info ) ) {
-	$include_contact_info = 1;
-    }
+    my $include_contact_info = $self->boolean( $c->req->param( 'include_contact_info' ), 1 );
     my $include_images = $c->req->param( 'include_images' ) || 0;
-    my $include_tags = $c->req->param( 'include_tags' );
-    if ( !defined( $include_tags ) ) {
-	$include_tags = 1;
-    }
+    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
@@ -1441,14 +1502,27 @@ sub search_by_title_or_description_in_album :Local {
     my @mids = map { $_->id } $album->videos;
 
     # Videos owned or shared to user where title or description match
-    my @tord = $c->model( 'RDS::Media' )->search({
-	-and => [
-	     'me.is_album' => 0,
-	     'me.id' => { -in => \@mids },
-	     -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
-		      'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
-	     -or => [ 'me.status' => 'visible',
-		      'me.status' => 'complete' ] ] });
+    my $where = undef;
+
+    if ( $only_visible ) {
+	$where = { -and => [
+			'me.is_album' => 0,
+			'me.id' => { -in => \@mids },
+			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
+			-or => [ 'me.status' => 'visible',
+				 'me.status' => 'complete' ] ] };
+    } else {
+	$where = { -and => [
+			'me.is_album' => 0,
+			'me.id' => { -in => \@mids },
+			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+    my @tord = $c->model( 'RDS::Media' )->search( $where );
     
     # Videos owned or shared to user which are tagged with the expression
     my @features = $c->model( 'RDS::MediaAssetFeature' )->search(
@@ -1468,6 +1542,14 @@ sub search_by_title_or_description_in_album :Local {
     my $seen = {};
     my @tagged = ();
 
+    foreach my $a ( @tord ) {
+	my $media = $a;
+	if ( ! $seen->{$media->id} ) {
+	    $seen->{$media->id} = 1;
+	    push( @tagged, $media );
+	}
+    }
+
     foreach my $a ( @features ) {
 	my $media = $a->media_asset->media;
 	if ( ! $seen->{$media->id} ) {
@@ -1484,7 +1566,7 @@ sub search_by_title_or_description_in_album :Local {
 	}
     }
 
-    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tord, @tagged );
+    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tagged );
 
     my $pager = Data::Page->new( $#media + 1, $rows, $page );
     my @sliced = ();
@@ -1515,9 +1597,20 @@ sub search_by_title_or_description_in_album :Local {
 # Return all the unique cities that a user's video apepars in
 sub cities :Local {
     my( $self, $c ) = @_;
-    my @media = $c->user->videos->search
-	({ geo_city => { '!=' => undef } },
-	 { group_by => ['geo_city'] });
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+
+    my $where = { geo_city => { '!=' => undef } };
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+
+    my @media = $c->user->videos->search(
+	$where,
+	{ group_by => ['geo_city'] } );
     my @cities = sort map { $_->geo_city } @media;
     $self->status_ok( $c, { cities => \@cities } );
 }
@@ -1530,13 +1623,19 @@ sub taken_in_city :Local {
     my $rows = $c->req->param( 'rows' ) || 10000;
     my $include_contact_info = $c->req->param( 'include_contact_info' ) || 0;
     my $include_images = $c->req->param( 'include_images' ) || 0;
-    my $include_tags = $c->req->param( 'include_tags' );
-    if ( !defined( $include_tags ) ) {
-	$include_tags = 1;
-    }
+    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
+    my $where = { geo_city => $q };
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
     my $rs = $c->user->videos->search(
-	{ geo_city => $q },
+	$where,
 	{ order_by => 'recording_date desc',
 	  page => $page, rows => $rows } );
     
@@ -1559,15 +1658,23 @@ sub recently_uploaded :Local {
     my $rows = $c->req->param( 'rows' ) || 10000;
     my $include_contact_info = $c->req->param( 'include_contact_info' ) || 0;
     my $include_images = $c->req->param( 'include_images' ) || 0;
-    my $include_tags = $c->req->param( 'include_tags' );
-    if ( !defined( $include_tags ) ) {
-	$include_tags = 1;
-    }
+    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
     my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
 
     # Find the most recent one
-    my @recent = $c->user->videos->search({},{order_by => 'me.created_date desc', rows => 1});
+    my $where = {};
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+    my @recent = $c->user->videos->search( 
+	$where,
+	{ order_by => 'me.created_date desc', rows => 1 } );
     unless( $#recent >= 0 ) {
 	$self->status_ok( $c, { media => [], pager => { next_page => undef } } );
     }
@@ -1576,13 +1683,20 @@ sub recently_uploaded :Local {
     my $to   = $from->clone;
     $to->subtract( days => $days );
 
-    my $rs = $c->user->videos->search
-	({ 'me.created_date' => {
-	    -between => [
-		 $dtf->format_datetime( $to ),
-		 $dtf->format_datetime( $from ) ]}},
-	 { order_by => 'me.created_date desc',
-	   page => $page, rows => $rows });
+    $where = { 'me.created_date' => {
+	-between => [
+	     $dtf->format_datetime( $to ),
+	     $dtf->format_datetime( $from ) ] } };
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+    my $rs = $c->user->videos->search(
+	$where,
+	{ order_by => 'me.created_date desc',
+	  page => $page, rows => $rows } );
     
     my $views = ['poster'];
     if ( $include_images ) {

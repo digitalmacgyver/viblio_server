@@ -50,13 +50,20 @@ sub is_email_valid :Private {
 #
 sub boolean :Private {
     my( $self, $value, $default ) = @_;
-    $value = $default unless( $value );
-    return 0 unless( $value );
-    return 1 if ( $value eq '1' );
-    return 0 if ( $value eq '0' );
-    return 1 if ( $value =~ /[Tt]rue/ );
-    return 0 if ( $value =~ /[Ff]alse/ );
-    return 1;
+    
+    if ( !defined( $value ) ) {
+	return $default;
+    } else {
+	if ( length( $value ) ) {
+	    return 0 if ( $value eq '0' );
+	    return 0 if ( $value =~ /[Ff]alse/ );
+	    return 1 if ( $value );
+	    return 0;
+	} else {
+	    return 1 if ( $value );
+	    return 0;
+	}
+    }
 }
 
 # Create a username from email
@@ -149,33 +156,56 @@ sub parse_args : Private {
     return $ret;
 }
 
-# Return a where claus suitable for obtaining mediafiles
+# Return a where clause suitable for obtaining mediafiles
 #
 sub where_valid_mediafile :Private {
-    my( $self, $isAlbum, $prefix ) = @_;
-    $isAlbum = 0 unless( defined( $isAlbum ) );
+    my( $self, $isAlbum, $prefix, $only_visible, $only_videos ) = @_;
+    $isAlbum = $self->boolean( $isAlbum, 0 );
+    $only_visible = $self->boolean( $only_visible, 1 );
+    $only_videos = $self->boolean( $only_videos, 1 );
     $prefix  = 'me' unless( defined( $prefix ) );
-    return { $prefix . '.is_album' => $isAlbum,
-	     -or => [ $prefix . '.status' => 'TranscodeComplete',
-		      $prefix . '.status' => 'FaceDetectComplete',
-		      $prefix . '.status' => 'FaceRecognizeComplete',
-		      $prefix . '.status' => 'visible',
-		      $prefix . '.status' => 'complete' ] };
+
+    my $where = undef;
+    if ( $only_videos ) {
+	$where = { 
+	    $prefix . '.is_album' => $isAlbum,
+	    $prefix . '.media_type' => 'original'
+	};
+    } else {
+	$where = { $prefix . '.is_album' => $isAlbum };
+    }
+
+    if ( $only_visible ) {
+	$where->{$prefix . '.status'} = [ 'visible', 'complete' ];
+    }
+
+    return $where;
 }
 
 # Return a resultset for media belonging to, and shared to, the logged in user.
 #
 sub user_media :Private {
-    my( $self, $c, $terms ) = @_;
+    my( $self, $c, $terms, $only_visible, $only_videos ) = @_;
+        $only_visible = $self->boolean( $only_visible, 1 );
+    $only_videos = $self->boolean( $only_videos, 1 );
+
     my $user = $c->user->obj;
     $terms = $terms || {};
     $terms->{is_album} = 0;
-    $terms->{-and} = [ 'me.media_type' => 'original',
-		       -or => ['me.user_id' => $user->id, 
-			       'media_shares.user_id' => $user->id], 
-		       -or => [status => 'visible',
-			       status => 'complete' ]
-	];
+    if ( $only_videos ) {
+	$terms->{'me.media_type'} = 'original';
+    }
+    if ( $only_visible ) {
+	$terms->{-and} = [ -or => ['me.user_id' => $user->id, 
+				   'media_shares.user_id' => $user->id], 
+			   -or => [status => 'visible',
+				   status => 'complete' ]
+	    ];
+    } else {
+	$terms->{-and} = [ -or => ['me.user_id' => $user->id, 
+				  'media_shares.user_id' => $user->id] ];
+    }
+
     my $rs = $c->model( 'RDS::Media' )->search( $terms, {prefetch=>'media_shares'} );
     return $rs;
 }

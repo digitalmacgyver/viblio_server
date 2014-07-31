@@ -532,23 +532,35 @@ __PACKAGE__->has_many(
     "videos" => "VA::RDSSchema::Result::Media",
     { "foreign.user_id" => "self.id" },
     { cascade_copy => 0, 
-      cascade_delete => 0,
-      where => { "me.is_album" => 0,
-		 -or => [ "me.status" => "visible",
-			  "me.status" => "complete" ] }
-    },
+      cascade_delete => 0 },
 );
 
 # Return an rs that can find *all* videos, both owned by
 # user and shared to user
 sub private_and_shared_videos {
-    my( $self ) = @_;
-    return $self->result_source->schema->resultset( 'Media' )->search(
-	{ -and =>  [ -or => ['me.user_id' => $self->id, 
-			     'media_shares.user_id' => $self->id], 
-		     -or => [status => 'visible',
-			     status => 'complete' ] ] },
-	{ prefetch => 'media_shares' });
+    my( $self, $only_visible ) = @_;
+
+    if ( !defined( $only_visible ) ) {
+	$only_visible = 1;
+    }
+
+    my $where = undef;
+
+    if ( $only_visible ) {
+	$where = { -and =>  [ 
+			'me.media_type' => 'original',
+			-or => ['me.user_id' => $self->id, 
+				'media_shares.user_id' => $self->id],
+			-or => [status => 'visible',
+				status => 'complete' ] ] };
+    } else {
+	$where = { 'me.media_type' => 'original',
+		   -or => ['me.user_id' => $self->id, 
+			   'media_shares.user_id' => $self->id] };
+    }
+
+    return $self->result_source->schema->resultset( 'Media' )->search( $where,
+								       { prefetch => 'media_shares' });
 }
 
 __PACKAGE__->has_many(
@@ -838,25 +850,43 @@ sub create_shared_album {
 # unique activities in the user's videos.  This method returns an
 # array of activities found across all videos, NOT a searchable rs.
 sub video_filters {
-    my( $self ) = @_;
-    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
-	{ 'media.user_id' => $self->id,
-	  "media.is_album" => 0,
-	  -or => [ "media.status" => "visible",
-		   "media.status" => "complete" ],
-	  'me.feature_type' => 'activity' },
+    my( $self, $only_visible ) = @_;
+
+    if ( !defined( $only_visible ) ) {
+	$only_visible = 1;
+    }
+
+    my $where = { 'media.user_id' => $self->id,
+		  "media.is_album" => 0,
+		  'me.feature_type' => 'activity',
+		  'media.media_type' => 'original' };
+    
+    if ( $only_visible ) {
+	$where->{'media.status'} = [ 'visible', 'complete' ];
+    }
+
+    my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search( 
+	$where,
 	{ prefetch => { 'media_asset' => 'media' },
 	  group_by => ['coordinates'] } );
     my @feats = $rs->all;
     my @filters = map { $_->coordinates } @feats;
     # how about faces?
+
+    $where = { 'media.user_id' => $self->id,
+	       "media.is_album" => 0,
+	       'me.feature_type' => 'face',
+	       'media.media_type' => 'original' };
+
+    if ( $only_visible ) {
+	$where->{'media.status'} = [ 'visible', 'complete' ];
+    }
+
     $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
-	{ 'media.user_id' => $self->id,
-	  "media.is_album" => 0,
-	  -or => [ "media.status" => "visible",
-		   "media.status" => "complete" ],
-	  'me.feature_type' => 'face' },
+	$where,
 	{ prefetch => { 'media_asset' => 'media' } } );
+    
+
     if ( $rs->count ) {
 	push( @filters, 'people' );
     }
@@ -866,14 +896,22 @@ sub video_filters {
 # Return the list of videos that contain one of the activities passed
 # in as a list.
 sub videos_with_activities {
-    my( $self, $act_list, $from, $to ) = @_;
+    my( $self, $act_list, $from, $to, $only_visible ) = @_;
+
+    if ( !defined( $only_visible ) ) {
+	$only_visible = 1;
+    }
 
     my $where = { 'media.user_id' => $self->id,
 		  "media.is_album" => 0,
-		  -or => [ "media.status" => "visible",
-			   "media.status" => "complete" ],
 		  'me.feature_type' => 'activity',
-		  'me.coordinates' => { -in => $act_list } };
+		  'me.coordinates' => { -in => $act_list },
+		  'media.media_type' => 'original' };
+
+    if ( $only_visible ) {
+	$where->{'media.status'} = [ 'visible', 'complete' ];
+    }
+
     if ( $from && $to ) {
 	my $dtf = $self->result_source->schema->storage->datetime_parser;
 	$where->{ 'media.recording_date' } = { 
@@ -890,14 +928,21 @@ sub videos_with_activities {
 
 # Return the list of videos that contain faces
 sub videos_with_people {
-    my( $self, $from, $to ) = @_;
+    my( $self, $from, $to, $only_visible ) = @_;
     
+    if ( !defined( $only_visible ) ) {
+	$only_visible = 1;
+    }
+
     my $where = { 'media.user_id' => $self->id,
 		  "media.is_album" => 0,
-		  -or => [ "media.status" => "visible",
-			   "media.status" => "complete" ],
 		  'me.contact_id' => { '!=', undef },
-		  'me.feature_type' => 'face' };
+		  'me.feature_type' => 'face',
+		  'media.media_type' => 'original' };
+
+    if ( $only_visible ) {
+	$where->{'media.status'} = [ 'visible', 'complete' ];
+    }
 
     if ( $from && $to ) {
 	my $dtf = $self->result_source->schema->storage->datetime_parser;

@@ -523,24 +523,18 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 __PACKAGE__->has_many(
-  "media_albums_medias",
-  "VA::RDSSchema::Result::MediaAlbum",
-  { "foreign.album_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0,
-    where => { "media.is_album" => 0,
-	       -or => [ "media.status" => "visible",
-			"media.status" => "complete" ] }
-  },
+    "media_albums_medias",
+    "VA::RDSSchema::Result::MediaAlbum",
+    { "foreign.album_id" => "self.id" },
+    { cascade_copy => 0, cascade_delete => 0,
+    where => { "media.is_album" => 0 } },
 );
 __PACKAGE__->has_many(
-  "media_albums_videos",
-  "VA::RDSSchema::Result::MediaAlbum",
-  { "foreign.album_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0,
-    where => { "videos.is_album" => 0,
-	       -or => [ "videos.status" => "visible",
-			"videos.status" => "complete" ] }
-  },
+    "media_albums_videos",
+    "VA::RDSSchema::Result::MediaAlbum",
+    { "foreign.album_id" => "self.id" },
+    { cascade_copy => 0, cascade_delete => 0,
+    where => { "videos.is_album" => 0 } },
 );
 __PACKAGE__->many_to_many( 'albums', 'media_albums_albums', 'album' );
 __PACKAGE__->many_to_many( 'media',  'media_albums_medias', 'media' );
