@@ -1661,6 +1661,10 @@ sub recently_uploaded :Local {
     my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
 
@@ -1668,6 +1672,11 @@ sub recently_uploaded :Local {
     my $where = {};
     if ( $only_visible ) {
 	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    # Overwrite the only_visible setting if the user provided
+    # particular status filters.
+    if ( scalar( @status_filters ) ) {
+	$where->{'status'} = \@status_filters;
     }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';
