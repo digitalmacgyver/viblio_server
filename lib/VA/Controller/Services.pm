@@ -159,7 +159,7 @@ sub parse_args : Private {
 # Return a where clause suitable for obtaining mediafiles
 #
 sub where_valid_mediafile :Private {
-    my( $self, $isAlbum, $prefix, $only_visible, $only_videos ) = @_;
+    my( $self, $isAlbum, $prefix, $only_visible, $only_videos, $status ) = @_;
     $isAlbum = $self->boolean( $isAlbum, 0 );
     $only_visible = $self->boolean( $only_visible, 1 );
     $only_videos = $self->boolean( $only_videos, 1 );
@@ -178,6 +178,9 @@ sub where_valid_mediafile :Private {
     if ( $only_visible ) {
 	$where->{$prefix . '.status'} = [ 'visible', 'complete' ];
     }
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$where->{$prefix . '.status'} = $status;
+    }
 
     return $where;
 }
@@ -185,7 +188,7 @@ sub where_valid_mediafile :Private {
 # Return a resultset for media belonging to, and shared to, the logged in user.
 #
 sub user_media :Private {
-    my( $self, $c, $terms, $only_visible, $only_videos ) = @_;
+    my( $self, $c, $terms, $only_visible, $only_videos, $status ) = @_;
         $only_visible = $self->boolean( $only_visible, 1 );
     $only_videos = $self->boolean( $only_videos, 1 );
 
@@ -195,15 +198,13 @@ sub user_media :Private {
     if ( $only_videos ) {
 	$terms->{'me.media_type'} = 'original';
     }
+    $terms->{-and} = [ -or => ['me.user_id' => $user->id, 
+			       'media_shares.user_id' => $user->id] ];
     if ( $only_visible ) {
-	$terms->{-and} = [ -or => ['me.user_id' => $user->id, 
-				   'media_shares.user_id' => $user->id], 
-			   -or => [status => 'visible',
-				   status => 'complete' ]
-	    ];
-    } else {
-	$terms->{-and} = [ -or => ['me.user_id' => $user->id, 
-				  'media_shares.user_id' => $user->id] ];
+	$terms->{'me.status'} = [ 'visible', 'complete' ];
+    }
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$terms->{'me.status'} = $status;
     }
 
     my $rs = $c->model( 'RDS::Media' )->search( $terms, {prefetch=>'media_shares'} );

@@ -11,7 +11,11 @@ BEGIN { extends 'VA::Controller::Services' }
 sub video_filters :Local {
     my( $self, $c ) = @_;
     my $only_visible = $self->boolean( $c->req->param( 'only_visible', 1 ) );
-    my @filters = $c->user->video_filters( $only_visible );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
+    my @filters = $c->user->video_filters( $only_visible, \@status_filters );
     $self->status_ok( $c, { filters => \@filters } );
 }
 
@@ -23,8 +27,11 @@ sub filter_by :Local {
     my $rows = $c->req->param( 'rows' ) || 10000;
     my $month = $c->req->param( 'month' );
     my $year  = $c->req->param( 'year' );
-
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     my @activities = ();
     my $with_people = 0;
@@ -47,10 +54,10 @@ sub filter_by :Local {
 
     my @a = ();  my @b = ();
     if ( $#activities >= 0 ) {
-	@a = $c->user->videos_with_activities( \@activities, $from, $to, $only_visible );
+	@a = $c->user->videos_with_activities( \@activities, $from, $to, $only_visible, \@status_filters );
     }
     if ( $with_people ) {
-	@b = $c->user->videos_with_people( $from, $to, $only_visible );
+	@b = $c->user->videos_with_people( $from, $to, $only_visible, \@status_filters );
     }
     my @all = ( @a, @b );
     if ( $#all == -1 ) {

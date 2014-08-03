@@ -538,25 +538,20 @@ __PACKAGE__->has_many(
 # Return an rs that can find *all* videos, both owned by
 # user and shared to user
 sub private_and_shared_videos {
-    my( $self, $only_visible ) = @_;
+    my( $self, $only_visible, $status ) = @_;
 
     if ( !defined( $only_visible ) ) {
 	$only_visible = 1;
     }
 
-    my $where = undef;
-
+    my $where = { 'me.media_type' => 'original',
+	       -or => ['me.user_id' => $self->id, 
+		       'media_shares.user_id' => $self->id] };
     if ( $only_visible ) {
-	$where = { -and =>  [ 
-			'me.media_type' => 'original',
-			-or => ['me.user_id' => $self->id, 
-				'media_shares.user_id' => $self->id],
-			-or => [status => 'visible',
-				status => 'complete' ] ] };
-    } else {
-	$where = { 'me.media_type' => 'original',
-		   -or => ['me.user_id' => $self->id, 
-			   'media_shares.user_id' => $self->id] };
+	$where->{'me.status'} = [ 'visible', 'complete' ];
+    }
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$where->{'me.status'} = $status;
     }
 
     return $self->result_source->schema->resultset( 'Media' )->search( $where,
@@ -850,7 +845,7 @@ sub create_shared_album {
 # unique activities in the user's videos.  This method returns an
 # array of activities found across all videos, NOT a searchable rs.
 sub video_filters {
-    my( $self, $only_visible ) = @_;
+    my( $self, $only_visible, $status ) = @_;
 
     if ( !defined( $only_visible ) ) {
 	$only_visible = 1;
@@ -864,7 +859,10 @@ sub video_filters {
     if ( $only_visible ) {
 	$where->{'media.status'} = [ 'visible', 'complete' ];
     }
-
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$where->{'media.status'} = $status;
+    }
+    
     my $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search( 
 	$where,
 	{ prefetch => { 'media_asset' => 'media' },
@@ -881,6 +879,9 @@ sub video_filters {
     if ( $only_visible ) {
 	$where->{'media.status'} = [ 'visible', 'complete' ];
     }
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$where->{'media.status'} = $status;
+    }
 
     $rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
 	$where,
@@ -896,7 +897,7 @@ sub video_filters {
 # Return the list of videos that contain one of the activities passed
 # in as a list.
 sub videos_with_activities {
-    my( $self, $act_list, $from, $to, $only_visible ) = @_;
+    my( $self, $act_list, $from, $to, $only_visible, $status ) = @_;
 
     if ( !defined( $only_visible ) ) {
 	$only_visible = 1;
@@ -910,6 +911,9 @@ sub videos_with_activities {
 
     if ( $only_visible ) {
 	$where->{'media.status'} = [ 'visible', 'complete' ];
+    }
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$where->{'media.status'} = $status;
     }
 
     if ( $from && $to ) {
@@ -928,7 +932,7 @@ sub videos_with_activities {
 
 # Return the list of videos that contain faces
 sub videos_with_people {
-    my( $self, $from, $to, $only_visible ) = @_;
+    my( $self, $from, $to, $only_visible, $status ) = @_;
     
     if ( !defined( $only_visible ) ) {
 	$only_visible = 1;
@@ -942,6 +946,9 @@ sub videos_with_people {
 
     if ( $only_visible ) {
 	$where->{'media.status'} = [ 'visible', 'complete' ];
+    }
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$where->{'media.status'} = $status;
     }
 
     if ( $from && $to ) {

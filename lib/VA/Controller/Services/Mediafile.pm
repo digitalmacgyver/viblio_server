@@ -391,7 +391,8 @@ sub list :Local {
 	  'views[]' => ['poster'],
 	  include_images => 0,
 	  only_visible => 1,
-	  only_videos => 1
+	  only_videos => 1,
+	  'status[]' => []
         ],
         @_ );
 
@@ -410,6 +411,9 @@ sub list :Local {
     my $where = {};
     if ( $args->{only_visible} ) {
 	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @{$args->{'status[]'}} ) ) {
+	$where->{'status'} = $args->{'status[]'};
     }
     if ( $args->{only_videos} ) {
 	$where->{'me.media_type'} = 'original';
@@ -442,11 +446,12 @@ sub popular :Local {
           rows => 10000,
 	  'views[]' => undef,
 	  only_visible => 1,
-	  only_videos => 1
+	  only_videos => 1,
+	  'status[]' => [],
         ],
         @_ );
     
-    my $where = $self->where_valid_mediafile( undef, undef, $args->{only_visible}, $args->{only_videos} );
+    my $where = $self->where_valid_mediafile( undef, undef, $args->{only_visible}, $args->{only_videos}, $args->{'status[]'} );
     $where->{ 'me.view_count' } = { '!=', 0 };
     my $rs = $c->user->media->search( $where, 
 				      { prefetch => 'assets',
@@ -791,7 +796,7 @@ sub add_share :Local {
 	}
     }
     elsif ( $disposition eq 'potential' ) {
-	# This is a potential share.  A potencial share is created in any context
+	# This is a potential share.  A potential share is created in any context
 	# where we don't otherwise know that the share will ever actually be used.
 	# Currently this is the case for cut-n-paste or copy-to-clipboard link
 	# displayed in the shareVidModal in the web gui.  We don't know if the user
@@ -830,9 +835,14 @@ sub count :Local {
     my $uid = $c->req->param( 'uid' );
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
+
     my $count = 0;
 
-    my $where = $self->where_valid_mediafile( undef, undef, $only_visible, $only_videos );
+    my $where = $self->where_valid_mediafile( undef, undef, $only_visible, $only_videos, \@status_filters );
 
     if ( $uid ) {
 	my $user = $c->model( 'RDS::User' )->find({uuid => $uid });
@@ -982,6 +992,10 @@ sub list_all :Local {
     my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     my @shares = $c->user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
     my @media = map { $_->media } @shares;
@@ -992,9 +1006,13 @@ sub list_all :Local {
     if ( $only_visible ) {
 	$where->{'status'} = [ 'visible', 'complete' ];
     }
+    if ( scalar( @status_filters ) ) {
+	$where->{'status'} = \@status_filters;
+    }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';
     }
+
     my @videos = $c->user->videos->search( $where )->all();
     my @sorted = sort { $b->recording_date <=> $a->recording_date } ( @media, @videos );
     my $pager = Data::Page->new( $#sorted + 1, $rows, $page );
@@ -1109,6 +1127,10 @@ sub related :Local {
 
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     unless( $mid ) {
 	$self->status_bad_request( $c, $c->loc( 'Missing param [_1]', 'mid' ) );
@@ -1118,19 +1140,22 @@ sub related :Local {
     # The passed in uuid might be from a shared video
     #
     my $where = undef;
-    
+
     if ( $only_visible ) {
 	$where = { 'me.uuid' => $mid,
 		   'me.is_album' => 0,
-		       -and => [ -or => ['me.user_id' => $user->id, 
-					 'media_shares.user_id' => $user->id], 
-				 -or => [status => 'visible',
-					 status => 'complete' ] ] };
+		   status => [ 'visible', 'complete'],
+		   -or => ['me.user_id' => $user->id, 
+			   'media_shares.user_id' => $user->id],
+	};
     } else {
 	$where = { 'me.uuid' => $mid,
 		   'me.is_album' => 0,
 		   -and => [ -or => ['me.user_id' => $user->id, 
 				     'media_shares.user_id' => $user->id] ] };
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{status} = \@status_filters;
     }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';
@@ -1163,15 +1188,17 @@ sub related :Local {
     if ( $only_visible ) {
 	$where = { 'me.asset_type' => 'poster',
 		   'media.is_album' => 0,
-		   -and => [ -or => ['media.user_id' => $user->id, 
-				     'media_shares.user_id' => $user->id], 
-			     -or => ['media.status' => 'visible',
-				     'media.status' => 'complete' ] ] };
+		   'media.status' => [ 'visible', 'complete' ],
+		   -or => ['media.user_id' => $user->id, 
+			   'media_shares.user_id' => $user->id] };
     } else {
 	$where = { 'me.asset_type' => 'poster',
 		   'media.is_album' => 0,
 		   -and => [ -or => ['media.user_id' => $user->id, 
 				     'media_shares.user_id' => $user->id] ] };
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'media.status'} = \@status_filters;
     }
     if ( $only_videos ) {
 	$where->{'media.media_type'} = 'original';
@@ -1374,6 +1401,10 @@ sub search_by_title_or_description :Local {
     my $include_contact_info = $self->boolean( $c->req->param( 'include_contact_info' ), 1 );
     my $include_images = $c->req->param( 'include_images' ) || 0;
     my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     # get uuids of all media shared to this user
     my @shares = $c->user->media_shares->search({ 'media.is_album' => 0 },{prefetch=>'media'});
@@ -1383,14 +1414,13 @@ sub search_by_title_or_description :Local {
     my $where = undef;
 
     if ( $only_visible ) {
-	$where = { -and => [
-			'me.is_album' => 0,
-			-or => [ 'me.user_id' => $c->user->id,
-				 'me.id' => { -in => \@mids } ],
-			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
-				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
-			-or => [ 'me.status' => 'visible',
-				 'me.status' => 'complete' ] ] };
+	$where = { 'me.status' => [ 'visible', 'complete' ],
+		   -and => [
+		       'me.is_album' => 0,
+		       -or => [ 'me.user_id' => $c->user->id,
+				'me.id' => { -in => \@mids } ],
+		       -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
     } else {
 	$where = { -and => [
 			'me.is_album' => 0,
@@ -1398,6 +1428,9 @@ sub search_by_title_or_description :Local {
 				 'me.id' => { -in => \@mids } ],
 			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
 				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'me.status'} = \@status_filters;
     }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';
@@ -1493,6 +1526,10 @@ sub search_by_title_or_description_in_album :Local {
     my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
@@ -1505,19 +1542,21 @@ sub search_by_title_or_description_in_album :Local {
     my $where = undef;
 
     if ( $only_visible ) {
-	$where = { -and => [
-			'me.is_album' => 0,
-			'me.id' => { -in => \@mids },
-			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
-				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
-			-or => [ 'me.status' => 'visible',
-				 'me.status' => 'complete' ] ] };
+	$where = { 'me.status' => [ 'visible', 'complete' ],
+		   -and => [
+		       'me.is_album' => 0,
+		       'me.id' => { -in => \@mids },
+		       -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
     } else {
 	$where = { -and => [
 			'me.is_album' => 0,
 			'me.id' => { -in => \@mids },
 			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
 				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'status'} = \@status_filters;
     }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';
@@ -1594,15 +1633,22 @@ sub search_by_title_or_description_in_album :Local {
     $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $pager ) } );
 }
 
-# Return all the unique cities that a user's video apepars in
+# Return all the unique cities that a user's video appears in
 sub cities :Local {
     my( $self, $c ) = @_;
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     my $where = { geo_city => { '!=' => undef } };
     if ( $only_visible ) {
 	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'status'} = \@status_filters;
     }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';
@@ -1626,10 +1672,17 @@ sub taken_in_city :Local {
     my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     my $where = { geo_city => $q };
     if ( $only_visible ) {
 	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'status'} = \@status_filters;
     }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';

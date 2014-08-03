@@ -47,6 +47,7 @@ sub media_face_appears_in :Local {
 	  include_tags => 0,
 	  only_visible => 1,
 	  only_videos => 1,
+	  'status[]' => []
         ],
         @_ );
 
@@ -82,6 +83,9 @@ sub media_face_appears_in :Local {
 	}
 	if ( $args->{only_visible} ) {
 	    $where->{'media.status'} = [ 'visible', 'complete' ];
+	}
+	if ( scalar( @{$args->{'status[]'}} ) ) {
+	    $where->{'media.status'} = $args->{'status[]'};
 	}
 
 	my $asset = $c->model( 'RDS::MediaAsset' )->find( 
@@ -158,7 +162,11 @@ sub contact_mediafile_count :Local {
 
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
-
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
+    
     my $cid = $c->req->param( 'cid' );
     my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
     # DEBUG - we should only be looking up by uuid.
@@ -178,6 +186,9 @@ sub contact_mediafile_count :Local {
     }
     if ( $only_visible ) {
 	$where->{'media.status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'media.status'} = \@status_filters;
     }
 
     my $count =  $c->model( 'RDS::MediaAssetFeature' )->search(

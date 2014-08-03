@@ -165,7 +165,23 @@ sub ps :Local {
 
     if ( $mediafile ) {
 	# Turn this potential share into a real, hidden share
-	my $hidden = $mediafile->find_or_create_related( 'media_shares', { share_type => 'hidden' } );
+	# 
+	# There has been some spooky business using
+	# find_or_create_related here resulting in duplicates that
+	# shouldn't occur - let's try less magic and more explicit
+	# code.
+	my @hidden_shares = $mediafile->media_shares->search( { share_type => 'hidden' } );
+	my $hidden = undef;
+	if ( !scalar( @hidden_shares ) ) {
+	    # Oops! No such hidden share exists - create one.
+	    $hidden = $mediafile->create_related( 'media_shares', 
+						  { share_type => 'hidden', 
+						    is_group_share => 0, 
+						    'view_count' => 0 } );
+	} else {
+	    $hidden = $hidden_shares[0];
+	}
+
 
 	# The fpheader needs only limitted information, so don't leak anything
 	# we don't have too.
