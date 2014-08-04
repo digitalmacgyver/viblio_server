@@ -7,6 +7,9 @@ use Email::Address;
 use Net::Nslookup;
 use Try::Tiny;
 
+# DEBUG
+use Data::Dumper;
+
 use Net::APNS;
 
 # My own 'REST' controller.  Catalyst::Controller::REST was just too restrictive
@@ -695,6 +698,13 @@ sub publish_mediafiles :Private {
 	}
 
 	my $hash = VA::MediaFile->new->publish( $c, $m, $params );
+
+	# DEBUG
+	$c->log->debug( "Result    : ", Dumper( $hash ) );
+	# DEBUG
+	$c->log->debug( "Key       :    ", $c->config->{'Model::S3'}->{aws_access_key_id} );
+	$c->log->debug( "Secret    : ", $c->config->{'Model::S3'}->{aws_secret_access_key} );
+
 	if ( $params->{include_owner_json} ) {
 	    $hash->{owner} = $people->{$m->user_id}->{json};
 	}
