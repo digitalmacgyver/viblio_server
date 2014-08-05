@@ -1728,7 +1728,7 @@ sub recently_uploaded :Local {
     my $include_tags = $args->{include_tags};
     my $only_visible = $args->{only_visible};
     my $only_videos = $args->{only_videos};
-    my @status_filters = ( $args->{'status[]'} );
+    my $status = $args->{'status[]'};
 
     my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
 
@@ -1739,8 +1739,8 @@ sub recently_uploaded :Local {
     }
     # Overwrite the only_visible setting if the user provided
     # particular status filters.
-    if ( scalar( @status_filters ) ) {
-	$where->{'status'} = \@status_filters;
+    if ( scalar( @$status ) ) {
+	$where->{'status'} = $status;
     }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';
@@ -1762,6 +1762,9 @@ sub recently_uploaded :Local {
 	     $dtf->format_datetime( $from ) ] } };
     if ( $only_visible ) {
 	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @$status ) ) {
+	$where->{'status'} = $status;
     }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';
