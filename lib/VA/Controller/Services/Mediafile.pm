@@ -1705,19 +1705,30 @@ sub taken_in_city :Local {
 # Return all videos recently uploaded.  Pass in a number of days
 # to include.  Defaults to 7 days.
 sub recently_uploaded :Local {
-    my( $self, $c ) = @_;
-    my $days = $c->req->param( 'days' ) || 7;
-    my $page = $c->req->param( 'page' ) || 1;
-    my $rows = $c->req->param( 'rows' ) || 10000;
-    my $include_contact_info = $c->req->param( 'include_contact_info' ) || 0;
-    my $include_images = $c->req->param( 'include_images' ) || 0;
-    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
-    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
-    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
-    my @status_filters = $c->req->param( 'status[]' );
-    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
-	@status_filters = ();
-    }
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ days => 7,
+	  page => 1,
+          rows => 10000,
+	  include_contact_info => 0,
+	  include_tags => 1,
+	  include_images => 0,
+	  only_visible => 1,
+	  only_videos => 1,
+	  'status[]' => []
+        ],
+        @_ );
+
+    my $days = $args->{days};
+    my $page = $args->{page};
+    my $rows = $args->{rows};
+    my $include_contact_info = $args->{include_contact_info};
+    my $include_images = $args->{include_images};
+    my $include_tags = $args->{include_tags};
+    my $only_visible = $args->{only_visible};
+    my $only_videos = $args->{only_videos};
+    my @status_filters = ( $args->{'status[]'} );
 
     my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
 
