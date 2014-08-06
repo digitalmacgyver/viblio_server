@@ -476,6 +476,22 @@ sub send_email :Local {
     };
 }
 
+
+# Send generic SQS message.
+sub send_sqs :Local {
+    my( $self, $c, $queue, $opts ) = @_;
+
+    try {
+       my $res = $c->model( 'SQS', $c->config->{sqs}->{$queue} )
+           ->SendMessage( $compact_encoder->encode( $opts ) );
+       return undef;
+    } catch {
+       $c->log->error( "send_sqs: error: $_" );
+       $c->log->debug( $encoder->encode( $opts ) );
+       return $_;
+    };
+}
+
 # Takes an array of email addresses and resolves it
 # looking for possible group names in the list.
 #

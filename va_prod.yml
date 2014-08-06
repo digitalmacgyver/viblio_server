@@ -12,6 +12,7 @@ sqs:
   new_account_creation: arn:aws:sqs:us-west-2:442359467480:new_account_creation_prod
   recognition: arn:aws:sqs:us-west-2:442359467480:recognition_prod
   email: arn:aws:sqs:us-west-2:442359467480:email_prod
+  album_summary: arn:aws:sqs:us-west-2:442359467480:album_summary_creation_staging
 
 s3:
   bucket: viblio-mediafiles

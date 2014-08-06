@@ -12,6 +12,7 @@ sqs:
   new_account_creation: arn:aws:sqs:us-west-2:442359467480:new_account_creation_staging
   recognition: arn:aws:sqs:us-west-2:442359467480:recognition_staging
   email: arn:aws:sqs:us-west-2:442359467480:email_staging
+  album_summary: arn:aws:sqs:us-west-2:442359467480:album_summary_creation_staging
 
 authentication:
   default_realm: facebook

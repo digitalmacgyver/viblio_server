@@ -4,8 +4,10 @@ use namespace::autoclean;
 
 use JSON;
 use URI::Escape;
+use DateTime;
 use DateTime::Format::Flexible;
 use CGI;
+use POSIX 'strftime';
 
 use Geo::Distance;
 
@@ -1815,6 +1817,170 @@ sub rm_tag :Local {
     }
     $self->status_ok( $c, {} );
 }
+
+
+=head2
+
+services/mediafile/create_video_summary
+
+Input OPtions
+
+{
+    'images[]' : [ # Array of images the user selected.
+        image1_uuid,
+        image2_uuid,
+        ... ],
+    'summary_type' : 'moments', # One of a predefined list of summary
+				# types, e.g. moments, people, etc.
+
+    'contacts[]' : [ # Who the summary should include, required if
+		   # summary_type is 'people', optional otherwise.
+		   # NOTE: Initially we will only support the
+		   # 'moments' type summary that won't use this most
+		   # likely.
+        contact1_uuid,
+        ... ],
+    'audio_track' : media_uuid # The UUID of the audio selected for
+			       # this track.
+
+# Optional parameters:
+
+# Summary controls:
+    'summary_style' : 'classic' # One of a predefined list of summary
+				# types, e.g. classic, cascade, etc.
+    'order' : 'random' # One of a predefined list of how we order
+		       # clips, e.g. 'random', 'oldest', 'newest',
+		       # etc.. Defaults to random.
+    'effects[]' : [ 'vintage', 'music video', ... ] # List of preset
+						  # video filters the
+						  # user wants us to
+						  # provide. NOTE:
+						  # Initially this may
+						  # not do anything.
+    'moment_offsets[]' : [-2.5, 2.5] # How much before the image to
+				   # start the summary clip, and how
+				   # much after the moment to end the
+				   # summary clip, defaults to [-2.5,
+				   # 2.5]
+    'target_duration' : 99 #The desired number of seconds the summary
+			   #will run. Defaults to something sane given
+			   #the clips selected and audio selected.
+    'summary_options' : { } # Defaults to {} Generic JSON to be passed
+			    # to the summary API for future expansions
+			    # (e.g. parameters that control blur, slow
+			    # motion, ??? ).
+
+# Where to put the summary:
+    'album_uuid' : album_uuid # An album to place the resulting
+			      # summary into.
+
+# Summary metadata:
+    'title' : 'Fun Times!', # OPTIONAL: A title for the video -
+			    # defaults "Summary - YYYY-MM-DD" - I
+			    # suggest the UI overwrite this with
+			    # "FilterName Summary"
+    'description' : "Vacation", # OPTIONAL: A description for the
+				# video - defaults to nothing.
+    'lat' : X, 'lng' : Y, 'geo_city' : Z, # Defaults to nothing
+    'tags[]' : [ tag1, tag2, ... ], # Defaults to nothing.
+    'recording_date' : 'when' # Defaults to now.
+}
+
+=cut
+
+sub create_video_summary :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [
+	 'images[]'         => [],
+	 'summary_type'     => 'moments',
+	 'contacts[]'       => [],
+	 'audio_track'      => undef,
+	 'summary_style'    => 'classic',
+	 'order'            => 'random',
+	 'effects[]'        => [],
+	 'moment_offsets[]' => [ -2.5, 2.5 ],
+	 'target_duration'  => undef,
+	 'summary_options'  => {},
+	 'album_uuid'       => undef,
+	 'title'            => "Summary - " . strftime( '%Y-%m-%d', localtime() ),
+	 'lat'              => undef,
+	 'lng'              => undef,
+	 'tags[]'           => [],
+	 'recording_date'   => DateTime->now()
+        ],
+        @_ );
+
+    $args->{user_uuid} = $c->user->uuid();
+
+    use Data::Dumper;
+    $c->log->info( Dumper( $args ) );
+
+    # Validate that we got passed one or more images.
+    unless ( scalar( @{$args->{'images[]'}} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'One or more images must be supplied to the images[] parameter.' ) );
+    }
+
+    # Validate the summary type was OK.
+    my $summary_types = { moments => 1, people => 1 };
+    unless ( exists( $summary_types->{$args->{'summary_type'}} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'Invalid or missing summary_type argument.' ) );
+    }
+
+    # If we're making a people summary, there had best be a contact list.
+    if ( $args->{'summary_type'} eq 'people' && !scalar( @{$args->{'contacts[]'}} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'One or more contacts must be supplied to the contacts[] parameter for symmary_type=people' ) );
+    }
+
+    unless ( defined( $args->{'audio_track'} ) ) {
+	# DEBUG - enable this later
+	#$self->status_bad_request( $c, $c->loc( 'An audio_track argument must be provided.' ) );
+    }
+
+    my $orders = { random => 1, oldest => 1, newest => 1 };
+    unless ( exists( $orders->{$args->{'order'}} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'Invalid order argument provided.' ) );
+    }
+
+    unless ( scalar( @{$args->{'moment_offsets[]'}} ) == 2 ) {
+	$self->status_bad_request( $c, $c->loc( 'moment_offsets[] must have exactly two parameters' ) );
+    }
+
+    # Validate whether the user has permissions to view the associated resources.
+    #
+    # This is a result set of all the videos that a user owns, or can
+    # see through media_shares.
+    my $allowed = {};
+    my @own_media_share = $c->user->private_and_shared_videos( 0 )->all();
+    foreach my $media ( @own_media_share ) {
+	$allowed->{$media->id} = 1;
+    }
+    
+    # If a video isn't owned by the user, or directly shared, check if
+    # user->can_view_video, which looks in their communities.
+    my @assets = $c->model( 'RDS::MediaAsset' )->search( { uuid => { '-in' => $args->{'images[]'} } } )->all();
+    foreach my $asset ( @assets ) {
+	if ( !exists( $allowed->{$asset->media_id()} ) ) {
+	    if ( $c->user->can_view_video( $asset->media->uuid() ) ) {
+		$allowed->{$asset->media_id()} = 1;
+		$c->log->debug( "OK TO ACCESS COMMUNITY VIDEO: ", $asset->uuid() );
+	    } else {
+		$c->log->error( "NOT ALLOWED TO ACCESS VIDEO: ", $asset->uuid() );
+		$self->status_bad_request( $c, $c->loc( 'You do not have permission to view the video associated with image: ' . $asset->uuid() ) );
+	    }
+	}
+    }
+    $c->log->debug( "OK TO ACCESS ALL VIDEOS" );
+
+    my $error = $c->model( 'SQS', $self->send_sqs( $c, 'album_summary', $args ) );
+    if ( $error ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occured while creating the summary.' ) );
+    }
+
+    $self->status_ok( $c, { success => 1 } );
+}
+
 
 __PACKAGE__->meta->make_immutable;
 
