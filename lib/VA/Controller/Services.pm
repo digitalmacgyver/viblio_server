@@ -730,6 +730,56 @@ sub publish_mediafiles :Private {
     return $result;
 }
 
+# Returns the fb_user object - the result of Model::Facebook::fetch( 'me' )
+# Also sets session->{fb_token} = the supplied token.
+sub validate_facebook_token :Private {
+    my( $self, $c, $token ) = @_;
+
+    $token = $c->req->param( 'access_token' ) unless( $token );
+    unless( $token ) {
+	$c->log->error( "Missing token param for link_facebook_account()" );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    my $fb = $c->model( 'Facebook', $token );
+    unless( $fb ) {
+	$c->log->error( "Failed to link FB account: token was: " + $token );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    my $fb_user = $fb->fetch( 'me' );
+    unless( $fb_user ) {
+	$c->log->error( "Facebook fetch(me) failed during FB link" );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    unless( $fb_user->{id} ) {
+	$c->log->error( "Facebook user id missing during link" );
+	$c->logdump( $fb_user );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    $c->user->obj->update_or_create_related
+	( 'links', {
+	    provider => 'facebook',
+	  });
+    my $link = $c->user->obj->links->find({provider => 'facebook'});
+    $link->data({
+	link => $fb_user->{link},
+	access_token => $token,
+	id => $fb_user->{id} });
+    $link->update; 
+    $c->session->{fb_token} = $token;
+    
+    return $fb_user;
+}
+
+
+
 __PACKAGE__->meta->make_immutable;
 
 1;

@@ -92,7 +92,7 @@ Size in bytes of this media file.
 =item uri
 
 The "uri" for this media file.  This is not usually a full URL, but rather some sort of
-tag passed back from the permenent storage server that holds the actual file.  Media file
+tag passed back from the permanent storage server that holds the actual file.  Media file
 views have "url" fields that are typically automatically derived from this uri field in
 some way.
 
@@ -150,7 +150,7 @@ sub create :Local {
 
 Get a full base url to the server used to store media files at the
 passed in location.  This is needed for servers that are protected
-with server-side generated credencials.  
+with server-side generated credentials.  
 
 =head3 Parameters
 
@@ -179,7 +179,7 @@ sub url_for :Local {
 
 =head2 /services/mediafile/delete
 
-Delete a mediafile.  Deletes the file in permenant storage as well.
+Delete a mediafile.  Deletes the file in permanent storage as well.
 
 =head3 Parameters
 
@@ -619,7 +619,7 @@ sub add_comment :Local {
 
     # Send emails and notifications (but not to myself!)
 
-    # Who should get email/notofications?  The owner of the video being commented on,
+    # Who should get email/notifications?  The owner of the video being commented on,
     # and everybody who has been shared this video.  The logged in user
     # making the comment should never get an email.
 
@@ -803,7 +803,7 @@ sub add_share :Local {
 	# Currently this is the case for cut-n-paste or copy-to-clipboard link
 	# displayed in the shareVidModal in the web gui.  We don't know if the user
 	# will actually c-n-p or c-t-c, and if they do, we don't know if they 
-	# actually utilize the information.  So we create a potencial share, which
+	# actually utilize the information.  So we create a potential share, which
 	# will turn into a "hidden" share if anyone ever comes into viblio via the
 	# special link we will specify.
 	#
@@ -1823,7 +1823,7 @@ sub rm_tag :Local {
 
 services/mediafile/create_video_summary
 
-Input OPtions
+Input Options
 
 {
     'images[]' : [ # Array of images the user selected.
@@ -1840,10 +1840,15 @@ Input OPtions
 		   # likely.
         contact1_uuid,
         ... ],
+    'videos[]' : [ video1_uuid, ... ] # An array of videos to
+				      # summarize for the 'people'
+				      # type of summary.
     'audio_track' : media_uuid # The UUID of the audio selected for
 			       # this track.
 
 # Optional parameters:
+
+# Additional things:
 
 # Summary controls:
     'summary_style' : 'classic' # One of a predefined list of summary
@@ -1896,6 +1901,7 @@ sub create_video_summary :Local {
 	 'images[]'         => [],
 	 'summary_type'     => 'moments',
 	 'contacts[]'       => [],
+	 'videos[]'         => [],
 	 'audio_track'      => undef,
 	 'summary_style'    => 'classic',
 	 'order'            => 'random',
@@ -1905,6 +1911,7 @@ sub create_video_summary :Local {
 	 'summary_options'  => {},
 	 'album_uuid'       => undef,
 	 'title'            => "Summary - " . strftime( '%Y-%m-%d', localtime() ),
+	 'description'      => '',
 	 'lat'              => undef,
 	 'lng'              => undef,
 	 'tags[]'           => [],
@@ -1929,8 +1936,13 @@ sub create_video_summary :Local {
     }
 
     # If we're making a people summary, there had best be a contact list.
-    if ( $args->{'summary_type'} eq 'people' && !scalar( @{$args->{'contacts[]'}} ) ) {
-	$self->status_bad_request( $c, $c->loc( 'One or more contacts must be supplied to the contacts[] parameter for symmary_type=people' ) );
+    if ( $args->{'summary_type'} eq 'people' ) {
+	if ( !scalar( @{$args->{'contacts[]'}} ) ) {
+	    $self->status_bad_request( $c, $c->loc( 'One or more contacts must be supplied to the contacts[] parameter for summary_type=people' ) );
+	}
+	if ( !scalar( @{$args->{'videos[]'}} ) ) {
+	    $self->status_bad_request( $c, $c->loc( 'One or more videos must be supplied to the videos[] parameter for summary_type=people' ) );
+	}
     }
 
     unless ( defined( $args->{'audio_track'} ) ) {
@@ -1973,11 +1985,99 @@ sub create_video_summary :Local {
     }
     $c->log->debug( "OK TO ACCESS ALL VIDEOS" );
 
+    $args->{action} = 'create_video_summary';
     my $error = $c->model( 'SQS', $self->send_sqs( $c, 'album_summary', $args ) );
     if ( $error ) {
-	$self->status_bad_request( $c, $c->loc( 'An error occured while creating the summary.' ) );
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the summary.' ) );
     }
 
+    $self->status_ok( $c, { success => 1 } );
+}
+
+
+=head2
+
+services/mediafile/create_fb_album
+
+{
+    'images[]' : [ # Array of images the user selected.
+        image1_uuid,
+        image2_uuid,
+        ... ],
+    'access_token' : 'sadfkb234lsdfhdsfkjh234' # A current OAuth token
+					   # with the requisite
+					   # permissions to publish on
+					   # behalf of the user.
+					  
+# Optional parameters:
+
+# Summary metadata:
+    'title' : 'Fun Times!', # OPTIONAL: A title for the album -
+			    # defaults to "VIBLIO Photo Summary -
+			    # YYYY-MM-DD" - I suggest the UI overwrite
+			    # this with "VIBLIO FilterName Summary"
+    'description' : "Vacation", # OPTIONAL: A description for the
+				# album - defaults to nothing.
+}
+
+=cut
+
+sub create_fb_album :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [
+	 'images[]'         => [],
+	 'access_token'     => undef,
+	 'title'            => "VIBLIO Photo Summary - " . strftime( '%Y-%m-%d', localtime() ),
+	 'description'      => undef
+        ],
+        @_ );
+
+    # Validate that we got passed one or more images.
+    unless ( scalar( @{$args->{'images[]'}} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'One or more images must be supplied to the images[] parameter.' ) );
+    }
+
+    # If this call returns, then we have a facebook token in $c->session->{fb_token}.
+    my $fb_user = $self->validate_facebook_token( $c, $args->{access_token} );
+    $args->{fb_token} = $c->session->{fb_token};
+
+    $c->log->debug( "fb token:" . $args->{fb_token} );
+
+    $args->{user_uuid} = $c->user->uuid();
+
+    # Validate whether the user has permissions to view the associated resources.
+    #
+    # This is a result set of all the videos that a user owns, or can
+    # see through media_shares.
+    my $allowed = {};
+    my @own_media_share = $c->user->private_and_shared_videos( 0 )->all();
+    foreach my $media ( @own_media_share ) {
+	$allowed->{$media->id} = 1;
+    }
+
+    # Is the user allowed to view the video the images are requested from?
+    my @assets = $c->model( 'RDS::MediaAsset' )->search( { uuid => { '-in' => $args->{'images[]'} } } )->all();
+    foreach my $asset ( @assets ) {
+	if ( !exists( $allowed->{$asset->media_id()} ) ) {
+	    if ( $c->user->can_view_video( $asset->media->uuid() ) ) {
+		$allowed->{$asset->media_id()} = 1;
+		$c->log->debug( "OK TO ACCESS COMMUNITY IMAGES: ", $asset->uuid() );
+	    } else {
+		$c->log->error( "NOT ALLOWED TO ACCESS IMAGES: ", $asset->uuid() );
+		$self->status_bad_request( $c, $c->loc( 'You do not have permission to view the image: ' . $asset->uuid() ) );
+	    }
+	}
+    }
+    $c->log->debug( "OK TO ACCESS ALL IMAGES" );
+    
+    $args->{action} = 'create_fb_album';
+    my $error = $c->model( 'SQS', $self->send_sqs( $c, 'create_fb_album', $args ) );
+    if ( $error ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album.' ) );
+    }
+    
     $self->status_ok( $c, { success => 1 } );
 }
 

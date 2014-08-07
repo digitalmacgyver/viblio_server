@@ -14,8 +14,10 @@ authentication:
     facebook:
       credential:
         class: FacebookToken
-        application_id: 357358674377173
-        application_secret: f22db0e8b2b38194d7ede5ce2d2df9e5
+        #application_id: 357358674377173
+        #application_secret: f22db0e8b2b38194d7ede5ce2d2df9e5
+        application_id: 165824470255570
+        application_secret: 3d03d1110a48d9cc44449fe3c2f50648
       store:
         class: DBIx::Class
         user_model: RDS::User

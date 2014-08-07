@@ -142,23 +142,29 @@ sub publish {
 	# the original .mp4 file from S3!!
 	#
 	my $location = $view_json->{location};
-	my $klass = $c->config->{mediafile}->{$location};
-	my $fp = new $klass;
-	$view_json->{url} = 
-	    $fp->uri2url( $c, $view_json, $params );
+	
+	# For facebook stuff we just store the URI as the URL.
+	if ( $location eq 'facebook' ) {
+	    $view_json->{url} = $view_json->{uri};
+	} else {
+	    my $klass = $c->config->{mediafile}->{$location};
+	    my $fp = new $klass;
+	    $view_json->{url} = 
+		$fp->uri2url( $c, $view_json, $params );
 
-	# If this is a video, also generate a cloudfront url
-	#
-	my $mimetype = MIME::Types->new()->mimeTypeOf( $view_json->{uri} ) || $view_json->{mimetype};
-	unless( $mimetype ) {
-	    $mimetype="unknown";
-	    $c->log->error( "Could not determine mimetype for $view_json->{uuid}" );
-	}
-	if ( $mimetype =~ /^video/ ) {
-	    $view_json->{cf_url} = $c->cf_sign( $view_json->{uri}, {
-		stream => 1,
-		expires => ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ),
-	    });
+	    # If this is a video, also generate a cloudfront url
+	    #
+	    my $mimetype = MIME::Types->new()->mimeTypeOf( $view_json->{uri} ) || $view_json->{mimetype};
+	    unless( $mimetype ) {
+		$mimetype="unknown";
+		$c->log->error( "Could not determine mimetype for $view_json->{uuid}" );
+	    }
+	    if ( $mimetype =~ /^video/ ) {
+		$view_json->{cf_url} = $c->cf_sign( $view_json->{uri}, {
+		    stream => 1,
+		    expires => ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ),
+						    });
+	    }
 	}
 
 	if ( defined( $mf_json->{'views'}->{$type} ) ) {
