@@ -110,11 +110,11 @@ foreach my $user ( @users ) {
 
 	my @media = $user->videos->search(
 	    { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
-	      'me.is_viblio_created' => 0 },
+	      'me.is_viblio_created' => 0, 'me.media_type' => 'original' },
 	    {prefetch => 'assets' } );
 	my @albums = $user->albums->search(
 	    { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
-	      'me.is_viblio_created' => 0 },
+	      'me.is_viblio_created' => 0, 'me.media_type' => 'original' },
 	    {prefetch => 'assets' } );
 
 	# Move on unless there is something to report for this user.
