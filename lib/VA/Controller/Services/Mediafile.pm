@@ -1906,7 +1906,7 @@ sub create_video_summary :Local {
 	 'summary_style'    => 'classic',
 	 'order'            => 'random',
 	 'effects[]'        => [],
-	 'moment_offsets[]' => [ -2.5, 2.5 ],
+	 'moment_offsets[]' => [ -3.5, 3.5 ],
 	 'target_duration'  => undef,
 	 'summary_options'  => {},
 	 'album_uuid'       => undef,
@@ -1948,6 +1948,24 @@ sub create_video_summary :Local {
     unless ( defined( $args->{'audio_track'} ) ) {
 	# DEBUG - enable this later
 	#$self->status_bad_request( $c, $c->loc( 'An audio_track argument must be provided.' ) );
+
+	# DEBUG - For now we just randomly pick a track from a hard
+	# coded list.
+	my $hard_coded_songs = [
+	    '35d8a68d-84e7-4879-94d9-d114063753a8',
+	    '0a693013-2e1e-44a3-8f57-f96088e1b826',
+	    '8ecc578b-63c4-4dd8-8b2b-bfe0f43c2573',
+	    '3b2ffa84-e13f-4c4f-9cf0-4831107f458b',
+	    'ab66fc11-4595-4326-aac9-08993b93b8f9',
+	    '164e5399-b7a8-43fd-b05f-e6de6da17791',
+	    'fc828f14-368b-4b02-8f93-b387f297aaf3',
+	    'cfeb0746-cd02-4817-91cc-b8e99c416fd5',
+	    '87013d3b-4574-468d-b14c-b02f393dd2f2',
+	    '7de7db37-6e42-4af0-a117-63e2551e80cd'
+	    ];
+	
+	my $song_idx = int( rand( scalar( @$hard_coded_songs ) ) );
+	$args->{'audio_track'} = $hard_coded_songs->[$song_idx];
     }
 
     my $orders = { random => 1, oldest => 1, newest => 1 };
@@ -2052,8 +2070,8 @@ sub create_fb_album :Local {
     # This is a result set of all the videos that a user owns, or can
     # see through media_shares.
     my $allowed = {};
-    my @own_media_share = $c->user->private_and_shared_videos( 0 )->all();
-    foreach my $media ( @own_media_share ) {
+    my @owned_videos = $c->model( 'RDS::Media' )->search( { user_id => $c->user->id() } )->all();
+    foreach my $media ( @owned_videos ) {
 	$allowed->{$media->id} = 1;
     }
 
@@ -2061,13 +2079,8 @@ sub create_fb_album :Local {
     my @assets = $c->model( 'RDS::MediaAsset' )->search( { uuid => { '-in' => $args->{'images[]'} } } )->all();
     foreach my $asset ( @assets ) {
 	if ( !exists( $allowed->{$asset->media_id()} ) ) {
-	    if ( $c->user->can_view_video( $asset->media->uuid() ) ) {
-		$allowed->{$asset->media_id()} = 1;
-		$c->log->debug( "OK TO ACCESS COMMUNITY IMAGES: ", $asset->uuid() );
-	    } else {
-		$c->log->error( "NOT ALLOWED TO ACCESS IMAGES: ", $asset->uuid() );
-		$self->status_bad_request( $c, $c->loc( 'You do not have permission to view the image: ' . $asset->uuid() ) );
-	    }
+	    $c->log->error( "NOT ALLOWED TO ACCESS IMAGES: ", $asset->uuid() );
+	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to view the image: ' . $asset->uuid() ) );
 	}
     }
     $c->log->debug( "OK TO ACCESS ALL IMAGES" );
