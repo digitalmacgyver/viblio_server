@@ -1963,7 +1963,21 @@ sub create_video_summary :Local {
 	    '87013d3b-4574-468d-b14c-b02f393dd2f2',
 	    '7de7db37-6e42-4af0-a117-63e2551e80cd'
 	    ];
-	
+	if ( $ENV{'VA_CONFIG_LOCAL_SUFFIX'} eq 'prod' ) {
+	    $hard_coded_songs = [
+		'3718a653-0ff6-44a6-96ee-85f399ca7713',
+		'8b6d43a3-d19a-485d-8427-b38303eb66fe',
+		'e38b10dc-69b9-448c-a4d6-59b4d5c2f60f',
+		'c6f8702b-e72e-4cb6-b2b6-6837531a1e58',
+		'609cf368-8852-460d-ac66-a2deb979c9ab',
+		'149db8a0-e141-4b76-b394-f3cd3a423689',
+		'4c87aa1b-ea98-4ad0-8ae7-41d0dff98b76',
+		'26f11c23-0b38-4829-84dc-a4d5b44ef23c',
+		'bae56b04-2c92-40c6-95a8-254c32f44387',
+		'73a00269-b4db-49a6-8203-cc877fecde95'
+		];
+	}
+
 	my $song_idx = int( rand( scalar( @$hard_coded_songs ) ) );
 	$args->{'audio_track'} = $hard_coded_songs->[$song_idx];
     }
