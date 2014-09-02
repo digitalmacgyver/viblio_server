@@ -1111,6 +1111,78 @@ sub mediafile_create :Local {
     $self->status_ok( $c, {} );
 }
 
+
+# This endpoint is called when we have created a Facebook resource on
+# behalf of our user.
+#
+# This is a protected endpoint.
+#
+sub create_fb_album :Local {
+    my( $self, $c, $uid, $mid, $site_token ) = @_;
+    $uid = $c->req->param( 'uid' ) unless( $uid );
+    $mid = $c->req->param( 'mid' ) unless( $mid );
+    $site_token = $c->req->param( 'site-token' ) unless( $site_token );
+
+    unless( $uid && $mid && $site_token ) {
+	$self->status_bad_request( $c, 'Missing one or more of uid, mid, site-token params' );
+    }
+
+    unless( $site_token eq 'maryhadalittlelamb' ) {
+	if ( $c->secure_token( $uid ) ne $site_token ) {
+	    $c->log->error( "mediafile_create() authentication failure: calculated(" . $c->secure_token( $uid ) . ") does not match $site_token" );
+	    $self->status_bad_request( $c, 'mediafile_create() authentication failure.' );
+	}
+    }
+
+    my $user = $c->model( 'RDS::User' )->find({uuid=>$uid});
+    if ( ! $user ) {
+	$self->status_bad_request( $c, 'Cannot find user for $uid' );
+    }
+
+    my $mediafile = $user->media->find({ uuid => $mid });
+    unless( $mediafile ) {
+	$self->status_bad_request( $c, 'Cannot find media for $mid' );
+    }
+    my $asset = $mediafile->assets->first( { asset_type => 'fb_album' } );
+
+    if ( $user->profile->setting( 'email_notifications' ) ) {
+	# Send email notification
+	#
+	$c->log->debug( 'Sending email to ' . $user->email );
+	my $email = {
+	    subject    => $c->loc( "Your Facebook Photo Album is Ready" ),
+	    to => [{
+		email => $user->email,
+		name  => $user->displayname }],
+	    template => 'email/22-fbAlbumCreated.tt',
+	    stash => {
+		user => $user,
+		# DEBUG - Do we need $mf here as above for email header or footer?
+		server => $c->server,
+		model => {
+		    media => $mediafile,
+		    media_asset => $asset
+		}
+	    }
+	};
+	$self->send_email( $c, $email );
+    }
+
+    # Send message queue notification
+    #
+    # DEBUG - IN THE FUTURE HAVE A SLIDE OUT OR SOMETHING FOR THIS!
+    #my $res = $c->model( 'MQ' )->post( '/enqueue', { uid => $uid,
+    #						     type => 'new_video',
+    #						     media  => $mf } );
+    #if ( $res->code != 200 ) {
+    #	$c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
+    #}
+
+    $self->status_ok( $c, {} );
+}
+
+
+
 =head2 /services/na/incoming_email
 
 This is a "webhook" used my the Mailchip/Mandrill email delivery service to
