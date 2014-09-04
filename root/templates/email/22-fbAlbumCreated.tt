@@ -11,10 +11,7 @@
   media_asset: The Corresponding fb_album media_asset record.
 %]
     <div class="centered regSize darkText">
-        <span>We've sent the photos you selected to Facebook, and stored them in your new album at:</span>
-	<span><a href="[% model.media_asset.uri %]">[% model.media_asset.uri %]</a></span>
-        <br />
-        <em>Someone you know is dying to see this.</em>
+        <span>We've stored the photos you selected in a <a href="[% model.media_asset.uri %]">new photo album in Facebook</a>, follow the link to see them!</span>
         <br />
         
         <div class="line"></div>
