@@ -611,6 +611,22 @@ sub new_user_helper :Private {
     my $update_rs = $c->model( 'RDS::Contact' )->search({ contact_email => $user->email });
     $update_rs->update({ contact_viblio_id => $user->id });
     
+    # Create some default albums for this account.
+    try {
+	my $new_user_albums = [ 'Using VIBLIO', 'Birthdays', 'Family', 'Friends', 'Holidays', 'Vacations' ];
+
+	my $album_object = new VA::Controller::Services::Album();
+	
+	my $ug = new Data::UUID;
+
+	foreach my $new_user_album ( @$new_user_albums ) {
+	    my $uuid =  $ug->create();
+	    VA::Controller::Services::Album->new()->create_album_helper( $c, $new_user_album, $ug->to_string( $uuid ), 1 );
+	}
+    } catch {
+	$c->log->error( "Failed to create welcome default albums, error was: $_" );
+    };
+
     # Send a SQS message for this new account creation
     try {
 	$c->log->debug( 'Sending SQS message for new account' );
@@ -621,6 +637,7 @@ sub new_user_helper :Private {
     } catch {
 	$c->log->error( "Failed to send welcome_video SQS message: $_" );
     };
+
     
 =perl
 	# And finally, send them a nice welcome email

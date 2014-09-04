@@ -151,12 +151,8 @@ sub album_names :Local {
     $self->status_ok( $c, { albums => \@n } );
 }
 
-sub create :Local {
-    my( $self, $c ) = @_;
-    my $name = $c->req->param( 'name' ) || 'unnamed';
-    my $aid = $c->req->param( 'aid' );
-    my $initial_mid = $c->req->param( 'initial_mid' );
-    my @list = $c->req->param( 'list[]' );
+sub create_album_helper :Private {
+    my ( $self, $c, $name, $aid, $is_viblio_created ) = @_;
 
     my $where = {
 	is_album => 1,
@@ -170,13 +166,35 @@ sub create :Local {
     }
     my $album = $c->user->find_or_create_related( 'media', $where );
 
-    unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Failed to create a new album' ) );
+    if ( $is_viblio_created ) {
+	$album->is_viblio_created( 1 );
     }
 
     unless ( $album->recording_date && $album->recording_date->epoch != 0 ) {
 	$album->recording_date( DateTime->now );
-	$album->update;
+    }
+
+    $album->title( $name );
+    $album->update;
+
+    return $album;
+}
+
+# Delegate the actual work to a subroutine, call the subroutine from
+# elsewhere, leave status and such in tact here.
+
+sub create :Local {
+    my( $self, $c ) = @_;
+    my $name = $c->req->param( 'name' ) || 'unnamed';
+    my $aid = $c->req->param( 'aid' );
+    my $initial_mid = $c->req->param( 'initial_mid' );
+
+    my @list = $c->req->param( 'list[]' );
+
+    my $album = $self->create_album_helper( $c, $name, $aid );
+
+    unless( $album ) {
+	$self->status_bad_request( $c, $c->loc( 'Failed to create a new album' ) );
     }
 
     if ( $#list >= 0 ) {
