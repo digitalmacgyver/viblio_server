@@ -215,6 +215,7 @@ sub delete :Local {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to delete this media file from storage." ) );
     }
+
     # Deal with faces.  
     #
     # foreach face in this video:
@@ -327,6 +328,71 @@ sub delete :Local {
     # Finally, delete record from the database
     $mf->delete;
     $self->status_ok( $c, { contacts => \@contacts_in_video } );
+}
+
+
+=head2 /services/mediafile/delete_asset
+
+Delete assets related to a mediafile.  Deletes the asset in permanent
+storage as well, and any related features.
+
+Note: This method doesn't do anything fancy about remapping face URIs,
+if faces are deleted using this API the caller must ensure all
+contacts have valid URIs as part of the operation.
+
+=head3 Parameters
+
+assets[] - A list of assets. Any assets not belonging to the user are ignored.
+
+=head3 Response
+
+  {}
+
+=cut
+
+sub delete_assets :Local {
+    my $self = shift;
+    my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [
+	  'assets[]' => []
+        ],
+        @_ );
+
+    my @assets_to_delete = $c->model( 'RDS::MediaAsset' )->search( {
+	'me.uuid' => { -in => $args->{ 'assets[]' } },
+	'me.user_id' => $c->user->id() } )->all();
+
+    unless( scalar( @assets_to_delete ) ) {
+	$self->status_bad_request( $c, $c->loc( "No media_assets to delete found." ) )
+    }
+
+    for my $asset_to_delete ( @assets_to_delete ) {
+
+	my $location = $asset_to_delete->location();
+
+	unless( $location ) {
+	    $self->status_bad_request( $c, $c->loc( "Cannot determine location of this asset." ) );
+	}
+
+	my $klass = $c->config->{mediafile}->{$location};
+	unless ( $klass ) {
+	    $self->status_bad_request( $c, $c->loc( "Cannot determine type of this asset." ) );
+	}
+	if ( $klass != 'VA::MediaFile::US' ) {
+	    $self->status_bad_request( $c, $c->loc( "Delete no implemented for resources of type: $klass" ) );
+	}
+	my $fp = new $klass;
+	# If we have an error on a particular asset, we just continue on to the rest of them.
+	$fp->delete_asset( $c, $asset_to_delete );
+
+	# Finally, delete record from the database - doing so will
+	# also take out any features associated with that asset
+	# automatically.
+	$asset_to_delete->delete;
+    }
+    $self->status_ok( $c, { } );
 }
 
 =head2 /services/mediafile/list
@@ -670,7 +736,7 @@ sub add_comment :Local {
 Called to share a video with someone or someones.  Requires a mid media uuid.  The
 list parameter is optional.  If not present, this share is 'public', a post to a
 social networking site.  If the list is present, its assumed to be a clean, sanitized
-comma delimitted list of email addresses.  If an email address belongs to a viblio user,
+comma delimited list of email addresses.  If an email address belongs to a viblio user,
 a private share is created, otherwise a hidden share.  Email is sent to each address
 on the list.  The url to the video is different depending on private or hidden.
 

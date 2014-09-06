@@ -56,6 +56,45 @@ sub delete {
     return $ret;
 }
 
+# Just delete a single asset.
+sub delete_asset {
+    my( $self, $c, $asset ) = @_;
+
+    my $bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );
+    unless( $bucket ) {
+        $c->log->error( "Cannot get s3 bucket: " . 
+                        $c->config->{s3}->{bucket} );
+        return undef;
+    }
+
+    # Collect all the uri's (s3 keys) from all the assets that have
+    # them, except for faces.  We never want to delete a face
+    #
+    my @uris = ();
+    if ( ref $asset eq 'HASH' ) {
+	push( @uris, $asset->{uri} );
+    }
+    else {
+	push( @uris, $asset->uri() );
+    }
+    
+    my $ret = $asset;
+
+    try {
+	foreach my $uri ( @uris ) {
+	    my $o = $bucket->object( key => $uri );
+	    if ( $o ) {
+		$o->delete;
+	    }
+	}
+    } catch { 
+        $c->log->error( "Error trying to delete S3 object: $_" );
+        $ret = undef;
+    };
+
+    return $ret;
+}
+
 sub metadata {
     my( $self, $c, $mediafile ) = @_;
     my $uri;
