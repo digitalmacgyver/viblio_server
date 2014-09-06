@@ -1094,44 +1094,47 @@ sub cf :Local {
 
 =head2 /services/mediafile/related
 
-Return list of mediafiles related to the passed in mediafile.  You can specify
-one or more of:
+Input parameters:
+* only_videos=1 - whether media_type is 'original' only or all types
+* only_visible=1 - whether status is restricted to ['visible', 'complete'] or not
+* status[]=['a','b','c'] - overrides the status setting of only_visible
+* media[]=[uuid1,uuid2,...] a list of related media
 
-  by_date=1    : All videos taken on same day followed by all videos 
-                 taken in same month as this video
-  by_faces=1   : All videos that contain at least one of the faces contained
-                 in this video
-  by_geo=1     : All videos taken "near" this video (see below)
+Return list of mediafiles related to the passed in mediafile, as
+determined by:
 
-If more than one by_ is specified, the array returned is in the order shown
-above (date, faces, geo).
+1. If media[] is included, we return just the list of those items
+which the user can see.
 
-If by_geo is specified, geo_unit=meter, geo_distance=100 are the defaults used
-to determine "near" and the results are returned sorted from closest to furthest.
-Legal values for geo_unit are: kilometer, kilometre, meter, metre, centimeter, 
-centimetre, millimeter, millimetre, yard, foot, inch, light second, mile, nautical mile, 
-poppy seed, barleycorn, rod, pole, perch, chain, furlong, league, fathom.
+2. If this media is in any albums, return a list of videos that the
+user can see in those albums, sorted by descending recording_date,
+created_date.
+
+3. Otherwise, if there are any faces in this video, return a list of
+videos the user can see which also have those faces in them, sorted by
+descending recording_date, created_date.
+
+4. Otherwise, return the empty list.
 
 =cut
 
 sub related :Local {
     my( $self, $c ) = @_;
+
     my $mid = $c->req->param( 'mid' );
     my $page = $c->req->param( 'page' );
     my $rows = $c->req->param( 'rows' ) || 10;
 
-    my $by_date  = $self->boolean( $c->req->param( 'by_date'  ), 1 );
-    my $by_faces = $self->boolean( $c->req->param( 'by_faces' ), 1 );
-    my $by_geo   = $self->boolean( $c->req->param( 'by_geo'   ), 1 );
-
-    my $geo_unit = $c->req->param( 'geo_unit' ) || 'meter';
-    my $geo_distance = $c->req->param( 'geo_distance' ) || '100';
-
-    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
-    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
     my @status_filters = $c->req->param( 'status[]' );
     if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
 	@status_filters = ();
+    }
+
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @related_media = $c->req->param( 'media[]' );
+    if ( scalar( @related_media ) == 1 && !defined( $related_media[0] ) ) {
+	@related_media = ();
     }
 
     unless( $mid ) {
@@ -1171,154 +1174,128 @@ sub related :Local {
 
     # Array of media objects to publish and return.
     my @media_results = ();
-    # Hash of media uuid's already added to results (to prevent dups in results)
-    my $seen = {};
-    $seen->{ $media->uuid } = $media; # DO NOT SHOW MYSELF IN RELATED
 
-    # First get a mediafile resultset that contains all media belonging to
-    # the user or shared to the user.
-    #
-    # Fetch by MediaAsset of poster, because all related videos needs
-    # is the mediafile and its poster.  Prefetch media and media_shares;
-    # media_shares so we get user's media plus all media shared with them,
-    # media so publish is fast.  Group by media.id so we get only only
-    # unique mediafiles in case there are multiple posters per mediafile.
-    #
-    # This prefetch into a resultset makes subsequent search queries
-    # easier.
-    #
-    if ( $only_visible ) {
-	$where = { 'me.asset_type' => 'poster',
-		   'media.is_album' => 0,
-		   'media.status' => [ 'visible', 'complete' ],
-		   -or => ['media.user_id' => $user->id, 
-			   'media_shares.user_id' => $user->id] };
+    if ( scalar( @related_media ) ) {
+	# If we were provided a list of related media, just return the
+	# ones the current user can see.
+	
+	@media_results = $user->visible_media( \@related_media, $only_visible, \@status_filters, $only_videos );
     } else {
-	$where = { 'me.asset_type' => 'poster',
-		   'media.is_album' => 0,
-		   -and => [ -or => ['media.user_id' => $user->id, 
-				     'media_shares.user_id' => $user->id] ] };
-    }
-    if ( scalar( @status_filters ) ) {
-	$where->{'media.status'} = \@status_filters;
-    }
-    if ( $only_videos ) {
-	$where->{'media.media_type'} = 'original';
-    }
 
-    my $rs = $c->model( 'RDS::MediaAsset' )->search(
-	$where, 
-	{ prefetch => { 'media' => 'media_shares' }, 
-	  group_by => [ 'media.id' ] } );
+	# First determine if this media is in any albums that this
+	# user can view, if so then return those.
+	#
+	# If not, then determine if there are any faces in this video,
+	# and if there are return other videos whose people appear in.
+	my $seen = {};
+	$seen->{ $media->uuid } = $media; # DO NOT SHOW MYSELF IN RELATED
 
-    # Return:
-    #
-    # 1. All other videos taken on same date as this video (within 24 hours)
-    # 2. All other videos taken in same month as this video
-    # 3. All other videos that contain at least one of the known faces in this video taken this year
-    # 3. All other videos that contain at least one of the known faces in this video ever taken
-    # 4. All other videos taken "at same location as" this video
-    #
-    if ( $by_date ) {
-	my $taken_on = $media->recording_date || $media->created_date;
-	my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
-
-	# Taken on same day
-	my $from = DateTime->new( year => $taken_on->year,
-				  month => $taken_on->month,
-				  day => $taken_on->day,
-				  hour => 0, minute => 0 );
-	my $to   = DateTime->new( year => $taken_on->year,
-				  month => $taken_on->month,
-				  day => $taken_on->day,
-				  hour => 23, minute => 59 );
-
-	my @taken_on_same_day = $rs->search({
-	    'media.recording_date' => {
-		-between => [
-		     $dtf->format_datetime( $from ),
-		     $dtf->format_datetime( $to )
-		    ]} }, { order_by => 'media.recording_date desc' } );
-	foreach my $a ( @taken_on_same_day ) {
-	    push( @media_results, $a->media ) unless ( $seen->{$a->media->uuid} );
-	    $seen->{ $a->media->uuid } = $a;
+	$where = { 'media.user_id' => $user->id(),
+		   'media.id' => $media->id() };
+	if ( $only_visible ) {
+	    $where->{ 'media.status' } = [ 'visible', 'complete' ];
+	}
+	if ( scalar( @status_filters ) ) {
+	    $where->{ 'media.status' } = \@status_filters;
+	}
+	if ( $only_videos ) {
+	    $where->{ 'media.media_type' } = 'original';
 	}
 
-	# Taken in same month
-	$from = DateTime->new( year => $taken_on->year,
-			       month => $taken_on->month,
-			       day => 1, hour => 0, minute => 0 );
-	$to = $from->clone;
-	$to->add( months => 1 )->subtract( days => 1 )->add( hours => 23 )->add( minutes => 59 );
+	my @owned_albums = $c->model( 'RDS::MediaAlbum' )->search(
+	    $where,
+	    { prefetch => [ 'media', { 'album_media' => 'media' } ] } )->all();
 
-	my @taken_in_same_month = $rs->search({
-	    'media.recording_date' => {
-		-between => [
-		     $dtf->format_datetime( $from ),
-		     $dtf->format_datetime( $to )
-		    ]} }, { order_by => 'media.recording_date desc' } );
-	foreach my $a ( @taken_in_same_month ) {
-	    push( @media_results, $a->media ) unless ( $seen->{$a->media->uuid} );
-	    $seen->{ $a->media->uuid } = $a;
+	foreach my $owned_album ( @owned_albums ) {
+	    foreach my $album_contents ( $owned_album->album_media() ) {
+		foreach my $owned_media ( $album_contents->media() ) {
+		    
+		    $c->log->error( "WORKING ON ", $owned_media->uuid() );
+		    
+		    unless ( exists( $seen->{ $owned_media->uuid() } ) ) {
+			push( @media_results, $owned_media );
+			$seen->{ $owned_media->uuid() } = $owned_media;
+		    }
+		}
+	    }
 	}
-    }
 
-    if ( $by_faces ) {
-	# FACES...
-	#
-	# First of all, find all known faces in the passed in mediafile
-	#
-	my @face_features = $c->model( 'RDS::MediaAssetFeature' )
-	    ->search({ 'me.media_id' => $media->id,
-		       'me.feature_type' => 'face',
-		       'contact.contact_name' => { '!=', undef } },
-		     { prefetch=>['contact','media_asset'], group_by=>['contact.id'] });
+	my @user_community_list = $user->is_community_member_of();
+	my @media_community_list = $media->is_community_member_of();
+	
+	my $user_communities = {};
+	foreach my $user_community ( @user_community_list ) {
+	    $user_communities->{ $user_community->uuid } = $user_community;
+	}
+	foreach my $media_community ( @media_community_list ) {
+	    if ( exists( $user_communities->{ $media_community->uuid() } ) ) {
+		#$DB::single = 1;
+		foreach my $album_contents ( $media_community->album->media_albums_medias->related_resultset( 'album_media' )->all() ) {
+		    foreach my $community_media ( $album_contents->related_resultset( 'media' )->all() ) {
+			unless ( exists( $seen->{ $community_media->uuid() } ) ) {
+			    push( @media_results, $community_media );
+			    $seen->{ $community_media->uuid() } = $community_media;
+			}
+		    }
+		}
+	    }
+	}
+	
+	if ( !scalar( @media_results ) ) {
+	    # We didn't find anything in related albums, try to find
+	    # related faces.
 
-	if ( $#face_features >= 0 ) {
-	    # There are faces.  Lets find all other videos in our list that contain at
-	    # least on of these faces, ordered by most recently recorded.
+	    # Hash of media uuid's already added to results (to prevent dups in results)
+	    my $seen = {};
+	    $seen->{ $media->uuid } = $media; # DO NOT SHOW MYSELF IN RELATED
+
+	    # First of all, find all known faces in the passed in mediafile
 	    #
-	    my @contact_ids = map { $_->contact->id } @face_features;
-	    my @media_ids   = map { $_->media->id } $rs->all;
-
-	    # $c->log->error( $_->contact->contact_name, "\n" ) foreach @face_features;
-
-	    my @feats = $c->model( 'RDS::MediaAssetFeature' )
-		->search({ 'contact.id' => { -in => \@contact_ids },
+	    my @face_features = $c->model( 'RDS::MediaAssetFeature' )
+		->search({ 'me.media_id' => $media->id,
 			   'me.feature_type' => 'face',
-			   'me.media_id' => { -in => \@media_ids },
-			 },
-			 { prefetch => [ 'contact', { 'media_asset' => 'media' } ], group_by => ['media.id'] });
+			   'contact.contact_name' => { '!=', undef } },
+			 { prefetch=>['contact','media_asset'], group_by=>['contact.id'] });
+	    
+	    if ( $#face_features >= 0 ) {
+		# There are faces.  Lets find all other videos in our list that contain at
+		# least one of these faces, ordered by most recently recorded.
+		#
+		my @contact_ids = map { $_->contact->id } @face_features;
+		my @visible_media = $user->visible_media( [], $only_visible, \@status_filters, $only_videos );
 
-	    # Unfortunately we are storing poster assets in the results array, so we have to do
-	    # poster fetches
-	    foreach my $feat ( @feats ) {
-		unless( $seen->{ $feat->media_asset->media->uuid } ) {
-		    # $c->log->error( $feat->media_asset->media->title );
-		    push( @media_results, $feat->media_asset->media );
-		    $seen->{ $feat->media_asset->media->uuid } = $feat->media_asset->media;
+		my @media_ids   = map { $_->id } @visible_media;
+		
+		# $c->log->error( $_->contact->contact_name, "\n" ) foreach @face_features;
+		
+		my @feats = $c->model( 'RDS::MediaAssetFeature' )
+		    ->search({ 'contact.id' => { -in => \@contact_ids },
+			       'me.feature_type' => 'face',
+			       'me.media_id' => { -in => \@media_ids },
+			     },
+			     { prefetch => [ 'contact', { 'media_asset' => 'media' } ], group_by => ['media.id'] });
+		
+		# Unfortunately we are storing poster assets in the results array, so we have to do
+		# poster fetches
+		foreach my $feat ( @feats ) {
+		    unless( $seen->{ $feat->media_asset->media->uuid } ) {
+			# $c->log->error( $feat->media_asset->media->title );
+			push( @media_results, $feat->media_asset->media );
+			$seen->{ $feat->media_asset->media->uuid } = $feat->media_asset->media;
+		    }
 		}
 	    }
 	}
     }
 
-    if ( $by_geo && defined( $media->lat ) && defined( $media->lng ) ) {
-
-	my $geo = new Geo::Distance;
-	$geo->formula('hsin');
-
-	my @geodata = ();
-	foreach my $asset ( $rs->search({ 'media.lat' => {'!=' => undef}, 'media.lng' => { '!=' => undef } }) ) {
-	    next if ( $asset->media->id == $media->id );
-	    my $distance = $geo->distance( $geo_unit, $media->lng, $media->lat => $asset->media->lng, $asset->media->lat );
-	    push( @geodata, { distance => $distance, asset => $asset } ) if ( $distance <= $geo_distance );
-	}
-	my @sorted = sort { $a->{distance} <=> $b->{distance} } @geodata;
-	foreach my $sd ( @sorted ) {
-	    push( @media_results, $sd->{asset}->media ) unless ( defined( $seen->{ $sd->{asset}->media->uuid } ) );
-	    $seen->{ $sd->{asset}->media->uuid } = $sd->{asset}->media;
-	}
-    }
+    # Sort the result set by descending recorded date, then created date.
+    @media_results = sort {  my $rdate_cmp = ( $b->recording_date->epoch() <=> $a->recording_date->epoch() );
+			     if ( $rdate_cmp ) {
+				 return $rdate_cmp;
+			     } else {
+				 return $b->created_date->epoch() <=> $a->created_date->epoch();
+			     }
+    } @media_results;
 
     # Prepare and return results
     #
@@ -1920,9 +1897,6 @@ sub create_video_summary :Local {
         @_ );
 
     $args->{user_uuid} = $c->user->uuid();
-
-    use Data::Dumper;
-    $c->log->info( Dumper( $args ) );
 
     # Validate that we got passed one or more images.
     unless ( scalar( @{$args->{'images[]'}} ) ) {

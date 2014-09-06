@@ -522,13 +522,18 @@ __PACKAGE__->has_many(
   { "foreign.media_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
+
 __PACKAGE__->has_many(
     "media_albums_medias",
     "VA::RDSSchema::Result::MediaAlbum",
     { "foreign.album_id" => "self.id" },
     { cascade_copy => 0, cascade_delete => 0,
-    where => { "media.is_album" => 0 } },
+    },
+    # DEBUG - this seems to be causing a problem, and this
+    #relationship is otherwise unusued.
+    # where => { "media.is_album" => 0 } },
 );
+
 __PACKAGE__->has_many(
     "media_albums_videos",
     "VA::RDSSchema::Result::MediaAlbum",
@@ -536,9 +541,9 @@ __PACKAGE__->has_many(
     { cascade_copy => 0, cascade_delete => 0,
     where => { "videos.is_album" => 0 } },
 );
-__PACKAGE__->many_to_many( 'albums', 'media_albums_albums', 'album' );
-__PACKAGE__->many_to_many( 'media',  'media_albums_medias', 'media' );
-__PACKAGE__->many_to_many( 'videos',  'media_albums_videos', 'videos' );
+__PACKAGE__->many_to_many( 'albums' => 'media_albums_albums', 'album' );
+__PACKAGE__->many_to_many( 'media' =>  'media_albums_medias', 'media' );
+__PACKAGE__->many_to_many( 'videos' =>  'media_albums_videos', 'videos' );
 
 __PACKAGE__->has_one(
     "community",
@@ -581,7 +586,8 @@ sub is_community_member_of {
     else {
 	my @cgroups = $self->result_source->schema->resultset( 'MediaAlbum' )->search
 	    ({'videos.id'=>$self->id},
-	     {prefetch=>['videos',{'album'=>'community'}]});
+	     { prefetch => [ 'videos', { 'album' => 'community' } ],
+	       order_by => 'videos.recording_date desc' } ); 
 	return map { $_->album->community } @cgroups;
     }
 }

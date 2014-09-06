@@ -171,6 +171,15 @@ __PACKAGE__->belongs_to(
     { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+
+# Allow self joins.
+__PACKAGE__->belongs_to( 
+    'album_media',
+    'VA::RDSSchema::Result::MediaAlbum',
+    { 'foreign.album_id' => 'self.album_id' },
+    { cascade_copy => 0, cascade_delete => 0 },
+    );
+
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
 __PACKAGE__->meta->make_immutable;
 1;

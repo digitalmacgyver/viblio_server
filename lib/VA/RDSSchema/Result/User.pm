@@ -535,27 +535,38 @@ __PACKAGE__->has_many(
       cascade_delete => 0 },
 );
 
-# Return an rs that can find *all* videos, both owned by
-# user and shared to user
+# Return an rs that can find *all* videos, both owned by user and
+# shared to user via the legacy MediaShares mechanism.
+#
+# NOTE: this does not include things shared to the user via the new
+# Community mechanism.
+# 
 sub private_and_shared_videos {
-    my( $self, $only_visible, $status ) = @_;
+    my( $self, $only_visible, $status, $only_videos ) = @_;
 
     if ( !defined( $only_visible ) ) {
 	$only_visible = 1;
     }
+    if ( !defined( $only_videos ) ) {
+	$only_videos = 1;
+    }
 
-    my $where = { 'me.media_type' => 'original',
-	       -or => ['me.user_id' => $self->id, 
-		       'media_shares.user_id' => $self->id] };
+    my $where = { -or => ['me.user_id' => $self->id, 
+			  'media_shares.user_id' => $self->id] };
     if ( $only_visible ) {
 	$where->{'me.status'} = [ 'visible', 'complete' ];
     }
     if ( defined( $status ) && scalar( @$status ) ) {
 	$where->{'me.status'} = $status;
     }
+    if ( $only_videos ) {
+	$where->{ 'me.media_type' } = 'original';
+    }
 
-    return $self->result_source->schema->resultset( 'Media' )->search( $where,
-								       { prefetch => 'media_shares' });
+    return $self->result_source->schema->resultset( 'Media' )->search(
+	$where,
+	{ prefetch => 'media_shares',
+	  order_by => [ 'me.recording_date desc', 'me.created_date desc' ] } );
 }
 
 __PACKAGE__->has_many(
@@ -964,6 +975,95 @@ sub videos_with_people {
 	  group_by => ['media.id'] } );
     return map { $_->media_asset->media } $rs->all;
 }    
+
+# If sent an array reference of media_uuid's in input, returns a
+# subset of that list the user is allowed to view, otherwise returns a
+# list of visible media, including both media owned by the user,
+# shared via legacy media_shares, or shared via community.
+# 
+# Return things in a predictable order (recording_date, created_date
+# descending) and with no duplicates.
+sub visible_media {
+    my ( $self, $media_uuids, $only_visible, $status, $only_videos ) = @_;
+
+    if ( !defined( $only_visible ) ) {
+	$only_visible = 1;
+    }
+    if ( !defined( $only_videos ) ) {
+	$only_videos = 1;
+    }
+    my $desired_uuids = {};
+    if ( defined( $media_uuids ) && scalar( @$media_uuids ) ) {
+	foreach my $media_uuid ( @$media_uuids ) {
+	    $desired_uuids->{ $media_uuid } = 1;
+	}
+    }
+
+    # Return all the things the user can see.
+    my $where = { };
+    if ( $only_visible ) {
+	$where->{'videos.status'} = [ 'visible', 'complete' ];
+    }
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$where->{'videos.status'} = $status;
+    }
+    if ( $only_videos ) {
+	$where->{ 'videos.media_type' } = 'original';
+    }
+    
+    # Get the list of media owned by the user, or shared to them via
+    # the legacy media_shares mechanism.
+    my @old_results = $self->private_and_shared_videos( $only_visible, $status, $only_videos )->all();
+    if ( defined( $media_uuids ) && scalar( @$media_uuids ) ) {
+	my @tmp = ();
+	foreach my $old_result ( @old_results ) {
+	    if ( exists( $desired_uuids->{ $old_result->uuid() } ) ) {
+		push( @tmp, $old_result );
+	    }
+	    @old_results = @tmp;
+	}
+    }
+    
+    # Get a list of all the media this user can see by virtue of
+    # communities.
+    my @user_communities = $self->is_community_member_of();
+    my @user_community_ids = map { $_->community->id(); } @user_communities;
+
+    $where->{ 'community.id' } = { -in => \@user_community_ids };
+    if ( defined( $media_uuids ) && scalar( @$media_uuids ) ) {
+	$where->{ 'videos.uuid' } = { -in => $media_uuids };
+    }
+	
+    my @new_results = $self->result_source->schema->resultset( 'MediaAlbum' )->search
+	( $where,
+	  { prefetch => [ 'videos', { 'album' => 'community' } ],
+	    order_by => [ 'videos.recording_date desc', 'videos.created_date desc' ] } )->all();
+	      
+    my $seen = {};
+    my @output = ();
+    foreach my $result ( @old_results ) {
+	unless ( exists( $seen->{ $result->uuid } ) ) {
+	    push( @output, $result );
+	    $seen->{ $result->uuid } = 1;
+	}
+    }
+    foreach my $result ( @new_results ) {
+	unless ( exists( $seen->{ $result->uuid } ) ) {
+	    push( @output, $result );
+	    $seen->{ $result->uuid } = 1;
+	}
+    }
+    
+    # Sort the result set by descending recorded date, then created date.
+    return sort {  my $rdate_cmp = ( $b->recording_date->epoch() <=> $a->recording_date->epoch() );
+		   if ( $rdate_cmp ) {
+		       return $rdate_cmp;
+		   } else {
+		       return $b->created_date->epoch() <=> $a->created_date->epoch();
+		   }
+    } @output;
+}
+
 
 __PACKAGE__->meta->make_immutable;
 1;
