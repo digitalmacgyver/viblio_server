@@ -157,6 +157,12 @@ __PACKAGE__->table("media");
   default_value: 0
   is_nullable: 0
 
+=head2 skip_faces
+
+  data_type: 'tinyint'
+  default_value: 0
+  is_nullable: 0
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -209,6 +215,8 @@ __PACKAGE__->add_columns(
   "status",
   { data_type => "varchar", is_nullable => 1, size => 32 },
   "is_viblio_created",
+  { data_type => "tinyint", default_value => 0, is_nullable => 0 },
+  "skip_faces",
   { data_type => "tinyint", default_value => 0, is_nullable => 0 },
   "created_date",
   {
@@ -424,6 +432,24 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+=head2 viblio_added_content_album_id_album_users
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::ViblioAddedContent>
+
+=cut
+
+__PACKAGE__->has_many(
+  "viblio_added_content_album_id_album_users",
+  "VA::RDSSchema::Result::ViblioAddedContent",
+  {
+    "foreign.album_id"      => "self.id",
+    "foreign.album_user_id" => "self.user_id",
+  },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 viblio_added_contents
 
 Type: has_many
@@ -443,8 +469,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2014-05-06 16:57:33
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FFlLX+pZg6jOMfQwWZ7yHw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-09-09 14:27:27
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:I4FIEc+0K16HPXD5MNQxyQ
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

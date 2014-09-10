@@ -1354,6 +1354,12 @@ sub related :Local {
 	}
     }
 
+    # If we had media results, add ourself to the end of the list.
+    if ( scalar( @media_results ) ) {
+	push( @media_results, $media );
+    }
+
+
     # Sort the result set by descending recorded date, then created date.
     @media_results = sort {  my $rdate_cmp = ( $b->recording_date->epoch() <=> $a->recording_date->epoch() );
 			     if ( $rdate_cmp ) {

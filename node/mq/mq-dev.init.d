@@ -12,7 +12,8 @@
 SERVICE_TYPE=dev
 
 APPNAME=mq
-APPDIR=/deploy/$SERVICE_TYPE/viblio-server/node/mq
+#APPDIR=/deploy/$SERVICE_TYPE/viblio-server/node/mq
+APPDIR=/home/viblio/viblio/va/viblio-server/node/mq
 export PORT=3002
 
 VA_CONFIG_LOCAL_SUFFIX=$SERVICE_TYPE
