@@ -1048,9 +1048,10 @@ sub visible_media {
 	}
     }
     foreach my $result ( @new_results ) {
-	unless ( exists( $seen->{ $result->uuid } ) ) {
-	    push( @output, $result );
-	    $seen->{ $result->uuid } = 1;
+	my $video = $result->videos();
+	unless ( exists( $seen->{ $video->uuid } ) ) {
+	    push( @output, $video );
+	    $seen->{ $video->uuid } = 1;
 	}
     }
     
