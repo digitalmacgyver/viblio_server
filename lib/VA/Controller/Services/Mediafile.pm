@@ -1356,7 +1356,7 @@ sub related :Local {
 
     # If we had media results, add ourself to the end of the list.
     if ( scalar( @media_results ) ) {
-	push( @media_results, $media );
+	unshift( @media_results, $media );
     }
 
 

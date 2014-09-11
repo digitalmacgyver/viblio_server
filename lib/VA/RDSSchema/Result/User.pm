@@ -1027,7 +1027,7 @@ sub visible_media {
     # Get a list of all the media this user can see by virtue of
     # communities.
     my @user_communities = $self->is_community_member_of();
-    my @user_community_ids = map { $_->community->id(); } @user_communities;
+    my @user_community_ids = map { $_->id(); } @user_communities;
 
     $where->{ 'community.id' } = { -in => \@user_community_ids };
     if ( defined( $media_uuids ) && scalar( @$media_uuids ) ) {
