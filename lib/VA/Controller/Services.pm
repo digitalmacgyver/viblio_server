@@ -658,9 +658,10 @@ sub publish_mediafiles :Private {
 	    { 
 		'me.media_id' => { -in => $mids },
 		'contact.id' => { '!=', undef },
-		'me.feature_type'=>'face' },
+		'me.feature_type'=>'face',
+		'me.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] } },
 	    { prefetch => ['contact', 'media_asset'],
-	      group_by => ['contact.id'] } );
+	      group_by => [ 'me.media_id', 'contact.id'] } );
 	foreach my $maf ( @mafs ) {
 	    if ( exists( $contact_features->{$maf->media_id} ) ) {
 		push( @{$contact_features->{$maf->media_id}},  $maf );
