@@ -1020,8 +1020,8 @@ sub visible_media {
 	    if ( exists( $desired_uuids->{ $old_result->uuid() } ) ) {
 		push( @tmp, $old_result );
 	    }
-	    @old_results = @tmp;
 	}
+	@old_results = @tmp;
     }
     
     # Get a list of all the media this user can see by virtue of
