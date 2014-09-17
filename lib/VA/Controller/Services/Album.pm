@@ -248,6 +248,21 @@ sub create :Local {
     $self->status_ok( $c, { album => $hash } );
 }
 
+=perl
+
+services/album/get - Return a list of media in the requested album,
+with posters, if the user has permission to view.
+
+Inputs:
+* aid - The uuid of the album
+* include_contact_info - Defaults to 0, if true includes face info in the response
+* include_tags - Defaults to 0
+* include_images - Defaults to 0
+* only_visible - Defaults to 1
+* only_videos - Defaults to 1
+
+=cut
+
 sub get :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
@@ -258,6 +273,8 @@ sub get :Local {
     $include_tags = 0 unless( $include_tags );
     my $include_images = $c->req->param( 'include_images' );
     $include_images = 0 unless ( $include_images );    
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
     my $params = {
 	views => ['poster'],
@@ -300,7 +317,17 @@ sub get :Local {
     my $hash = VA::MediaFile->new->publish( $c, $album, $poster_params );
     $hash->{is_shared} = ( $album->community ? 1 : 0 );
 
-    my @media_list = $album->media->search({},{order_by => 'recording_date desc'} )->all();
+
+    my $where = {};
+    if ( $only_visible ) {
+	$where = { -or => [ status => 'visible',
+			    status => 'complete' ]  };
+    }
+    if ( $only_videos ) {
+	$where->{'media_type'} = 'original';
+    }
+
+    my @media_list = $album->media->search( $where, {order_by => 'recording_date desc'} )->all();
 
     my $m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
 							     include_contact_info => $include_contact_info,
@@ -835,10 +862,12 @@ sub shared_with :Local {
     $self->status_ok( $c, { displayname => $displayname, members => \@data } );
 }
 
+# Create an album of faces for the input contact_id.
 sub create_face_album :Local {
     my( $self, $c ) = @_;
     my $title = $c->req->param( 'title' );
     my $contact_uuid = $c->req->param( 'contact_id' );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
     my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $contact_uuid });
     unless( $contact ) {
@@ -849,9 +878,19 @@ sub create_face_album :Local {
 	$title = $contact->contact_name;
     }
 
+    my $where = { 
+	contact_id => $contact->id, 
+	'me.user_id' => $c->user->id, 
+	feature_type => 'face' 
+    };
+
+    if ( $only_videos ) {
+	$where->{'media.media_type'} = 'original';
+    }
+
     my $rs = $c->model( 'RDS::MediaAssetFeature' )
 	->search(
-	{ contact_id => $contact->id, 'me.user_id' => $c->user->id, feature_type => 'face' },
+	$where,
 	{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
 
     my @mediafiles = map { $_->media_asset->media } $rs->all;
