@@ -7,6 +7,7 @@ use URI::Escape;
 use DateTime;
 use DateTime::Format::Flexible;
 use CGI;
+use HTTP::Tiny;
 use POSIX 'strftime';
 
 use Geo::Distance;
@@ -2170,14 +2171,60 @@ sub create_fb_album :Local {
 	}
     }
     $c->log->debug( "OK TO ACCESS ALL IMAGES" );
-    
+
+    # Create a new album.
+    my $fb_album_id = undef;
+    my $fb_album_url = undef;
+
+    my $web_client = HTTP::Tiny->new();
+    my $data = {
+	access_token => $args->{fb_token},
+	name => $args->{title},
+    };
+    if ( defined( $args->{description} ) ) {
+	$data->{description} = $args->{description};
+    }
+    my $params = $web_client->www_form_urlencode( $data );
+    my $url = $c->config->{'facebook_endpoint'} . 'me/albums?' . $params;
+    my $response = $web_client->post( $url );
+    if ( !$response->{success} ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album: ' . $response->{reason} ) );
+    }
+    my $rjson = from_json( $response->{content} );
+    unless ( exists( $rjson->{id} ) and length( $rjson->{id} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album.' ) );
+    } else {
+	$fb_album_id = $rjson->{id};
+    }
+
+    # Get the URL to that album.
+    $data = {
+	access_token => $args->{fb_token},
+    };
+    $params = $web_client->www_form_urlencode( $data );
+    $url = $c->config->{'facebook_endpoint'} . $fb_album_id . "?" . $params;
+    $response = $web_client->get( $url );
+    if ( !$response->{success} ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album: ' . $response->{reason} ) );
+    }
+    $rjson = from_json( $response->{content} );
+    unless ( exists( $rjson->{link} ) and length( $rjson->{link} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album.' ) );
+    } else {
+	$fb_album_url = $rjson->{link};
+    }
+
+    $args->{fb_album_id} = $fb_album_id;
+    $args->{fb_album_url} = $fb_album_url;
+
+    # Send the request to build the album to the back end.
     $args->{action} = 'create_fb_album';
     my $error = $c->model( 'SQS', $self->send_sqs( $c, 'create_fb_album', $args ) );
     if ( $error ) {
 	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album.' ) );
     }
     
-    $self->status_ok( $c, { success => 1 } );
+    $self->status_ok( $c, { success => 1, fb_album_url => $rjson->{link} } );
 }
 
 

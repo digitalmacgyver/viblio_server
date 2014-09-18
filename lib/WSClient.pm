@@ -8,7 +8,6 @@ use Data::Dumper;
 use LWP::UserAgent;
 use FileHandle;
 use File::Basename;
-use JSON;
 use IO::Socket::SSL qw();
 
 sub new {

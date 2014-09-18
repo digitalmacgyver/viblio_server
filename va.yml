@@ -195,3 +195,5 @@ Model::MQ:
 #
 file_storage:
   secret: viblio321
+
+facebook_endpoint: https://graph.facebook.com/
