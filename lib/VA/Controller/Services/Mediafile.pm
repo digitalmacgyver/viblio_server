@@ -1168,34 +1168,6 @@ sub cf :Local {
 	cf_url => $c->cf_sign( $asset->uri, {stream=>1} ) } );
 }
 
-=head2 /services/mediafile/embed_urls
-
-Return the S3 and cloudfront urls for a video with a maximal expiration time.
-
-Note: This effectively make a public, shareable URL.  Also - if we
-ever move our S3 resources in the future this will break.
-
-=cut
-
-sub embed_urls :Local {
-    my( $self, $c ) = @_;
-    my $mid = $c->req->param( 'mid' );
-    my $rs = $c->model( 'RDS::MediaAsset' )->search(
-	{ 'media.uuid' => $mid,
-	  'me.asset_type' => 'main',
-	  -or => [ 'media.user_id' => $c->user->id,
-		   'media_shares.user_id' => $c->user->id ] },
-	{ prefetch => {'media' => 'media_shares' } });
-    my $asset = $rs->first;
-    unless( $asset ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find main asset for media [_1]', $mid ) );
-    }
-    $self->status_ok( $c, { 
-	url    => VA::MediaFile::US->new->uri2url( $c, $asset->uri, { expires => 2**31-1-time() } ),
-	cf_url => $c->cf_sign( $asset->uri, {stream=>0, expires => 2**31-1-time() } ) } );
-}
-    
-
 =head2 /services/mediafile/related
 
 Input parameters:
