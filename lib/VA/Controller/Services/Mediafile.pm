@@ -753,8 +753,11 @@ sub add_share :Local {
     my $subject = $c->req->param( 'subject' );
     my $body = $c->req->param( 'body' );
     my $title = $c->req->param( 'title' );
+    my $embed = $self->boolean( $c->req->param( 'embed' ), 0 );
     my $disposition = $c->req->param( 'private' );
     $disposition = 'private' unless( $disposition );
+
+    my $embed_url = undef;
 
     my $media = $c->user->media->find({ uuid => $mid });
     unless( $media ) {
@@ -888,9 +891,16 @@ sub add_share :Local {
 	    $self->status_bad_request
 		( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 	}
+	if ( $embed ) {
+	    $embed_url = $c->server . 's/e/' . $share->uuid;
+	}
     }
 
-    $self->status_ok( $c, {} );
+    if ( $embed and defined( $embed_url ) and length( $embed_url ) ) {
+	$self->status_ok( $c, { embed_url => $embed_url } );
+    } else {
+	$self->status_ok( $c, {} );
+    }
 }
 
 =head2 /services/mediafile/count

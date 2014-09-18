@@ -208,7 +208,50 @@ sub ps :Local {
 	$c->stash->{template}  = 'shared/fpheader.tt';
     }
 }
-    
+
+
+=head2 /s/e/<share-uuid>
+
+This redirects a potential share which is accessed through an embed
+code to the underlying resource.
+
+=cut
+
+sub e :Local {
+    my( $self, $c, $sid ) = @_;
+
+    unless( $sid ) {
+	$c->res->status( 404 );
+	$c->res->body( 'Not found' );
+	$c->detach;
+    }
+
+    my $share = $c->model( 'RDS::MediaShare' )->find( { uuid=>$sid, share_type=>'public' } );
+
+    unless( $share ) {
+	$c->res->status( 404 );
+	$c->res->body( 'Not found' );
+	$c->detach;
+    }
+
+    my $mediafile = $share->media;
+
+    $mediafile->view_count( $mediafile->view_count + 1 );
+    $mediafile->update;
+	    
+    my $mf = VA::MediaFile->new->publish( $c, $mediafile, { views => [ 'main' ] } );
+
+    my $url = $mf->{views}->{main}->{url};
+    my $cf_url = $c->cf_sign( $mf->{views}->{main}->{uri}, { stream => 0, expires => 24*60*60 } );
+
+    import Data::Dumper; 
+    $c->log->error( "SENDING YOU TO: " . Dumper( $mf ) );
+    $c->log->error( "SENDING YOU TO: " . $mf->{views}->{main}->{uri} );
+    $c->log->error( "SENDING YOU TO: " . $cf_url );
+
+    $c->response->redirect( $cf_url, 307 );
+    $c->detach();
+}
 
 __PACKAGE__->meta->make_immutable;
 

@@ -248,7 +248,7 @@ sub create :Local {
     $self->status_ok( $c, { album => $hash } );
 }
 
-=perl
+=head2
 
 services/album/get - Return a list of media in the requested album,
 with posters, if the user has permission to view.
