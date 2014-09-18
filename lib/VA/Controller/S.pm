@@ -226,7 +226,7 @@ sub e :Local {
 	$c->detach;
     }
 
-    my $share = $c->model( 'RDS::MediaShare' )->find( { uuid=>$sid, share_type=>'public' } );
+    my $share = $c->model( 'RDS::MediaShare' )->find( { uuid=>$sid, share_type=> 'public' } );
 
     unless( $share ) {
 	$c->res->status( 404 );
@@ -243,11 +243,6 @@ sub e :Local {
 
     my $url = $mf->{views}->{main}->{url};
     my $cf_url = $c->cf_sign( $mf->{views}->{main}->{uri}, { stream => 0, expires => 24*60*60 } );
-
-    import Data::Dumper; 
-    $c->log->error( "SENDING YOU TO: " . Dumper( $mf ) );
-    $c->log->error( "SENDING YOU TO: " . $mf->{views}->{main}->{uri} );
-    $c->log->error( "SENDING YOU TO: " . $cf_url );
 
     $c->response->redirect( $cf_url, 307 );
     $c->detach();
