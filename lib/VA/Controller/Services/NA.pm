@@ -163,7 +163,7 @@ sub authenticate :Local {
 	    my $device_type = device_type( $c->req->browser );
 	    if ( ( $device_type eq 'iphone' ) || ( $device_type eq 'ipad' ) ) {
 		my $mp = WWW::Mixpanel->new( $c->config->{mixpanel_token} );
-		$mp->people_set( $c->user->obj->uuid(), '$email' => $c->user->obj->email(), '$created' => $c->user->obj->created_date(), '$last_login' => time()  );
+		$mp->people_set( $c->user->obj->uuid(), '$email' => $c->user->obj->email(), '$created' => $c->user->obj->created_date() );
 	    }
 	} catch {
 	    my $exception = $_;
