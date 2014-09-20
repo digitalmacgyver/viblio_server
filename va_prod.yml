@@ -75,3 +75,5 @@ Model::MQ:
   server: http://localhost:3002
   type: application/json
 
+mixpanel_token: 404b9a0b96b8147b5050c165dfc809b3
+

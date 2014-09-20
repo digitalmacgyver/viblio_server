@@ -197,3 +197,5 @@ file_storage:
   secret: viblio321
 
 facebook_endpoint: https://graph.facebook.com/
+
+mixpanel_token: 6954c354aa38909f812ed12d1b425e60

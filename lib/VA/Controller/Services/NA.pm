@@ -20,6 +20,8 @@ use Net::GitHub::V3;
 use Data::UUID;
 use GeoData;
 
+use WWW::Mixpanel;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 =head1 /services/na
@@ -133,7 +135,6 @@ sub authenticate :Local {
     
     if ( $c->authenticate( $creds, $realm ) ) {
 	# The website's facebook login only ever calls: services/na/authenticate.
-	# Here we handle the case where.
 	if ( $realm =~ /facebook/ ) {
 	    if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
 		# In this case we have just authenticated a new facebook user.
@@ -152,6 +153,22 @@ sub authenticate :Local {
 		lc( Data::UUID->new->create_from_name_str( 'com.viblio', $c->user->obj->email ) ) );
 	    $c->user->obj->update;
 	}
+
+	try {
+	    # Try to send Mixpanel a message about this user does
+	    # stuff from the iPhone app.  This isn't perfect - it also
+	    # sends events when the user does logins through a
+	    # browser, but it's better than the no information we get
+	    # now.
+	    my $device_type = device_type( $c->req->browser );
+	    if ( ( $device_type eq 'iphone' ) || ( $device_type eq 'ipad' ) ) {
+		my $mp = WWW::Mixpanel->new( $c->config->{mixpanel_token} );
+		$mp->people_set( $c->user->obj->uuid(), '$email' => $c->user->obj->email(), '$created' => $c->user->obj->created_date(), '$last_login' => time()  );
+	    }
+	} catch {
+	    my $exception = $_;
+	    $c->log->error( 'Failed to send mixpanel event for login.  Error was $exception. User was: ' . $c->user->obj->uuid() );
+	};
 
 	$self->status_ok( $c, { user => $c->user->obj } );
     } 

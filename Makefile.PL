@@ -85,6 +85,8 @@ requires 'Geo::Distance::XS';
 requires 'Net::APNS';
 requires 'CatalystX::DebugFilter';
 requires 'Geo::GeoNames';
+requires 'WWW::Mixpanel';
+
 
 test_requires 'Test::More' => '0.88';
 catalyst;
