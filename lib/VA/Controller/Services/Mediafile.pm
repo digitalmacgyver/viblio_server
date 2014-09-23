@@ -2007,17 +2007,24 @@ sub create_video_summary :Local {
 	# DEBUG - For now we just randomly pick a track from a hard
 	# coded list.
 	my $hard_coded_songs = [
-	    '35d8a68d-84e7-4879-94d9-d114063753a8',
-	    '0a693013-2e1e-44a3-8f57-f96088e1b826',
-	    '8ecc578b-63c4-4dd8-8b2b-bfe0f43c2573',
-	    '3b2ffa84-e13f-4c4f-9cf0-4831107f458b',
-	    'ab66fc11-4595-4326-aac9-08993b93b8f9',
-	    '164e5399-b7a8-43fd-b05f-e6de6da17791',
-	    'fc828f14-368b-4b02-8f93-b387f297aaf3',
-	    'cfeb0746-cd02-4817-91cc-b8e99c416fd5',
-	    '87013d3b-4574-468d-b14c-b02f393dd2f2',
-	    '7de7db37-6e42-4af0-a117-63e2551e80cd'
+	    'c637ac8a-3b3f-4030-82a0-af423a227457',
+	    '2cecfbf0-66de-4947-a168-590ddc1f200f',
+	    'd105304f-6fae-4fab-8fc1-bfe1352100d3',
+	    'a75cd2de-0c62-4cb3-bc9c-245ecfda0da7',
+	    '5406e7f6-ea76-4f60-98d6-092df9a0b637',
+	    '1b324c07-945d-434f-926d-cc5095dabcc8',
+	    'f4a6501d-7f85-4040-92b5-e97d5a568c27',
+	    '11e033aa-464d-48af-979f-d30a359d1ff8',
+	    '9ad4e4ff-69a6-448d-ac44-b86cdbfa8d60',
+	    '0db07b3c-2cd2-4624-bd6a-43840ded3f4b',
+	    '756c6329-662e-46d4-9ea9-1223585c2487',
+	    'c6bfc438-fd26-4742-9b89-576132d86c61',
+	    'ff48a1f5-59ae-4c1a-be68-d842dc1a884f',
+	    '9664ab37-68c8-4e8a-890a-327ec7ec7c5e',
+	    '82c7b7f7-272e-48ef-a989-942872b38456',
+	    '1d04fc52-93da-4182-8cff-428b27c49f09'
 	    ];
+	    
 	if ( $ENV{'VA_CONFIG_LOCAL_SUFFIX'} eq 'prod' ) {
 	    $hard_coded_songs = [
 		'3718a653-0ff6-44a6-96ee-85f399ca7713',
