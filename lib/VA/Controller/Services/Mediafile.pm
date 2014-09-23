@@ -2027,16 +2027,22 @@ sub create_video_summary :Local {
 	    
 	if ( $ENV{'VA_CONFIG_LOCAL_SUFFIX'} eq 'prod' ) {
 	    $hard_coded_songs = [
-		'3718a653-0ff6-44a6-96ee-85f399ca7713',
-		'8b6d43a3-d19a-485d-8427-b38303eb66fe',
-		'e38b10dc-69b9-448c-a4d6-59b4d5c2f60f',
-		'c6f8702b-e72e-4cb6-b2b6-6837531a1e58',
-		'609cf368-8852-460d-ac66-a2deb979c9ab',
-		'149db8a0-e141-4b76-b394-f3cd3a423689',
-		'4c87aa1b-ea98-4ad0-8ae7-41d0dff98b76',
-		'26f11c23-0b38-4829-84dc-a4d5b44ef23c',
-		'bae56b04-2c92-40c6-95a8-254c32f44387',
-		'73a00269-b4db-49a6-8203-cc877fecde95'
+		'e5483c87-3ffc-4eb1-a0ce-8b15e8588de5',
+		'1cd76132-f421-48eb-b8cb-9758b9a78a19',
+		'8c18da4a-04ee-415f-887b-1319df19319e',
+		'dbd2735d-c9c9-47c3-9048-96605b1b0bad',
+		'1c918f69-bccf-4b08-baf2-1bba1213f2a0',
+		'79dd6b15-6ea9-470d-bdc6-be5a425b10b3',
+		'564d7c84-6bd8-43dd-8a22-9308097f852b',
+		'401f07a5-d255-4284-b9ac-067a5494d2e9',
+		'6578e271-813b-4c1f-82cf-2cca0364550a',
+		'44a82bdc-b8cb-4ddc-be7c-51cad60755be',
+		'49e4b313-8263-4587-859f-19027f6ddad4',
+		'734d156f-2f06-40d0-a19f-8abd15b336c9',
+		'e5e6dddb-436b-4d3a-a0fc-c26bb657d771',
+		'07d65af3-e365-4d89-a80f-bdd0b232e1d6',
+		'13d96521-4d22-42d5-b7cf-8d8208640345',
+		'4c16a3bd-a18e-48cf-8c0d-59832f7e31a3'
 		];
 	}
 
