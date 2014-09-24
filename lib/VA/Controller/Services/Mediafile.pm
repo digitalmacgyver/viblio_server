@@ -1406,6 +1406,30 @@ sub change_recording_date :Local {
     unless( $media ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
     }
+
+    my $new_date = DateTime::Format::Flexible->parse_datetime( $dstring );
+    my $date_string = $new_date->month_name . ' ' . $new_date->year();
+
+    my $old_date = $media->recording_date();
+
+    if ( $old_date == DateTime->from_epoch( epoch => 0 ) ) {
+	# We are updating from the default, add a new tag.
+	$media->asset( 'main' )->create_related( 'media_asset_features', { feature_type => 'activity',
+									     coordinates => $date_string } );
+    } else {
+	# We are updating from a prior date, update existing or add
+	# new tag if none.
+	my $old_date_string = $old_date->month_name . ' ' . $old_date->year();
+	my $old_tag = $media->asset( 'main' )->search_related( 'media_asset_features', { coordinates => $old_date_string } )->single();
+	if ( defined( $old_tag ) ) {
+	    $old_tag->coordinates( $date_string );
+	    $old_tag->update();
+	} else {
+	    $media->asset( 'main' )->create_related( 'media_asset_features', { feature_type => 'activity',
+										 coordinates => $date_string } );
+	}
+    }
+
     $media->recording_date( DateTime::Format::Flexible->parse_datetime( $dstring ) );
     $media->update;
     $self->status_ok( $c, { date => $media->recording_date } );
