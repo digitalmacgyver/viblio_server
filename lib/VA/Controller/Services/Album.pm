@@ -164,7 +164,7 @@ sub create_album_helper :Private {
     else {
 	$where->{title} = $name;
     }
-    my $album = $c->user->create_related( 'media', $where );
+    my $album = $c->user->find_or_create_related( 'media', $where );
 
     if ( $is_viblio_created ) {
 	$album->is_viblio_created( 1 );
