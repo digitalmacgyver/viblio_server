@@ -2198,7 +2198,7 @@ sub create_fb_album :Local {
     my $web_client = HTTP::Tiny->new();
     my $data = {
 	access_token => $args->{fb_token},
-	name => $args->{title},
+	name => 'VIBLIO: ' . $args->{title},
     };
     if ( defined( $args->{description} ) ) {
 	$data->{description} = $args->{description};
