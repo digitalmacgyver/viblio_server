@@ -265,7 +265,7 @@ if ( $days_ago >= 7 ) {
     else {
 	foreach my $user ( @users ) {
 	    try {
-		if ( $user->videos->count == 0 || $email_addr eq $user->email ) {
+		if ( $user->videos->count < 3 || $email_addr eq $user->email ) {
 		    my $res  = VA::Controller::Services->send_email( $c, {
 			subject => $c->loc( "Get started with your new VIBLIO account" ),
 			to => [{ email => $user->email,
@@ -299,7 +299,7 @@ if ( $days_ago >= 7 ) {
     else {
 	foreach my $user ( @users ) {
 	    try {
-		if ( $user->videos->count == 0 || $email_addr eq $user->email ) {
+		if ( $user->videos->count < 3 || $email_addr eq $user->email ) {
 		    $c->log->debug( 'Sending email to ' . $user->email );
 		    my $res  = VA::Controller::Services->send_email( $c, {
 			subject => $c->loc( "VIBLIO wants to help"  ),
