@@ -466,7 +466,7 @@ sub invite_request :Local {
     $c->stash->{email} =
     { to       => $args->{email},
       from     => $c->config->{viblio_return_email_address},
-      subject  => $c->loc( "Invitation to join Viblio" ),
+      subject  => $c->loc( "Invitation to join VIBLIO" ),
       template => 'email/invitation.tt'
     };
     $c->stash->{user} = $user;
@@ -660,7 +660,7 @@ sub new_user_helper :Private {
 	# And finally, send them a nice welcome email
 	#
 	$self->send_email( $c, {
-	    subject => $c->loc( "Viblio Account Confirmation" ),
+	    subject => $c->loc( "VIBLIO Account Confirmation" ),
 	    to => [{
 		email => $user->email,
 		name  => $user->displayname }],
@@ -704,7 +704,7 @@ sub account_confirm :Local {
     $user->confirmed( 1 ); $user->update;
 
     my $headers = {
-	subject => $c->loc( "Welcome to Viblio" ),
+	subject => $c->loc( "Welcome to VIBLIO" ),
 	to => [{
 	    email => $user->email,
 	    name  => $user->displayname }],
@@ -769,7 +769,7 @@ sub forgot_password_request :Local {
     }
 =cut
     my $email= { 
-	subject  => $c->loc( "Reset your password on Viblio" ),
+	subject  => $c->loc( "Reset your password on VIBLIO" ),
 	to => [{
 	    email => $args->{email} }],
 	template => 'email/18-forgotPassword.tt',
@@ -1098,7 +1098,7 @@ sub mediafile_create :Local {
 	    $c->log->debug( 'Sending email to ' . $user->email );
 
 	    my $email = {
-		subject    => $c->loc( "Your Viblio Video is Ready" ),
+		subject    => $c->loc( "Your VIBLIO Video is Ready" ),
 		to => [{
 		    email => $user->email,
 		    name  => $user->displayname }],

@@ -560,7 +560,7 @@ sub tell_a_friend :Local {
 	    }
 	}
 	$self->send_email( $c, {
-	    subject    => $c->loc( "Invitation to join Viblio" ),
+	    subject    => $c->loc( "Invitation to join VIBLIO" ),
 	    to => [{
 		name  => $to_name,
 		email => $recip}],
