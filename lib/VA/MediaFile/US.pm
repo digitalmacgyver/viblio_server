@@ -179,7 +179,12 @@ sub uri2url {
 				     month => 1, day => 1,
 				     hour => 23, minute => 59 )->epoch );
     }
-    my $url = $aws_generator->get( $aws_bucket_name, $s3key );
+    my $url = '';
+    if ( exists( $params->{'download'} ) && $params->{'download'} ) {
+	$url = $aws_generator->get( $aws_bucket_name, $s3key, { 'response-content-disposition' => 'attachment' } );
+    } else {
+	$url = $aws_generator->get( $aws_bucket_name, $s3key );
+    }
     $url =~ s/\/$aws_bucket_name\//\//g;
 
     #$c->log->debug( sprintf( "key=%s, secret=%s, https=%s, endpoint=%s, uri=%s, url=%s",

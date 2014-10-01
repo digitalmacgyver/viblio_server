@@ -152,6 +152,12 @@ sub publish {
 	    $view_json->{url} = 
 		$fp->uri2url( $c, $view_json, $params );
 
+	    my $download_params = $params;
+	    $download_params->{'download'} = 1;
+
+	    $view_json->{download_url} = 
+		$fp->uri2url( $c, $view_json, $params );
+
 	    # If this is a video, also generate a cloudfront url
 	    #
 	    my $mimetype = MIME::Types->new()->mimeTypeOf( $view_json->{uri} ) || $view_json->{mimetype};

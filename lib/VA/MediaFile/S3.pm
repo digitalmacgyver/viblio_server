@@ -138,7 +138,13 @@ sub uri2url {
 	$aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
     $aws_generator->expires_in( ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ) );
 
-    my $url = $aws_generator->get( $aws_bucket_name, $s3key );
+    my $url = '';
+    if ( exists( $params->{'download'} ) && $params->{'download'} ) {
+	$url = $aws_generator->get( $aws_bucket_name, $s3key, { 'response-content-disposition' => 'attachment' } );
+    } else {
+	$url = $aws_generator->get( $aws_bucket_name, $s3key );
+    }
+
     $url =~ s/\/$aws_bucket_name\//\//g;
     return $url;
 }

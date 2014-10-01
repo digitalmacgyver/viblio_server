@@ -2167,7 +2167,7 @@ sub create_fb_album :Local {
     my $fb_user = $self->validate_facebook_token( $c, $args->{access_token} );
     $args->{fb_token} = $c->session->{fb_token};
 
-    $c->log->debug( "fb token:" . $args->{fb_token} );
+    #$c->log->debug( "fb token:" . $args->{fb_token} );
 
     $args->{user_uuid} = $c->user->uuid();
 
@@ -2181,12 +2181,12 @@ sub create_fb_album :Local {
 	$allowed->{$media->id} = 1;
     }
 
-    # Is the user allowed to view the video the images are requested from?
+    # Does the user own the video the image is from?
     my @assets = $c->model( 'RDS::MediaAsset' )->search( { uuid => { '-in' => $args->{'images[]'} } } )->all();
     foreach my $asset ( @assets ) {
 	if ( !exists( $allowed->{$asset->media_id()} ) ) {
-	    $c->log->error( "NOT ALLOWED TO ACCESS IMAGES: ", $asset->uuid() );
-	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to view the image: ' . $asset->uuid() ) );
+	    $c->log->error( "CAN'T SEND UNOWNED IMAGES TO FACEBOOK: ", $asset->uuid() );
+	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to share this image to Facebook: ' . $asset->uuid() ) );
 	}
     }
     $c->log->debug( "OK TO ACCESS ALL IMAGES" );
@@ -2245,7 +2245,6 @@ sub create_fb_album :Local {
     
     $self->status_ok( $c, { success => 1, fb_album_url => $rjson->{link} } );
 }
-
 
 __PACKAGE__->meta->make_immutable;
 
