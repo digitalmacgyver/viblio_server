@@ -155,7 +155,7 @@ sub publish {
 	    my $download_params = $params;
 	    $download_params->{'download'} = 1;
 
-	    $view_json->{download_url} = 
+	    $view_json->{'download_url'} = 
 		$fp->uri2url( $c, $view_json, $params );
 
 	    # If this is a video, also generate a cloudfront url
