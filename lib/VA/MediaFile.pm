@@ -4,6 +4,10 @@ use Module::Find;
 use VA::MediaFile;
 use MIME::Types;
 
+use Carp;
+use Muck::FS::S3 qw($DEFAULT_HOST $PORTS_BY_SECURITY merge_meta);
+use URI::Escape;
+
 # This is a proxy class, not a super class.  The methods
 # called here will proxy to the class indicated by the
 # location of the media file.
@@ -152,11 +156,13 @@ sub publish {
 	    $view_json->{url} = 
 		$fp->uri2url( $c, $view_json, $params );
 
+	    #$DB::single = 1;
+
 	    my $download_params = $params;
-	    $download_params->{'download'} = 1;
+	    $download_params->{'download_url'} = 1;
 
 	    $view_json->{'download_url'} = 
-		$fp->uri2url( $c, $view_json, $params );
+		$fp->uri2url( $c, $view_json, $download_params );
 
 	    # If this is a video, also generate a cloudfront url
 	    #
@@ -262,5 +268,59 @@ sub error {
 	return $self->{emsg};
     }
 }
+
+# Code from Muck::FS::S3 - altered to support
+# request-disposition-type:
+sub generate_signed_url {
+    my ($self, $aws_key, $aws_secret, $aws_use_https, $aws_endpoint, $bucket, $key, $headers, $expires ) = @_;
+
+    my $DEFAULT_EXPIRES_IN = 60;
+ 
+    my $AWS_ACCESS_KEY_ID = $aws_key || croak "must specify aws access key id";
+    my $AWS_SECRET_ACCESS_KEY = $aws_secret || croak "must specify aws secret access key";
+    my $IS_SECURE  = $aws_use_https || croak "must specify aws is secure key";
+    my $SERVER = $aws_endpoint || $DEFAULT_HOST;
+    my $PORT = $PORTS_BY_SECURITY->{$IS_SECURE};
+ 
+    my $protocol = $IS_SECURE ? 'https' : 'http';
+ 
+    my $URL_BASE = "$protocol://$SERVER:$PORT";
+ 
+    croak 'must specify bucket' unless $bucket;
+    croak 'must specify key' unless $key;
+    $headers ||= {};
+ 
+    $key = uri_escape($key);
+ 
+    my $method = 'GET';
+    my $path = "$bucket/$key";
+
+    my $expiration = 0;
+    if ( $expires ) {
+	if ( exists( $expires->{'EXPIRES_IN'} ) ) {
+	    $expiration = int(time + $expires->{'EXPIRES_IN'} );
+	} elsif ( exists( $expires->{EXPIRES} ) ) {
+	    $expiration = int( $expires->{EXPIRES} );
+	}
+    }
+ 
+    my $canonical_string = Muck::FS::S3::canonical_string($method, $path, $headers, $expiration );
+    if ( exists( $headers->{'response-content-disposition'} ) && $headers->{'response-content-disposition'} ) {
+	if ( $canonical_string =~ /\?/ ) {
+	    $canonical_string .= "&response-content-disposition=" . $headers->{'response-content-disposition'};
+	} else {
+	    $canonical_string .= "?response-content-disposition=" . $headers->{'response-content-disposition'};
+	}
+	$path .= "?response-content-disposition=" . $headers->{'response-content-disposition'};
+    }
+    my $encoded_canonical = Muck::FS::S3::encode($AWS_SECRET_ACCESS_KEY, $canonical_string, 1);
+    if (index($path, '?') == -1) {
+        return "$URL_BASE/$path?Signature=$encoded_canonical&Expires=$expiration&AWSAccessKeyId=$AWS_ACCESS_KEY_ID";
+    } else {
+        return "$URL_BASE/$path&Signature=$encoded_canonical&Expires=$expiration&AWSAccessKeyId=$AWS_ACCESS_KEY_ID";
+    }
+}
+
+
 
 1;
