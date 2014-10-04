@@ -140,10 +140,35 @@ sub album_names :Local {
          { prefetch=>['contact',{'cgroup'=>'community'}]});
 
     my @communities = map { $_->cgroup->community } $rs->all;
-    my @albums = map { {title => $_->album->title(), uuid => $_->album->uuid(), is_shared => 1} } @communities;
+    my @albums = ();
+    
+    my $seen_owners = {};
+
+    foreach my $community ( @communities ) {
+	my $owner_id = $community->user_id();
+	my $owner_uuid = undef;
+	if ( exists( $seen_owners->{ $owner_id } ) ) {
+	    $owner_uuid = $seen_owners->{ $owner_id };
+	} else {
+	    $owner_uuid = $community->user->uuid();
+	    $seen_owners->{ $owner_id } = $owner_uuid;
+	}
+	push( @albums, { title => $community->album->title(),
+			 uuid => $community->album->uuid(),
+			 is_shared => 1,
+			 owner_uuid => $owner_uuid } );
+    }
 
     foreach my $album ( $c->user->albums->all ) {
-	push( @albums, { title => $album->title(), uuid => $album->uuid(), is_shared => 0 } );
+	my $owner_id = $album->user_id();
+	my $owner_uuid = undef;
+	if ( exists( $seen_owners->{ $owner_id } ) ) {
+	    $owner_uuid = $seen_owners->{ $owner_id };
+	} else {
+	    $owner_uuid = $album->user->uuid();
+	    $seen_owners->{ $owner_id } = $owner_uuid;
+	}
+	push( @albums, { title => $album->title(), uuid => $album->uuid(), is_shared => 0, owner_uuid => $owner_uuid } );
     }
 
     my @n = sort { $a->{title} cmp $b->{title} } @albums;
