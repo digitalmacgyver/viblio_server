@@ -157,6 +157,12 @@ __PACKAGE__->table("media");
   default_value: 0
   is_nullable: 0
 
+=head2 skip_faces
+
+  data_type: 'tinyint'
+  default_value: 0
+  is_nullable: 0
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -209,6 +215,8 @@ __PACKAGE__->add_columns(
   "status",
   { data_type => "varchar", is_nullable => 1, size => 32 },
   "is_viblio_created",
+  { data_type => "tinyint", default_value => 0, is_nullable => 0 },
+  "skip_faces",
   { data_type => "tinyint", default_value => 0, is_nullable => 0 },
   "created_date",
   {
@@ -424,6 +432,24 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+=head2 viblio_added_content_album_id_album_users
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::ViblioAddedContent>
+
+=cut
+
+__PACKAGE__->has_many(
+  "viblio_added_content_album_id_album_users",
+  "VA::RDSSchema::Result::ViblioAddedContent",
+  {
+    "foreign.album_id"      => "self.id",
+    "foreign.album_user_id" => "self.user_id",
+  },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 viblio_added_contents
 
 Type: has_many
@@ -443,17 +469,25 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07036 @ 2014-05-06 16:57:33
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FFlLX+pZg6jOMfQwWZ7yHw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-09-09 14:27:27
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:I4FIEc+0K16HPXD5MNQxyQ
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
 sub TO_JSON {
     my $self = shift;
+    my $params = shift;
     my $hash = { %{$self->{_column_data}} };
     delete $hash->{id};
     delete $hash->{user_id};
-    $hash->{owner_uuid} = $self->user->uuid;
+    # If our caller already knows who owns this media, they can tell
+    # us to avoid doing a DB query.
+    if ( defined( $params ) && $params->{owner_uuid} ) {
+	$hash->{owner_uuid} = $params->{owner_uuid};
+    } else {
+	# This results in a database query.
+	$hash->{owner_uuid} = $self->user->uuid;
+    }
     return $hash;
 }
 
@@ -514,29 +548,28 @@ __PACKAGE__->has_many(
   { "foreign.media_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
+
 __PACKAGE__->has_many(
-  "media_albums_medias",
-  "VA::RDSSchema::Result::MediaAlbum",
-  { "foreign.album_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0,
-    where => { "media.is_album" => 0,
-	       -or => [ "media.status" => "visible",
-			"media.status" => "complete" ] }
-  },
+    "media_albums_medias",
+    "VA::RDSSchema::Result::MediaAlbum",
+    { "foreign.album_id" => "self.id" },
+    { cascade_copy => 0, cascade_delete => 0,
+    },
+    # DEBUG - this seems to be causing a problem, and this
+    #relationship is otherwise unusued.
+    # where => { "media.is_album" => 0 } },
 );
+
 __PACKAGE__->has_many(
-  "media_albums_videos",
-  "VA::RDSSchema::Result::MediaAlbum",
-  { "foreign.album_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0,
-    where => { "videos.is_album" => 0,
-	       -or => [ "videos.status" => "visible",
-			"videos.status" => "complete" ] }
-  },
+    "media_albums_videos",
+    "VA::RDSSchema::Result::MediaAlbum",
+    { "foreign.album_id" => "self.id" },
+    { cascade_copy => 0, cascade_delete => 0,
+    where => { "videos.is_album" => 0 } },
 );
-__PACKAGE__->many_to_many( 'albums', 'media_albums_albums', 'album' );
-__PACKAGE__->many_to_many( 'media',  'media_albums_medias', 'media' );
-__PACKAGE__->many_to_many( 'videos',  'media_albums_videos', 'videos' );
+__PACKAGE__->many_to_many( 'albums' => 'media_albums_albums', 'album' );
+__PACKAGE__->many_to_many( 'media' =>  'media_albums_medias', 'media' );
+__PACKAGE__->many_to_many( 'videos' =>  'media_albums_videos', 'videos' );
 
 __PACKAGE__->has_one(
     "community",
@@ -579,7 +612,8 @@ sub is_community_member_of {
     else {
 	my @cgroups = $self->result_source->schema->resultset( 'MediaAlbum' )->search
 	    ({'videos.id'=>$self->id},
-	     {prefetch=>['videos',{'album'=>'community'}]});
+	     { prefetch => [ 'videos', { 'album' => 'community' } ],
+	       order_by => 'videos.recording_date desc' } ); 
 	return map { $_->album->community } @cgroups;
     }
 }

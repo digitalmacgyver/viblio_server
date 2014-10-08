@@ -165,7 +165,23 @@ sub ps :Local {
 
     if ( $mediafile ) {
 	# Turn this potential share into a real, hidden share
-	my $hidden = $mediafile->find_or_create_related( 'media_shares', { share_type => 'hidden' } );
+	# 
+	# There has been some spooky business using
+	# find_or_create_related here resulting in duplicates that
+	# shouldn't occur - let's try less magic and more explicit
+	# code.
+	my @hidden_shares = $mediafile->media_shares->search( { share_type => 'hidden' } );
+	my $hidden = undef;
+	if ( !scalar( @hidden_shares ) ) {
+	    # Oops! No such hidden share exists - create one.
+	    $hidden = $mediafile->create_related( 'media_shares', 
+						  { share_type => 'hidden', 
+						    is_group_share => 0, 
+						    'view_count' => 0 } );
+	} else {
+	    $hidden = $hidden_shares[0];
+	}
+
 
 	# The fpheader needs only limitted information, so don't leak anything
 	# we don't have too.
@@ -192,7 +208,45 @@ sub ps :Local {
 	$c->stash->{template}  = 'shared/fpheader.tt';
     }
 }
-    
+
+
+=head2 /s/e/<share-uuid>
+
+This redirects a potential share which is accessed through an embed
+code to the underlying resource.
+
+=cut
+
+sub e :Local {
+    my( $self, $c, $sid ) = @_;
+
+    unless( $sid ) {
+	$c->res->status( 404 );
+	$c->res->body( 'Not found' );
+	$c->detach;
+    }
+
+    my $share = $c->model( 'RDS::MediaShare' )->find( { uuid=>$sid, share_type=> 'public' } );
+
+    unless( $share ) {
+	$c->res->status( 404 );
+	$c->res->body( 'Not found' );
+	$c->detach;
+    }
+
+    my $mediafile = $share->media;
+
+    $mediafile->view_count( $mediafile->view_count + 1 );
+    $mediafile->update;
+	    
+    my $mf = VA::MediaFile->new->publish( $c, $mediafile, { views => [ 'main' ] } );
+
+    my $url = $mf->{views}->{main}->{url};
+    my $cf_url = $c->cf_sign( $mf->{views}->{main}->{uri}, { stream => 0, expires => 24*60*60 } );
+
+    $c->response->redirect( $cf_url, 307 );
+    $c->detach();
+}
 
 __PACKAGE__->meta->make_immutable;
 

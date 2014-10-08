@@ -22,7 +22,8 @@ sub dates_for_contact :Private {
     my( $self, $c, $cid ) = @_;
     my @features = $c->model( 'RDS::MediaAssetFeature' )
 	->search(
-	{ contact_id => $cid },
+	{ feature_type => 'face',
+	  contact_id => $cid },
 	{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
     my @media = map { $_->media_asset->media } @features;
     return @media;
@@ -314,6 +315,7 @@ sub videos_for_month :Local {
     my $pager = {};
     if ( $cid ) {
 	my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
+	# DEBUG shouldn't need this? What are we doing here?
 	unless( $contact ) {
 	    $contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
 	}

@@ -4,8 +4,11 @@ use namespace::autoclean;
 
 use JSON;
 use URI::Escape;
+use DateTime;
 use DateTime::Format::Flexible;
 use CGI;
+use HTTP::Tiny;
+use POSIX 'strftime';
 
 use Geo::Distance;
 
@@ -90,7 +93,7 @@ Size in bytes of this media file.
 =item uri
 
 The "uri" for this media file.  This is not usually a full URL, but rather some sort of
-tag passed back from the permenent storage server that holds the actual file.  Media file
+tag passed back from the permanent storage server that holds the actual file.  Media file
 views have "url" fields that are typically automatically derived from this uri field in
 some way.
 
@@ -148,7 +151,7 @@ sub create :Local {
 
 Get a full base url to the server used to store media files at the
 passed in location.  This is needed for servers that are protected
-with server-side generated credencials.  
+with server-side generated credentials.  
 
 =head3 Parameters
 
@@ -177,7 +180,7 @@ sub url_for :Local {
 
 =head2 /services/mediafile/delete
 
-Delete a mediafile.  Deletes the file in permenant storage as well.
+Delete a mediafile.  Deletes the file in permanent storage as well.
 
 =head3 Parameters
 
@@ -213,6 +216,7 @@ sub delete :Local {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Failed to delete this media file from storage." ) );
     }
+
     # Deal with faces.  
     #
     # foreach face in this video:
@@ -238,6 +242,8 @@ sub delete :Local {
     my @faces = @{$mediafile->{views}->{face}};
 
     # Generic resultset for finding other mediafiles (other than this one)
+    #
+    # Explicitly consider fb_face and face features here.
     my $rs = $c->model( 'RDS::MediaAssetFeature' )->search({
 	'media.id' => { '!=', $mf->id } }, {
 	    prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
@@ -325,6 +331,71 @@ sub delete :Local {
     $self->status_ok( $c, { contacts => \@contacts_in_video } );
 }
 
+
+=head2 /services/mediafile/delete_asset
+
+Delete assets related to a mediafile.  Deletes the asset in permanent
+storage as well, and any related features.
+
+Note: This method doesn't do anything fancy about remapping face URIs,
+if faces are deleted using this API the caller must ensure all
+contacts have valid URIs as part of the operation.
+
+=head3 Parameters
+
+assets[] - A list of assets. Any assets not belonging to the user are ignored.
+
+=head3 Response
+
+  {}
+
+=cut
+
+sub delete_assets :Local {
+    my $self = shift;
+    my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [
+	  'assets[]' => []
+        ],
+        @_ );
+
+    my @assets_to_delete = $c->model( 'RDS::MediaAsset' )->search( {
+	'me.uuid' => { -in => $args->{ 'assets[]' } },
+	'me.user_id' => $c->user->id() } )->all();
+
+    unless( scalar( @assets_to_delete ) ) {
+	$self->status_bad_request( $c, $c->loc( "No media_assets to delete found." ) )
+    }
+
+    for my $asset_to_delete ( @assets_to_delete ) {
+
+	my $location = $asset_to_delete->location();
+
+	unless( $location ) {
+	    $self->status_bad_request( $c, $c->loc( "Cannot determine location of this asset." ) );
+	}
+
+	my $klass = $c->config->{mediafile}->{$location};
+	unless ( $klass ) {
+	    $self->status_bad_request( $c, $c->loc( "Cannot determine type of this asset." ) );
+	}
+	if ( $klass != 'VA::MediaFile::US' ) {
+	    $self->status_bad_request( $c, $c->loc( "Delete no implemented for resources of type: $klass" ) );
+	}
+	my $fp = new $klass;
+	# If we have an error on a particular asset, we just continue on to the rest of them.
+	$fp->delete_asset( $c, $asset_to_delete );
+
+	# Finally, delete record from the database - doing so will
+	# also take out any features associated with that asset
+	# automatically.
+	$asset_to_delete->delete;
+    }
+    $self->status_ok( $c, { } );
+}
+
 =head2 /services/mediafile/list
 
 Return a list of media files belonging to the logged in user.  Supports
@@ -386,7 +457,11 @@ sub list :Local {
 	  include_contact_info => 0,
 	  include_tags => 1,
 	  include_shared => 0,
-	  'views[]' => undef
+	  'views[]' => ['poster'],
+	  include_images => 0,
+	  only_visible => 1,
+	  only_videos => 1,
+	  'status[]' => []
         ],
         @_ );
 
@@ -394,23 +469,40 @@ sub list :Local {
 	include_contact_info => $args->{include_contact_info},
 	include_tags => $args->{include_tags},
 	include_shared => $args->{include_shared},
-	views => $args->{'views[]'}
+	views => $args->{'views[]'},
+	include_images => $args->{include_images}
     };
 
+    if ( $params->{include_images} ) {
+	push( @{$params->{views}}, 'image' );
+    }
+
+    my $where = {};
+    if ( $args->{only_visible} ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @{$args->{'status[]'}} ) ) {
+	$where->{'status'} = $args->{'status[]'};
+    }
+    if ( $args->{only_videos} ) {
+	$where->{'me.media_type'} = 'original';
+    }
+
     my $rs = $c->user->videos->search(
-	{},
+	$where,
 	{ prefetch => 'assets',
 	  page => $args->{page}, rows => $args->{rows},
 	  order_by => { -desc => 'me.id' } } );
-    my @media = ();
-    foreach my $m ( $rs->all ) {
-	my @a = $m->assets;
-	$params->{assets} = \@a;
-	push( @media, VA::MediaFile->new->publish( $c, $m, $params ) )
+
+    if ( $args->{include_images} ) {
+	push( @{$args->{'views[]'}}, 'image' );
     }
+
+    my $media = $self->publish_mediafiles( $c, [$rs->all], $params );
+
     $self->status_ok(
 	$c,
-	{ media => \@media,
+	{ media => $media,
 	  pager => $self->pagerToJson( $rs->pager ),
 	} );
 }
@@ -421,22 +513,25 @@ sub popular :Local {
       ( $c,
         [ page => 1,
           rows => 10000,
-	  'views[]' => undef
+	  'views[]' => undef,
+	  only_visible => 1,
+	  only_videos => 1,
+	  'status[]' => [],
         ],
         @_ );
     
-    my $where = $self->where_valid_mediafile();
+    my $where = $self->where_valid_mediafile( undef, undef, $args->{only_visible}, $args->{only_videos}, $args->{'status[]'} );
     $where->{ 'me.view_count' } = { '!=', 0 };
     my $rs = $c->user->media->search( $where, 
 				      { prefetch => 'assets',
 					page => $args->{page},
 					rows => $args->{rows},
 					order_by => { -desc => 'me.view_count' } });
-    my @media;
-    push( @media, VA::MediaFile->new->publish( $c, $_, { views => $args->{'views[]'} } ) )
-	foreach( $rs->all );
+
+    my $media = $self->publish_mediafiles( $c, [$rs->all], { views => $args->{'views[]'} } );
+
     my $pager = $self->pagerToJson( $rs->pager );
-    $self->status_ok( $c, { media => \@media, pager => $pager } );
+    $self->status_ok( $c, { media => $media, pager => $pager } );
 }
 
 =head2 /services/mediafile/get
@@ -591,7 +686,7 @@ sub add_comment :Local {
 
     # Send emails and notifications (but not to myself!)
 
-    # Who should get email/notofications?  The owner of the video being commented on,
+    # Who should get email/notifications?  The owner of the video being commented on,
     # and everybody who has been shared this video.  The logged in user
     # making the comment should never get an email.
 
@@ -642,7 +737,7 @@ sub add_comment :Local {
 Called to share a video with someone or someones.  Requires a mid media uuid.  The
 list parameter is optional.  If not present, this share is 'public', a post to a
 social networking site.  If the list is present, its assumed to be a clean, sanitized
-comma delimitted list of email addresses.  If an email address belongs to a viblio user,
+comma delimited list of email addresses.  If an email address belongs to a viblio user,
 a private share is created, otherwise a hidden share.  Email is sent to each address
 on the list.  The url to the video is different depending on private or hidden.
 
@@ -658,8 +753,11 @@ sub add_share :Local {
     my $subject = $c->req->param( 'subject' );
     my $body = $c->req->param( 'body' );
     my $title = $c->req->param( 'title' );
+    my $embed = $self->boolean( $c->req->param( 'embed' ), 0 );
     my $disposition = $c->req->param( 'private' );
     $disposition = 'private' unless( $disposition );
+
+    my $embed_url = undef;
 
     my $media = $c->user->media->find({ uuid => $mid });
     unless( $media ) {
@@ -770,12 +868,12 @@ sub add_share :Local {
 	}
     }
     elsif ( $disposition eq 'potential' ) {
-	# This is a potential share.  A potencial share is created in any context
+	# This is a potential share.  A potential share is created in any context
 	# where we don't otherwise know that the share will ever actually be used.
 	# Currently this is the case for cut-n-paste or copy-to-clipboard link
 	# displayed in the shareVidModal in the web gui.  We don't know if the user
 	# will actually c-n-p or c-t-c, and if they do, we don't know if they 
-	# actually utilize the information.  So we create a potencial share, which
+	# actually utilize the information.  So we create a potential share, which
 	# will turn into a "hidden" share if anyone ever comes into viblio via the
 	# special link we will specify.
 	#
@@ -793,9 +891,16 @@ sub add_share :Local {
 	    $self->status_bad_request
 		( $c, $c->loc( "Failed to create a share for for uuid=[_1]", $mid ) );
 	}
+	if ( $embed ) {
+	    $embed_url = $c->server . 's/e/' . $share->uuid;
+	}
     }
 
-    $self->status_ok( $c, {} );
+    if ( $embed and defined( $embed_url ) and length( $embed_url ) ) {
+	$self->status_ok( $c, { embed_url => $embed_url } );
+    } else {
+	$self->status_ok( $c, {} );
+    }
 }
 
 =head2 /services/mediafile/count
@@ -807,9 +912,16 @@ Simply return the total number of mediafiles owned by the logged in user.
 sub count :Local {
     my( $self, $c ) = @_;
     my $uid = $c->req->param( 'uid' );
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
+
     my $count = 0;
 
-    my $where = $self->where_valid_mediafile();
+    my $where = $self->where_valid_mediafile( undef, undef, $only_visible, $only_videos, \@status_filters );
 
     if ( $uid ) {
 	my $user = $c->model( 'RDS::User' )->find({uuid => $uid });
@@ -917,34 +1029,34 @@ sub all_shared :Local {
 sub list_status :Local {
     my ( $self, $c ) = @_;
     my @media = $c->model( 'RDS::Media' )->search( 
-       { 'me.user_id' => $c->user->id,
-         'me.is_album' => 0,
-         'me.media_type' => 'original' } )->all();
+	{ 'me.user_id' => $c->user->id,
+	  'me.is_album' => 0,
+	  'me.media_type' => 'original' } )->all();
 
     my $valid_status = { 
-       pending  => 1,
-       visible  => 1,
-       complete => 1,
-       failed   => 1
+	pending  => 1,
+	visible  => 1,
+	complete => 1,
+	failed   => 1
     };
 
     my $result = { 
-       stats => { 
-           pending  => 0,
-           visible  => 0,
-           complete => 0,
-           failed   => 0
-       },
-               details => [] 
+	stats => { 
+	    pending  => 0,
+	    visible  => 0,
+	    complete => 0,
+	    failed   => 0
+	},
+		details => [] 
     };
 
     foreach my $m ( @media ) {
-       if ( exists( $valid_status->{$m->status} ) ) {
-           $result->{stats}->{$m->status}++;
-           push( @{$result->{details}}, { uuid => $m->uuid, status => $m->status } );
-       } else {
-           $c->log->warning( "Error, invalid status of: ", $m->status, " for media: ", $m->id, "\n" );
-       }
+	if ( exists( $valid_status->{$m->status} ) ) {
+	    $result->{stats}->{$m->status}++;
+	    push( @{$result->{details}}, { uuid => $m->uuid, status => $m->status } );
+	} else {
+	    $c->log->warning( "Error, invalid status of: ", $m->status, " for media: ", $m->id, "\n" );
+	}
     }
     $self->status_ok( $c, $result );
 }
@@ -954,31 +1066,55 @@ sub list_all :Local {
     my( $self, $c ) = @_;
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 100000;
+    my $include_images = $self->boolean( $c->req->param( 'include_images' ), 0 );
+    my $include_contact_info = $self->boolean( $c->req->param( 'include_contact_info' ), 0 );
+    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     my @shares = $c->user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
     my @media = map { $_->media } @shares;
     my $shared_uuids = {};
     foreach my $v ( @media ) { $shared_uuids->{ $v->uuid } = 1; }
-    my @videos = $c->user->videos->all;
+
+    my $where = {};
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'status'} = \@status_filters;
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+
+    my @videos = $c->user->videos->search( $where )->all();
     my @sorted = sort { $b->recording_date <=> $a->recording_date } ( @media, @videos );
     my $pager = Data::Page->new( $#sorted + 1, $rows, $page );
     my @slice = ();
     if ( $#sorted >= 0 ) {
         @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
     }
-    my @data = ();
-    foreach my $m ( @slice ) {
-	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1 } );
+
+    my $views = ['poster'];
+    if ( $include_images ) {
+	push( @$views, 'image' );
+    }
+
+    my $data = $self->publish_mediafiles( $c, \@slice, { views => $views, include_tags => $include_tags, include_shared => 1, include_owner_json => 1, include_images=>$include_images, include_contact_info=>$include_contact_info } );
+
+    foreach my $d ( @$data ) {
 	if ( $shared_uuids->{$d->{uuid}} ) {
 	    $d->{is_shared} = 1; 
-	    $d->{owner} = $m->user->TO_JSON;
-	}
-	else {
+	} else {
 	    $d->{is_shared} = 0;
 	}
-	push( @data, $d );
     }
-    $self->status_ok( $c, { albums => \@data, 
+    $self->status_ok( $c, { albums => $data, 
                             pager  => $self->pagerToJson( $pager ) });
 }
 
@@ -1031,43 +1167,51 @@ sub cf :Local {
 	url    => VA::MediaFile::US->new->uri2url( $c, $asset->uri ),
 	cf_url => $c->cf_sign( $asset->uri, {stream=>1} ) } );
 }
-    
 
 =head2 /services/mediafile/related
 
-Return list of mediafiles related to the passed in mediafile.  You can specify
-one or more of:
+Input parameters:
+* only_videos=1 - whether media_type is 'original' only or all types
+* only_visible=1 - whether status is restricted to ['visible', 'complete'] or not
+* status[]=['a','b','c'] - overrides the status setting of only_visible
+* media[]=[uuid1,uuid2,...] a list of related media
 
-  by_date=1    : All videos taken on same day followed by all videos 
-                 taken in same month as this video
-  by_faces=1   : All videos that contain at least one of the faces contained
-                 in this video
-  by_geo=1     : All videos taken "near" this video (see below)
+Return list of mediafiles related to the passed in mediafile, as
+determined by:
 
-If more than one by_ is specified, the array returned is in the order shown
-above (date, faces, geo).
+1. If media[] is included, we return just the list of those items
+which the user can see.
 
-If by_geo is specified, geo_unit=meter, geo_distance=100 are the defaults used
-to determine "near" and the results are returned sorted from closest to furthest.
-Legal values for geo_unit are: kilometer, kilometre, meter, metre, centimeter, 
-centimetre, millimeter, millimetre, yard, foot, inch, light second, mile, nautical mile, 
-poppy seed, barleycorn, rod, pole, perch, chain, furlong, league, fathom.
+2. If this media is in any albums, return a list of videos that the
+user can see in those albums, sorted by descending recording_date,
+created_date.
+
+3. Otherwise, if there are any faces in this video, return a list of
+videos the user can see which also have those faces in them, sorted by
+descending recording_date, created_date.
+
+4. Otherwise, return the empty list.
 
 =cut
 
 sub related :Local {
     my( $self, $c ) = @_;
-    my $mid = $c->req->param( 'mid' );
 
+    my $mid = $c->req->param( 'mid' );
     my $page = $c->req->param( 'page' );
     my $rows = $c->req->param( 'rows' ) || 10;
 
-    my $by_date  = $self->boolean( $c->req->param( 'by_date'  ), 1 );
-    my $by_faces = $self->boolean( $c->req->param( 'by_faces' ), 1 );
-    my $by_geo   = $self->boolean( $c->req->param( 'by_geo'   ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
-    my $geo_unit = $c->req->param( 'geo_unit' ) || 'meter';
-    my $geo_distance = $c->req->param( 'geo_distance' ) || '100';
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @related_media = $c->req->param( 'media[]' );
+    if ( scalar( @related_media ) == 1 && !defined( $related_media[0] ) ) {
+	@related_media = ();
+    }
 
     unless( $mid ) {
 	$self->status_bad_request( $c, $c->loc( 'Missing param [_1]', 'mid' ) );
@@ -1076,155 +1220,162 @@ sub related :Local {
 
     # The passed in uuid might be from a shared video
     #
-    my $media = $c->model( 'RDS::Media' )->find({ 
-	'me.uuid' => $mid,
-	'me.is_album' => 0,
-	-and => [ -or => ['me.user_id' => $user->id, 
-			  'media_shares.user_id' => $user->id], 
-		  -or => [status => 'TranscodeComplete',
-			  status => 'FaceDetectComplete',
-			  status => 'FaceRecognizeComplete',
-			  status => 'visible',
-			  status => 'complete' ]
-	    ]}, {prefetch=>'media_shares'});
+    my $where = undef;
+
+    if ( $only_visible ) {
+	$where = { 'me.uuid' => $mid,
+		   'me.is_album' => 0,
+		   status => [ 'visible', 'complete'],
+		   -or => ['me.user_id' => $user->id, 
+			   'media_shares.user_id' => $user->id],
+	};
+    } else {
+	$where = { 'me.uuid' => $mid,
+		   'me.is_album' => 0,
+		   -and => [ -or => ['me.user_id' => $user->id, 
+				     'media_shares.user_id' => $user->id] ] };
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{status} = \@status_filters;
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+
+    my $media = $c->model( 'RDS::Media' )->find( $where, {prefetch=>'media_shares'} );
+
     unless( $media ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find mediafile for [_1]', $mid ) );
     }
 
-    # Array of mediafile objects to return
-    my @results = ();
-    # Hash of media uuid's already added to results (to prevent dups in results)
-    my $seen = {};
-    $seen->{ $media->uuid } = $media; # DO NOT SHOW MYSELF IN RELATED
+    # Array of media objects to publish and return.
+    my @media_results = ();
 
-    # First get a mediafile resultset that contains all media belonging to
-    # the user or shared to the user.
-    #
-    # Fetch by MediaAsset of poster, because all related videos needs
-    # is the mediafile and its poster.  Prefetch media and media_shares;
-    # media_shares so we get user's media plus all media shared with them,
-    # media so publish is fast.  Group by media.id so we get only only
-    # unique mediafiles in case there are multiple posters per mediafile.
-    #
-    # This prefetch into a resultset makes subsequent search queries
-    # easier.
-    #
-    my $rs = $c->model( 'RDS::MediaAsset' )->search({ 
-	'me.asset_type' => 'poster',
-	'media.is_album' => 0,
-	-and => [ -or => ['media.user_id' => $user->id, 
-			  'media_shares.user_id' => $user->id], 
-		  -or => ['media.status' => 'visible',
-			  'media.status' => 'complete' ]
-	    ]}, {prefetch=>{'media' => 'media_shares'}, group_by=>['media.id']});
+    if ( scalar( @related_media ) ) {
+	# If we were provided a list of related media, just return the
+	# ones the current user can see.
+	
+	@media_results = $user->visible_media( \@related_media, $only_visible, \@status_filters, $only_videos );
+    } else {
 
-    # Return:
-    #
-    # 1. All other videos taken on same date as this video (within 24 hours)
-    # 2. All other videos taken in same month as this video
-    # 3. All other videos that contain at least one of the known faces in this video taken this year
-    # 3. All other videos that contain at least one of the known faces in this video ever taken
-    # 4. All other videos taken "at same location as" this video
-    #
-    if ( $by_date ) {
-	my $taken_on = $media->recording_date || $media->created_date;
-	my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+	# First determine if this media is in any albums that this
+	# user can view, if so then return those.
+	#
+	# If not, then determine if there are any faces in this video,
+	# and if there are return other videos whose people appear in.
+	my $seen = {};
+	$seen->{ $media->uuid } = $media; # DO NOT SHOW MYSELF IN RELATED
 
-	# Taken on same day
-	my $from = DateTime->new( year => $taken_on->year,
-				  month => $taken_on->month,
-				  day => $taken_on->day,
-				  hour => 0, minute => 0 );
-	my $to   = DateTime->new( year => $taken_on->year,
-				  month => $taken_on->month,
-				  day => $taken_on->day,
-				  hour => 23, minute => 59 );
-
-	my @taken_on_same_day = $rs->search({
-	    'media.recording_date' => {
-		-between => [
-		     $dtf->format_datetime( $from ),
-		     $dtf->format_datetime( $to )
-		    ]} }, { order_by => 'media.recording_date desc' } );
-	foreach my $a ( @taken_on_same_day ) {
-	    push( @results, $a ) unless( $seen->{ $a->media->uuid } );
-	    $seen->{ $a->media->uuid } = $a;
+	$where = { 'media.user_id' => $user->id(),
+		   'media.id' => $media->id() };
+	if ( $only_visible ) {
+	    $where->{ 'media.status' } = [ 'visible', 'complete' ];
+	}
+	if ( scalar( @status_filters ) ) {
+	    $where->{ 'media.status' } = \@status_filters;
+	}
+	if ( $only_videos ) {
+	    $where->{ 'media.media_type' } = 'original';
 	}
 
-	# Taken in same month
-	$from = DateTime->new( year => $taken_on->year,
-			       month => $taken_on->month,
-			       day => 1, hour => 0, minute => 0 );
-	$to = $from->clone;
-	$to->add( months => 1 )->subtract( days => 1 )->add( hours => 23 )->add( minutes => 59 );
+	my @owned_albums = $c->model( 'RDS::MediaAlbum' )->search(
+	    $where,
+	    { prefetch => [ 'media', { 'album_media' => 'media' } ] } )->all();
 
-	my @taken_in_same_month = $rs->search({
-	    'media.recording_date' => {
-		-between => [
-		     $dtf->format_datetime( $from ),
-		     $dtf->format_datetime( $to )
-		    ]} }, { order_by => 'media.recording_date desc' } );
-	foreach my $a ( @taken_in_same_month ) {
-	    push( @results, $a ) unless( $seen->{ $a->media->uuid } );
-	    $seen->{ $a->media->uuid } = $a;
+	foreach my $owned_album ( @owned_albums ) {
+	    foreach my $album_contents ( $owned_album->album_media() ) {
+		foreach my $owned_media ( $album_contents->media() ) {
+		    
+		    $c->log->error( "WORKING ON ", $owned_media->uuid() );
+		    
+		    unless ( exists( $seen->{ $owned_media->uuid() } ) ) {
+			push( @media_results, $owned_media );
+			$seen->{ $owned_media->uuid() } = $owned_media;
+		    }
+		}
+	    }
 	}
-    }
 
-    if ( $by_faces ) {
-	# FACES...
-	#
-	# First of all, find all known faces in the passed in mediafile
-	#
-	my @face_features = $c->model( 'RDS::MediaAssetFeature' )
-	    ->search({ 'me.media_id' => $media->id,
-		       'me.feature_type' => 'face',
-		       'contact.contact_name' => { '!=', undef } },
-		     { prefetch=>['contact','media_asset'], group_by=>['contact.id'] });
+	my @user_community_list = $user->is_community_member_of();
+	my @media_community_list = $media->is_community_member_of();
+	
+	my $user_communities = {};
+	foreach my $user_community ( @user_community_list ) {
+	    $user_communities->{ $user_community->uuid } = $user_community;
+	}
+	foreach my $media_community ( @media_community_list ) {
+	    if ( exists( $user_communities->{ $media_community->uuid() } ) ) {
+		#$DB::single = 1;
+		foreach my $album_contents ( $media_community->album->media_albums_medias->related_resultset( 'album_media' )->all() ) {
+		    foreach my $community_media ( $album_contents->related_resultset( 'media' )->all() ) {
+			unless ( exists( $seen->{ $community_media->uuid() } ) ) {
+			    push( @media_results, $community_media );
+			    $seen->{ $community_media->uuid() } = $community_media;
+			}
+		    }
+		}
+	    }
+	}
+	
+	if ( !scalar( @media_results ) ) {
+	    # We didn't find anything in related albums, try to find
+	    # related faces.
 
-	if ( $#face_features >= 0 ) {
-	    # There are faces.  Lets find all other videos in our list that contain at
-	    # least on of these faces, ordered by most recently recorded.
+	    # Hash of media uuid's already added to results (to prevent dups in results)
+	    my $seen = {};
+	    $seen->{ $media->uuid } = $media; # DO NOT SHOW MYSELF IN RELATED
+
+	    # First of all, find all known faces in the passed in mediafile
 	    #
-	    my @contact_ids = map { $_->contact->id } @face_features;
-	    my @media_ids   = map { $_->media->id } $rs->all;
-
-	    # $c->log->error( $_->contact->contact_name, "\n" ) foreach @face_features;
-
-	    my @feats = $c->model( 'RDS::MediaAssetFeature' )
-		->search({ 'contact.id' => { -in => \@contact_ids },
+	    my @face_features = $c->model( 'RDS::MediaAssetFeature' )
+		->search({ 'me.media_id' => $media->id,
 			   'me.feature_type' => 'face',
-			   'me.media_id' => { -in => \@media_ids },
-			 },
-			 { prefetch => [ 'contact', { 'media_asset' => 'media' } ], group_by => ['media.id'] });
+			   'contact.contact_name' => { '!=', undef } },
+			 { prefetch=>['contact','media_asset'], group_by=>['contact.id'] });
+	    
+	    if ( $#face_features >= 0 ) {
+		# There are faces.  Lets find all other videos in our list that contain at
+		# least one of these faces, ordered by most recently recorded.
+		#
+		my @contact_ids = map { $_->contact->id } @face_features;
+		my @visible_media = $user->visible_media( [], $only_visible, \@status_filters, $only_videos );
 
-	    # Unfortunately we are storing poster assets in the results array, so we have to do
-	    # poster fetches
-	    foreach my $feat ( @feats ) {
-		unless( $seen->{ $feat->media_asset->media->uuid } ) {
-		    # $c->log->error( $feat->media_asset->media->title );
-		    push( @results, $feat->media_asset->media->assets->find({ asset_type => 'poster' }) );
-		    $seen->{ $feat->media_asset->media->uuid } = $feat->media_asset->media;
+		my @media_ids   = map { $_->id } @visible_media;
+		
+		# $c->log->error( $_->contact->contact_name, "\n" ) foreach @face_features;
+		
+		my @feats = $c->model( 'RDS::MediaAssetFeature' )
+		    ->search({ 'contact.id' => { -in => \@contact_ids },
+			       'me.feature_type' => 'face',
+			       'me.media_id' => { -in => \@media_ids },
+			     },
+			     { prefetch => [ 'contact', { 'media_asset' => 'media' } ], group_by => ['media.id'] });
+		
+		# Unfortunately we are storing poster assets in the results array, so we have to do
+		# poster fetches
+		foreach my $feat ( @feats ) {
+		    unless( $seen->{ $feat->media_asset->media->uuid } ) {
+			# $c->log->error( $feat->media_asset->media->title );
+			push( @media_results, $feat->media_asset->media );
+			$seen->{ $feat->media_asset->media->uuid } = $feat->media_asset->media;
+		    }
 		}
 	    }
 	}
     }
 
-    if ( $by_geo && defined( $media->lat ) && defined( $media->lng ) ) {
+    # Sort the result set by descending recorded date, then created date.
+    @media_results = sort {  my $rdate_cmp = ( $b->recording_date->epoch() <=> $a->recording_date->epoch() );
+			     if ( $rdate_cmp ) {
+				 return $rdate_cmp;
+			     } else {
+				 return $b->created_date->epoch() <=> $a->created_date->epoch();
+			     }
+    } @media_results;
 
-	my $geo = new Geo::Distance;
-	$geo->formula('hsin');
-
-	my @geodata = ();
-	foreach my $asset ( $rs->search({ 'media.lat' => {'!=' => undef}, 'media.lng' => { '!=' => undef } }) ) {
-	    next if ( $asset->media->id == $media->id );
-	    my $distance = $geo->distance( $geo_unit, $media->lng, $media->lat => $asset->media->lng, $asset->media->lat );
-	    push( @geodata, { distance => $distance, asset => $asset } ) if ( $distance <= $geo_distance );
-	}
-	my @sorted = sort { $a->{distance} <=> $b->{distance} } @geodata;
-	foreach my $sd ( @sorted ) {
-	    push( @results, $sd->{asset} ) unless( defined( $seen->{ $sd->{asset}->media->uuid } ) );
-	    $seen->{ $sd->{asset}->media->uuid } = $sd->{asset}->media;
-	}
+    # If we had media results, add ourself to the front of the list.
+    if ( scalar( @media_results ) ) {
+	unshift( @media_results, $media );
     }
 
     # Prepare and return results
@@ -1232,25 +1383,19 @@ sub related :Local {
     my @data  = ();
     my $pager = {};
     if ( $page ) {
-	my $data_pager = Data::Page->new( $#results + 1, $rows, $page );
-	if ( $#results >= 0 ) {
-	    @data = @results[ $data_pager->first - 1 .. $data_pager->last - 1 ];
+	my $data_pager = Data::Page->new( $#media_results + 1, $rows, $page );
+	if ( $#media_results >= 0 ) {
+	    @data = @media_results[ $data_pager->first - 1 .. $data_pager->last - 1 ];
 	}
 	$pager = $self->pagerToJson( $data_pager );
     }
     else {
-	@data = @results;
+	@data = @media_results;
     }
 
-    my @media = ();
-    #
-    # This form of publish, where we pass the mediafile and assets in an array is
-    # much faster, since the assets do not need to be fetched.  We can do this if
-    # we know the assets already, and are sure we know how the media file will be
-    # consumed on the client.
-    # $_->media->assets->find({ asset_type=>'main'})
-    push( @media, VA::MediaFile->new->publish( $c, $_->media, { assets => [$_], include_tags => 1, include_shared => 1 } ) ) foreach( @data );
-    $self->status_ok( $c, { media => \@media, pager => $pager } );
+    my $media_hash = $self->publish_mediafiles( $c, \@media_results, { include_tags=>1, include_shared=>1, 'views[]' => 'poster' } );
+
+    $self->status_ok( $c, { media => $media_hash, pager => $pager } );
 }
 
 sub change_recording_date :Local {
@@ -1261,6 +1406,30 @@ sub change_recording_date :Local {
     unless( $media ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
     }
+
+    my $new_date = DateTime::Format::Flexible->parse_datetime( $dstring );
+    my $date_string = $new_date->month_name . ' ' . $new_date->year();
+
+    my $old_date = $media->recording_date();
+
+    if ( $old_date == DateTime->from_epoch( epoch => 0 ) ) {
+	# We are updating from the default, add a new tag.
+	$media->asset( 'main' )->create_related( 'media_asset_features', { feature_type => 'activity',
+									     coordinates => $date_string } );
+    } else {
+	# We are updating from a prior date, update existing or add
+	# new tag if none.
+	my $old_date_string = $old_date->month_name . ' ' . $old_date->year();
+	my $old_tag = $media->asset( 'main' )->search_related( 'media_asset_features', { coordinates => $old_date_string } )->single();
+	if ( defined( $old_tag ) ) {
+	    $old_tag->coordinates( $date_string );
+	    $old_tag->update();
+	} else {
+	    $media->asset( 'main' )->create_related( 'media_asset_features', { feature_type => 'activity',
+										 coordinates => $date_string } );
+	}
+    }
+
     $media->recording_date( DateTime::Format::Flexible->parse_datetime( $dstring ) );
     $media->update;
     $self->status_ok( $c, { date => $media->recording_date } );
@@ -1310,21 +1479,48 @@ sub search_by_title_or_description :Local {
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
 
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+
+    my $include_contact_info = $self->boolean( $c->req->param( 'include_contact_info' ), 1 );
+    my $include_images = $c->req->param( 'include_images' ) || 0;
+    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
+
     # get uuids of all media shared to this user
     my @shares = $c->user->media_shares->search({ 'media.is_album' => 0 },{prefetch=>'media'});
     my @mids = map { $_->media->id } @shares;
 
     # Videos owned or shared to user where title or description match
-    my @tord = $c->model( 'RDS::Media' )->search({
-	-and => [
-	     'me.is_album' => 0,
-	     -or => [ 'me.user_id' => $c->user->id,
-		      'me.id' => { -in => \@mids } ],
-	     -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
-		      'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
-	     -or => [ 'me.status' => 'visible',
-		      'me.status' => 'complete' ] ] });
-    
+    my $where = undef;
+
+    if ( $only_visible ) {
+	$where = { 'me.status' => [ 'visible', 'complete' ],
+		   -and => [
+		       'me.is_album' => 0,
+		       -or => [ 'me.user_id' => $c->user->id,
+				'me.id' => { -in => \@mids } ],
+		       -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
+    } else {
+	$where = { -and => [
+			'me.is_album' => 0,
+			-or => [ 'me.user_id' => $c->user->id,
+				 'me.id' => { -in => \@mids } ],
+			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'me.status'} = \@status_filters;
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+    my @tord = $c->model( 'RDS::Media' )->search( $where );
+
     # Videos owned or shared to user which are tagged with the expression
     my @features = $c->model( 'RDS::MediaAssetFeature' )->search(
 	{ -and => [ 
@@ -1336,15 +1532,24 @@ sub search_by_title_or_description :Local {
     # Videos owned or shared to user which have the passed in person's name
     # associated with them
     my @faces = $c->model( 'RDS::MediaAssetFeature' )->search(
-	{ -and => [ 
-	       -or => [ 'media.user_id' => $c->user->id,
-			'media.id' => { -in => \@mids } ],
-	       'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } ] },
+	{ feature_type => 'face',
+	  -and => [ 
+	      -or => [ 'media.user_id' => $c->user->id,
+		       'media.id' => { -in => \@mids } ],
+	      'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } ] },
 	{ prefetch => [ 'contact', { 'media_asset' => 'media' } ] });
 
     # We will have dups.  De-dup, then page.
     my $seen = {};
     my @tagged = ();
+
+    foreach my $a ( @tord ) {
+	my $media = $a;
+	if ( ! $seen->{$media->id} ) {
+	    $seen->{$media->id} = 1;
+	    push( @tagged, $media );
+	}
+    }
 
     foreach my $a ( @features ) {
 	my $media = $a->media_asset->media;
@@ -1362,7 +1567,7 @@ sub search_by_title_or_description :Local {
 	}
     }
 
-    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tord, @tagged );
+    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tagged );
 
     my $pager = Data::Page->new( $#media + 1, $rows, $page );
     my @sliced = ();
@@ -1370,22 +1575,25 @@ sub search_by_title_or_description :Local {
 	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
 
-    my @data = ();
     my $shared;
     foreach my $m ( @mids ) { $shared->{$m} = 1; }
-    foreach my $m ( @sliced ) {
-	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1 } );
-	if ( $shared->{ $m->id } ) {
-	    $d->{is_shared} = 1;
-	    $d->{owner} = $m->user->TO_JSON;
-	}
-	else {
-	    $d->{is_shared} = 0;
-	}
-	push( @data, $d );
+
+    my $views = ['poster'];
+    if ( $include_images )  {
+	push( @{$views}, 'image' );
     }
 
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $pager ) } );
+    my $data = $self->publish_mediafiles( $c, \@sliced, { views => $views, include_tags => $include_tags, include_shared => 1, include_contact_info => $include_contact_info, include_owner_json => 1, include_images => $include_images } );
+
+    foreach my $d ( @$data ) {
+	if ( $shared->{ $d->{id} } ) {
+	    $d->{is_shared} = 1;
+	} else {
+	    $d->{is_shared} = 0;
+	}
+    }
+
+    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $pager ) } );
 }
 
 # IN ALBUM : Search by title or description OR TAG
@@ -1397,23 +1605,47 @@ sub search_by_title_or_description_in_album :Local {
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
     my $aid = $c->req->param( 'aid' );
+    my $include_contact_info = $self->boolean( $c->req->param( 'include_contact_info' ), 1 );
+    my $include_images = $c->req->param( 'include_images' ) || 0;
+    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_bad_request( $c, $c->loc( 'Cannot find album for "[_1]"', $aid ) );
     }
 
     my @mids = map { $_->id } $album->videos;
 
     # Videos owned or shared to user where title or description match
-    my @tord = $c->model( 'RDS::Media' )->search({
-	-and => [
-	     'me.is_album' => 0,
-	     'me.id' => { -in => \@mids },
-	     -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
-		      'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ],
-	     -or => [ 'me.status' => 'visible',
-		      'me.status' => 'complete' ] ] });
+    my $where = undef;
+
+    if ( $only_visible ) {
+	$where = { 'me.status' => [ 'visible', 'complete' ],
+		   -and => [
+		       'me.is_album' => 0,
+		       'me.id' => { -in => \@mids },
+		       -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
+    } else {
+	$where = { -and => [
+			'me.is_album' => 0,
+			'me.id' => { -in => \@mids },
+			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
+				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'status'} = \@status_filters;
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+    my @tord = $c->model( 'RDS::Media' )->search( $where );
     
     # Videos owned or shared to user which are tagged with the expression
     my @features = $c->model( 'RDS::MediaAssetFeature' )->search(
@@ -1424,13 +1656,22 @@ sub search_by_title_or_description_in_album :Local {
     # Videos owned or shared to user which have the passed in person's name
     # associated with them
     my @faces = $c->model( 'RDS::MediaAssetFeature' )->search(
-	{ 'media.id' => { -in => \@mids },
+	{ feature_type => 'face',
+	  'media.id' => { -in => \@mids },
 	  'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } },
 	{ prefetch => [ 'contact', { 'media_asset' => 'media' } ] });
 
     # We will have dups.  De-dup, then page.
     my $seen = {};
     my @tagged = ();
+
+    foreach my $a ( @tord ) {
+	my $media = $a;
+	if ( ! $seen->{$media->id} ) {
+	    $seen->{$media->id} = 1;
+	    push( @tagged, $media );
+	}
+    }
 
     foreach my $a ( @features ) {
 	my $media = $a->media_asset->media;
@@ -1448,7 +1689,7 @@ sub search_by_title_or_description_in_album :Local {
 	}
     }
 
-    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tord, @tagged );
+    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tagged );
 
     my $pager = Data::Page->new( $#media + 1, $rows, $page );
     my @sliced = ();
@@ -1456,29 +1697,50 @@ sub search_by_title_or_description_in_album :Local {
 	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
 
-    my @data = ();
-    foreach my $m ( @sliced ) {
-	my $d = VA::MediaFile->publish( $c, $m, { views => ['poster' ], include_tags => 1, include_shared => 1, include_contact_info => 1 } );
-	if ( $m->user_id != $c->user->id ) {
+    my $views = ['poster'];
+    if ( $include_images )  {
+	push( @{$views}, 'image' );
+    }
+
+    my $data = $self->publish_mediafiles( $c, \@sliced, { views => $views, include_tags => $include_tags, include_shared => 1, include_contact_info => $include_contact_info, include_images => $include_images } );
+
+    foreach my $d ( @$data ) {
+	if ( $d->{owner_uuid} ne $c->user->uuid ) {
 	    # This must be shared because the album is shared
 	    $d->{is_shared} = ( $album->community ? 1 : 0 );
 	    $d->{owner}     = $album->user->TO_JSON;
-	}
-	else {
+	} else {
 	    $d->{is_shared} = 0;
 	}
-	push( @data, $d );
     }
 
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $pager ) } );
+    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $pager ) } );
 }
 
-# Return all the unique cities that a user's video apepars in
+# Return all the unique cities that a user's video appears in
 sub cities :Local {
     my( $self, $c ) = @_;
-    my @media = $c->user->videos->search
-	({ geo_city => { '!=' => undef } },
-	 { group_by => ['geo_city'] });
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
+
+    my $where = { geo_city => { '!=' => undef } };
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'status'} = \@status_filters;
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+
+    my @media = $c->user->videos->search(
+	$where,
+	{ group_by => ['geo_city'] } );
     my @cities = sort map { $_->geo_city } @media;
     $self->status_ok( $c, { cities => \@cities } );
 }
@@ -1489,26 +1751,87 @@ sub taken_in_city :Local {
     my $q = $c->req->param( 'q' );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
+    my $include_contact_info = $c->req->param( 'include_contact_info' ) || 0;
+    my $include_images = $c->req->param( 'include_images' ) || 0;
+    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my @status_filters = $c->req->param( 'status[]' );
+    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
+	@status_filters = ();
+    }
+
+    my $where = { geo_city => $q };
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @status_filters ) ) {
+	$where->{'status'} = \@status_filters;
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
     my $rs = $c->user->videos->search(
-	{ geo_city => $q },
+	$where,
 	{ order_by => 'recording_date desc',
 	  page => $page, rows => $rows } );
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+    
+    my $views = ['poster'];
+    if ( $include_images ) {
+	push( @$views, 'image' );
+    }
+
+    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => $views, include_tags => $include_tags, include_contact_info => $include_contact_info, include_images => $include_images } );
+
+     $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
 # Return all videos recently uploaded.  Pass in a number of days
 # to include.  Defaults to 7 days.
 sub recently_uploaded :Local {
-    my( $self, $c ) = @_;
-    my $days = $c->req->param( 'days' ) || 7;
-    my $page = $c->req->param( 'page' ) || 1;
-    my $rows = $c->req->param( 'rows' ) || 10000;
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [ days => 7,
+	  page => 1,
+          rows => 10000,
+	  include_contact_info => 0,
+	  include_tags => 1,
+	  include_images => 0,
+	  only_visible => 1,
+	  only_videos => 1,
+	  'status[]' => []
+        ],
+        @_ );
+
+    my $days = $args->{days};
+    my $page = $args->{page};
+    my $rows = $args->{rows};
+    my $include_contact_info = $args->{include_contact_info};
+    my $include_images = $args->{include_images};
+    my $include_tags = $args->{include_tags};
+    my $only_visible = $args->{only_visible};
+    my $only_videos = $args->{only_videos};
+    my $status = $args->{'status[]'};
 
     my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
 
     # Find the most recent one
-    my @recent = $c->user->videos->search({},{order_by => 'me.created_date desc', rows => 1});
+    my $where = {};
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    # Overwrite the only_visible setting if the user provided
+    # particular status filters.
+    if ( scalar( @$status ) ) {
+	$where->{'status'} = $status;
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+    my @recent = $c->user->videos->search( 
+	$where,
+	{ order_by => 'me.created_date desc', rows => 1 } );
     unless( $#recent >= 0 ) {
 	$self->status_ok( $c, { media => [], pager => { next_page => undef } } );
     }
@@ -1517,16 +1840,32 @@ sub recently_uploaded :Local {
     my $to   = $from->clone;
     $to->subtract( days => $days );
 
-    my $rs = $c->user->videos->search
-	({ 'me.created_date' => {
-	    -between => [
-		 $dtf->format_datetime( $to ),
-		 $dtf->format_datetime( $from ) ]}},
-	 { order_by => 'me.created_date desc',
-	   page => $page, rows => $rows });
+    $where = { 'me.created_date' => {
+	-between => [
+	     $dtf->format_datetime( $to ),
+	     $dtf->format_datetime( $from ) ] } };
+    if ( $only_visible ) {
+	$where->{'status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @$status ) ) {
+	$where->{'status'} = $status;
+    }
+    if ( $only_videos ) {
+	$where->{'me.media_type'} = 'original';
+    }
+    my $rs = $c->user->videos->search(
+	$where,
+	{ order_by => 'me.created_date desc',
+	  page => $page, rows => $rows } );
     
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+    my $views = ['poster'];
+    if ( $include_images ) {
+	push( @$views, 'image' );
+    }
+
+    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => $views, include_tags => $include_tags, include_contact_info => $include_contact_info, include_images => $include_images } );
+
+    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
 # Add a tag to a video
@@ -1559,6 +1898,352 @@ sub rm_tag :Local {
 	$self->status_bad_request( $c, $c->loc( 'Failed to remove tag [_1]', $tagname ) );
     }
     $self->status_ok( $c, {} );
+}
+
+
+=head2
+
+services/mediafile/create_video_summary
+
+Input Options
+
+{
+    'images[]' : [ # Array of images the user selected.
+        image1_uuid,
+        image2_uuid,
+        ... ],
+    'summary_type' : 'moments', # One of a predefined list of summary
+				# types, e.g. moments, people, etc.
+
+    'contacts[]' : [ # Who the summary should include, required if
+		   # summary_type is 'people', optional otherwise.
+		   # NOTE: Initially we will only support the
+		   # 'moments' type summary that won't use this most
+		   # likely.
+        contact1_uuid,
+        ... ],
+    'videos[]' : [ video1_uuid, ... ] # An array of videos to
+				      # summarize for the 'people'
+				      # type of summary.
+    'audio_track' : media_uuid # The UUID of the audio selected for
+			       # this track.
+
+# Optional parameters:
+
+# Additional things:
+
+# Summary controls:
+    'summary_style' : 'classic' # One of a predefined list of summary
+				# types, e.g. classic, cascade, etc.
+    'order' : 'random' # One of a predefined list of how we order
+		       # clips, e.g. 'random', 'oldest', 'newest',
+		       # etc.. Defaults to random.
+    'effects[]' : [ 'vintage', 'music video', ... ] # List of preset
+						  # video filters the
+						  # user wants us to
+						  # provide. NOTE:
+						  # Initially this may
+						  # not do anything.
+    'moment_offsets[]' : [-2.5, 2.5] # How much before the image to
+				   # start the summary clip, and how
+				   # much after the moment to end the
+				   # summary clip, defaults to [-2.5,
+				   # 2.5]
+    'target_duration' : 99 #The desired number of seconds the summary
+			   #will run. Defaults to something sane given
+			   #the clips selected and audio selected.
+    'summary_options' : { } # Defaults to {} Generic JSON to be passed
+			    # to the summary API for future expansions
+			    # (e.g. parameters that control blur, slow
+			    # motion, ??? ).
+
+# Where to put the summary:
+    'album_uuid' : album_uuid # An album to place the resulting
+			      # summary into.
+
+# Summary metadata:
+    'title' : 'Fun Times!', # OPTIONAL: A title for the video -
+			    # defaults "Summary - YYYY-MM-DD" - I
+			    # suggest the UI overwrite this with
+			    # "FilterName Summary"
+    'description' : "Vacation", # OPTIONAL: A description for the
+				# video - defaults to nothing.
+    'lat' : X, 'lng' : Y, 'geo_city' : Z, # Defaults to nothing
+    'tags[]' : [ tag1, tag2, ... ], # Defaults to nothing.
+    'recording_date' : 'when' # Defaults to now.
+}
+
+=cut
+
+sub create_video_summary :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [
+	 'images[]'         => [],
+	 'summary_type'     => 'moments',
+	 'contacts[]'       => [],
+	 'videos[]'         => [],
+	 'audio_track'      => undef,
+	 'summary_style'    => 'classic',
+	 'order'            => 'random',
+	 'effects[]'        => [],
+	 'moment_offsets[]' => [ -3.5, 3.5 ],
+	 'target_duration'  => undef,
+	 'summary_options'  => {},
+	 'album_uuid'       => undef,
+	 'title'            => "Summary - " . strftime( '%Y-%m-%d', localtime() ),
+	 'description'      => '',
+	 'lat'              => undef,
+	 'lng'              => undef,
+	 'tags[]'           => [],
+	 'recording_date'   => DateTime->now()
+        ],
+        @_ );
+
+    $args->{user_uuid} = $c->user->uuid();
+
+    # Validate that we got passed one or more images.
+    unless ( scalar( @{$args->{'images[]'}} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'One or more images must be supplied to the images[] parameter.' ) );
+    }
+
+    # Validate the summary type was OK.
+    my $summary_types = { moments => 1, people => 1 };
+    unless ( exists( $summary_types->{$args->{'summary_type'}} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'Invalid or missing summary_type argument.' ) );
+    }
+
+    # If we're making a people summary, there had best be a contact list.
+    if ( $args->{'summary_type'} eq 'people' ) {
+	if ( !scalar( @{$args->{'contacts[]'}} ) ) {
+	    $self->status_bad_request( $c, $c->loc( 'One or more contacts must be supplied to the contacts[] parameter for summary_type=people' ) );
+	}
+	if ( !scalar( @{$args->{'videos[]'}} ) ) {
+	    $self->status_bad_request( $c, $c->loc( 'One or more videos must be supplied to the videos[] parameter for summary_type=people' ) );
+	}
+    }
+
+    unless ( defined( $args->{'audio_track'} ) ) {
+	# DEBUG - enable this later
+	#$self->status_bad_request( $c, $c->loc( 'An audio_track argument must be provided.' ) );
+
+	# DEBUG - For now we just randomly pick a track from a hard
+	# coded list.
+	my $hard_coded_songs = [
+	    'c637ac8a-3b3f-4030-82a0-af423a227457',
+	    '2cecfbf0-66de-4947-a168-590ddc1f200f',
+	    'd105304f-6fae-4fab-8fc1-bfe1352100d3',
+	    'a75cd2de-0c62-4cb3-bc9c-245ecfda0da7',
+	    '5406e7f6-ea76-4f60-98d6-092df9a0b637',
+	    '1b324c07-945d-434f-926d-cc5095dabcc8',
+	    'f4a6501d-7f85-4040-92b5-e97d5a568c27',
+	    '11e033aa-464d-48af-979f-d30a359d1ff8',
+	    '9ad4e4ff-69a6-448d-ac44-b86cdbfa8d60',
+	    '0db07b3c-2cd2-4624-bd6a-43840ded3f4b',
+	    '756c6329-662e-46d4-9ea9-1223585c2487',
+	    'c6bfc438-fd26-4742-9b89-576132d86c61',
+	    'ff48a1f5-59ae-4c1a-be68-d842dc1a884f',
+	    '9664ab37-68c8-4e8a-890a-327ec7ec7c5e',
+	    '82c7b7f7-272e-48ef-a989-942872b38456',
+	    '1d04fc52-93da-4182-8cff-428b27c49f09'
+	    ];
+	    
+	if ( $ENV{'VA_CONFIG_LOCAL_SUFFIX'} eq 'prod' ) {
+	    $hard_coded_songs = [
+		'e5483c87-3ffc-4eb1-a0ce-8b15e8588de5',
+		'1cd76132-f421-48eb-b8cb-9758b9a78a19',
+		'8c18da4a-04ee-415f-887b-1319df19319e',
+		'dbd2735d-c9c9-47c3-9048-96605b1b0bad',
+		'1c918f69-bccf-4b08-baf2-1bba1213f2a0',
+		'79dd6b15-6ea9-470d-bdc6-be5a425b10b3',
+		'564d7c84-6bd8-43dd-8a22-9308097f852b',
+		'401f07a5-d255-4284-b9ac-067a5494d2e9',
+		'6578e271-813b-4c1f-82cf-2cca0364550a',
+		'44a82bdc-b8cb-4ddc-be7c-51cad60755be',
+		'49e4b313-8263-4587-859f-19027f6ddad4',
+		'734d156f-2f06-40d0-a19f-8abd15b336c9',
+		'e5e6dddb-436b-4d3a-a0fc-c26bb657d771',
+		'07d65af3-e365-4d89-a80f-bdd0b232e1d6',
+		'13d96521-4d22-42d5-b7cf-8d8208640345',
+		'4c16a3bd-a18e-48cf-8c0d-59832f7e31a3'
+		];
+	}
+
+	my $song_idx = int( rand( scalar( @$hard_coded_songs ) ) );
+	$args->{'audio_track'} = $hard_coded_songs->[$song_idx];
+    }
+
+    my $orders = { random => 1, oldest => 1, newest => 1 };
+    unless ( exists( $orders->{$args->{'order'}} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'Invalid order argument provided.' ) );
+    }
+
+    unless ( scalar( @{$args->{'moment_offsets[]'}} ) == 2 ) {
+	$self->status_bad_request( $c, $c->loc( 'moment_offsets[] must have exactly two parameters' ) );
+    }
+
+    # Validate whether the user has permissions to view the associated resources.
+    #
+    # This is a result set of all the videos that a user owns, or can
+    # see through media_shares.
+    my $allowed = {};
+    my @own_media_share = $c->user->private_and_shared_videos( 0 )->all();
+    foreach my $media ( @own_media_share ) {
+	$allowed->{$media->id} = 1;
+    }
+    
+    # If a video isn't owned by the user, or directly shared, check if
+    # user->can_view_video, which looks in their communities.
+    my @assets = $c->model( 'RDS::MediaAsset' )->search( { uuid => { '-in' => $args->{'images[]'} } } )->all();
+    foreach my $asset ( @assets ) {
+	if ( !exists( $allowed->{$asset->media_id()} ) ) {
+	    if ( $c->user->can_view_video( $asset->media->uuid() ) ) {
+		$allowed->{$asset->media_id()} = 1;
+		$c->log->debug( "OK TO ACCESS COMMUNITY VIDEO: ", $asset->uuid() );
+	    } else {
+		$c->log->error( "NOT ALLOWED TO ACCESS VIDEO: ", $asset->uuid() );
+		$self->status_bad_request( $c, $c->loc( 'You do not have permission to view the video associated with image: ' . $asset->uuid() ) );
+	    }
+	}
+    }
+    $c->log->debug( "OK TO ACCESS ALL VIDEOS" );
+
+    $args->{action} = 'create_video_summary';
+    my $error = $c->model( 'SQS', $self->send_sqs( $c, 'album_summary', $args ) );
+    if ( $error ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the summary.' ) );
+    }
+
+    $self->status_ok( $c, { success => 1 } );
+}
+
+
+=head2
+
+services/mediafile/create_fb_album
+
+{
+    'images[]' : [ # Array of images the user selected.
+        image1_uuid,
+        image2_uuid,
+        ... ],
+    'access_token' : 'sadfkb234lsdfhdsfkjh234' # A current OAuth token
+					   # with the requisite
+					   # permissions to publish on
+					   # behalf of the user.
+					  
+# Optional parameters:
+
+# Summary metadata:
+    'title' : 'Fun Times!', # OPTIONAL: A title for the album -
+			    # defaults to "VIBLIO Photo Summary -
+			    # YYYY-MM-DD" - I suggest the UI overwrite
+			    # this with "VIBLIO FilterName Summary"
+    'description' : "Vacation", # OPTIONAL: A description for the
+				# album - defaults to nothing.
+}
+
+=cut
+
+sub create_fb_album :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [
+	 'images[]'         => [],
+	 'access_token'     => undef,
+	 'title'            => "VIBLIO Photo Summary - " . strftime( '%Y-%m-%d', localtime() ),
+	 'description'      => undef
+        ],
+        @_ );
+
+    # Validate that we got passed one or more images.
+    unless ( scalar( @{$args->{'images[]'}} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'One or more images must be supplied to the images[] parameter.' ) );
+    }
+
+    # If this call returns, then we have a facebook token in $c->session->{fb_token}.
+    my $fb_user = $self->validate_facebook_token( $c, $args->{access_token} );
+    $args->{fb_token} = $c->session->{fb_token};
+
+    #$c->log->debug( "fb token:" . $args->{fb_token} );
+
+    $args->{user_uuid} = $c->user->uuid();
+
+    # Validate whether the user has permissions to view the associated resources.
+    #
+    # This is a result set of all the videos that a user owns, or can
+    # see through media_shares.
+    my $allowed = {};
+    my @owned_videos = $c->model( 'RDS::Media' )->search( { user_id => $c->user->id() } )->all();
+    foreach my $media ( @owned_videos ) {
+	$allowed->{$media->id} = 1;
+    }
+
+    # Does the user own the video the image is from?
+    my @assets = $c->model( 'RDS::MediaAsset' )->search( { uuid => { '-in' => $args->{'images[]'} } } )->all();
+    foreach my $asset ( @assets ) {
+	if ( !exists( $allowed->{$asset->media_id()} ) ) {
+	    $c->log->error( "CAN'T SEND UNOWNED IMAGES TO FACEBOOK: ", $asset->uuid() );
+	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to share this image to Facebook: ' . $asset->uuid() ) );
+	}
+    }
+    $c->log->debug( "OK TO ACCESS ALL IMAGES" );
+
+    # Create a new album.
+    my $fb_album_id = undef;
+    my $fb_album_url = undef;
+
+    my $web_client = HTTP::Tiny->new();
+    my $data = {
+	access_token => $args->{fb_token},
+	name => 'VIBLIO: ' . $args->{title},
+    };
+    if ( defined( $args->{description} ) ) {
+	$data->{description} = $args->{description};
+    }
+    my $params = $web_client->www_form_urlencode( $data );
+    my $url = $c->config->{'facebook_endpoint'} . 'me/albums?' . $params;
+    my $response = $web_client->post( $url );
+    if ( !$response->{success} ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album: ' . $response->{reason} ) );
+    }
+    my $rjson = from_json( $response->{content} );
+    unless ( exists( $rjson->{id} ) and length( $rjson->{id} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album.' ) );
+    } else {
+	$fb_album_id = $rjson->{id};
+    }
+
+    # Get the URL to that album.
+    $data = {
+	access_token => $args->{fb_token},
+    };
+    $params = $web_client->www_form_urlencode( $data );
+    $url = $c->config->{'facebook_endpoint'} . $fb_album_id . "?" . $params;
+    $response = $web_client->get( $url );
+    if ( !$response->{success} ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album: ' . $response->{reason} ) );
+    }
+    $rjson = from_json( $response->{content} );
+    unless ( exists( $rjson->{link} ) and length( $rjson->{link} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album.' ) );
+    } else {
+	$fb_album_url = $rjson->{link};
+    }
+
+    $args->{fb_album_id} = $fb_album_id;
+    $args->{fb_album_url} = $fb_album_url;
+
+    # Send the request to build the album to the back end.
+    $args->{action} = 'create_fb_album';
+    my $error = $c->model( 'SQS', $self->send_sqs( $c, 'create_fb_album', $args ) );
+    if ( $error ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while creating the Facebook photo album.' ) );
+    }
+    
+    $self->status_ok( $c, { success => 1, fb_album_url => $rjson->{link} } );
 }
 
 __PACKAGE__->meta->make_immutable;

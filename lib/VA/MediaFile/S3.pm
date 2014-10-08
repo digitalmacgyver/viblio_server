@@ -136,9 +136,16 @@ sub uri2url {
     my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
     my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
 	$aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
-    $aws_generator->expires_in( ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ) );
+    my $expiration = ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} );
+    $aws_generator->expires_in( $expiration );
 
-    my $url = $aws_generator->get( $aws_bucket_name, $s3key );
+    my $url = '';
+    if ( exists( $params->{'download_url'} ) && $params->{'download_url'} ) {
+	$url = VA::MediaFile->generate_signed_url( $aws_key, $aws_secret, $aws_use_https, $aws_endpoint, $aws_bucket_name, $s3key, { 'response-content-disposition' => 'attachment' }, { 'EXPIRES_IN' => $expiration } );
+    } else {
+	$url = $aws_generator->get( $aws_bucket_name, $s3key );
+    }
+
     $url =~ s/\/$aws_bucket_name\//\//g;
     return $url;
 }

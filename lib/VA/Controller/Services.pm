@@ -50,13 +50,20 @@ sub is_email_valid :Private {
 #
 sub boolean :Private {
     my( $self, $value, $default ) = @_;
-    $value = $default unless( $value );
-    return 0 unless( $value );
-    return 1 if ( $value eq '1' );
-    return 0 if ( $value eq '0' );
-    return 1 if ( $value =~ /[Tt]rue/ );
-    return 0 if ( $value =~ /[Ff]alse/ );
-    return 1;
+    
+    if ( !defined( $value ) ) {
+	return $default;
+    } else {
+	if ( length( $value ) ) {
+	    return 0 if ( $value eq '0' );
+	    return 0 if ( $value =~ /[Ff]alse/ );
+	    return 1 if ( $value );
+	    return 0;
+	} else {
+	    return 1 if ( $value );
+	    return 0;
+	}
+    }
 }
 
 # Create a username from email
@@ -149,35 +156,57 @@ sub parse_args : Private {
     return $ret;
 }
 
-# Return a where claus suitable for obtaining mediafiles
+# Return a where clause suitable for obtaining mediafiles
 #
 sub where_valid_mediafile :Private {
-    my( $self, $isAlbum, $prefix ) = @_;
-    $isAlbum = 0 unless( defined( $isAlbum ) );
+    my( $self, $isAlbum, $prefix, $only_visible, $only_videos, $status ) = @_;
+    $isAlbum = $self->boolean( $isAlbum, 0 );
+    $only_visible = $self->boolean( $only_visible, 1 );
+    $only_videos = $self->boolean( $only_videos, 1 );
     $prefix  = 'me' unless( defined( $prefix ) );
-    return { $prefix . '.is_album' => $isAlbum,
-	     -or => [ $prefix . '.status' => 'TranscodeComplete',
-		      $prefix . '.status' => 'FaceDetectComplete',
-		      $prefix . '.status' => 'FaceRecognizeComplete',
-		      $prefix . '.status' => 'visible',
-		      $prefix . '.status' => 'complete' ] };
+
+    my $where = undef;
+    if ( $only_videos ) {
+	$where = { 
+	    $prefix . '.is_album' => $isAlbum,
+	    $prefix . '.media_type' => 'original'
+	};
+    } else {
+	$where = { $prefix . '.is_album' => $isAlbum };
+    }
+
+    if ( $only_visible ) {
+	$where->{$prefix . '.status'} = [ 'visible', 'complete' ];
+    }
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$where->{$prefix . '.status'} = $status;
+    }
+
+    return $where;
 }
 
 # Return a resultset for media belonging to, and shared to, the logged in user.
 #
 sub user_media :Private {
-    my( $self, $c, $terms ) = @_;
+    my( $self, $c, $terms, $only_visible, $only_videos, $status ) = @_;
+        $only_visible = $self->boolean( $only_visible, 1 );
+    $only_videos = $self->boolean( $only_videos, 1 );
+
     my $user = $c->user->obj;
     $terms = $terms || {};
     $terms->{is_album} = 0;
+    if ( $only_videos ) {
+	$terms->{'me.media_type'} = 'original';
+    }
     $terms->{-and} = [ -or => ['me.user_id' => $user->id, 
-			       'media_shares.user_id' => $user->id], 
-		       -or => [status => 'TranscodeComplete',
-			       status => 'FaceDetectComplete',
-			       status => 'FaceRecognizeComplete',
-			       status => 'visible',
-			       status => 'complete' ]
-	];
+			       'media_shares.user_id' => $user->id] ];
+    if ( $only_visible ) {
+	$terms->{'me.status'} = [ 'visible', 'complete' ];
+    }
+    if ( defined( $status ) && scalar( @$status ) ) {
+	$terms->{'me.status'} = $status;
+    }
+
     my $rs = $c->model( 'RDS::Media' )->search( $terms, {prefetch=>'media_shares'} );
     return $rs;
 }
@@ -444,6 +473,22 @@ sub send_email :Local {
     };
 }
 
+
+# Send generic SQS message.
+sub send_sqs :Local {
+    my( $self, $c, $queue, $opts ) = @_;
+
+    try {
+       my $res = $c->model( 'SQS', $c->config->{sqs}->{$queue} )
+           ->SendMessage( $compact_encoder->encode( $opts ) );
+       return undef;
+    } catch {
+       $c->log->error( "send_sqs: error: $_" );
+       $c->log->debug( $encoder->encode( $opts ) );
+       return $_;
+    };
+}
+
 # Takes an array of email addresses and resolves it
 # looking for possible group names in the list.
 #
@@ -508,6 +553,224 @@ sub push_notification :Private {
 	};
     }
 }
+
+# Helper function to speed up the publish operation on mediafiles.
+#
+# As background, publishing a single mediafile, depending on options,
+# can cause several database queries:
+#
+# A query to get the user_uuid of the owner
+# A query to get the assets associated with the media
+# A query to get the tags associated with the media
+# A query to get the faces associated with the media
+#
+# Often this method is called in a loop over a particular result set,
+# and often that result set has a small number of users and or media
+# files.
+# 
+# This method optimizes things by doing a small number of broad
+# queries to formulate a set of optional parameters to the publish
+# method that cause it to just use whatever we pass in, and not query
+# itself.
+#
+# Returns an array of results from VA::Mediafile->new->publish,
+# possible augmented with an owner key that has the JSON of the user
+# owning the JSON if the optional include_owner_json parameter is set.
+sub publish_mediafiles :Private {
+    my $self = shift;
+    my $c = shift;
+    my $media = shift;
+    my $params = shift;
+
+    my $include_images = 0;
+    if ( exists( $params->{include_images} ) ) {
+	$include_images = $params->{include_images};
+    }
+
+    if ( scalar( $media ) == 0 ) {
+	return [];
+    }
+
+    # media.id -> { tag1 => 1, tag2 => 2, ... }
+    my $media_tags = {};
+    
+    # media.id -> [ list of contact RDS::MediaAssetFeatures ]
+    my $contact_features = {};
+    
+    # media.id -> [ list of requested assets ]
+    my $assets = {};
+
+    # media.id -> # of media share rows that exist for this media.
+    my $shared = {};
+
+    # user_id -> { uuid => user_uuid, json => RDS::User->TO_JSON }
+    my $people = {};
+
+    # We also want a list of the media IDs we're going to publish.
+    my $mids = [];
+
+    foreach my $m ( @$media ) {
+	my $owner_id = $m->user_id;
+	unless ( exists( $people->{$owner_id} ) ) {
+	    $people->{$owner_id} = { uuid => $m->user->uuid };
+	    if ( $params->{include_owner_json} ) {
+		$people->{$owner_id}->{json} = $m->user->TO_JSON;
+	    }
+	}
+	
+	push( @$mids, $m->id );
+    }
+
+    my $search = { 'me.media_id' => { -in => $mids } };
+    if ( !$include_images ) {
+	$search->{'me.asset_type'} = { '!=', 'image' };
+    }
+    my @mas = $c->model( 'RDS::MediaAsset' )->search( $search )->all();
+    foreach my $ma ( @mas ) {
+	if ( exists( $assets->{$ma->media_id} ) ) {
+	    push( @{$assets->{$ma->media_id}}, $ma );
+	} else {
+	    $assets->{$ma->media_id} = [ $ma ];
+	}
+    }
+
+    if ( $params->{include_tags} ) {
+	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( { 
+	    'me.media_id' => { -in => $mids },
+	    -or => [ 'me.feature_type' => 'activity',
+		     -and => [ 'me.feature_type' => 'face',
+			       'me.contact_id' => { '!=', undef } ] ] } );
+	foreach my $maf ( @mafs ) {
+	    my $tag = undef;
+	    if ( $maf->{_column_data}->{feature_type} eq 'face' ) {
+		$tag = 'people';
+	    } elsif ( $maf->{_column_data}->{feature_type} eq 'activity' ) {
+		$tag = $maf->coordinates;
+	    }
+	    if ( defined( $tag ) ) {
+		$media_tags->{$maf->media_id}->{$tag} = 1;
+	    }
+	}
+    }
+
+    if ( $params->{include_contact_info} ) {
+	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( 
+	    { 
+		'me.media_id' => { -in => $mids },
+		'contact.id' => { '!=', undef },
+		'me.feature_type'=>'face',
+		'me.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] } },
+	    { prefetch => ['contact', 'media_asset'],
+	      group_by => [ 'me.media_id', 'contact.id'] } );
+	foreach my $maf ( @mafs ) {
+	    if ( exists( $contact_features->{$maf->media_id} ) ) {
+		push( @{$contact_features->{$maf->media_id}},  $maf );
+	    } else {
+		$contact_features->{$maf->media_id} = [ $maf ];
+	    }
+	}
+    }
+    
+    if ( $params->{include_shared} ) {
+	my @shares = $c->model( 'RDS::MediaShare' )->search(
+	    { 'media_id' => { -in => $mids } },
+	    { group_by => [ 'me.media_id' ],
+	      select => [ 'me.media_id', { count => 'me.id', -as => 'share_count' } ] } );
+	foreach my $share ( @shares ) {
+	    $shared->{$share->{_column_data}->{media_id}} = $share->{_column_data}->{share_count};
+	}
+    }
+
+    my $result = [];
+    
+    foreach my $m ( @$media ) {
+	$params->{assets} = $assets->{$m->id};
+	$params->{owner_uuid} = $people->{$m->user_id}->{uuid};
+	
+	if ( $params->{include_tags} ) {
+	    if ( exists( $media_tags->{$m->id} ) ) {
+		$params->{media_tags} = $media_tags->{$m->id};
+	    } else {
+		$params->{media_tags} = {};
+	    }
+	}
+	
+	if ( $params->{include_contact_info} ) {
+	    if ( exists( $contact_features->{$m->id} ) ) {
+		$params->{features} = $contact_features->{$m->id};
+	    } else {
+		$params->{features} = [];
+	    }
+	}
+	
+	if ( $params->{include_shared} ) {
+	    if ( exists( $shared->{$m->id} ) ) {
+		$params->{shared} = $shared->{$m->id};
+	    } else {
+		$params->{shared} = 0;
+	    }
+	}
+
+	my $hash = VA::MediaFile->new->publish( $c, $m, $params );
+
+	if ( $params->{include_owner_json} ) {
+	    $hash->{owner} = $people->{$m->user_id}->{json};
+	}
+	push( @$result, $hash );
+    }
+
+    return $result;
+}
+
+# Returns the fb_user object - the result of Model::Facebook::fetch( 'me' )
+# Also sets session->{fb_token} = the supplied token.
+sub validate_facebook_token :Private {
+    my( $self, $c, $token ) = @_;
+
+    $token = $c->req->param( 'access_token' ) unless( $token );
+    unless( $token ) {
+	$c->log->error( "Missing token param for link_facebook_account()" );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    my $fb = $c->model( 'Facebook', $token );
+    unless( $fb ) {
+	$c->log->error( "Failed to link FB account: token was: " + $token );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    my $fb_user = $fb->fetch( 'me' );
+    unless( $fb_user ) {
+	$c->log->error( "Facebook fetch(me) failed during FB link" );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    unless( $fb_user->{id} ) {
+	$c->log->error( "Facebook user id missing during link" );
+	$c->logdump( $fb_user );
+	$self->status_bad_request
+	    ( $c, 
+	      $c->loc("Unable to establish a link to Facebook at this time.") );
+    }
+    $c->user->obj->update_or_create_related
+	( 'links', {
+	    provider => 'facebook',
+	  });
+    my $link = $c->user->obj->links->find({provider => 'facebook'});
+    $link->data({
+	link => $fb_user->{link},
+	access_token => $token,
+	id => $fb_user->{id} });
+    $link->update; 
+    $c->session->{fb_token} = $token;
+    
+    return $fb_user;
+}
+
+
 
 __PACKAGE__->meta->make_immutable;
 

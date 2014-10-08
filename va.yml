@@ -26,6 +26,8 @@ sqs:
   new_account_creation: arn:aws:sqs:us-west-2:442359467480:new_account_creation_local
   recognition: arn:aws:sqs:us-west-2:442359467480:recognition_local
   email: arn:aws:sqs:us-west-2:442359467480:email_local
+  album_summary: arn:aws:sqs:us-west-2:442359467480:album_summary_creation_local
+  create_fb_album: arn:aws:sqs:us-west-2:442359467480:create_fb_album_local
 
 geodata:
   geonames:
@@ -77,6 +79,7 @@ mediafile:
   s3: VA::MediaFile::S3
   jfs: VA::MediaFile::JFS
   us: VA::MediaFile::US
+  facebook: VA::MediaFile::Facebook
 
 roles:
   tester:
@@ -192,3 +195,7 @@ Model::MQ:
 #
 file_storage:
   secret: viblio321
+
+facebook_endpoint: https://graph.facebook.com/
+
+mixpanel_token: 6954c354aa38909f812ed12d1b425e60

@@ -140,10 +140,35 @@ sub album_names :Local {
          { prefetch=>['contact',{'cgroup'=>'community'}]});
 
     my @communities = map { $_->cgroup->community } $rs->all;
-    my @albums = map { {title => $_->album->title(), uuid => $_->album->uuid(), is_shared => 1} } @communities;
+    my @albums = ();
+    
+    my $seen_owners = {};
+
+    foreach my $community ( @communities ) {
+	my $owner_id = $community->user_id();
+	my $owner_uuid = undef;
+	if ( exists( $seen_owners->{ $owner_id } ) ) {
+	    $owner_uuid = $seen_owners->{ $owner_id };
+	} else {
+	    $owner_uuid = $community->user->uuid();
+	    $seen_owners->{ $owner_id } = $owner_uuid;
+	}
+	push( @albums, { title => $community->album->title(),
+			 uuid => $community->album->uuid(),
+			 is_shared => 1,
+			 owner_uuid => $owner_uuid } );
+    }
 
     foreach my $album ( $c->user->albums->all ) {
-	push( @albums, { title => $album->title(), uuid => $album->uuid(), is_shared => 0 } );
+	my $owner_id = $album->user_id();
+	my $owner_uuid = undef;
+	if ( exists( $seen_owners->{ $owner_id } ) ) {
+	    $owner_uuid = $seen_owners->{ $owner_id };
+	} else {
+	    $owner_uuid = $album->user->uuid();
+	    $seen_owners->{ $owner_id } = $owner_uuid;
+	}
+	push( @albums, { title => $album->title(), uuid => $album->uuid(), is_shared => 0, owner_uuid => $owner_uuid } );
     }
 
     my @n = sort { $a->{title} cmp $b->{title} } @albums;
@@ -151,12 +176,8 @@ sub album_names :Local {
     $self->status_ok( $c, { albums => \@n } );
 }
 
-sub create :Local {
-    my( $self, $c ) = @_;
-    my $name = $c->req->param( 'name' ) || 'unnamed';
-    my $aid = $c->req->param( 'aid' );
-    my $initial_mid = $c->req->param( 'initial_mid' );
-    my @list = $c->req->param( 'list[]' );
+sub create_album_helper :Private {
+    my ( $self, $c, $name, $aid, $is_viblio_created ) = @_;
 
     my $where = {
 	is_album => 1,
@@ -170,13 +191,35 @@ sub create :Local {
     }
     my $album = $c->user->find_or_create_related( 'media', $where );
 
-    unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Failed to create a new album' ) );
+    if ( $is_viblio_created ) {
+	$album->is_viblio_created( 1 );
     }
 
     unless ( $album->recording_date && $album->recording_date->epoch != 0 ) {
 	$album->recording_date( DateTime->now );
-	$album->update;
+    }
+
+    $album->title( $name );
+    $album->update;
+
+    return $album;
+}
+
+# Delegate the actual work to a subroutine, call the subroutine from
+# elsewhere, leave status and such in tact here.
+
+sub create :Local {
+    my( $self, $c ) = @_;
+    my $name = $c->req->param( 'name' ) || 'unnamed';
+    my $aid = $c->req->param( 'aid' );
+    my $initial_mid = $c->req->param( 'initial_mid' );
+
+    my @list = $c->req->param( 'list[]' );
+
+    my $album = $self->create_album_helper( $c, $name, $aid );
+
+    unless( $album ) {
+	$self->status_bad_request( $c, $c->loc( 'Failed to create a new album' ) );
     }
 
     if ( $#list >= 0 ) {
@@ -184,7 +227,7 @@ sub create :Local {
     }
 
     if ( $initial_mid ) {
-	my $media = $c->user->videos->find({ uuid => $initial_mid });
+	my $media = $c->user->videos->find( { uuid => $initial_mid } );
 	unless( $media ) {
 	    $self->status_bad_request( $c, $c->loc( 'Bad initial media uuid' ) );
 	}
@@ -230,6 +273,21 @@ sub create :Local {
     $self->status_ok( $c, { album => $hash } );
 }
 
+=head2
+
+services/album/get - Return a list of media in the requested album,
+with posters, if the user has permission to view.
+
+Inputs:
+* aid - The uuid of the album
+* include_contact_info - Defaults to 0, if true includes face info in the response
+* include_tags - Defaults to 0
+* include_images - Defaults to 0
+* only_visible - Defaults to 1
+* only_videos - Defaults to 1
+
+=cut
+
 sub get :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
@@ -238,6 +296,10 @@ sub get :Local {
     $include_contact_info = 0 unless( $include_contact_info );
     my $include_tags = $c->req->param( 'include_tags' );
     $include_tags = 0 unless( $include_tags );
+    my $include_images = $c->req->param( 'include_images' );
+    $include_images = 0 unless ( $include_images );    
+    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
     my $params = {
 	views => ['poster'],
@@ -249,6 +311,8 @@ sub get :Local {
     unless( $album ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
     }
+
+    my $album_owner_uuid = undef;
 
     # Is this album viewable by the user?
     if ( $album->user_id != $c->user->id ) {
@@ -267,20 +331,35 @@ sub get :Local {
 	if ( ! $found ) {
 	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to view this album.' ) );
 	}
+    } else {
+	$album_owner_uuid = $c->user->uuid;
     }
 
-    my $hash  = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+    my $poster_params = { views => ['poster'] };
+    if ( $album_owner_uuid ) {
+	$poster_params->{owner_uuid} = $album_owner_uuid;
+    }
+    my $hash = VA::MediaFile->new->publish( $c, $album, $poster_params );
     $hash->{is_shared} = ( $album->community ? 1 : 0 );
-    my @m = ();
-    foreach my $med ( $album->media->search({},{order_by => 'recording_date desc'}) ) {
-	my $data = VA::MediaFile->new->publish( 
-	    $c, $med, 
-	    $params );
-	$data->{owner} = $med->user->TO_JSON;
-	push( @m, $data );
-    } 
-	
-    $hash->{media} = \@m;
+
+
+    my $where = {};
+    if ( $only_visible ) {
+	$where = { -or => [ status => 'visible',
+			    status => 'complete' ]  };
+    }
+    if ( $only_videos ) {
+	$where->{'media_type'} = 'original';
+    }
+
+    my @media_list = $album->media->search( $where, {order_by => 'recording_date desc'} )->all();
+
+    my $m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
+							     include_contact_info => $include_contact_info,
+							     include_tags => $include_tags,
+							     include_images => $include_images } ) );
+
+    $hash->{media} = $m;
     $hash->{owner} = $album->user->TO_JSON; 
 
     $self->status_ok( $c, { album => $hash } );
@@ -808,10 +887,12 @@ sub shared_with :Local {
     $self->status_ok( $c, { displayname => $displayname, members => \@data } );
 }
 
+# Create an album of faces for the input contact_id.
 sub create_face_album :Local {
     my( $self, $c ) = @_;
     my $title = $c->req->param( 'title' );
     my $contact_uuid = $c->req->param( 'contact_id' );
+    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
     my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $contact_uuid });
     unless( $contact ) {
@@ -822,9 +903,19 @@ sub create_face_album :Local {
 	$title = $contact->contact_name;
     }
 
+    my $where = { 
+	contact_id => $contact->id, 
+	'me.user_id' => $c->user->id, 
+	feature_type => 'face' 
+    };
+
+    if ( $only_videos ) {
+	$where->{'media.media_type'} = 'original';
+    }
+
     my $rs = $c->model( 'RDS::MediaAssetFeature' )
 	->search(
-	{ contact_id => $contact->id, 'me.user_id' => $c->user->id },
+	$where,
 	{ prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
 
     my @mediafiles = map { $_->media_asset->media } $rs->all;
@@ -875,13 +966,15 @@ sub search_by_title_or_description :Local {
     my $q = $c->req->param( 'q' );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
+
     my $rs = $c->user->albums->search(
 	{ -or => [ 'LOWER(title)' => { 'like', '%'.lc($q).'%' },
 		   'LOWER(description)' => { 'like', '%'.lc($q).'%' } ] },
 	{ order_by => 'recording_date desc',
 	  page => $page, rows => $rows } );
-    my @data = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ], include_tags => 1 } ) } $rs->all;
-    $self->status_ok( $c, { media => \@data, pager => $self->pagerToJson( $rs->pager ) } );
+    
+    my $data = $self->publish_mediafiles( $c, [ $rs->all() ], { include_tags => 1 } );
+    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
 

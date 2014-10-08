@@ -56,6 +56,45 @@ sub delete {
     return $ret;
 }
 
+# Just delete a single asset.
+sub delete_asset {
+    my( $self, $c, $asset ) = @_;
+
+    my $bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );
+    unless( $bucket ) {
+        $c->log->error( "Cannot get s3 bucket: " . 
+                        $c->config->{s3}->{bucket} );
+        return undef;
+    }
+
+    # Collect all the uri's (s3 keys) from all the assets that have
+    # them, except for faces.  We never want to delete a face
+    #
+    my @uris = ();
+    if ( ref $asset eq 'HASH' ) {
+	push( @uris, $asset->{uri} );
+    }
+    else {
+	push( @uris, $asset->uri() );
+    }
+    
+    my $ret = $asset;
+
+    try {
+	foreach my $uri ( @uris ) {
+	    my $o = $bucket->object( key => $uri );
+	    if ( $o ) {
+		$o->delete;
+	    }
+	}
+    } catch { 
+        $c->log->error( "Error trying to delete S3 object: $_" );
+        $ret = undef;
+    };
+
+    return $ret;
+}
+
 sub metadata {
     my( $self, $c, $mediafile ) = @_;
     my $uri;
@@ -127,20 +166,35 @@ sub uri2url {
     my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
     my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
         $aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
+    my $expires = undef;
+    my $expires_in = undef;
     if ( $params && $params->{expires} ) {
 	$aws_generator->expires_in( $params->{expires} );
+	$expires_in = $params->{expires};
     }
     else {
 	# Have to have an expires, but if we keep it constant then the browser
 	# can cache images.  So, get the current year, add 1 to it and set the
 	# expire to Jan 1 of next year.
 	# 
-	$aws_generator->expires( DateTime->new(
-				     year => (DateTime->now->year + 1),
-				     month => 1, day => 1,
-				     hour => 23, minute => 59 )->epoch );
+	$expires = DateTime->new(
+	    year => (DateTime->now->year + 1),
+	    month => 1, day => 1,
+	    hour => 23, minute => 59 )->epoch;
+	$aws_generator->expires( $expires );
     }
-    my $url = $aws_generator->get( $aws_bucket_name, $s3key );
+    my $url = '';
+    if ( exists( $params->{'download_url'} ) && $params->{'download_url'} ) {
+	my $expiration = {};
+	if ( defined( $expires ) ) {
+	    $expiration->{'EXPIRES'} = $expires;
+	} elsif ( defined( $expires_in ) ) {
+	    $expiration->{'EXPIRES_IN'} = $expires_in;
+	}
+	$url = VA::MediaFile->generate_signed_url( $aws_key, $aws_secret, $aws_use_https, $aws_endpoint, $aws_bucket_name, $s3key, { 'response-content-disposition' => 'attachment' }, $expiration );
+    } else {
+	$url = $aws_generator->get( $aws_bucket_name, $s3key );
+    }
     $url =~ s/\/$aws_bucket_name\//\//g;
 
     #$c->log->debug( sprintf( "key=%s, secret=%s, https=%s, endpoint=%s, uri=%s, url=%s",

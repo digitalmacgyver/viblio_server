@@ -129,13 +129,15 @@ sub authenticate {
 	    return undef;
 	}
 
-	if ( $ctx->{no_autocreate} ) {
-	    # User's email must already exist ... no auto creates here!!
-	    if ( ! $ctx->model( 'RDS::User' )->find({email=>$fb_user->{email}}) ) {
-		$ctx->{authfail_code} = "NOLOGIN_EMAIL_NOT_FOUND";
-		$ctx->log->debug( 'Facebook user lookup failed: no db record for ' . $fb_user->{email} );
-		return undef;
-	    }
+	my $new_user = 0;
+	if ( ! $ctx->model( 'RDS::User' )->find({email=>$fb_user->{email}}) ) {
+	    $new_user = 1;
+	}
+
+	if ( $new_user && $ctx->{no_autocreate} ) {
+	    $ctx->{authfail_code} = "NOLOGIN_EMAIL_NOT_FOUND";
+	    $ctx->log->debug( 'Facebook user lookup failed: no db record for ' . $fb_user->{email} );
+	    return undef;
 	}
 
 	my $attributes = {
@@ -214,6 +216,11 @@ sub authenticate {
 		};
 	    }
 
+	    # The return value of here plugs into larger
+	    # authentication stuff and can't be messed with, but we
+	    # need a way of communicating whether this is a new user
+	    # elsewhere.  Put it in the stash.
+	    $ctx->stash->{new_user} = $new_user;
 	    return $user;
 	}
 	else {

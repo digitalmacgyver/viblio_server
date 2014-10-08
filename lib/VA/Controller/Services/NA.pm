@@ -20,6 +20,8 @@ use Net::GitHub::V3;
 use Data::UUID;
 use GeoData;
 
+use WWW::Mixpanel;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 =head1 /services/na
@@ -121,6 +123,8 @@ sub authenticate :Local {
     }
     elsif ( $realm =~ /facebook/ ) {
 	$creds = {};
+	# Turn on auto creation of Facebook accounts on login.
+	$c->{no_autocreate} = 0;
     }
     elsif ( $realm =~ /community/ ) {
 	$creds = $c->req->params;
@@ -129,8 +133,14 @@ sub authenticate :Local {
 	$creds = $c->req->params;
     }
     
-    $c->{no_autocreate} = 1;
     if ( $c->authenticate( $creds, $realm ) ) {
+	# The website's facebook login only ever calls: services/na/authenticate.
+	if ( $realm =~ /facebook/ ) {
+	    if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
+		# In this case we have just authenticated a new facebook user.
+		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email } );
+	    }
+	}
 
 	# If the user does not already have an access_token, generate one now.
 	# Normally this token is generated in new_user(), but that functionality was
@@ -144,8 +154,23 @@ sub authenticate :Local {
 	    $c->user->obj->update;
 	}
 
+	try {
+	    # Try to send Mixpanel a message about this user does
+	    # stuff from the iPhone app.  This isn't perfect - it also
+	    # sends events when the user does logins through a
+	    # browser, but it's better than the no information we get
+	    # now.
+	    my $device_type = device_type( $c->req->browser );
+	    if ( ( $device_type eq 'iphone' ) || ( $device_type eq 'ipad' ) ) {
+		my $mp = WWW::Mixpanel->new( $c->config->{mixpanel_token} );
+		$mp->people_set( $c->user->obj->uuid(), '$email' => $c->user->obj->email(), '$created' => $c->user->obj->created_date() );
+	    }
+	} catch {
+	    my $exception = $_;
+	    $c->log->error( 'Failed to send mixpanel event for login.  Error was $exception. User was: ' . $c->user->obj->uuid() );
+	};
+
 	$self->status_ok( $c, { user => $c->user->obj } );
-	return;
     } 
     else {
 	# Lets try to create a more meaningful error message
@@ -441,7 +466,7 @@ sub invite_request :Local {
     $c->stash->{email} =
     { to       => $args->{email},
       from     => $c->config->{viblio_return_email_address},
-      subject  => $c->loc( "Invitation to join Viblio" ),
+      subject  => $c->loc( "Invitation to join VIBLIO" ),
       template => 'email/invitation.tt'
     };
     $c->stash->{user} = $user;
@@ -551,75 +576,7 @@ sub new_user :Local {
     }
 
     if ($c->authenticate( $creds, $args->{realm} ) ) {
-	my $user = $c->user->obj;
-	$user->provider( ( $args->{realm} eq 'db' ? 'local' : $args->{realm}) ); $user->update;
-
-	# Create a profile - note authentication may have already
-	# created a profile if the user came in via facebook.
-	if ( ! $user->profile ) {
-	    $user->create_profile();
-	}
-
-	# Create an access token for use with the 'viblio' authenticator
-	$user->access_token(
-	    lc( Data::UUID->new->create_from_name_str( 'com.viblio', $user->email ) ) );
-	$user->update;
-
-	# There may be a "pending user" record corresponding to this email.
-	# If there is, in media_shares table, replace all 'private' shares
-	# with pending user id with this new user's id.
-	my $pending_user = $c->model( 'RDS::User' )->find({ provider_id => 'pending', displayname => $args->{email} });
-	if ( $pending_user ) {
-	    foreach my $share ( $c->model( 'RDS::MediaShare' )->search({ share_type => 'private', user_id => $pending_user->id }) ) {
-		$share->user_id( $user->id );
-		$share->update;
-	    }
-	    $pending_user->delete;
-	    $pending_user->update;
-	}
-       
-	# Contact records consist of an email address and an optional pointer
-	# to a real viblio user.  A person registering as the result of a email
-	# share will be a contact, but the viblio user pointer is currently NULL.
-	# Lets fix that now.
-	#
-	my $update_rs = $c->model( 'RDS::Contact' )->search({ contact_email => $user->email });
-	$update_rs->update({ contact_viblio_id => $user->id });
-
-	# Send a SQS message for this new account creation
-	try {
-	    $c->log->debug( 'Sending SQS message for new account' );
-	    my $sqs = $c->model( 'SQS', $c->config->{sqs}->{new_account_creation} )
-		->SendMessage( to_json({
-		    user_uuid => $user->uuid,
-		    action => 'welcome_video' }) );
-	} catch {
-	    $c->log->error( "Failed to send welcome_video SQS message: $_" );
-	};
-
-=perl
-	# And finally, send them a nice welcome email
-	#
-	$self->send_email( $c, {
-	    subject => $c->loc( "Viblio Account Confirmation" ),
-	    to => [{
-		email => $user->email,
-		name  => $user->displayname }],
-	    template => 'email/03-accountConfirmation.tt',
-	    stash => {
-		url => $c->server . '#confirmed?uuid=' . $user->uuid,
-	    }});
-=cut
-	# Send an instructional email too.
-	$self->send_email( $c, {
-	    subject => $c->loc( "Welcome to VIBLIO" ),
-	    to => [{
-		email => $user->email,
-		name  => $user->displayname }],
-	    template => 'email/04-07-accountCreated.tt',
-	    stash => {
-		model => { user => $user }
-	    }});
+	$self->new_user_helper( $c, $args );
 	$self->status_ok( $c, { user => $c->user->obj } );
     }
     else {
@@ -630,6 +587,101 @@ sub new_user :Local {
 	    ( $c, $self->authfailure_response( $c, $code ), $code );
     }
 }
+
+sub new_user_helper :Private {
+    my $self = shift;
+    my $c    = shift;
+    my $args = shift;
+
+    my $user = $c->user->obj;
+    $user->provider( ( $args->{realm} eq 'db' ? 'local' : $args->{realm}) ); $user->update;
+    
+    # Create a profile - note authentication may have already
+    # created a profile if the user came in via facebook.
+    if ( ! $user->profile ) {
+	$user->create_profile();
+    }
+    
+    # Create an access token for use with the 'viblio' authenticator
+    $user->access_token(
+	lc( Data::UUID->new->create_from_name_str( 'com.viblio', $user->email ) ) );
+    $user->update;
+    
+    # There may be a "pending user" record corresponding to this email.
+    # If there is, in media_shares table, replace all 'private' shares
+    # with pending user id with this new user's id.
+    my $pending_user = $c->model( 'RDS::User' )->find({ provider_id => 'pending', displayname => $args->{email} });
+    if ( $pending_user ) {
+	foreach my $share ( $c->model( 'RDS::MediaShare' )->search({ share_type => 'private', user_id => $pending_user->id }) ) {
+	    $share->user_id( $user->id );
+	    $share->update;
+	}
+	$pending_user->delete;
+	$pending_user->update;
+    }
+    
+    # Contact records consist of an email address and an optional pointer
+    # to a real viblio user.  A person registering as the result of a email
+    # share will be a contact, but the viblio user pointer is currently NULL.
+    # Lets fix that now.
+    #
+    my $update_rs = $c->model( 'RDS::Contact' )->search({ contact_email => $user->email });
+    $update_rs->update({ contact_viblio_id => $user->id });
+    
+    # Create some default albums for this account.
+    try {
+	my $new_user_albums = [ 'Using VIBLIO', 'Birthdays', 'Family', 'Friends', 'Holidays', 'Vacations' ];
+
+	my $album_object = new VA::Controller::Services::Album();
+	
+	my $ug = new Data::UUID;
+
+	foreach my $new_user_album ( @$new_user_albums ) {
+	    my $uuid =  $ug->create();
+	    VA::Controller::Services::Album->new()->create_album_helper( $c, $new_user_album, $ug->to_string( $uuid ), 1 );
+	}
+    } catch {
+	$c->log->error( "Failed to create welcome default albums, error was: $_" );
+    };
+
+    # Send a SQS message for this new account creation
+    try {
+	$c->log->debug( 'Sending SQS message for new account' );
+	my $sqs = $c->model( 'SQS', $c->config->{sqs}->{new_account_creation} )
+	    ->SendMessage( to_json({
+		user_uuid => $user->uuid,
+		action => 'welcome_video' }) );
+    } catch {
+	$c->log->error( "Failed to send welcome_video SQS message: $_" );
+    };
+
+    
+=perl
+	# And finally, send them a nice welcome email
+	#
+	$self->send_email( $c, {
+	    subject => $c->loc( "VIBLIO Account Confirmation" ),
+	    to => [{
+		email => $user->email,
+		name  => $user->displayname }],
+	    template => 'email/03-accountConfirmation.tt',
+	    stash => {
+		url => $c->server . '#confirmed?uuid=' . $user->uuid,
+	    }});
+=cut
+
+    # Send an instructional email too.
+    $self->send_email( $c, {
+	subject => $c->loc( "Welcome to VIBLIO" ),
+	to => [{
+	    email => $user->email,
+	    name  => $user->displayname }],
+	template => 'email/04-07-accountCreated.tt',
+	stash => {
+	    model => { user => $user }
+	}});
+}
+
 
 =head2 /services/na/account_confirm
 
@@ -652,7 +704,7 @@ sub account_confirm :Local {
     $user->confirmed( 1 ); $user->update;
 
     my $headers = {
-	subject => $c->loc( "Welcome to Viblio" ),
+	subject => $c->loc( "Welcome to VIBLIO" ),
 	to => [{
 	    email => $user->email,
 	    name  => $user->displayname }],
@@ -717,7 +769,7 @@ sub forgot_password_request :Local {
     }
 =cut
     my $email= { 
-	subject  => $c->loc( "Reset your password on Viblio" ),
+	subject  => $c->loc( "Reset your password on VIBLIO" ),
 	to => [{
 	    email => $args->{email} }],
 	template => 'email/18-forgotPassword.tt',
@@ -1035,7 +1087,7 @@ sub mediafile_create :Local {
 
     ### FOR NOW, LIMIT ANY EMAILS TO THE FIRST FEW VIDEOS UPLOADED
     ### TO THE ACCOUNT
-    my $rs = $user->media->search( $self->where_valid_mediafile() );
+    my $rs = $user->media->search( $self->where_valid_mediafile( undef, undef, 1, 1 ) );
     if ( $rs->count == 5 ) {
 
 	if ( $user->profile->setting( 'email_notifications' ) &&
@@ -1046,7 +1098,7 @@ sub mediafile_create :Local {
 	    $c->log->debug( 'Sending email to ' . $user->email );
 
 	    my $email = {
-		subject    => $c->loc( "Your Viblio Video is Ready" ),
+		subject    => $c->loc( "Your VIBLIO Video is Ready" ),
 		to => [{
 		    email => $user->email,
 		    name  => $user->displayname }],
@@ -1092,6 +1144,78 @@ sub mediafile_create :Local {
 
     $self->status_ok( $c, {} );
 }
+
+
+# This endpoint is called when we have created a Facebook resource on
+# behalf of our user.
+#
+# This is a protected endpoint.
+#
+sub create_fb_album :Local {
+    my( $self, $c, $uid, $mid, $site_token ) = @_;
+    $uid = $c->req->param( 'uid' ) unless( $uid );
+    $mid = $c->req->param( 'mid' ) unless( $mid );
+    $site_token = $c->req->param( 'site-token' ) unless( $site_token );
+
+    unless( $uid && $mid && $site_token ) {
+	$self->status_bad_request( $c, 'Missing one or more of uid, mid, site-token params' );
+    }
+
+    unless( $site_token eq 'maryhadalittlelamb' ) {
+	if ( $c->secure_token( $uid ) ne $site_token ) {
+	    $c->log->error( "mediafile_create() authentication failure: calculated(" . $c->secure_token( $uid ) . ") does not match $site_token" );
+	    $self->status_bad_request( $c, 'mediafile_create() authentication failure.' );
+	}
+    }
+
+    my $user = $c->model( 'RDS::User' )->find({uuid=>$uid});
+    if ( ! $user ) {
+	$self->status_bad_request( $c, 'Cannot find user for $uid' );
+    }
+
+    my $mediafile = $user->media->find({ uuid => $mid });
+    unless( $mediafile ) {
+	$self->status_bad_request( $c, 'Cannot find media for $mid' );
+    }
+    my $asset = $mediafile->assets->first( { asset_type => 'fb_album' } );
+
+    if ( $user->profile->setting( 'email_notifications' ) ) {
+	# Send email notification
+	#
+	$c->log->debug( 'Sending email to ' . $user->email );
+	my $email = {
+	    subject    => $c->loc( "Your Facebook Photo Album is Ready" ),
+	    to => [{
+		email => $user->email,
+		name  => $user->displayname }],
+	    template => 'email/22-fbAlbumCreated.tt',
+	    stash => {
+		user => $user,
+		# DEBUG - Do we need $mf here as above for email header or footer?
+		server => $c->server,
+		model => {
+		    media => $mediafile,
+		    media_asset => $asset
+		}
+	    }
+	};
+	$self->send_email( $c, $email );
+    }
+
+    # Send message queue notification
+    #
+    # DEBUG - IN THE FUTURE HAVE A SLIDE OUT OR SOMETHING FOR THIS!
+    #my $res = $c->model( 'MQ' )->post( '/enqueue', { uid => $uid,
+    #						     type => 'new_video',
+    #						     media  => $mf } );
+    #if ( $res->code != 200 ) {
+    #	$c->log->error( "Failed to post wo to user message queue! Response code: " . $res->code );
+    #}
+
+    $self->status_ok( $c, {} );
+}
+
+
 
 =head2 /services/na/incoming_email
 
