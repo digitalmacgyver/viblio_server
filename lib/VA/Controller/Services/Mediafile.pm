@@ -1432,7 +1432,7 @@ sub change_recording_date :Local {
 
     $media->recording_date( DateTime::Format::Flexible->parse_datetime( $dstring ) );
     $media->update;
-    $self->status_ok( $c, { date => $media->recording_date } );
+    $self->status_ok( $c, [ $media->tags() ] )
 }
 
 sub get_animated_gif :Local {
