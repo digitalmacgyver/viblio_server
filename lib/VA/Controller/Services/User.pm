@@ -377,6 +377,46 @@ sub add_or_replace_profile_photo :Local {
     $self->status_ok( $c, {} );
 }
 
+
+# Handle the per user banner photo.
+#
+sub add_or_replace_banner_photo :Local {
+    my( $self, $c ) = @_;
+
+    my $user = $c->user->obj;
+    unless( $user ) {
+	$self->status_bad_request
+	    ( $c, $c->loc("User for not found!" ) );
+    }
+
+    my $result = {};
+
+    my $upload = $c->req->upload( 'upload' );
+    my $photo;
+    if ( $upload ) {
+	my $image = Imager->new();
+	$image->read( data => $upload->slurp ) or
+	    $c->log->error( "Failed to create Imager object: " . $image->errstr );
+
+	my $mimetype = $upload->type;
+	my $data;
+	(my $file_type = $upload->type) =~ s!^image/!!;
+	$image->write( data => \$data, type => $file_type );
+	my $width = $image->getwidth();
+	my $height = $image->getheight();
+
+	$c->stash->{data} = $data;
+	my $mediafile = VA::MediaFile::US->create( $c, { width => $width, height => $height, mimetype => $mimetype } );
+	unless ( $mediafile ) {
+	    $self->status_bad_request( $c, $c->loc("Failed to create mediafile.") );
+	}
+	$result = $self->publish_mediafiles( $c, [ $mediafile ], { views => [ 'banner' ], only_videos => 0 } );
+    } else {
+	$self->status_bad_request( $c, $c->loc("Missing upload field") );
+    }
+    $self->status_ok( $c, $result );
+}
+
 # Leaving this in just for code example, if I need to do this
 # in the future.
 #

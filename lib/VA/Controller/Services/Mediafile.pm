@@ -495,7 +495,7 @@ sub list :Local {
 	  order_by => { -desc => 'me.id' } } );
 
     if ( $args->{include_images} ) {
-	push( @{$args->{'views[]'}}, 'image' );
+	push( @{$params->{'views'}}, 'image' );
     }
 
     my $media = $self->publish_mediafiles( $c, [$rs->all], $params );
@@ -1393,7 +1393,7 @@ sub related :Local {
 	@data = @media_results;
     }
 
-    my $media_hash = $self->publish_mediafiles( $c, \@media_results, { include_tags=>1, include_shared=>1, 'views[]' => 'poster' } );
+    my $media_hash = $self->publish_mediafiles( $c, \@media_results, { include_tags=>1, include_shared=>1, 'views' => [ 'poster' ] } );
 
     $self->status_ok( $c, { media => $media_hash, pager => $pager } );
 }

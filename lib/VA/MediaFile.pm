@@ -124,6 +124,7 @@ sub publish {
 	%include = map { $_ => 1 } @{$params->{views}};
 	if ( $include{poster} ) {
 	    $include{poster_animated} = 1;
+	    $include{banner} = 1;
 	}
     }
     my $include_images = 0;

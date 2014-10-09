@@ -432,6 +432,21 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
+=head2 users
+
+Type: has_many
+
+Related object: L<VA::RDSSchema::Result::User>
+
+=cut
+
+__PACKAGE__->has_many(
+  "users",
+  "VA::RDSSchema::Result::User",
+  { "foreign.banner_uuid" => "self.uuid" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 viblio_added_content_album_id_album_users
 
 Type: has_many
@@ -469,8 +484,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-09-09 14:27:27
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:I4FIEc+0K16HPXD5MNQxyQ
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-10-08 21:47:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:XwqhTEJEudQT41vlQZZH8g
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

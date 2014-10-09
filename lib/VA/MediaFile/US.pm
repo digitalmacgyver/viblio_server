@@ -6,10 +6,117 @@ use Muck::FS::S3::QueryStringAuthGenerator;
 use File::Basename;
 use JSON;
 use MIME::Types;
+use Data::UUID;
 
+# Create a mediafile - presently this is only intended to be called
+# from the UI's per-user banner update method.
 sub create {
     my ( $self, $c, $params ) = @_;
-    return undef;
+    
+    my $bucket = $c->model( 'S3' )->bucket( name => $c->config->{s3}->{bucket} );
+    unless( $bucket ) {
+        $c->log->error( "Cannot get s3 bucket: " . 
+                        $c->config->{s3}->{bucket} );
+        return undef;
+    }
+
+    my $user = $c->user->obj();
+    unless ( $user ) {
+        $c->log->error( "Cannot get user" );
+        return undef;
+    }
+
+    # We pass the data only via a stash to ensure security - anyone
+    # who manages to call this API must be able to manipulate the
+    # stash to effect a state change. This may be an unecessary
+    # precaution.
+    my $data = $c->stash->{data};
+    unless ( defined( $data ) && length( $data ) ) {
+        $c->log->error( "No data found in the stash." );
+	return undef;
+    }
+
+    my $mimetype = $params->{mimetype};
+    unless ( defined( $mimetype ) && length( $mimetype ) ) {
+        $c->log->error( "No mimetype parameter provided." );
+	return undef;
+    }
+    
+    my $extension = undef;
+    my $mt = MIME::Types->new();
+    my @extensions = $mt->type( $mimetype )->extensions();
+    $extension = lc( $extensions[0] );
+    unless ( defined( $extension ) && length( $extension ) ) {
+	$c->log->error( "Could not determine file extension for mimetype: $mimetype." );
+	return undef;
+    }
+
+    my $mediatype = 'image';
+    if ( exists( $params->{mediatype} ) && length( $params->{mediatype} ) ) {
+	$mediatype = $params->{mediatype};
+    }
+    my $assettype = 'banner';
+    if ( exists( $params->{assettype} ) && length( $params->{assettype} ) ) {
+	$assettype = $params->{assettype};
+    }
+    my $width = undef;
+    if ( exists( $params->{width} ) && length( $params->{width} ) ) {
+	$width = $params->{width};
+    }
+    my $height = undef;
+    if ( exists( $params->{height} ) && length( $params->{height} ) ) {
+	$height = $params->{height};
+    }
+
+    # For now no API for title, filename, description, recording_date,
+    # lat, lng, etc.
+
+    # OK - we have a stashed data stream and a mimetype, our task is
+    # to:
+    # A. Create an S3 object.
+    # B. Create a Mediafile object of the appropriate type, with an
+    # asset of the appropriate type.
+    
+    my $ug = new Data::UUID;
+    
+    my $media_uuid = undef;
+    my $media_status = 'complete';
+    if ( exists( $params->{album} ) && $params->{album} ) {
+	my $album = $params->{album};
+	$media_uuid = $album->uuid();
+	$mediatype = $album->media_type();
+	$media_status = $album->status();
+    } else {
+	$media_uuid = $ug->to_string( $ug->create() );
+    }
+
+    my $asset_uuid = $ug->to_string( $ug->create() );
+
+    my $uri = "$media_uuid/${asset_uuid}_${assettype}.$extension";
+
+    # Store this sucker in S3.
+    my $s3_obj = $bucket->object( key => $uri, content_type => $mimetype );
+    $s3_obj->put( $data );
+
+    # Write the rows to the database.
+    my $mediafile = $user->find_or_create_related( 'media', { 
+	uuid => $media_uuid,
+	status => $media_status,
+	media_type => $mediatype } );
+    my $asset = $mediafile->find_or_create_related( 'media_assets', {
+	uuid => $asset_uuid,
+	location => 'us',
+	asset_type => $assettype,
+	bytes => length( $data ),
+	mimetype => $mimetype,
+	uri => $uri,
+	width => $width,
+	height => $height } );
+
+    $user->banner_uuid( $mediafile->uuid() );
+    $user->update();
+
+    return $mediafile;
 }
 
 # Delete all views stored on S3 for this mediafile

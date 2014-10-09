@@ -139,6 +139,13 @@ __PACKAGE__->table("users");
   is_nullable: 0
   size: 32
 
+=head2 banner_uuid
+
+  data_type: 'varchar'
+  is_foreign_key: 1
+  is_nullable: 1
+  size: 36
+
 =head2 created_date
 
   data_type: 'datetime'
@@ -188,6 +195,8 @@ __PACKAGE__->add_columns(
     is_nullable => 0,
     size => 32,
   },
+  "banner_uuid",
+  { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 36 },
   "created_date",
   {
     data_type => "datetime",
@@ -241,6 +250,26 @@ __PACKAGE__->add_unique_constraint("email_UNIQUE", ["email"]);
 __PACKAGE__->add_unique_constraint("uuid_UNIQUE", ["uuid"]);
 
 =head1 RELATIONS
+
+=head2 banner_uuid
+
+Type: belongs_to
+
+Related object: L<VA::RDSSchema::Result::Media>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "banner_uuid",
+  "VA::RDSSchema::Result::Media",
+  { uuid => "banner_uuid" },
+  {
+    is_deferrable => 1,
+    join_type     => "LEFT",
+    on_delete     => "SET NULL",
+    on_update     => "SET NULL",
+  },
+);
 
 =head2 communities
 
@@ -498,8 +527,8 @@ Composing rels: L</user_roles> -> role
 __PACKAGE__->many_to_many("roles", "user_roles", "role");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-04-02 23:10:33
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:TUbybQJuLdxdtThUwzZerA
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-10-08 21:47:14
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:7plwoD/wGmp9UuvQu/aRGw
 use Email::AddressParser;
 use Email::Address;
 
