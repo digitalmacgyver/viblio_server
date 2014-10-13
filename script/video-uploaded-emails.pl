@@ -104,13 +104,11 @@ foreach my $user ( @users ) {
 	    next;
 	}
 
-	$DB::single = 1;
-
 	my $user_uuid = $user->uuid;
 
 	my @media = $user->videos->search(
 	    { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
-	      'me.is_viblio_created' => 0, 'me.media_type' => 'original' },
+	      'me.is_viblio_created' => 0, 'me.media_type' => 'original', 'me.is_album' => 0 },
 	    {prefetch => 'assets' } );
 	my @albums = $user->albums->search(
 	    { 'me.created_date' => { '>', $dtf->format_datetime( $TARGET ) },
