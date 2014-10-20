@@ -2138,7 +2138,6 @@ sub create_video_summary :Local {
     $self->status_ok( $c, { success => 1 } );
 }
 
-
 =head2
 
 services/mediafile/create_fb_album
@@ -2265,6 +2264,66 @@ sub create_fb_album :Local {
     
     $self->status_ok( $c, { success => 1, fb_album_url => $rjson->{link} } );
 }
+
+
+=head2
+
+services/mediafile/find_photos
+
+{
+    'media_uuid' : media_uuid,
+    'images_per_second : 1,
+
+# Optional parameters:
+
+    'start_time' : 0.5, # Defaults to 0 - Time in seconds to begin finding photos.
+    'end_time'   : 13.5, # Defaults to end of video - Time in seconds to end finding photos.
+    # Note: Both start and end time can also accept negative values
+    # and interpret them as offsets from the end of the video,
+    # e.g. photos from the second to last minue of the video can be
+    # found with start_time = -120 and end_time = -60.
+
+    'faces_only' : 0, # Default 0, if true then only images with faces will be found.
+}
+
+=cut
+
+sub find_photos :Local {
+    my $self = shift; my $c = shift;
+    my $args = $self->parse_args
+      ( $c,
+        [
+	 'media_uuid'       => undef,
+	 'images_per_second' => undef,
+	 'start_time'       => 0,
+	 'end_time'         => undef,
+	 'faces_only'       => 0
+        ],
+        @_ );
+
+    # Validate inputs.
+    unless ( defined( $args->{media_uuid} ) ) {
+	$self->status_bad_request( $c, $c->loc( 'media_uuid must be specified.' ) );
+    }
+    unless ( defined( $args->{images_per_second} ) && $args->{images_per_second} > 0 ) {
+	$self->status_bad_request( $c, $c->loc( 'images_per_second must be specified as a positive number.' ) );
+    }
+    my @owned_videos = $c->model( 'RDS::Media' )->search( { user_id => $c->user->id(), uuid => $args->{media_uuid} } )->all();
+    unless ( scalar( @owned_videos ) == 1 ) {
+	$self->status_bad_request( $c, $c->loc( 'No media of that UUID found for this user.' ) );
+    }
+
+    # Send the request to the back end to get photos.
+    my $error = $c->model( 'SQS', $self->send_sqs( $c, 'photo_finder', $args ) );
+    if ( $error ) {
+	$self->status_bad_request( $c, $c->loc( 'An error occurred while invoking the photo finder.' ) );
+    }
+    
+    $self->status_ok( $c, { success => 1 } );
+}
+
+
+
 
 __PACKAGE__->meta->make_immutable;
 
