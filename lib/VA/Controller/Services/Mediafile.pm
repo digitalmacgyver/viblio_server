@@ -10,6 +10,7 @@ use CGI;
 use HTTP::Tiny;
 use POSIX 'strftime';
 
+use Data::UUID;
 use Geo::Distance;
 
 BEGIN { extends 'VA::Controller::Services' }
@@ -2108,6 +2109,25 @@ sub create_video_summary :Local {
 	}
     }
     $c->log->debug( "OK TO ACCESS ALL VIDEOS" );
+
+    my $ug = new Data::UUID;
+    my $summary_uuid = $ug->to_string( $ug->create() );
+
+    $args->{summary_uuid} = $summary_uuid;
+    $c->log->debug( "Creating database records for media_uuid: ", $summary_uuid );
+    my $user = $c->user->obj();
+    my $mediafile = $user->find_or_create_related( 'media', {
+	uuid => $summary_uuid,
+	status => 'pending',
+	media_type => 'original',
+	filename => "$args->{summary_type}_$args->{summary_style}_$args->{summary_order}",
+	title => $args->{title},
+	description => $args->{description},
+	view_count => 0,
+	recording_date => $args->{recording_date},
+	lat => $args->{lat},
+	lng => $args->{lng},
+	is_viblio_created => 1 } );
 
     $args->{action} = 'create_video_summary';
     my $error = $c->model( 'SQS', $self->send_sqs( $c, 'album_summary', $args ) );
