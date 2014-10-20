@@ -2280,7 +2280,7 @@ services/mediafile/find_photos
     'end_time'   : 13.5, # Defaults to end of video - Time in seconds to end finding photos.
     # Note: Both start and end time can also accept negative values
     # and interpret them as offsets from the end of the video,
-    # e.g. photos from the second to last minue of the video can be
+    # e.g. photos from the second to last minute of the video can be
     # found with start_time = -120 and end_time = -60.
 
     'faces_only' : 0, # Default 0, if true then only images with faces will be found.
