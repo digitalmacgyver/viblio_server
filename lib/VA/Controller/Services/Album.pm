@@ -179,16 +179,36 @@ sub album_names :Local {
 sub create_album_helper :Private {
     my ( $self, $c, $name, $aid, $is_viblio_created ) = @_;
 
+    #$DB::single = 1;
+
     my $where = {
+	user_id => $c->user->id(),
 	is_album => 1,
 	media_type => 'original',
     };
+    if ( $name ) {
+	$where->{title} = $name;
+    }
+
+    my @albums = $c->model( 'RDS::Media' )->search( $where )->all();
+
+    if ( scalar( @albums ) > 0 ) {
+	# At least one album of this name already exists, change the
+	# name of the desired created album.
+	if ( my $count = ( $name =~ m/\(\d+\)$/ ) ) {
+	    my $new_count = $count + 1;
+	    $name =~ s/\($count\)$/\($new_count\)/;
+	} else {
+	    $name = "$name (1)";
+	}
+	
+	$where->{title} = "$name";
+    }
+
     if ( $aid ) {
 	$where->{uuid} = $aid;
     }
-    else {
-	$where->{title} = $name;
-    }
+
     my $album = $c->user->find_or_create_related( 'media', $where );
 
     if ( $is_viblio_created ) {

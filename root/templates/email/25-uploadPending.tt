@@ -1,0 +1,10 @@
+[% INCLUDE email/top.tt 
+    previewText = "Your VIBLIO Upload"
+%]
+    <div class="centered regSize darkText">
+        <span class="largeText">VIBLIO Duplicate Upload</span>
+        <br />
+        <br />
+        <span>You just uploaded [% IF filename %][% filename %][% ELSE %]a movie[% END %] to VIBLIO, however that video was already being processed in your <a class="tomato" href='[% c.server %]#home'><span class="tomato">VIBLIO account</span></a> - it should be ready for sharing soon, cheers!</span>
+
+[% INCLUDE email/bottom.tt %]
