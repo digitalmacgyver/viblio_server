@@ -17,6 +17,7 @@
     <div class="centered regSize darkText">
         <p style="text-align: left;">[% user.displayname %] just invited you to be part of an album - how cool is that!</p>
         <br />
+	[% IF album.views.poster.uri %]
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
@@ -29,6 +30,9 @@
             </tr>
         </table>
         [% IF album.title != 'Untitled' %] <span class="smallText">Album: [% album.title %]</span> [% END %]
+	[% ELSE %]
+                    <a href='[% url %]'>Album: [% album.title %]</a>
+	[% END %]
         <br />
         <br />
         <table border="0" cellpadding="0" cellspacing="0" height="100" style="width:100%; height:100px;" width="100%">
