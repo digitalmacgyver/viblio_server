@@ -1031,7 +1031,10 @@ sub add_or_replace_banner_photo :Local {
 	my $width = $image->getwidth();
 	my $height = $image->getheight();
 
+	# We store the original upload data, we just put it in Imager
+	#to get the mime type and size.
 	$c->stash->{data} = $data;
+	$c->stash->{data} = $upload->slurp();
 	my $mediafile = VA::MediaFile::US->create( $c, { album => $album, width => $width, height => $height, mimetype => $mimetype } );
 	unless ( $mediafile ) {
 	    $self->status_bad_request( $c, $c->loc("Failed to create mediafile.") );
