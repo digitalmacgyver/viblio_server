@@ -557,7 +557,7 @@ sub remove_media :Local {
 sub change_title :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
-    my $title = $c->req->param( 'title' );
+    my $title = $c->sanitize( $c, $c->req->param( 'title' ) );
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     
@@ -939,7 +939,7 @@ sub shared_with :Local {
 # Create an album of faces for the input contact_id.
 sub create_face_album :Local {
     my( $self, $c ) = @_;
-    my $title = $c->req->param( 'title' );
+    my $title = $self->sanitize( $c, $c->req->param( 'title' ) );
     my $contact_uuid = $c->req->param( 'contact_id' );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
@@ -1012,7 +1012,7 @@ sub create_face_album :Local {
 # Search by title or description
 sub search_by_title_or_description :Local {
     my( $self, $c ) = @_;
-    my $q = $c->req->param( 'q' );
+    my $q = $self->sanitize( $c, $c->req->param( 'q' ) );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
 

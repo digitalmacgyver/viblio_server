@@ -140,14 +140,15 @@ sub parse_args : Private {
 	elsif ( defined( $c->req->param( $key ) ) ) {
 	    if ( $key =~ /\[\]$/ ) {
 		my @a = $c->req->param( $key );
-		$ret->{$key} = \@a;
+		my @result = map { $self->sanitize( $c, $_ ); } @a;
+		$ret->{$key} = \@result;
 	    }
 	    else {
-		$ret->{$key} = $c->req->param( $key );
+		$ret->{$key} = $self->sanitize( $c, $c->req->param( $key ) );
 	    }
 	}
 	elsif ( defined( $c->{data} && defined( $c->{data}->{$key} ) ) ) {
-	    $ret->{$key} = $c->{data}->{$key};
+	    $ret->{$key} = $self->sanitize( $c, $c->{data}->{$key} );
 	}
 	else {
 	    $ret->{$key} = $def;
@@ -770,6 +771,21 @@ sub validate_facebook_token :Private {
     return $fb_user;
 }
 
+# Utility function to make user input for comments, names, tags, etc. safe.
+
+sub sanitize :Private {
+    my( $self, $c, $txt ) = @_;
+
+    # Finally, comments can only be 2048 chars in length
+    if ( defined( $txt ) ) {
+	if ( length( $txt ) > 2048 ) {
+	    $txt = substr( $txt, 0, 2047 );
+	}
+	return CGI::escapeHTML( $txt );
+    } else {
+	return undef;
+    }
+}
 
 
 __PACKAGE__->meta->make_immutable;

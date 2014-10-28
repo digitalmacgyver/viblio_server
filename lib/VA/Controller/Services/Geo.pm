@@ -45,9 +45,9 @@ sub location :Local {
 
 sub change_latlng :Local {
     my( $self, $c ) = @_;
-    my $lat = $c->req->param( 'lat' );
-    my $lng = $c->req->param( 'lng' );
-    my $addr = $c->req->param( 'addr' );
+    my $lat = $self->sanitize( $c, $c->req->param( 'lat' ) );
+    my $lng = $self->sanitize( $c, $c->req->param( 'lng' ) );
+    my $addr = $self->sanitize( $c, $c->req->param( 'addr' ) );
 
     my $mid = $c->req->param( 'mid' );
     my $m = $c->user->media->find({uuid=>$mid});

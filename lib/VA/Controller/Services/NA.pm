@@ -87,7 +87,7 @@ sub authenticate :Local {
     my ( $self, $c ) = @_;
 
     # Get the username and password from form
-    my $email = $c->req->params->{email};
+    my $email = $self->sanitize( $c, $c->req->params->{email} );
     my $password = $c->req->params->{password};
     my $realm = $c->req->params->{realm} || 'facebook';
 
@@ -560,6 +560,8 @@ sub new_user :Local {
 	$args->{displayname} = $args->{username} unless( $args->{displayname} );
 	$args->{displayname} = $self->displayname_from_email( $args->{email} ) unless( $args->{displayname} );
 	$args->{displayname} = $args->{email} unless( $args->{displayname} );
+
+	$args->{displayname} = $self->sanitize( $c, $args->{displayname} );
 
 	unless( $args->{password} ) {
 	    my $code = "NOLOGIN_MISSING_PASSWORD";
@@ -1550,7 +1552,7 @@ sub valid_email :Local {
 
 sub find_share_info_for_pending :Local {
     my( $self, $c ) = @_;
-    my $email = $c->req->param( 'email' );
+    my $email = $self->sanitize( $c, $c->req->param( 'email' ) );
     my $test  = $c->req->param( 'test' );
 
     # find pending user
@@ -1742,8 +1744,8 @@ sub faces_in_mediafile :Local {
 
 sub geo_loc :Local {
     my( $self, $c ) = @_;
-    my $lat = $c->req->param( 'lat' );
-    my $lng = $c->req->param( 'lng' );
+    my $lat = $self->sanitize( $c, $c->req->param( 'lat' ) );
+    my $lng = $self->sanitize( $c, $c->req->param( 'lng' ) );
 
     my $latlng = "$lat,$lng";
     my $keystr = '';
@@ -1765,9 +1767,14 @@ uses to route back to us, which we then file in our feedback system.
 
 sub form_feedback :Local {
     my( $self, $c ) = @_;
-    my $feedback = $c->req->param( 'feedback' );
+    my $feedback = $self->sanitize( $c, $c->req->param( 'feedback' ) );
     my $feedback_email = $c->req->param( 'feedback_email' );
     my $feedback_location = $c->req->param( 'feedback_location' );
+
+    unless ( $self->is_email_valid( $feedback_email ) ) {
+	# Silently fail.
+	$self->status_ok( $c, {} );
+    }
 
     $self->send_email( $c, {
 	subject => 'feedback on ' . $feedback_location,

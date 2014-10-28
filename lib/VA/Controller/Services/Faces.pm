@@ -904,7 +904,7 @@ sub add_contact_to_mediafile :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
     my $cid = $c->req->param( 'cid' );
-    my $contact_name = $c->req->param( 'contact_name' );
+    my $contact_name = $self->sanitize( $c, $c->req->param( 'contact_name' ) );
 
     my $media = $c->user->media->find({ uuid => $mid });
     unless( $media ) {

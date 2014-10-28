@@ -7,7 +7,7 @@ BEGIN { extends 'VA::Controller::Services' }
 
 sub create :Local {
     my( $self, $c ) = @_;
-    my $name = $c->req->param( 'name' );
+    my $name = $self->sanitize( $c, $c->req->param( 'name' ) );
     my $list = $c->req->param( 'list' );
 
     my $group = $c->user->create_group( $name, $list );

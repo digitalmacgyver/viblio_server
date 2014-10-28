@@ -122,7 +122,7 @@ sub change_profile :Local {
 	next if ( $name eq '_' );
 	my $field = $profile->fields->find({ name => $name });
 	if ( $field ) {
-	    $field->value( $c->req->param( $name ) );
+	    $field->value( $self->sanitize( $c, $c->req->param( $name ) ) );
 	    $field->update;
 	}
 	else {
@@ -146,8 +146,9 @@ Returns the user struct. { user: {userinfo} }
 sub change_email_or_displayname :Local {
     my( $self, $c ) = @_;
     my $email = $c->req->param( 'email' );
-    my $displayname = $c->req->param( 'displayname' );
+    my $displayname = $self->sanitize( $c, $c->req->param( 'displayname' ) );
     if ( $email ) {
+	# IF WE EVER PUT TIS BACK IN VALIDATE IT IS AN OK EMAIL.
 	# $c->user->obj->email( $email );
 	# DO NOT ALLOW THIS AT THIS TIME ... changing the user's email address has
 	# large ramifications.
@@ -232,6 +233,17 @@ sub add_user :Local {
 	      $c->loc("Only users with 'admin' role can add new users.") );
     }
     my $params = $c->req->params;
+
+    if ( exists( $params->{username} ) ) {
+	$params->{username} = $self->sanitize( $c, $params->{username} );
+    }
+    if ( exists( $params->{fullname} ) ) {
+	$params->{fullname} = $self->sanitize( $c, $params->{fullname} );
+    }
+    if ( exists( $params->{email} ) ) {
+	$params->{email} = $self->sanitize( $c, $params->{email} );
+    }
+
     # $c->logdump( $params );
 
     foreach my $arg ( qw/username password fullname email/ ) {
@@ -585,7 +597,7 @@ sub change_password :Local {
 sub tell_a_friend :Local {
     my( $self, $c ) = @_;
     my @list = $c->req->param( 'list[]' );
-    my $message = $c->req->param( 'message' );
+    my $message = $self->sanitize( $c, $c->req->param( 'message' ) );
     my $tnum = $c->req->param( 'emailTemplate' ) || 15;
 
     my $user = $c->user->obj;

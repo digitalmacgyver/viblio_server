@@ -602,8 +602,8 @@ sub get_metadata :Local {
 sub set_title_description :Local {
     my( $self, $c) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $title = $c->req->param( 'title' );
-    my $description = $c->req->param( 'description' );
+    my $title = $self->sanitize( $c, $c->req->param( 'title' ) );
+    my $description = $self->sanitize( $c, $c->req->param( 'description' ) );
     unless( $mid ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( "Missing required field: [_1]", "mid" ) );
@@ -622,17 +622,6 @@ sub set_title_description :Local {
 sub comments :Local {
     my( $self, $c ) = @_;
     $c->forward( '/services/na/media_comments' );
-}
-
-sub sanitize :Private {
-    my( $self, $c, $txt ) = @_;
-
-
-    # Finally, comments can only be 2048 chars in length
-    if ( length( $txt ) > 2048 ) {
-	$txt = substr( $txt, 0, 2047 );
-    }
-    return CGI::escapeHTML( $txt );
 }
 
 sub add_comment :Local {
@@ -751,9 +740,10 @@ sub add_share :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
     my @list = $c->req->param( 'list[]' );
-    my $subject = $c->req->param( 'subject' );
+    my $subject = $self->sanitize( $c, $c->req->param( 'subject' ) );
+    # Can't sanitize this, it comes with a HREF link in it.
     my $body = $c->req->param( 'body' );
-    my $title = $c->req->param( 'title' );
+    my $title = $self->sanitize( $c, $c->req->param( 'title' ) );
     my $embed = $self->boolean( $c->req->param( 'embed' ), 0 );
     my $disposition = $c->req->param( 'private' );
     $disposition = 'private' unless( $disposition );
@@ -1402,7 +1392,7 @@ sub related :Local {
 sub change_recording_date :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $dstring = $c->req->param( 'date' );
+    my $dstring = $self->sanitize( $c, $c->req->param( 'date' ) );
     my $media = $c->user->media->find({uuid => $mid });
     unless( $media ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
@@ -1476,7 +1466,7 @@ sub has_been_shared :Local {
 # search criterion.
 sub search_by_title_or_description :Local {
     my( $self, $c ) = @_;
-    my $q = $c->req->param( 'q' );
+    my $q = $self->sanitize( $c, $c->req->param( 'q' ) );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
 
@@ -1602,7 +1592,7 @@ sub search_by_title_or_description :Local {
 # search criterion.
 sub search_by_title_or_description_in_album :Local {
     my( $self, $c ) = @_;
-    my $q = $c->req->param( 'q' );
+    my $q = $self->sanitize( $c, $c->req->param( 'q' ) );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
     my $aid = $c->req->param( 'aid' );
@@ -1749,7 +1739,7 @@ sub cities :Local {
 # Return all videos taken in the passed in city
 sub taken_in_city :Local {
     my( $self, $c ) = @_;
-    my $q = $c->req->param( 'q' );
+    my $q = $self->sanitize( $c, $c->req->param( 'q' ) );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
     my $include_contact_info = $c->req->param( 'include_contact_info' ) || 0;
@@ -1873,7 +1863,7 @@ sub recently_uploaded :Local {
 sub add_tag :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $tagname = $c->req->param( 'tag' );
+    my $tagname = $self->sanitize( $c, $c->req->param( 'tag' ) );
     my $video = $c->user->videos->find({ uuid => $mid });
     unless( $video ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
@@ -1889,7 +1879,7 @@ sub add_tag :Local {
 sub rm_tag :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $tagname = $c->req->param( 'tag' );
+    my $tagname = $self->sanitize( $c, $c->req->param( 'tag' ) );
     my $video = $c->user->videos->find({ uuid => $mid });
     unless( $video ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
