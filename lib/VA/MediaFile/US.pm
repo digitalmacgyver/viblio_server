@@ -177,9 +177,9 @@ sub delete_asset {
         return undef;
     }
 
-    # Collect all the uri's (s3 keys) from all the assets that have
-    # them, except for faces.  We never want to delete a face
-    #
+    # This code copied and pasted from delete above - in our case URIs
+    # will only ever have one value, the value of the asset in
+    # question's URI.
     my @uris = ();
     if ( ref $asset eq 'HASH' ) {
 	push( @uris, $asset->{uri} );

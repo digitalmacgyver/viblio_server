@@ -409,6 +409,13 @@ sub add_or_replace_banner_photo :Local {
 	# to verify the mime type and size.
 	#$c->stash->{data} = $data;
 	$c->stash->{data} = $upload->slurp();
+	if ( defined( $user->banner_uuid->uuid() ) ) {
+	    my @user_banner_assets = $c->model( 'RDS::MediaAsset' )->search( { uuid => $user->banner_uuid()->uuid() } )->all();
+	    if ( scalar( @user_banner_assets ) == 1 ) {
+		VA::MediaFile::US->delete_asset( $c, $user_banner_assets[0] );
+		$user_banner_assets[0]->delete();
+	    }
+	}
 	my $mediafile = VA::MediaFile::US->create( $c, { width => $width, height => $height, mimetype => $mimetype } );
 	unless ( $mediafile ) {
 	    $self->status_bad_request( $c, $c->loc("Failed to create mediafile.") );
