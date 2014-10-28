@@ -1879,7 +1879,7 @@ sub add_tag :Local {
 sub rm_tag :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $tagname = $self->sanitize( $c, $c->req->param( 'tag' ) );
+    my $tagname = $c->req->param( 'tag' );
     my $video = $c->user->videos->find({ uuid => $mid });
     unless( $video ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
