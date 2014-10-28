@@ -557,7 +557,7 @@ sub remove_media :Local {
 sub change_title :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
-    my $title = $c->sanitize( $c, $c->req->param( 'title' ) );
+    my $title = $self->sanitize( $c, $c->req->param( 'title' ) );
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     

@@ -144,7 +144,11 @@ sub parse_args : Private {
 		$ret->{$key} = \@result;
 	    }
 	    else {
-		$ret->{$key} = $self->sanitize( $c, $c->req->param( $key ) );
+		if ( $key != 'password' ) {
+		    $ret->{$key} = $self->sanitize( $c, $c->req->param( $key ) );
+		} else {
+		    $ret->{$key} = $c->req->param( $key );
+		}
 	    }
 	}
 	elsif ( defined( $c->{data} && defined( $c->{data}->{$key} ) ) ) {

@@ -91,6 +91,8 @@ sub authenticate :Local {
     my $password = $c->req->params->{password};
     my $realm = $c->req->params->{realm} || 'facebook';
 
+    $DB::single = 1;
+
     # Different realms require different lookup and password values
     #
     my $creds = {};
