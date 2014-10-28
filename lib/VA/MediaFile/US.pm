@@ -9,7 +9,8 @@ use MIME::Types;
 use Data::UUID;
 
 # Create a mediafile - presently this is only intended to be called
-# from the UI's per-user banner update method.
+# from the UI's per-user banner update method, or when creating a
+# default album.
 sub create {
     my ( $self, $c, $params ) = @_;
     
@@ -113,8 +114,10 @@ sub create {
 	width => $width,
 	height => $height } );
 
-    $user->banner_uuid( $mediafile->uuid() );
-    $user->update();
+    if ( !exists( $params->{album} ) && $assettype == 'banner' ) {
+	$user->banner_uuid( $mediafile->uuid() );
+	$user->update();
+    }
 
     return $mediafile;
 }

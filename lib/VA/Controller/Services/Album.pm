@@ -4,6 +4,8 @@ use namespace::autoclean;
 use JSON::XS ();
 use URI::Escape;
 
+use Try::Tiny;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 my $encoder = JSON::XS
@@ -177,7 +179,7 @@ sub album_names :Local {
 }
 
 sub create_album_helper :Private {
-    my ( $self, $c, $name, $aid, $is_viblio_created ) = @_;
+    my ( $self, $c, $name, $aid, $is_viblio_created, $set_album_cover ) = @_;
 
     #$DB::single = 1;
 
@@ -221,6 +223,24 @@ sub create_album_helper :Private {
 
     $album->title( $name );
     $album->update;
+
+    # Set the poster of the new album to a canned image
+    if ( defined( $set_album_cover ) ) {
+	try {
+	    my $s3_bucket = $set_album_cover->{s3_bucket};
+	    my $s3_key = $set_album_cover->{s3_key};
+	    my $width = $set_album_cover->{width};
+	    my $height = $set_album_cover->{height};
+	    my $mimetype = $set_album_cover->{mimetype};
+	    my $bucket = $c->model( 'S3' )->bucket( name => $s3_bucket );
+	    my $poster_image = $bucket->object( key => $s3_key );
+	    $c->stash->{data} = $poster_image->get();
+	    my $poster = VA::MediaFile::US->create( $c, { album => $album, width => $width, height => $height, mimetype => $mimetype, assettype => 'poster' } );
+	} catch {
+	    # Oh well...
+	    $c->log->error( "Failed to set default poster image: $_" );
+	}
+    }
 
     return $album;
 }
@@ -273,7 +293,16 @@ sub create :Local {
 	}
     }
     else {
-	# Set the poster of the new album to a canned image
+        # Set the poster of the new album to a canned image
+	try {
+	    my $bucket = $c->model( 'S3' )->bucket( name => 'viblio-external' );
+	    my $poster_image = $bucket->object( key => 'media/default-images/DEFAULT-poster.png' );
+	    $c->stash->{data} = $poster_image->get();
+	    my $poster = VA::MediaFile::US->create( $c, { album => $album, width => 288, height => 216, mimetype => 'image/png', assettype => 'poster' } );
+	} catch {
+	    # Oh well...
+	    $c->log->error( "Failed to set default poster image: $_" );
+	}
     }
 
     foreach my $vid ( @list ) {

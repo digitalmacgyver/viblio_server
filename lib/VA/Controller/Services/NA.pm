@@ -484,6 +484,36 @@ sub invite_request :Local {
     }
 }
 
+
+
+=head2 /services/na/new_user_no_password
+
+Supports a new API to create a user account with just an email address.
+
+=head3 Response
+
+  { "user": $user }
+
+=cut
+
+sub new_user_no_password :Local {
+    my $self = shift;
+    my $c    = shift;
+    my $args = $self->parse_args
+	( $c,
+	  [ email    => undef,
+	    realm => 'db',
+	    via => 'trayapp'
+	  ],
+	  @_ );
+
+    my $username = ( $args->{email} =~ m/^(.*?)@/ );
+
+    my $password = $username . int( rand( 9999 ) );
+
+    $self->new_user( $c, $args->{email}, $password, $username, $username, $args->{realm}, $args->{via}, 1 );
+}
+
 =head2 /services/na/new_user
 
 This is the companion endpoint to /services/na/invite_request.  Once the user
@@ -512,7 +542,8 @@ sub new_user :Local {
 	    username => undef,
 	    displayname => undef,
 	    realm => 'db',
-	    via => 'trayapp'
+	    via => 'trayapp',
+	    no_password => 0
 	  ],
 	  @_ );
 
@@ -630,15 +661,28 @@ sub new_user_helper :Private {
     
     # Create some default albums for this account.
     try {
-	my $new_user_albums = [ 'Using VIBLIO', 'Birthdays', 'Family', 'Friends', 'Holidays', 'Vacations' ];
+	my $new_user_albums = [ { name => 'Using VIBLIO', s3_key => 'media/default-images/DEFAULT-poster.png', mimetype => 'image/png' },
+				{ name => 'Birthdays', s3_key => 'media/default-images/BIRTHDAY-poster.jpg' },
+				{ name => 'Family', s3_key => 'media/default-images/FAMILY-poster.jpg' },
+				{ name => 'Friends', s3_key => 'media/default-images/FRIENDS-poster.jpg' },
+				{ name => 'Holidays', s3_key => 'media/default-images/HOLIDAY-poster.jpg' },
+				{ name => 'Vacations', s3_key => 'media/default-images/VACATION-poster.jpg' }
+	    ];
 
 	my $album_object = new VA::Controller::Services::Album();
 	
 	my $ug = new Data::UUID;
 
 	foreach my $new_user_album ( @$new_user_albums ) {
+	    my $name = $new_user_album->{name};
+	    my $s3_key = $new_user_album->{s3_key};
+	    my $s3_bucket = 'viblio-external';
+	    my $mimetype = 'image/jpeg';
+	    if ( exists( $new_user_album->{mimetype} ) ) {
+		$mimetype = $new_user_album->{mimetype};
+	    }
 	    my $uuid =  $ug->create();
-	    VA::Controller::Services::Album->new()->create_album_helper( $c, $new_user_album, $ug->to_string( $uuid ), 1 );
+	    VA::Controller::Services::Album->new()->create_album_helper( $c, $name, $ug->to_string( $uuid ), 1, { s3_bucket => $s3_bucket, s3_key => $s3_key, mimetype => $mimetype, width => 288, height => 216 } );
 	}
     } catch {
 	$c->log->error( "Failed to create welcome default albums, error was: $_" );
@@ -670,15 +714,25 @@ sub new_user_helper :Private {
 	    }});
 =cut
 
+    my $template = 'email/04-07-accountCreated.tt';
+    my $model = { user => $user };
+    my $subject = 'Welcome to VIBLIO';
+
+    if ( $args->{no_password} ) {
+	$template = '04-08-no_pw_accountCreated.tt';
+	$model->{user}->{password} = $args->{password};
+	$subject = 'Welcome to VIBLIO Photo Finder';
+    }
+
     # Send an instructional email too.
     $self->send_email( $c, {
-	subject => $c->loc( "Welcome to VIBLIO" ),
+	subject => $c->loc( $subject ),
 	to => [{
 	    email => $user->email,
 	    name  => $user->displayname }],
-	template => 'email/04-07-accountCreated.tt',
+	template => $template,
 	stash => {
-	    model => { user => $user }
+	    model => $model
 	}});
 }
 
