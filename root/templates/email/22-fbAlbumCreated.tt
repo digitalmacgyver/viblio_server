@@ -11,7 +11,7 @@
   media_asset: The Corresponding fb_album media_asset record.
 %]
     <div class="centered regSize darkText">
-        <span><a href="[% model.media_asset.uri %]">Your new Facebook photo alum is up!</a></span>
+        <span><a href="[% model.media_asset.uri %]">Your new Facebook photo album is up!</a></span>
         <br />
 	<p>VIBLIO turns your videos into fun photos that are easy to share.</p>
     	<p>Invite a friend to <a href="[% c.server %]#refer">try VIBLIO</a> today!</p>    
