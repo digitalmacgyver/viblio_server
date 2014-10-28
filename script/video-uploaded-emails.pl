@@ -172,6 +172,9 @@ foreach my $user ( @users ) {
 	#
 	next if ( ($#published == -1) && ($#apublished == -1) );
 	
+	# Actually - only send email if there were new videos.
+	next if ( $#published == -1 );
+
 	if ( $days_ago == 1 ) {
 	    # The daily report should not include albums
 	    next if ($#published == -1);
