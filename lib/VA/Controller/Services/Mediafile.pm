@@ -458,7 +458,7 @@ sub list :Local {
 	  include_contact_info => 0,
 	  include_tags => 1,
 	  include_shared => 0,
-	  'views[]' => ['poster'],
+	  'views[]' => ['poster', 'main'],
 	  include_images => 0,
 	  only_visible => 1,
 	  only_videos => 1,
@@ -680,7 +680,7 @@ sub add_comment :Local {
     # and everybody who has been shared this video.  The logged in user
     # making the comment should never get an email.
 
-    my $published_mf = VA::MediaFile->new->publish( $c, $mf, { views => ['poster'] } );
+    my $published_mf = VA::MediaFile->new->publish( $c, $mf, { views => ['poster', 'main'] } );
     if ( $c->user->id != $mf->user->id ) {
 	my $res = $c->model( 'MQ' )->post( '/enqueue', 
 					   { uid => $mf->user->uuid,
@@ -983,7 +983,7 @@ sub all_shared :Local {
     my @sorted_user_keys = sort{ lc( $a ) cmp lc( $b ) } keys( %$users );
     my @data = ();
     foreach my $key ( @sorted_user_keys ) {
-	my @media = map { VA::MediaFile->publish( $c, $_, { views => ['poster' ] } ) } sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }};
+	my @media = map { VA::MediaFile->publish( $c, $_, { views => ['poster', 'main' ] } ) } sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }};
 
 	# iOS app wants to sort based on shared on date ...
 	my @mids = map { $_->id } sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }};
@@ -1091,7 +1091,7 @@ sub list_all :Local {
         @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
     }
 
-    my $views = ['poster'];
+    my $views = ['poster', 'main'];
     if ( $include_images ) {
 	push( @$views, 'image' );
     }
@@ -1144,19 +1144,25 @@ Return the S3 and cloudfront urls for a video
 sub cf :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    my $rs = $c->model( 'RDS::MediaAsset' )->search(
-	{ 'media.uuid' => $mid,
-	  'me.asset_type' => 'main',
-	  -or => [ 'media.user_id' => $c->user->id,
-		   'media_shares.user_id' => $c->user->id ] },
-	{ prefetch => {'media' => 'media_shares' } });
-    my $asset = $rs->first;
-    unless( $asset ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find main asset for media [_1]', $mid ) );
+    
+
+    if ( $c->user->obj->can_view_video( $mid ) ) {
+	my $rs = $c->model( 'RDS::MediaAsset' )->search(
+	    { 'media.uuid' => $mid,
+	      'me.asset_type' => 'main',
+	      -or => [ 'media.user_id' => $c->user->id,
+		       'media_shares.user_id' => $c->user->id ] },
+	    { prefetch => {'media' => 'media_shares' } });
+	my $asset = $rs->first;
+	unless( $asset ) {
+	    $self->status_bad_request( $c, $c->loc( 'Cannot find main asset for media [_1]', $mid ) );
+	}
+	$self->status_ok( $c, { 
+	    url    => VA::MediaFile::US->new->uri2url( $c, $asset->uri ),
+	    cf_url => $c->cf_sign( $asset->uri, {stream=>1} ) } );
+    } else {
+	$self->status_bad_request( $c, $c->loc( 'Not authorized to views this video.' ) );
     }
-    $self->status_ok( $c, { 
-	url    => VA::MediaFile::US->new->uri2url( $c, $asset->uri ),
-	cf_url => $c->cf_sign( $asset->uri, {stream=>1} ) } );
 }
 
 =head2 /services/mediafile/related
@@ -1384,7 +1390,7 @@ sub related :Local {
 	@data = @media_results;
     }
 
-    my $media_hash = $self->publish_mediafiles( $c, \@media_results, { include_tags=>1, include_shared=>1, 'views' => [ 'poster' ] } );
+    my $media_hash = $self->publish_mediafiles( $c, \@media_results, { include_tags=>1, include_shared=>1, 'views' => [ 'poster', 'main' ] } );
 
     $self->status_ok( $c, { media => $media_hash, pager => $pager } );
 }
@@ -1569,7 +1575,7 @@ sub search_by_title_or_description :Local {
     my $shared;
     foreach my $m ( @mids ) { $shared->{$m} = 1; }
 
-    my $views = ['poster'];
+    my $views = ['poster', 'main'];
     if ( $include_images )  {
 	push( @{$views}, 'image' );
     }
@@ -1688,7 +1694,7 @@ sub search_by_title_or_description_in_album :Local {
 	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
 
-    my $views = ['poster'];
+    my $views = ['poster', 'main'];
     if ( $include_images )  {
 	push( @{$views}, 'image' );
     }
@@ -1767,7 +1773,7 @@ sub taken_in_city :Local {
 	{ order_by => 'recording_date desc',
 	  page => $page, rows => $rows } );
     
-    my $views = ['poster'];
+    my $views = ['poster', 'main'];
     if ( $include_images ) {
 	push( @$views, 'image' );
     }
@@ -1849,7 +1855,7 @@ sub recently_uploaded :Local {
 	{ order_by => 'me.created_date desc',
 	  page => $page, rows => $rows } );
     
-    my $views = ['poster'];
+    my $views = ['poster', 'main'];
     if ( $include_images ) {
 	push( @$views, 'image' );
     }
