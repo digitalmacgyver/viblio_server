@@ -79,6 +79,7 @@ sub authfailure_response :Private {
 	"NOLOGIN_XCHECK" => "Login failed: If you created your account with Facebook, please log in with Facebook.",
 	"NOLOGIN_OAUTH_FAILURE" => "Login failed: Authentication failure against social network.",
 	"NOLOGIN_UNKNOWN" => "Login failed",
+	"NOLOGIN_INVALID_EMAIL" => "Login failed: Invalid Email."
     };
     return $c->loc( $hash->{$code} );
 }
@@ -90,8 +91,6 @@ sub authenticate :Local {
     my $email = $self->sanitize( $c, $c->req->params->{email} );
     my $password = $c->req->params->{password};
     my $realm = $c->req->params->{realm} || 'facebook';
-
-    $DB::single = 1;
 
     # Different realms require different lookup and password values
     #
@@ -509,11 +508,16 @@ sub new_user_no_password :Local {
 	  ],
 	  @_ );
 
-    my $username = ( $args->{email} =~ m/^(.*?)@/ );
+    if ( $self->is_email_valid( $args->{email} ) ) {
+	my $username = ( $args->{email} =~ m/^(.*?)@/ )[0];
+	my $password = $self->invite_code;
 
-    my $password = $username . int( rand( 9999 ) );
-
-    $self->new_user( $c, $args->{email}, $password, $username, $username, $args->{realm}, $args->{via}, 1 );
+	$self->new_user( $c, $args->{email}, $password, $username, $username, $args->{realm}, $args->{via}, $password );
+    } else {
+	my $code = "NOLOGIN_INVALID_EMAIL";
+	$self->status_bad_request
+	    ( $c, $self->authfailure_response( $c, $code ), $code );
+    }
 }
 
 =head2 /services/na/new_user
@@ -723,8 +727,8 @@ sub new_user_helper :Private {
     my $subject = 'Welcome to VIBLIO';
 
     if ( $args->{no_password} ) {
-	$template = '04-08-no_pw_accountCreated.tt';
-	$model->{user}->{password} = $args->{password};
+	$template = 'email/04-08-no_pw_accountCreated.tt';
+	$model->{password} = $args->{no_password};
 	$subject = 'Welcome to VIBLIO Photo Finder';
     }
 

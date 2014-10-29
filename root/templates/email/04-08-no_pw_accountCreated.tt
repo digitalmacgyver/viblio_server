@@ -19,7 +19,7 @@
 	Your login: [% model.user.email %]
 	</li>
 	<li>
-	Your password: [% model.user.password %]
+	Your password: [% model.password %]
 	</li>
 	</ul>
         <p>So start <a href="[% c.server %]#home?addVideos=true"><span class="tomato">UPLOADING</span></a> your videos today.</p>
