@@ -965,8 +965,9 @@ sub all_shared :Local {
 	}
     }
     else {
-	my @shares = $user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
-	@media = map { $_->media } @shares;
+	#my @shares = $user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
+	#@media = map { $_->media } @shares;
+	@media = $user->visible_media();
     }
     
     # partition this into an array of users, each with an array of videos they've
@@ -987,12 +988,14 @@ sub all_shared :Local {
 
 	# iOS app wants to sort based on shared on date ...
 	my @mids = map { $_->id } sort{ $b->created_date->epoch <=> $a->created_date->epoch } @{$users->{ $key }};
+
 	for( my $i=0; $i<=$#media; $i++ ) {
-	    my $share = $c->model( 'RDS::MediaShare' )->find({ media_id => $mids[$i],
-							       user_id  => $c->user->obj->id });
-	    # force the date to be formatted like other dates
-	    my $s = { %{$share->{_column_data}} };
-	    $media[$i]->{shared_date} = $s->{created_date};
+	    #    my $share = $c->model( 'RDS::MediaShare' )->find({ media_id => $mids[$i],
+	    #						       user_id  => $c->user->obj->id });
+	    #    # force the date to be formatted like other dates
+	    #    my $s = { %{$share->{_column_data}} };
+	    #    $media[$i]->{shared_date} = $s->{created_date};
+	    $media[$i]->{shared_date} = $media[$i]->{created_date};
 	}
 
 	push( @data, {
