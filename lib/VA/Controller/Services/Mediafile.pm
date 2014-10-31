@@ -382,8 +382,8 @@ sub delete_assets :Local {
 	unless ( $klass ) {
 	    $self->status_bad_request( $c, $c->loc( "Cannot determine type of this asset." ) );
 	}
-	if ( $klass != 'VA::MediaFile::US' ) {
-	    $self->status_bad_request( $c, $c->loc( "Delete no implemented for resources of type: $klass" ) );
+	if ( $klass ne 'VA::MediaFile::US' ) {
+	    $self->status_bad_request( $c, $c->loc( "Delete not implemented for resources of type: $klass" ) );
 	}
 	my $fp = new $klass;
 	# If we have an error on a particular asset, we just continue on to the rest of them.
@@ -976,6 +976,7 @@ sub all_shared :Local {
     my $users = {};
     foreach my $media ( @media ) {
 	my $owner = $media->user->displayname;
+	next if $media->user->id() == $user->id();
 	if ( ! defined( $users->{ $owner } ) ) {
 	    $users->{ $owner } = [];
 	}

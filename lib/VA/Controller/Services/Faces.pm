@@ -729,13 +729,27 @@ sub delete_contact :Local {
 
     if ( $contact->contact_name ) {
 	# This is a known contact
-	$contact->picture_uri( undef ); 
-	$contact->contact_name( undef ); 
-	$contact->contact_email( undef ); 
-	$contact->update;
+	#$contact->picture_uri( undef ); 
+	#$contact->contact_name( undef ); 
+	#$contact->contact_email( undef ); 
+	#$contact->update;
+	#foreach my $feat ( @feats ) {
+	#    $feat->delete; $feat->update;
+	#}
+
+	# Why would we delete as above?  We should delete the contact,
+	# but we also want to delete the stuff in S3.
+	my @assets = ();
 	foreach my $feat ( @feats ) {
-	    $feat->delete; $feat->update;
-	}
+	    my $asset = $feat->media_asset();
+	    push( @assets, $asset );
+	}	
+	# Handles deletion from S3 of the assets, and from the
+	# database for both assets and features.
+	my @asset_uuids = map { $_->uuid() } @assets;
+	VA::Controller::Services::Mediafile->new()->delete_assets( $c, \@asset_uuids );
+
+	$contact->delete; $contact->update;
     }
     else {
 	# This is an unknown contact
@@ -880,10 +894,20 @@ sub remove_from_video :Local {
 	
 	if ( $contact->contact_name ) {
 	    # This is a known contact
-	    $contact->picture_uri( undef ); $contact->update;
+	    #$contact->picture_uri( undef ); $contact->update;
+	    #foreach my $feat ( @feats ) {
+	    #	$feat->delete; $feat->update;
+	    #}
+
+	    my @assets = ();
 	    foreach my $feat ( @feats ) {
-		$feat->delete; $feat->update;
-	    }
+		my $asset = $feat->media_asset();
+		push( @assets, $asset );
+	    }	
+	    # Handles deletion from S3 of the assets, and from the
+	    # database for both assets and features.
+	    my @asset_uuids = map { $_->uuid() } @assets;
+	    VA::Controller::Services::Mediafile->new()->delete_assets( $c, \@asset_uuids );
 	}
 	else {
 	    # This is an unknown contact

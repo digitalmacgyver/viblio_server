@@ -1046,7 +1046,7 @@ sub visible_media {
     if ( defined( $media_uuids ) && scalar( @$media_uuids ) ) {
 	my @tmp = ();
 	foreach my $old_result ( @old_results ) {
-	    if ( exists( $desired_uuids->{ $old_result->uuid() } ) ) {
+	    if ( !%{$desired_uuids} || exists( $desired_uuids->{ $old_result->uuid() } ) ) {
 		push( @tmp, $old_result );
 	    }
 	}
@@ -1079,8 +1079,10 @@ sub visible_media {
     foreach my $result ( @new_results ) {
 	my $video = $result->videos();
 	unless ( exists( $seen->{ $video->uuid } ) ) {
-	    push( @output, $video );
-	    $seen->{ $video->uuid } = 1;
+	    if ( !%{$desired_uuids} || exists( $desired_uuids->{ $video->uuid() } ) ) {
+		push( @output, $video );
+		$seen->{ $video->uuid } = 1;
+	    }
 	}
     }
     
