@@ -78,20 +78,21 @@ sub create {
     # B. Create a Mediafile object of the appropriate type, with an
     # asset of the appropriate type.
     
-    my $ug = new Data::UUID;
+    my $media_ug = new Data::UUID;
     
     my $media_uuid = undef;
     my $media_status = 'complete';
     if ( exists( $params->{album} ) && $params->{album} ) {
 	my $album = $params->{album};
 	$media_uuid = $album->uuid();
-	$mediatype = $album->media_type();
+	$mediatype = $album->media_type->type();
 	$media_status = $album->status();
     } else {
-	$media_uuid = $ug->to_string( $ug->create() );
+	$media_uuid = $media_ug->to_string( $media_ug->create() );
     }
 
-    my $asset_uuid = $ug->to_string( $ug->create() );
+    my $asset_ug = new Data::UUID;
+    my $asset_uuid = $asset_ug->to_string( $asset_ug->create() );
 
     my $uri = "$media_uuid/${asset_uuid}_${assettype}.$extension";
 
@@ -101,9 +102,9 @@ sub create {
 
     # Write the rows to the database.
     my $mediafile = $user->find_or_create_related( 'media', { 
-	uuid => $media_uuid,
-	status => $media_status,
-	media_type => $mediatype } );
+	uuid => $media_uuid, media_type => $mediatype } );
+    $mediafile->status( $media_status );
+    $mediafile->update();
     my $asset = $mediafile->find_or_create_related( 'media_assets', {
 	uuid => $asset_uuid,
 	location => 'us',

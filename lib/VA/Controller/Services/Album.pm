@@ -340,6 +340,8 @@ Inputs:
 sub get :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
+    my $page = $c->req->param( 'page' ) || 1;
+    my $rows = $c->req->param( 'rows' ) || 100000;
 
     my $include_contact_info = $c->req->param( 'include_contact_info' );
     $include_contact_info = 0 unless( $include_contact_info );
@@ -367,7 +369,7 @@ sub get :Local {
     if ( $album->user_id != $c->user->id ) {
 	# check shared albums
 	my $rs = $c->model( 'RDS::ContactGroup' )->search
-	    ({'contact.contact_email'=>$c->user->email},
+	    ( { 'contact.contact_email' => $c->user->email },
 	     { prefetch=>['contact',{'cgroup'=>'community'}]});
 	my @communities = map { $_->cgroup->community } $rs->all;
 	my @albums = map { $_->album } @communities;
@@ -1044,7 +1046,19 @@ sub add_or_replace_banner_photo :Local {
 	    $c, $c->loc( 'Could not find album, or this user does not own the album.' ) );
     }
 
+    if ( $c->req->param( 'delete' ) ) {
+	# Delete the banner for this album.
+	my @album_banners = $c->model( 'RDS::MediaAsset' )->search( { media_id => $album->id(), asset_type => 'banner' } )->all();
+	foreach my $album_banner ( @album_banners ) {
+	    VA::MediaFile::US->delete_asset( $c, $album_banner );
+	    $album_banner->delete();
+	}
+	$self->status_ok( $c, {} );
+    }
+
     my $result = {};
+
+    #$DB::single = 1;
 
     my $upload = $c->req->upload( 'upload' );
     my $photo;
@@ -1052,6 +1066,11 @@ sub add_or_replace_banner_photo :Local {
 	my $image = Imager->new();
 	$image->read( data => $upload->slurp ) or
 	    $c->log->error( "Failed to create Imager object: " . $image->errstr );
+
+	if ( !( $upload->type =~ m/^image/ ) ) {
+	    $self->status_bad_request(
+		$c, $c->loc( "Upload must have mime type starting with image/." ) );
+	}
 
 	my $mimetype = $upload->type;
 	my $data;

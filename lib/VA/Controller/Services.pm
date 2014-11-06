@@ -131,6 +131,12 @@ sub parse_args : Private {
 
     my $ret = {};
 
+    # Don't HTML escape these keys.
+    my $excluded_keys = {
+	'password' => 1,
+	'access_token' => 1
+    };
+
     while( my $key = shift @$defaults ) {
 	my $def = shift @$defaults;
 	my $arg = shift @args;
@@ -144,7 +150,7 @@ sub parse_args : Private {
 		$ret->{$key} = \@result;
 	    }
 	    else {
-		if ( $key != 'password' ) {
+		if ( !exists( $excluded_keys->{$key} ) ) {
 		    $ret->{$key} = $self->sanitize( $c, $c->req->param( $key ) );
 		} else {
 		    $ret->{$key} = $c->req->param( $key );

@@ -352,6 +352,12 @@ sub add_or_replace_profile_photo :Local {
 	my $image = Imager->new();
 	$image->read( data => $upload->slurp ) or
 	    $c->log->error( "Failed to create Imager object: " . $image->errstr );
+
+	if ( !( $upload->type =~ m/^image/ ) ) {
+	    $self->status_bad_request(
+		$c, $c->loc( "Upload must have mime type starting with image/." ) );
+	}
+
 	if ( $image->getheight > 128 ) {
 	    $c->log->debug( "The profile image height is greater that 128, so scale." );
 	    my $source_aspect = $image->getwidth / $image->getheight;
@@ -401,6 +407,21 @@ sub add_or_replace_banner_photo :Local {
 	    ( $c, $c->loc("User for not found!" ) );
     }
 
+    #$DB::single = 1;
+
+    if ( $c->req->param( 'delete' ) ) {
+	if ( defined( $user->banner_uuid()->uuid() ) ) {
+	    my @user_banners = $c->model( 'RDS::Media' )->search( { uuid => $user->banner_uuid()->uuid() } )->all();
+	    if ( scalar( @user_banners ) == 1 ) {
+		VA::MediaFile::US->delete( $c, $user_banners[0] );
+		$user_banners[0]->delete();
+	    }
+	    $user->banner_uuid( undef );
+	    $user->update();
+	}
+	$self->status_ok( $c, {} );
+    }
+
     my $result = {};
 
     my $upload = $c->req->upload( 'upload' );
@@ -421,8 +442,8 @@ sub add_or_replace_banner_photo :Local {
 	# to verify the mime type and size.
 	#$c->stash->{data} = $data;
 	$c->stash->{data} = $upload->slurp();
-	if ( defined( $user->banner_uuid->uuid() ) ) {
-	    my @user_banner_assets = $c->model( 'RDS::MediaAsset' )->search( { uuid => $user->banner_uuid()->uuid() } )->all();
+	if ( defined( $user->banner_uuid() ) and defined( $user->banner_uuid->uuid() ) ) {
+	    my @user_banner_assets = $c->model( 'RDS::MediaAsset' )->search( { media_id => $user->banner_uuid()->id() } )->all();
 	    if ( scalar( @user_banner_assets ) == 1 ) {
 		VA::MediaFile::US->delete_asset( $c, $user_banner_assets[0] );
 		$user_banner_assets[0]->delete();

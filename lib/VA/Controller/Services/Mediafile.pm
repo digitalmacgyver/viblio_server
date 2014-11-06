@@ -1149,14 +1149,23 @@ sub cf :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
     
+    my $user = $c->user();
+    my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid }, {prefetch => 'user'});
+    unless( $mediafile ) {
+	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
+    }
+    
+    my $owns_video = 0;
 
-    if ( $c->user->obj->can_view_video( $mid ) ) {
+    # If the user is logged in and its their video, show it
+    if ( $user && $mediafile->user_id == $user->id ) {
+	$owns_video = 1;
+    }
+
+    if ( $owns_video || $c->user->obj->can_view_video( $mid ) ) {
 	my $rs = $c->model( 'RDS::MediaAsset' )->search(
 	    { 'media.uuid' => $mid,
-	      'me.asset_type' => 'main',
-	      -or => [ 'media.user_id' => $c->user->id,
-		       'media_shares.user_id' => $c->user->id ] },
-	    { prefetch => {'media' => 'media_shares' } });
+	      'me.asset_type' => 'main' }, { prefetch => 'media' } );
 	my $asset = $rs->first;
 	unless( $asset ) {
 	    $self->status_bad_request( $c, $c->loc( 'Cannot find main asset for media [_1]', $mid ) );
