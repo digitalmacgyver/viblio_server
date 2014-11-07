@@ -403,7 +403,13 @@ sub get :Local {
 	$where->{'media_type'} = 'original';
     }
 
-    my @media_list = $album->media->search( $where, {order_by => 'recording_date desc'} )->all();
+    my $rs = $album->media->search( $where, {
+	order_by => 'recording_date desc',
+	page => $page,
+	rows => $rows
+				    } );
+
+    my @media_list = $rs->all();
 
     my $m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
 							     include_contact_info => $include_contact_info,
@@ -413,7 +419,7 @@ sub get :Local {
     $hash->{media} = $m;
     $hash->{owner} = $album->user->TO_JSON; 
 
-    $self->status_ok( $c, { album => $hash } );
+    $self->status_ok( $c, { album => $hash, pager => $self->pagerToJson( $rs->pager() ) } );
 }
 
 sub add_media :Local {

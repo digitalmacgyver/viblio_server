@@ -88,15 +88,22 @@ sub media_face_appears_in :Local {
 	    $where->{'media.status'} = $args->{'status[]'};
 	}
 
-	my $asset = $c->model( 'RDS::MediaAsset' )->find( 
+	my $rs = $c->model( 'RDS::MediaAsset' )->search( 
 	    $where,
-	    { join => 'media', prefetch => 'media', group_by => ['media.id'] } );
+	    { 
+		join => 'media', 
+		prefetch => 'media', 
+		group_by => ['media.id'],
+		page => 1,
+		rows => $args->{rows}
+	    } );
+	my $asset = ( $rs->all() )[0];
 	unless( $asset ) {
 	    $self->status_bad_request( $c, 
 				       $c->loc( 'Unable to find asset for [_1]', $asset_id ) );
 	}
 	my $mediafile = VA::MediaFile->new->publish( $c, $asset->media, { $args->{'views[]'} } );
-	$self->status_ok( $c, { media => [ $mediafile ] } );
+	$self->status_ok( $c, { media => [ $mediafile ], page => $self->pagerToJson( $rs->pager ) } );
     }
     else {
 	# This is an identified face and may appear in multiple media files.
@@ -116,7 +123,8 @@ sub media_face_appears_in :Local {
 
 	my $rs = $c->model( 'RDS::MediaAssetFeature' )->search( 
 	    $where,
-	    { prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
+	    { prefetch => { 'media_asset' => 'media' }, 
+	      group_by => ['media.id'] } );
 	my $features = ();
 	if ( $args->{page} ) {
 	    my $features = $rs->search({},{page=>$args->{page}, rows=>$args->{rows}});
@@ -124,7 +132,7 @@ sub media_face_appears_in :Local {
 	    $pager       = $features->pager;
 	}
 	else {
-	    @features = $rs->all
+	    @features = $rs->all();
 	}
 
 	my $media_ids = {};
