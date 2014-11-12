@@ -1162,7 +1162,9 @@ sub cf :Local {
 	$owns_video = 1;
     }
 
-    if ( $owns_video || $c->user->obj->can_view_video( $mid ) ) {
+    my @result = $c->user->obj->visible_media( [ $mid ], 1, undef, 1 );
+
+    if ( $owns_video || scalar( @result ) ) {
 	my $rs = $c->model( 'RDS::MediaAsset' )->search(
 	    { 'media.uuid' => $mid,
 	      'me.asset_type' => 'main' }, { prefetch => 'media' } );

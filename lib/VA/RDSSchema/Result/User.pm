@@ -667,7 +667,10 @@ sub is_community_member_of {
 }
 
 # Given a mediafile uuid, is the user able to view it
-# via shared albums?
+# via the new community shared albums mechanism.
+#
+# NOTE: This does not return true for videos shared under the legacy
+# sharing mechanism.
 sub can_view_video {
     my( $self, $mid ) = @_;
     my $rs1 = $self->result_source->schema->resultset( 'ContactGroup' )->search

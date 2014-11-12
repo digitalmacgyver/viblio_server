@@ -365,6 +365,8 @@ sub get :Local {
 
     my $album_owner_uuid = undef;
 
+    #$c->log->error( "Setup done: ", time() );
+
     # Is this album viewable by the user?
     if ( $album->user_id != $c->user->id ) {
 	# check shared albums
@@ -385,6 +387,8 @@ sub get :Local {
     } else {
 	$album_owner_uuid = $c->user->uuid;
     }
+
+    #$c->log->error( "Auth done  : ", time() );
 
     my $poster_params = { views => ['poster'] };
     if ( $album_owner_uuid ) {
@@ -411,10 +415,14 @@ sub get :Local {
 
     my @media_list = $rs->all();
 
+    #$c->log->error( "Media done : ", time(), " - ", scalar( @media_list ), " items." );
+
     my $m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
 							     include_contact_info => $include_contact_info,
 							     include_tags => $include_tags,
 							     include_images => $include_images } ) );
+
+    #$c->log->error( "Publish done: ", time() );
 
     $hash->{media} = $m;
     $hash->{owner} = $album->user->TO_JSON; 
@@ -722,7 +730,10 @@ sub list_shared_by_sharer :Local {
 sub get_shared_video :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    if ( $c->user->obj->can_view_video( $mid ) ) {
+    
+    my @result = $c->user->obj->visible_media( [ $mid ], 1, undef, 1 );
+
+    if ( scalar( @result ) ) {
 	my $media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
 	$self->status_ok( $c, { media => VA::MediaFile->new->publish( $c, $media, { views => ['poster'] } ) } );
     }

@@ -53,7 +53,7 @@
 
         [% IF model.tagged_faces.size > 0 %]
             <span>I've been organizing your videos for you into albums.</span><br />
-            <span class="tomato">Click on one of these faces to share videos of them.</span>
+            <span class="tomato">Click on a face to create an album of videos of that person, then invite others to share and enjoy.</span>
             <br />
             <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;margin-bottom: 20px;">
                 <tbody>

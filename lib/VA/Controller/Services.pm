@@ -620,6 +620,8 @@ sub publish_mediafiles :Private {
     # We also want a list of the media IDs we're going to publish.
     my $mids = [];
 
+    #$c->log->error( "Step 1", time() );
+
     foreach my $m ( @$media ) {
 	my $owner_id = $m->user_id;
 	unless ( exists( $people->{$owner_id} ) ) {
@@ -631,6 +633,8 @@ sub publish_mediafiles :Private {
 	
 	push( @$mids, $m->id );
     }
+
+    #$c->log->error( "Step 2", time() );
 
     my $search = { 'me.media_id' => { -in => $mids } };
     if ( !$include_images ) {
@@ -644,6 +648,8 @@ sub publish_mediafiles :Private {
 	    $assets->{$ma->media_id} = [ $ma ];
 	}
     }
+
+    #$c->log->error( "Step 3", time() );
 
     if ( $params->{include_tags} ) {
 	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( { 
@@ -664,6 +670,8 @@ sub publish_mediafiles :Private {
 	}
     }
 
+    #$c->log->error( "Step 4", time() );
+
     if ( $params->{include_contact_info} ) {
 	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( 
 	    { 
@@ -681,6 +689,8 @@ sub publish_mediafiles :Private {
 	    }
 	}
     }
+
+    #$c->log->error( "Step 5", time() );
     
     if ( $params->{include_shared} ) {
 	my @shares = $c->model( 'RDS::MediaShare' )->search(
@@ -691,6 +701,8 @@ sub publish_mediafiles :Private {
 	    $shared->{$share->{_column_data}->{media_id}} = $share->{_column_data}->{share_count};
 	}
     }
+
+    #$c->log->error( "Step 6", time() );
 
     my $result = [];
     
