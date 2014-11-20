@@ -1,41 +1,24 @@
 [% INCLUDE email/top.tt 
-    previewText = "Your VIBLIO Upload"
+    previewText = "Status of your video upload"
 %]
-    <div class="centered regSize darkText">
-        <span class="largeText">VIBLIO Duplicate Upload</span>
+    <div class="regSize darkText">
         <br />
         <br />
-        <span>You just uploaded [% IF filename %][% filename %][% ELSE %]a movie[% END %] to VIBLIO, however that video is already present in your <a class="tomato" href='[% c.server %]#home'><span class="tomato">account</span></a>, cheers!</span>
-        
-        <div class="line"></div>
-
-        <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
-            <tbody>
-                <tr>
-                [% FOREACH media IN model.media %]
-                    [% LAST IF loop.count > 2 %]
-                        <td class="video" valign="bottom">
-                            <table cellspacing="0">
-                                <tbody>
-                                    <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                        <td class="name" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                            [% IF media.title != 'Untitled' %] Title: [% media.title %] [% END %]
-                                        </td>
-                                    </tr>
-                                    <tr cellspacing="0" cellpadding="0" style="margin: 0;">
-                                        <td cellspacing="0" cellpadding="0">
-                                            <a href='[% c.server  %]#new_player?mid=[% media.uuid %]'>
-                                                <img class='videoThumb boxShadowed' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
-                                            </a>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table> 
-                        </td>
-                [% END %]
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
+	<span>Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %],
+        <br />
+        <br />
+        <span>Today, you tried to upload a video [% IF filename %]called "[% filename %]"[% END %] that you had already previously uploaded to your VIBLIO account.</span>
+        <br />
+        <br />        
+        <span>Don't worry.  We didn't add a duplicate copy.  If you want to see the copy you originally uploaded click <a class="tomato" href='[% c.server %]#home'><span class="tomato">here</span></a>.</span>
+        <br />
+        <br />        
+        <span>There's nothing else you need to do.  This is just an FYI!</span>
+        <br />
+        <br />        
+        <span>Enjoy!</span>
+        <br />
+        <br />        
+        <span>VIBLIO, your personal video assistant</span>
+   </div>
 [% INCLUDE email/bottom.tt %]

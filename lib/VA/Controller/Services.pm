@@ -593,6 +593,9 @@ sub publish_mediafiles :Private {
     my $media = shift;
     my $params = shift;
 
+    # If set to 1, includes all images, if set to a false value,
+    # includes none, if set to a non-1 true value it is assumed to be
+    # an integer that limits the number of images returned.
     my $include_images = 0;
     if ( exists( $params->{include_images} ) ) {
 	$include_images = $params->{include_images};
@@ -640,12 +643,63 @@ sub publish_mediafiles :Private {
     if ( !$include_images ) {
 	$search->{'me.asset_type'} = { '!=', 'image' };
     }
-    my @mas = $c->model( 'RDS::MediaAsset' )->search( $search )->all();
+    # The sort order here is important to the logic below.
+    my @mas = $c->model( 'RDS::MediaAsset' )->search( $search, { order_by => 'me.timecode' } )->all();
+    
+    # We will handle images sperately because we wish to only return
+    # $include_images worth of images per media.
+    my %media_images = ();
+
     foreach my $ma ( @mas ) {
-	if ( exists( $assets->{$ma->media_id} ) ) {
-	    push( @{$assets->{$ma->media_id}}, $ma );
+	if ( ( $include_images > 1 ) && ( $ma->{_column_data}->{asset_type} eq 'image' ) ) {
+	    if ( exists( $media_images{$ma->media_id} ) ) {
+		push( @{$media_images{$ma->media_id}}, $ma );
+	    } else {
+		$media_images{$ma->media_id} = [ $ma ];
+	    }
 	} else {
-	    $assets->{$ma->media_id} = [ $ma ];
+	    if ( exists( $assets->{$ma->media_id} ) ) {
+		push( @{$assets->{$ma->media_id}}, $ma );
+	    } else {
+		$assets->{$ma->media_id} = [ $ma ];
+	    }
+	}
+    }
+
+    # If include images is true and greater than one then we wish to
+    # limit the number of returned images to this value.
+    if ( $include_images > 1 ) {
+	foreach my $mid ( keys( %media_images ) ) {
+	    my $image_count = scalar( @{$media_images{$mid}} );
+
+	    if ( $image_count > $include_images ) {
+		# Add the first asset.
+		if ( exists( $assets->{$mid} ) ) {
+		    push( @{$assets->{$mid}}, $media_images{$mid}->[0] );
+		} else {
+		    $assets->{$mid} = [ $media_images{$mid}->[0] ];
+		}
+		if ( $include_images > 2 ) {
+		    # If we need more than two, pick some evenly
+		    # spaced ones out from the middle.
+
+		    # Note: step > 1.
+		    my $step = $image_count / ( $include_images - 1 );
+		    for ( my $i = 1 ; $i < $include_images - 1 ; $i++ ) {
+			push( @{$assets->{$mid}}, $media_images{$mid}->[ int( $i * $step ) ] );
+		    }
+		}
+		# Add the last asset.
+		push( @{$assets->{$mid}}, $media_images{$mid}->[-1] );
+	    } else {
+		# Include everything if image count is less than or
+		# equal to the limit.
+		if ( exists( $assets->{$mid} ) ) {
+		    $assets->{$mid} = [ @{$assets->{$mid}}, @{$media_images{$mid}} ];
+		} else {
+		    $assets->{$mid} = $media_images{$mid};
+		}
+	    }
 	}
     }
 
