@@ -499,6 +499,18 @@ Supports a new API to create a user account with just an email address.
 
 sub new_user_no_password :Local {
     my $self = shift;
+    my $c = shift;
+    my $result = $self->_new_user_no_password( $c, @_ );
+    if ( $result->{ok} ) {
+	$self->status_ok( $c, $result->{response} );
+    } else {
+	$self->status_bad_request( $c, $result->{response} );
+    }
+}
+
+
+sub _new_user_no_password :Private {
+    my $self = shift;
     my $c    = shift;
     my $args = $self->parse_args
 	( $c,
@@ -512,11 +524,11 @@ sub new_user_no_password :Local {
 	my $username = ( $args->{email} =~ m/^(.*?)@/ )[0];
 	my $password = $self->invite_code;
 
-	$self->new_user( $c, $args->{email}, $password, $username, $username, $args->{realm}, $args->{via}, $password );
+	return $self->_new_user( $c, $args->{email}, $password, $username, $username, $args->{realm}, $args->{via}, $password );
     } else {
 	my $code = "NOLOGIN_INVALID_EMAIL";
-	$self->status_bad_request
-	    ( $c, $self->authfailure_response( $c, $code ), $code );
+	return { 'ok' => 0,
+		 'response' => ( $self->authfailure_response( $c, $code ), $code ) };
     }
 }
 
@@ -540,6 +552,18 @@ The caller may redirect into the application.
 
 sub new_user :Local {
     my $self = shift;
+    my $c = shift;
+    my $result = $self->_new_user( $c, @_ );
+
+    if ( $result->{ok} ) {
+	$self->status_ok( $c, $result->{response} );
+    } else {
+	$self->status_bad_request( $c, $result->{response} );
+    }
+}
+
+sub _new_user :Private {
+    my $self = shift;
     my $c    = shift;
     my $args = $self->parse_args
 	( $c,
@@ -559,8 +583,8 @@ sub new_user :Local {
     if ( $args->{realm} eq 'db' ) {
 	unless( $args->{email} ) {
 	    my $code = "NOLOGIN_MISSING_EMAIL";
-	    $self->status_bad_request
-		( $c, $self->authfailure_response( $c, $code ), $code );
+	    return { 'ok' => 0,
+		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
 	}
 
 	$args->{displayname} = $args->{username} unless( $args->{displayname} );
@@ -571,27 +595,29 @@ sub new_user :Local {
 
 	unless( $args->{password} ) {
 	    my $code = "NOLOGIN_MISSING_PASSWORD";
-	    $self->status_bad_request
-		( $c, $self->authfailure_response( $c, $code ), $code );
+	    return { 'ok' => 0,
+		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
 	}
 
 	my @hits = $c->model( 'RDS::User' )->search({ email => $args->{email} });
 	if ( $#hits >= 0 ) {
 	    my $code = "NOLOGIN_EMAIL_TAKEN";
-	    $self->status_bad_request
-		( $c, $self->authfailure_response( $c, $code ), $code );
+	    return { 'ok' => 0,
+		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
 	}
 
 	if ( $c->config->{in_beta} ) {
 	    unless( $c->model( 'RDS::EmailUser' )->find({email => $args->{email}, status => 'whitelist'}) ) {
 		my $code = "NOLOGIN_NOT_IN_BETA";
-		$self->status_unauthorized( $c, $self->authfailure_response( $c, $code ), $code );
+		return { 'ok' => 0,
+			 'response' => ( $self->authfailure_response( $c, $code ), $code ) };
 	    }
 	}
 
 	if ( $c->model( 'RDS::EmailUser' )->find({email => $args->{email}, status => 'blacklist'}) ) {
 	    my $code = "NOLOGIN_BLACKLISTED";
-	    $self->status_unauthorized( $c, $self->authfailure_response( $c, $code ), $code );
+	    return { 'ok' => 0,
+		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
 	}
 
 	$dbuser = $c->model( 'RDS::User' )->create
@@ -604,8 +630,8 @@ sub new_user :Local {
 	unless( $dbuser ) {
 	    $c->log->error( "new_user: Failed to create new user for $args->{email}" );
 	    my $code = "NOLOGIN_DB_FAILED";
-	    $self->status_bad_request
-		( $c, $self->authfailure_response( $c, $code ), $code );
+	    return { 'ok' => 0,
+		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
 	}
 
 	$creds = {
@@ -616,14 +642,15 @@ sub new_user :Local {
 
     if ($c->authenticate( $creds, $args->{realm} ) ) {
 	$self->new_user_helper( $c, $args );
-	$self->status_ok( $c, { user => $c->user->obj } );
+	return { 'ok' => 1,
+		 'response' => { user => $c->user->obj } };
     }
     else {
 	$dbuser->delete if ( $dbuser );
 	$c->log->error( "new_user: Failed to create new user for $args->{email}" );
 	my $code = "NOLOGIN_DB_FAILED";
-	$self->status_bad_request
-	    ( $c, $self->authfailure_response( $c, $code ), $code );
+	return { 'ok' => 0,
+		 'response' => ( $self->authfailure_response( $c, $code ), $code ) };
     }
 }
 
@@ -1396,27 +1423,47 @@ been shared.
 =cut
 
 sub media_shared :Local {
+    my $self = shift;
+    my $c = shift;
+    my $result = $self->_media_shared( $c, @_ );
+    if ( $result->{ok} ) {
+	$self->status_ok( $c, $result->{response} );
+    } else {
+	$self->status_bad_request( $c, $result->{response} );
+    }
+}
+
+sub _media_shared :Private {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
     my $preview = $c->req->param( 'preview' );
 
     # Is caller logged in?
     my $user = $c->user;
+    
+    if ( !defined( $user ) && exists( $c->stash->{user_obj} ) && defined( $c->stash->{user_obj} ) ) {
+	# We are being called by an internal process, to act as if
+	# this user has viewed the video in question.
+	$user = $c->stash->{user_obj};
+    }
 
     my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid }, {prefetch => 'user'});
     unless( $mediafile ) {
-	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
+	return { 'ok' => 0,
+		 'response' => $c->loc( "Cannot find media for uuid=[_1]", $mid ) };
     }
 
     # FOR TESTING
     if ( $c->req->param( 'share_type' ) && $c->req->param( 'secret' ) ) {
 	if ( $c->req->param( 'secret' ) eq 'Viblio2013' ) {
 	    my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_tags => 1 } );
-	    $self->status_ok( $c, { share_type => $c->req->param( 'share_type' ),
-				    media => $mf, owner => $mediafile->user->TO_JSON } );
+	    return { 'ok' => 1,
+		     'response' => { share_type => $c->req->param( 'share_type' ),
+				    media => $mf, owner => $mediafile->user->TO_JSON } }; 
 	}
 	else {
-	    $self->status_bad_request( $c, $c->loc( 'Bad secret passed' ) );
+	    return { 'ok' => 0,
+		     'response' => $c->loc( 'Bad secret passed' ) };
 	}
     }
 
@@ -1425,8 +1472,9 @@ sub media_shared :Local {
 	# They own it
 	$c->log->debug( "SHARE: OWNED BY USER" );
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_tags => 1 } );
-	$self->status_ok( $c, { share_type => "owned_by_user", 
-				media => $mf, owner => $mediafile->user->TO_JSON } );
+	return { 'ok' => 1,
+		 'response' => { share_type => "owned_by_user", 
+				 media => $mf, owner => $mediafile->user->TO_JSON } };
     }
 
     # If the user is logged in and they can see the video because
@@ -1436,10 +1484,10 @@ sub media_shared :Local {
 	$mediafile->view_count( $mediafile->view_count + 1 ) unless( $preview );
 	$mediafile->update;
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_tags => 1 } );
-	$self->status_ok( $c, { share_type => 'private', 
-				media => $mf, 
-				owner => $mediafile->user->TO_JSON } );
-	$self->detach;
+	return { 'ok' => 1,
+		 'response' => { share_type => 'private', 
+				 media => $mf, 
+				 owner => $mediafile->user->TO_JSON } };
     }
 
     # Gather all of the media_shares ...
@@ -1447,7 +1495,8 @@ sub media_shared :Local {
 
     if ( $#shares == -1 ) {
 	# Its private
-	$self->status_bad_request( $c, $c->loc( "This mediafile is private." ) );
+	return { 'ok' => 0,
+		 'response' => $c->loc( 'This mediafile is private.' ) };
     }
 
     my $is = {};
@@ -1515,7 +1564,8 @@ sub media_shared :Local {
 	    # This is a private share, but the user coming in is not
 	    # authenticated.  Return an indication that this user needs
 	    # to be prompted to either log in or create an account.
-	    $self->status_ok( $c, { auth_required => 1 } );
+	    return { 'ok' => 1,
+		     'response' => { auth_required => 1 } };
 	}
     }
 
@@ -1525,10 +1575,12 @@ sub media_shared :Local {
 	$mediafile->update;
 
 	my $mf = VA::MediaFile->new->publish( $c, $mediafile, { include_tags => 1 } );
-	$self->status_ok( $c, { share_type => $share_type, media => $mf, owner => $mediafile->user->TO_JSON } );
+	return { 'ok' => 1,
+		 'response' => { share_type => $share_type, media => $mf, owner => $mediafile->user->TO_JSON } };
     }
     else {
-	$self->status_bad_request( $c, $c->loc( "You are not authorized to view this media." ) );
+	return { 'ok' => 0,
+		 'response' => $c->loc( "You are not authorized to view this media." ) };
     }
 }
 
@@ -1554,6 +1606,46 @@ sub valid_email :Local {
 	$self->status_ok( $c, { valid => $valid, why => 'email address taken' } );
     }
     $self->status_ok( $c, { valid => 1, why => '' } );
+}
+
+sub add_video_to_email :Local {
+    my( $self, $c ) = @_;
+    my $email = $c->req->param( 'email' );
+    unless( $email ) {
+	$self->status_bad_request( $c, $c->loc( "No email address specified." ) );
+    }
+    unless( $self->is_email_valid( $email ) ) {
+	$self->status_bad_request( $c, $c->loc( "Malformed email address" ) );
+    }
+
+    my $mid = $c->req->param( 'mid' );
+    my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid }, {prefetch => 'user'});
+    unless( $mediafile ) {
+	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
+    }
+
+    my $user = $c->model( 'RDS::User' )->find( { email => $email } );
+
+    my $result = {};
+
+    unless ( $user ) {
+	# It's a valid email, but no user of this email exists, create an account.
+	my $response = $self->_new_user_no_password( $c, $email );
+	if ( $response->{ok} ) {
+	    $user = $response->{response}->{user};
+	} else {
+	    $self->status_bad_request( $c, $c->loc( $response->{response} ) );
+	}
+    }
+
+    # Add this video to the user account, if permissible.
+    $c->stash->{user_obj} = $user;
+    my $share_response = $self->_media_shared( $c );
+    unless ( $share_response->{ok} ) {
+	$self->status_bad_request( $c, $c->loc( $share_response->{response } ) );
+    }
+
+    $self->status_ok( $c, $result );
 }
 
 sub find_share_info_for_pending :Local {
