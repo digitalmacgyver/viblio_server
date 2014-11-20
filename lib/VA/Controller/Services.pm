@@ -6,6 +6,7 @@ use Email::AddressParser;
 use Email::Address;
 use Net::Nslookup;
 use Try::Tiny;
+use Scalar::Util qw/looks_like_number/;
 
 use Net::APNS;
 
@@ -598,7 +599,24 @@ sub publish_mediafiles :Private {
     # an integer that limits the number of images returned.
     my $include_images = 0;
     if ( exists( $params->{include_images} ) ) {
-	$include_images = $params->{include_images};
+	if ( looks_like_number( $params->{include_images } ) ) {
+	    try { 
+		$include_images = int( $params->{include_images} );
+	    } catch {
+		$c->log->error( "Error converting include_images parameter '$params->{include_images}' to number." );
+		if ( $params->{include_images} ) {
+		    $include_images = 1;
+		}
+	    }
+	} else {
+	    if ( $params->{include_images} ) {
+		$include_images = 1;
+	    }
+	}
+    }
+    if ( $include_images < 0 ) {
+	$c->log->error( "Error - negative value '$params->{include_images}' sent to include_images parameter." );
+	$include_images = 1;
     }
 
     if ( scalar( $media ) == 0 ) {
