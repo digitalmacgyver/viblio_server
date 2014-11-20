@@ -135,7 +135,8 @@ sub parse_args : Private {
     # Don't HTML escape these keys.
     my $excluded_keys = {
 	'password' => 1,
-	'access_token' => 1
+	'access_token' => 1,
+	'summary_options' => 1
     };
 
     while( my $key = shift @$defaults ) {
