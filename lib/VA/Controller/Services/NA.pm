@@ -504,7 +504,7 @@ sub new_user_no_password :Local {
     if ( $result->{ok} ) {
 	$self->status_ok( $c, $result->{response} );
     } else {
-	$self->status_bad_request( $c, $result->{response} );
+	$self->status_bad_request( $c, $result->{response}, $result->{detail} );
     }
 }
 
@@ -528,7 +528,8 @@ sub _new_user_no_password :Private {
     } else {
 	my $code = "NOLOGIN_INVALID_EMAIL";
 	return { 'ok' => 0,
-		 'response' => ( $self->authfailure_response( $c, $code ), $code ) };
+		 'response' => $self->authfailure_response( $c, $code ),
+		 'detail' => $code };
     }
 }
 
@@ -555,10 +556,12 @@ sub new_user :Local {
     my $c = shift;
     my $result = $self->_new_user( $c, @_ );
 
+    $DB::single = 1;
+
     if ( $result->{ok} ) {
 	$self->status_ok( $c, $result->{response} );
     } else {
-	$self->status_bad_request( $c, $result->{response} );
+	$self->status_bad_request( $c, $result->{response}, $result->{detail} );
     }
 }
 
@@ -584,7 +587,8 @@ sub _new_user :Private {
 	unless( $args->{email} ) {
 	    my $code = "NOLOGIN_MISSING_EMAIL";
 	    return { 'ok' => 0,
-		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
+		     'response' => $self->authfailure_response( $c, $code ),
+		     'detail' => $code };
 	}
 
 	$args->{displayname} = $args->{username} unless( $args->{displayname} );
@@ -596,28 +600,32 @@ sub _new_user :Private {
 	unless( $args->{password} ) {
 	    my $code = "NOLOGIN_MISSING_PASSWORD";
 	    return { 'ok' => 0,
-		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
+		     'response' => $self->authfailure_response( $c, $code ), 
+		     'detail' => $code };
 	}
 
 	my @hits = $c->model( 'RDS::User' )->search({ email => $args->{email} });
 	if ( $#hits >= 0 ) {
 	    my $code = "NOLOGIN_EMAIL_TAKEN";
 	    return { 'ok' => 0,
-		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
+		     'response' => $self->authfailure_response( $c, $code ),
+		     'detail' => $code  };
 	}
 
 	if ( $c->config->{in_beta} ) {
 	    unless( $c->model( 'RDS::EmailUser' )->find({email => $args->{email}, status => 'whitelist'}) ) {
 		my $code = "NOLOGIN_NOT_IN_BETA";
 		return { 'ok' => 0,
-			 'response' => ( $self->authfailure_response( $c, $code ), $code ) };
+			 'response' => $self->authfailure_response( $c, $code ), 
+			 'detail' => $code };
 	    }
 	}
 
 	if ( $c->model( 'RDS::EmailUser' )->find({email => $args->{email}, status => 'blacklist'}) ) {
 	    my $code = "NOLOGIN_BLACKLISTED";
 	    return { 'ok' => 0,
-		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
+		     'response' => $self->authfailure_response( $c, $code ), 
+		     'detail' => $code };
 	}
 
 	$dbuser = $c->model( 'RDS::User' )->create
@@ -631,7 +639,8 @@ sub _new_user :Private {
 	    $c->log->error( "new_user: Failed to create new user for $args->{email}" );
 	    my $code = "NOLOGIN_DB_FAILED";
 	    return { 'ok' => 0,
-		     'response' => ( $self->authfailure_response( $c, $code ), $code ) };
+		     'response' => $self->authfailure_response( $c, $code ), 
+		     'detail' => $code };
 	}
 
 	$creds = {
@@ -650,7 +659,8 @@ sub _new_user :Private {
 	$c->log->error( "new_user: Failed to create new user for $args->{email}" );
 	my $code = "NOLOGIN_DB_FAILED";
 	return { 'ok' => 0,
-		 'response' => ( $self->authfailure_response( $c, $code ), $code ) };
+		 'response' => $self->authfailure_response( $c, $code ), 
+		 'detail' => $code };
     }
 }
 
