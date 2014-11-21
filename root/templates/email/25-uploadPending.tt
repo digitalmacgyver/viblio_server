@@ -2,9 +2,6 @@
     previewText = "Status of your video upload"
 %]
     <div class="regSize darkText">
-        <span class="largeText">VIBLIO Duplicate Upload</span>
-        <br />
-        <br />
 	<span>Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %],</span>
         <br />
         <br />        
