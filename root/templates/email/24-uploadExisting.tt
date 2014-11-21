@@ -4,7 +4,7 @@
     <div class="regSize darkText">
         <br />
         <br />
-	<span>Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %],
+	<span>Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %],</span>
         <br />
         <br />
         <span>Today, you tried to upload a video [% IF filename %]called "[% filename %]"[% END %] that you had already previously uploaded to your VIBLIO account.</span>

@@ -1,10 +1,19 @@
 [% INCLUDE email/top.tt 
-    previewText = "Your VIBLIO Upload"
+    previewText = "Status of your video upload"
 %]
-    <div class="centered regSize darkText">
+    <div class="regSize darkText">
         <span class="largeText">VIBLIO Duplicate Upload</span>
         <br />
         <br />
-        <span>You just uploaded [% IF filename %][% filename %][% ELSE %]a movie[% END %] to VIBLIO, however that video was already being processed in your <a class="tomato" href='[% c.server %]#home'><span class="tomato">VIBLIO account</span></a> - it should be ready for sharing soon, cheers!</span>
+	<span>Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %],</span>
+        <br />
+        <br />        
+        <span>Today, you tried to upload a video [% IF filename %]called "[% filename %]"[% END %] that you had already previously uploaded to your VIBLIO account.</span>
+        <br />        
+        <span>Don't worry.  We didn't add a duplicate copy.  Once it's ready, you'll be able to see the video thumbnail and play the video in your account.</span>
+        <br />        
+        <span>There's nothing else you need to do.  This is just an FYI!</span>
+        <br />        
+        <span>Enjoy!</span>
 
 [% INCLUDE email/bottom.tt %]
