@@ -4,21 +4,21 @@
     <div class="regSize darkText">
         <br />
         <br />
-	<span>Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %],</span>
+	<span class="darkText">Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %],</span>
         <br />
         <br />
-        <span>Today, you tried to upload a video [% IF filename %]called "[% filename %]"[% END %] that you had already previously uploaded to your VIBLIO account.</span>
-        <br />
-        <br />        
-        <span>Don't worry.  We didn't add a duplicate copy.  If you want to see the copy you originally uploaded click <a class="tomato" href='[% c.server %]#home'><span class="tomato">here</span></a>.</span>
+        <span class="darkText">Today, you tried to upload a video [% IF filename %]called "[% filename %]"[% END %] that you had already previously uploaded to your VIBLIO account.</span>
         <br />
         <br />        
-        <span>There's nothing else you need to do.  This is just an FYI!</span>
+        <span class="darkText">Don't worry.  We didn't add a duplicate copy.  If you want to see the copy you originally uploaded click <a class="tomato" href='[% c.server %]#home'><span class="tomato">here</span></a>.</span>
         <br />
         <br />        
-        <span>Enjoy!</span>
+        <span class="darkText">There's nothing else you need to do.  This is just an FYI!</span>
         <br />
         <br />        
-        <span>VIBLIO, your personal video assistant</span>
+        <span class="darkText">Enjoy!</span>
+        <br />
+        <br />        
+        <span class="darkText">VIBLIO, your personal video assistant</span>
    </div>
 [% INCLUDE email/bottom.tt %]

@@ -2,15 +2,15 @@
     previewText = "Status of your video upload"
 %]
     <div class="regSize darkText">
-	<span>Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %],</span>
+	<span class="darkText">Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %],</span>
         <br />
         <br />        
-        <span>Today, you tried to upload a video [% IF filename %]called "[% filename %]"[% END %] that you had already previously uploaded to your VIBLIO account.</span>
+        <span class="darkText">Today, you tried to upload a video [% IF filename %]called "[% filename %]"[% END %] that you had already previously uploaded to your VIBLIO account.</span>
         <br />        
-        <span>Don't worry.  We didn't add a duplicate copy.  Once it's ready, you'll be able to see the video thumbnail and play the video in your account.</span>
+        <span class="darkText">Don't worry.  We didn't add a duplicate copy.  Once it's ready, you'll be able to see the video thumbnail and play the video in your account.</span>
         <br />        
-        <span>There's nothing else you need to do.  This is just an FYI!</span>
+        <span class="darkText">There's nothing else you need to do.  This is just an FYI!</span>
         <br />        
-        <span>Enjoy!</span>
+        <span class="darkText">Enjoy!</span>
 
 [% INCLUDE email/bottom.tt %]
