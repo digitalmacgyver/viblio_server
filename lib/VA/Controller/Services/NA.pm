@@ -576,7 +576,8 @@ sub _new_user :Private {
 	    displayname => undef,
 	    realm => 'db',
 	    via => 'trayapp',
-	    no_password => 0
+	    no_password => 0,
+	    try_photos => 1
 	  ],
 	  @_ );
 
@@ -763,10 +764,11 @@ sub new_user_helper :Private {
     my $model = { user => $user };
     my $subject = 'Welcome to VIBLIO';
 
-    if ( $args->{no_password} ) {
-	$template = 'email/04-08-no_pw_accountCreated.tt';
-	$model->{password} = $args->{no_password};
-	$subject = 'Welcome to VIBLIO Photo Finder';
+    if ( $args->{no_password} && $args->{try_photos} ) {
+	$subject = 'The first step to easy photos!';
+	$template = 'email/26-01-photoFinder.tt';
+	$user->metadata( $args->{no_password} );
+	$user->update();
     }
 
     # Send an instructional email too.

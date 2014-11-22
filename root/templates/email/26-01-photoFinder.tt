@@ -1,0 +1,41 @@
+[% INCLUDE email/top.tt 
+    previewText = "Got a video?  Now you have photos too!"
+%]
+
+[%# The trigger that is expected to send email:
+  Auto send on new account creation for accounts with no password
+%]
+
+[%# The data model that this template expects:
+  user:  The JSON object for a Viblio user, the one who is receiving the email
+%]
+    <div class='regSize darkText' style='text-align: left;'>
+    <span>Hi there,</span>
+    <br />
+    <br />
+    <span>Congratulations on taking the first step towards managing your personal videos and getting great photos from them!</span>
+    <br />
+    <br />
+    <span>VIBLIO lets you organize your videos not just by date, but by place or person, or tags you have added to your videos.   We also automatically create the best photos from your video clips to print, post and share.</span>
+    <br />
+    <br />
+    <span>What comes next:</span>
+    <br />
+    <br />
+    <span>
+      <ol>
+        <li>You’ll get another email shortly as soon as we have processed your video.</li>
+        <li>In the email, you’ll get a link taking you to your own private page where you can view and download your photos.</li>
+      </ol>
+    </span>
+    <br />
+    <br />
+    <span>It’s as easy as that!  So stay tuned...</span>
+    <br />
+    <br />
+    <span>Movingly yours</span>
+    <br />
+    <span>VIBLIO, your personal video manager</span>
+    <br />
+    </div>
+[% INCLUDE email/bottom.tt %]
