@@ -18,7 +18,7 @@ A new user tries photo finder.
     <div class="leftAligned regSize darkText">
         <p class='xLargeText darkText' style='text-align: left;'>Success!</p>
 
-        <span class="darkText">VIBLIO has found some fun photos from the video you uploaded.  Because we care about your <span class="tomato"><a href="[% c.server %]#about?showPrivacy=true">privacy</a></span>, we have saved your photos and the original video in your own private account.  <span class="tomato"><a href="[% c.server %]#home?aid=[% model.album_uuid %]&try_photos=1">Login</a>
+        <span class="darkText">VIBLIO has found some fun photos from the video you uploaded.  Because we care about your <a class="tomato" href="[% c.server %]#about?showPrivacy=true">privacy</a>, we have saved your photos and the original video in your own private account.  <a class="tomato" href="[% c.server %]#home?aid=[% model.album_uuid %]&try_photos=1">Login</a>
         [% IF  model.user.provider == 'facebook' %]
         with Facebook.
         [% ELSE %]
@@ -32,7 +32,7 @@ A new user tries photo finder.
 	<span class="darkText">Download your photos or select some to post directly to Facebook.</span>
     <br />
     <br />
-	<p>After logging in, change your password <span class="tomato"><a href="[% c.server %]#settings">here under Settings</a></span> and start using your new private VIBLIO library for all your videos – for Free!</p>
+	<p>After logging in, change your password <a class="tomato" href="[% c.server %]#settings">here under Settings</a> and start using your new private VIBLIO library for all your videos - for Free!</p>
     <span class="darkText">Movingly yours</span>
     <br />
     <span class="darkText">VIBLIO, your personal video manager</span>
