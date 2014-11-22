@@ -18,13 +18,13 @@ A new user tries photo finder.
     <div class="leftAligned regSize darkText">
         <p class='xLargeText darkText' style='text-align: left;'>Success!</p>
 
-        <span class="darkText">VIBLIO has found some fun photos from the video you uploaded.  Because we care about your <a class="tomato" href="[% c.server %]#about?showPrivacy=true">privacy</a>, we have saved your photos and the original video in your own private account.  <a class="tomato" href="[% c.server %]#home?aid=[% model.album_uuid %]&try_photos=1">Login</a>
+        <span class="darkText">VIBLIO has found some fun photos from the video you uploaded.  Because we care about your <a href="[% c.server %]#about?showPrivacy=true"><span class="tomato">privacy</span></a>, we have saved your photos and the original video in your own private account.  <a href="[% c.server %]#home?aid=[% model.album_uuid %]&photos=true"><span class="tomato">Login</span></a>
         [% IF  model.user.provider == 'facebook' %]
         with Facebook.
         [% ELSE %]
         with your email and this temporary password.</span>
 	<ul>
-	<li>login: [% model.user.email %]</li>
+	<li>login: [% user.email %]</li>
 	<li>password: [% model.password %]</li>	
 	</ul>
 	[% END %]
@@ -32,7 +32,7 @@ A new user tries photo finder.
 	<span class="darkText">Download your photos or select some to post directly to Facebook.</span>
     <br />
     <br />
-	<p>After logging in, change your password <a class="tomato" href="[% c.server %]#settings">here under Settings</a> and start using your new private VIBLIO library for all your videos - for Free!</p>
+	<p>After logging in, change your password <a href="[% c.server %]#settings"><span class="tomato">here under Settings</span></a> and start using your new private VIBLIO library for all your videos - for Free!</p>
     <span class="darkText">Movingly yours</span>
     <br />
     <span class="darkText">VIBLIO, your personal video manager</span>
