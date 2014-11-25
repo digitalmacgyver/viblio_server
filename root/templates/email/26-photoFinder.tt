@@ -21,6 +21,8 @@ A new user tries photo finder.
         <span class="darkText">VIBLIO has found some fun photos from the video you uploaded.  Because we care about your <a href="[% c.server %]#about?showPrivacy=true" class="tomato"><span class="tomato">privacy</span></a>, we have saved your photos and the original video in your own private account.  <a href="[% c.server %]#home?aid=[% model.album_uuid %]&photos=more" class="tomato"><span class="tomato">Login</span></a>
         [% IF  user.provider == 'facebook' %]
         with Facebook.
+	<br />
+	<br />
         [% ELSE %]
         with your email and this temporary password.</span>
 	<ul>
