@@ -86,6 +86,12 @@ sub authfailure_response :Private {
 
 sub authenticate :Local {
     my ( $self, $c ) = @_;
+    my $args = $self->parse_args
+	( $c,
+	  [ no_password => 0,
+	    try_photos =>  0
+	  ],
+	  @_ );
 
     # Get the username and password from form
     my $email = $self->sanitize( $c, $c->req->params->{email} );
@@ -139,7 +145,7 @@ sub authenticate :Local {
 	if ( $realm =~ /facebook/ ) {
 	    if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
 		# In this case we have just authenticated a new facebook user.
-		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email } );
+		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email, no_password => 0, try_photos => $args->{try_photos} } );
 	    }
 	}
 
