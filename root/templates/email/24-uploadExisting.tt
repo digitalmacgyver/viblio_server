@@ -10,7 +10,7 @@
         <span class="darkText">Today, you tried to upload a video [% IF filename %]called "[% filename %]"[% END %] that you had already previously uploaded to your VIBLIO account.</span>
         <br />
         <br />        
-        <span class="darkText">Don't worry.  We didn't add a duplicate copy.  If you want to see the copy you originally uploaded click <a class="tomato" href='[% c.server %]#home'><span class="tomato">here</span></a>.</span>
+        <span class="darkText">Don't worry.  We didn't add a duplicate copy.  If you want to see the copy you originally uploaded click <a class="tomato" href='[% c.server %]#new_player?mid=[% model.media.0.uuid %]'><span class="tomato">here</span></a>.</span>
         <br />
         <br />        
         <span class="darkText">There's nothing else you need to do.  This is just an FYI!</span>

@@ -767,8 +767,10 @@ sub new_user_helper :Private {
     if ( $args->{no_password} && $args->{try_photos} ) {
 	$subject = 'The first step to easy photos!';
 	$template = 'email/26-01-photoFinder.tt';
-	$user->metadata( $args->{no_password} );
-	$user->update();
+	if ( defined( $args->{no_password} ) ) {
+	    $user->metadata( $args->{no_password} );
+	    $user->update();
+	}
     }
 
     # Send an instructional email too.
