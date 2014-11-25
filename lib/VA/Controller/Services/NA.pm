@@ -145,7 +145,7 @@ sub authenticate :Local {
 	if ( $realm =~ /facebook/ ) {
 	    if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
 		# In this case we have just authenticated a new facebook user.
-		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email, no_password => 0, try_photos => $args->{try_photos} } );
+		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email, no_password => 1, try_photos => $args->{try_photos} } );
 	    }
 	}
 
