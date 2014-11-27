@@ -41,7 +41,11 @@ A new or existing user tries photo finder.
     <br />
     [% IF model.greeting == 'new_user' %]
     <br />
-	<p class="darkText">After logging in, change your password <a href="[% c.server %]#settings" class="tomato"><span class="tomato">here under Settings</span></a> and start using your new private VIBLIO library for all your videos - for Free!</p>
+	<p class="darkText">After logging in
+        [% IF  user.provider == 'facebook' %]
+       , change your password <a href="[% c.server %]#settings" class="tomato"><span class="tomato">here under Settings</span></a> and 
+        [% END %]
+        start using your new private VIBLIO library for all your videos - for Free!</p>
     [% END %]
     <span class="darkText">Movingly yours</span>
     <br />
