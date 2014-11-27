@@ -39,8 +39,10 @@ A new or existing user tries photo finder.
         </span>
 	<span class="darkText">Download your photos or select some to post directly to Facebook.</span>
     <br />
+    [% IF model.greeting == 'new_user' %]
     <br />
 	<p class="darkText">After logging in, change your password <a href="[% c.server %]#settings" class="tomato"><span class="tomato">here under Settings</span></a> and start using your new private VIBLIO library for all your videos - for Free!</p>
+    [% END %]
     <span class="darkText">Movingly yours</span>
     <br />
     <span class="darkText">VIBLIO, your personal video manager</span>
