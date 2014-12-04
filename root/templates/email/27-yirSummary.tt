@@ -15,7 +15,7 @@
     
     <div class="leftAligned regSize darkText">
         <p style="text-align: left;">Hi [% user.displayname %],</p>
-        <p style="text-align: left;">I made a special video Moments Mashup for videos in your <a class="noUnderline" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><span class='tomato'>VIBLIO account</span></a> as a special gift for you this holiday season.</p>
+        <p style="text-align: left;">I made a special video Moments Mashup for videos in your <a class="noUnderline" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><span class='tomato'>VIBLIO account</span></a> as a gift for you this holiday season.</p>
 
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
@@ -28,6 +28,7 @@
                 <td cellspacing="0" cellpadding="0" style="width: 69px"></td>
             </tr>
         </table>
+	<p style="text-align: left;">You now own this video in your private VIBLIO account!</p>
         <p class="centered">Like it? <a class="noUnderline" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><strong><span class='tomato'>SHARE IT!</span></strong></a></p>
         <br />
         <span>Your personal video assistant,</span><br />
