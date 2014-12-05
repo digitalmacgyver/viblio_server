@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<html lang="en" prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# website: http://ogp.me/ns/website#">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Shared Video from Viblio.com</title>
+
+  <meta name="medium" content="website" />
+  <meta name="title" content="[% mediafile.title || 'My VIBLIO Video' %]" />
+  <meta name="description" content="[% mediafile.description || 'I am sharing this video from my VIBLIO collection.' %]" />
+
+
+  <meta property="og:title" content="[% mediafile.title || 'My VIBLIO Video' %]" />
+  <meta property="og:type" content="video.other" />
+  <meta property="og:image" content="http://staging.viblio.com/s/ip/[% mediafile.views.poster.uri %]" />
+  <meta property="og:url" content="[% server %]/#web_player?mid=[% mediafile.uuid %]" />
+  <meta property="og:image:secure_url" content="[% server %]s/ip/[% mediafile.views.poster.uri %]" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:video:width" content="288" />
+  <meta property="og:video:height" content="216" />  
+  <meta property="og:video" content="http://staging.viblio.com/s/e/[% mediafile.uuid %]" />
+  <meta property="og:video:secure_url" content="[% server %]s/e/[% mediafile.uuid %]" />
+  <meta property="og:video:type" content="video/mp4" />
+  <meta property="og:video:width" content="480" />
+  <meta property="og:video:height" content="270" />
+
+  <meta property="og:site_name" content="VIBLIO" />
+  <meta property="og:description" content="[% mediafile.description || 'I am sharing this video from my VIBLIO collection.' %]" />
+  
+</head>
+
+<!--
+<body>
+  <script>
+    function go() {
+      window.location = "/#web_player?mid=[% mediafile.uuid %]";
+    }
+    window.onload = go;
+  </script>
+</body>
+-->
+
+</html>
