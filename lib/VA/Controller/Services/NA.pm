@@ -86,12 +86,9 @@ sub authfailure_response :Private {
 
 sub authenticate :Local {
     my ( $self, $c ) = @_;
-    my $args = $self->parse_args
-	( $c,
-	  [ no_password => 0,
-	    try_photos =>  0
-	  ],
-	  @_ );
+
+    my $no_password = $self->boolean( $c->req->param( 'no_password' ), 0 );
+    my $try_photos = $self->boolean( $c->req->param( 'try_photos' ), 0 );
 
     # Get the username and password from form
     my $email = $self->sanitize( $c, $c->req->params->{email} );
@@ -145,7 +142,7 @@ sub authenticate :Local {
 	if ( $realm =~ /facebook/ ) {
 	    if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
 		# In this case we have just authenticated a new facebook user.
-		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email, no_password => 1, try_photos => $args->{try_photos} } );
+		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email, no_password => 1, try_photos => $try_photos } );
 	    }
 	}
 
@@ -562,8 +559,6 @@ sub new_user :Local {
     my $c = shift;
     my $result = $self->_new_user( $c, @_ );
 
-    $DB::single = 1;
-
     if ( $result->{ok} ) {
 	$self->status_ok( $c, $result->{response} );
     } else {
@@ -583,7 +578,7 @@ sub _new_user :Private {
 	    realm => 'db',
 	    via => 'trayapp',
 	    no_password => 0,
-	    try_photos => 1
+	    try_photos => 0
 	  ],
 	  @_ );
 
