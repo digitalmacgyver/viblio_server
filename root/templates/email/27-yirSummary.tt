@@ -15,7 +15,11 @@
     
     <div class="leftAligned regSize darkText">
         <p style="text-align: left;">Hi [% user.displayname %],</p>
-        <p style="text-align: left;">I made a special video Moments Mashup for videos in your <a class="noUnderline" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><span class='tomato'>VIBLIO account</span></a> as a gift for you this holiday season.</p>
+        <p style="text-align: left;">I made a special video Moments Mashup for 
+          [% IF year_desc %] [% year_desc %] [% END %]
+          videos in your <a class="noUnderline" href="[% c.server  %]#new_player?mid=[% model.media.0.uuid %]"><span class='tomato'>VIBLIO 
+          [% IF album_name %] [% album_name %] album [% ELSE %] account [% END %]
+          </span></a> as a gift for you this holiday season.</p>
 
         <table cellspacing="0" cellpadding="0" style="text-align: center;margin-right: auto;margin-left: auto;">   
             <tr cellspacing="0" cellpadding="0" style="margin: 0;">
