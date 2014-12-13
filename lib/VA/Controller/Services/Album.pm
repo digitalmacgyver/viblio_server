@@ -338,26 +338,62 @@ Inputs:
 =cut
 
 sub get :Local {
-    my( $self, $c ) = @_;
-    my $aid = $c->req->param( 'aid' );
-    my $page = $c->req->param( 'page' ) || 1;
-    my $rows = $c->req->param( 'rows' ) || 100000;
+    my $self = shift;
+    my $c = shift;
+    my $args = $self->parse_args
+	( $c,
+	  [ aid => undef,
+	    page => 1,
+	    rows => 100000,
+	    include_contact_info => 0,
+	    include_tags => 0,
+	    include_images => 0,
+	    only_visible => 1,
+	    only_videos => 1,
+	    'tags[]' => []
+	  ],
+	  @_ );
 
-    my $include_contact_info = $c->req->param( 'include_contact_info' );
-    $include_contact_info = 0 unless( $include_contact_info );
-    my $include_tags = $c->req->param( 'include_tags' );
-    $include_tags = 0 unless( $include_tags );
-    my $include_images = $c->req->param( 'include_images' );
-    $include_images = 0 unless ( $include_images );    
-    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
-    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    #my $aid = $c->req->param( 'aid' );
+    #my $page = $c->req->param( 'page' ) || 1;
+    #my $rows = $c->req->param( 'rows' ) || 100000;
+    #my $tags = $c->req->param( 'tags[]' ) || [];
+
+    #my $include_contact_info = $c->req->param( 'include_contact_info' );
+    #$include_contact_info = 0 unless( $include_contact_info );
+    #my $include_tags = $c->req->param( 'include_tags' );
+    #$include_tags = 0 unless( $include_tags );
+    #my $include_images = $c->req->param( 'include_images' );
+    #$include_images = 0 unless ( $include_images );    
+    #my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
+    #my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+
+    my $aid = $args->{aid};
+    my $page = $args->{page};
+    my $rows = $args->{rows};
+    my $tags = $args->{'tags[]'};
+
+    my $include_contact_info = $args->{include_contact_info};
+    my $include_tags = $args->{include_tags};
+    my $include_images = $args->{include_images};
+    my $only_visible = $args->{only_visible};
+    my $only_videos = $args->{only_videos};
+
+    # DEBUG - always get tags for testing.
+    $include_tags = 1;
+
+    # If we've been asked to filter by tags we may as well include
+    # tags.
+    if ( scalar( @$tags ) ) {
+	$include_tags = 1;
+    }
 
     my $params = {
 	views => ['poster'],
 	include_contact_info => $include_contact_info,
 	include_tags => $include_tags,
     };
-
+    
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
 	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
@@ -407,16 +443,74 @@ sub get :Local {
 	$where->{'media_type'} = 'original';
     }
 
-    my $rs = $album->media->search( $where, {
-	order_by => 'recording_date desc',
-	page => $page,
-	rows => $rows
-				    } );
+    my $tag_clause = undef;
+    if ( scalar( @$tags ) ) {
+	#$where->{ 'media_asset_features.feature_type' } = 'activity';
+	# To be included with the -or.
+	$tag_clause = { -or => [ -and => [ 'media_asset_features.feature_type' => 'activity', 
+					   'media_asset_features.coordinates' => { -in => $tags } ],
+				 -and => [ 'media_asset_features.feature_type' => 'face',
+					   'media_asset_features.contact_id' => { '!=', undef },
+					   'contact.contact_name' => { -in => $tags } ] ] };
+    }
+    
+    my $all_tags = {};
 
-    my @media_list = $rs->all();
+    my $current_page = undef;
+    if ( $include_tags ) {
+	my $all_videos = $album->media->search( $where, {
+	    order_by => 'recording_date desc',
+	    prefetch => 
+	    { media_assets => 
+	      { media_asset_features => 'contact' } } } );
+	
+	my @everything = $all_videos->all();
+	foreach my $m ( @everything ) {
+	    foreach my $ma ( $m->media_assets() ) {
+		foreach my $feature ( $ma->media_asset_features ) {
+		    my $feature_type = $feature->{_column_data}->{feature_type};
+		    if ( $feature_type eq 'activity' ) {
+			if ( exists( $all_tags->{ $feature->coordinates() } ) ) {
+			    $all_tags->{ $feature->coordinates() }++;
+			} else {
+			    $all_tags->{ $feature->coordinates() } = 1;
+			}
+		    } elsif ( ( $feature_type eq 'face' ) and ( $feature->contact() ) ) {
+			if ( defined( $feature->contact->contact_name() ) ) {
+			    if ( exists( $all_tags->{ $feature->contact->contact_name() } ) ) {
+				$all_tags->{ $feature->contact->contact_name() }++;
+			    } else {
+				$all_tags->{ $feature->contact->contact_name() } = 1;
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
+	$current_page = $all_videos->search( $tag_clause,
+					     { order_by => 'recording_date desc',
+					       page => $page,
+					       rows => $rows ,
+					       prefetch => 
+					       { media_assets => 
+						 { media_asset_features => 'contact' } } } );
+	
+    } else {
+	$current_page = $album->media->search( $where, {
+	    order_by => 'recording_date desc',
+	    page => $page,
+	    rows => $rows
+					       } );
+    }
+		
+
+    my @media_list = $current_page->all();
 
     #$c->log->error( "Media done : ", time(), " - ", scalar( @media_list ), " items." );
 
+    # DEBUG - we'll have to change publish_mediafiles to accept
+    # prefetched data in the result set to avoid N queries.
     my $m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
 							     include_contact_info => $include_contact_info,
 							     include_tags => $include_tags,
@@ -427,7 +521,7 @@ sub get :Local {
     $hash->{media} = $m;
     $hash->{owner} = $album->user->TO_JSON; 
 
-    $self->status_ok( $c, { album => $hash, pager => $self->pagerToJson( $rs->pager() ) } );
+    $self->status_ok( $c, { album => $hash, pager => $self->pagerToJson( $current_page->pager() ), all_tags => $all_tags } );
 }
 
 sub add_media :Local {
