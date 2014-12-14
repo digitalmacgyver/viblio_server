@@ -107,6 +107,9 @@ sub metadata {
 #
 sub publish {
     my( $self, $c, $mediafile, $params ) = @_;
+
+    #$DB::single = 1;
+
     # If our caller was kind enough to pass us the owner_uuid of the
     # mediafile in question, pass it on down.
     my $mf_json = $mediafile->TO_JSON( $params );
@@ -156,8 +159,6 @@ sub publish {
 	    my $fp = new $klass;
 	    $view_json->{url} = 
 		$fp->uri2url( $c, $view_json, $params );
-
-	    #$DB::single = 1;
 
 	    my $download_params = $params;
 	    $download_params->{'download_url'} = 1;

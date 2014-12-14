@@ -725,20 +725,24 @@ sub publish_mediafiles :Private {
     #$c->log->error( "Step 3", time() );
 
     if ( $params->{include_tags} ) {
-	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( { 
-	    'me.media_id' => { -in => $mids },
-	    -or => [ 'me.feature_type' => 'activity',
-		     -and => [ 'me.feature_type' => 'face',
-			       'me.contact_id' => { '!=', undef } ] ] } );
-	foreach my $maf ( @mafs ) {
-	    my $tag = undef;
-	    if ( $maf->{_column_data}->{feature_type} eq 'face' ) {
-		$tag = 'people';
-	    } elsif ( $maf->{_column_data}->{feature_type} eq 'activity' ) {
-		$tag = $maf->coordinates;
-	    }
-	    if ( defined( $tag ) ) {
-		$media_tags->{$maf->media_id}->{$tag} = 1;
+	if ( exists( $params->{media_tags} ) ) {
+	    $media_tags = $params->{media_tags};
+	} else { 
+	    my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( { 
+		'me.media_id' => { -in => $mids },
+		-or => [ 'me.feature_type' => 'activity',
+			 -and => [ 'me.feature_type' => 'face',
+				   'me.contact_id' => { '!=', undef } ] ] } );
+	    foreach my $maf ( @mafs ) {
+		my $tag = undef;
+		if ( $maf->{_column_data}->{feature_type} eq 'face' ) {
+		    $tag = 'people';
+		} elsif ( $maf->{_column_data}->{feature_type} eq 'activity' ) {
+		    $tag = $maf->coordinates;
+		}
+		if ( defined( $tag ) ) {
+		    $media_tags->{$maf->media_id}->{$tag} = 1;
+		}
 	    }
 	}
     }
@@ -762,7 +766,7 @@ sub publish_mediafiles :Private {
 	    }
 	}
     }
-
+    
     #$c->log->error( "Step 5", time() );
     
     if ( $params->{include_shared} ) {

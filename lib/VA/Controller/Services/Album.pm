@@ -450,11 +450,14 @@ sub get :Local {
 	$tag_clause = { -or => [ -and => [ 'media_asset_features.feature_type' => 'activity', 
 					   'media_asset_features.coordinates' => { -in => $tags } ],
 				 -and => [ 'media_asset_features.feature_type' => 'face',
+					   'media_asset_features.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] },
 					   'media_asset_features.contact_id' => { '!=', undef },
 					   'contact.contact_name' => { -in => $tags } ] ] };
     }
     
     my $all_tags = {};
+    my $media_tags = {};
+    #my $media_contacts = {};
 
     my $current_page = undef;
     if ( $include_tags ) {
@@ -467,9 +470,10 @@ sub get :Local {
 	my @everything = $all_videos->all();
 	foreach my $m ( @everything ) {
 	    foreach my $ma ( $m->media_assets() ) {
-		foreach my $feature ( $ma->media_asset_features ) {
+		foreach my $feature ( $ma->media_asset_features() ) {
 		    my $feature_type = $feature->{_column_data}->{feature_type};
 		    if ( $feature_type eq 'activity' ) {
+			$media_tags->{ $m->id() }->{ $feature->coordinates() } = 1;
 			if ( exists( $all_tags->{ $feature->coordinates() } ) ) {
 			    $all_tags->{ $feature->coordinates() }++;
 			} else {
@@ -477,6 +481,11 @@ sub get :Local {
 			}
 		    } elsif ( ( $feature_type eq 'face' ) and ( $feature->contact() ) ) {
 			if ( defined( $feature->contact->contact_name() ) ) {
+			    #if ( exists( $media_contacts->{ $m->id() } ) ) {
+			    #push( @{$media_contacts->{ $m->id() }}, $feature );
+			    #} else {
+			    #		$media_contacts->{ $m->id() } = [ $feature ];
+			    #}
 			    if ( exists( $all_tags->{ $feature->contact->contact_name() } ) ) {
 				$all_tags->{ $feature->contact->contact_name() }++;
 			    } else {
@@ -487,6 +496,8 @@ sub get :Local {
 		}
 	    }
 	}
+
+	#$DB::single = 1;
 
 	$current_page = $all_videos->search( $tag_clause,
 					     { order_by => 'recording_date desc',
@@ -514,7 +525,10 @@ sub get :Local {
     my $m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
 							     include_contact_info => $include_contact_info,
 							     include_tags => $include_tags,
-							     include_images => $include_images } ) );
+							     include_images => $include_images,
+							     media_tags => $media_tags,
+							     #media_contacts => $media_contacts 
+					 } ) );
 
     #$c->log->error( "Publish done: ", time() );
 
