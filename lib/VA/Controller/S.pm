@@ -28,16 +28,31 @@ sub p :Local {
     if ( $mediafile ) {
 	# The fpheader needs only limitted information, so don't leak anything
 	# we don't have too.
+
+	# DEBUG - add in access control - make sure this thing has been publicly shared.
+
+	my $published = VA::MediaFile->new->publish( $c, $mediafile, { views => [ 'main', 'poster' ] } );
+
+	use Data::Dumper;
+	$c->log->error( 'Published: ', Dumper( $published ) );
+
 	my $mhash = {
 	    title => $mediafile->title,
 	    description => $mediafile->description,
 	    uuid => $mediafile->uuid,
 	    views => {
 		poster => {
-		    uri => $mediafile->asset( 'poster' )->uri,
+		    uri => $mediafile->asset( 'poster' )->uri(),
+		},
+		main => {
+		    url => $published->{views}->{main}->{url},
+		    mimetype => $published->{views}->{main}->{mimetype},
 		}
-	    }
+	    },
+	    share_uuid => '120C52CE-8627-11E4-BE4D-7188EB796919',
 	};
+
+	$c->log->error( 'Published: ', Dumper( $mhash ) );
 
 	$c->stash->{no_wrapper} = 1;
 	$c->stash->{server} = $c->server;

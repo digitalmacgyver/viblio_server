@@ -9,12 +9,44 @@
   <meta name="title" content="[% mediafile.title || 'My VIBLIO Video' %]" />
   <meta name="description" content="[% mediafile.description || 'I am sharing this video from my VIBLIO collection.' %]" />
 
-  <meta property="og:url" content="[% server %]s/p/[% mediafile.uuid %]" />
+<!--
+        <meta property="og:site_name" content="YouTube">
+      <meta property="og:url" content="http://www.youtube.com/watch?v=_VFsdPAoI1g">
+    <meta property="og:title" content="Make It Wearable Finalists | Meet Team Nixie">
+    <meta property="og:image" content="https://i.ytimg.com/vi/_VFsdPAoI1g/hqdefault.jpg">
+
+      <meta property="og:description" content="Team Nixie (http://flynixie.com) is developing the first wearable drone camera, which can be worn around your wrist. The team won the Grand Prize for the Int...">
+
+    <meta property="al:ios:app_store_id" content="544007664">
+    <meta property="al:ios:app_name" content="YouTube">
+      <meta property="al:ios:url" content="vnd.youtube://www.youtube.com/watch?v=_VFsdPAoI1g&amp;feature=applinks">
+    <meta property="al:android:url" content="http://www.youtube.com/watch?v=_VFsdPAoI1g&amp;feature=applinks">
+    <meta property="al:android:app_name" content="YouTube">
+    <meta property="al:android:package" content="com.google.android.youtube">
+    <meta property="al:web:url" content="http://www.youtube.com/watch?v=_VFsdPAoI1g&amp;feature=applinks">
+
+    <meta property="og:type" content="video">
+        <meta property="og:video" content="http://www.youtube.com/v/_VFsdPAoI1g?version=3&amp;autohide=1">
+        <meta property="og:video:secure_url" content="https://www.youtube.com/v/_VFsdPAoI1g?version=3&amp;autohide=1">
+      <meta property="og:video:type" content="application/x-shockwave-flash">
+      <meta property="og:video:width" content="1280">
+      <meta property="og:video:height" content="720">
+-->
+
   <meta property="og:site_name" content="VIBLIO" />
-  <meta property="og:type" content="website" />
+  <meta property="og:url" content="[% server %]s/p/[% mediafile.uuid %]" />
   <meta property="og:title" content="[% mediafile.title || 'My VIBLIO Video' %]" />
-  <meta property="og:description" content="[% mediafile.description || 'I am sharing this video from my VIBLIO collection.' %]" />
   <meta property="og:image" content="[% server %]s/ip/[% mediafile.views.poster.uri %]" />
+  <meta property="og:description" content="[% mediafile.description || 'I am sharing this video from my VIBLIO collection.' %]" />
+
+  <meta property="og:type" content="movie" />
+
+  <!-- <meta property="og:video:secure_url" content="[% mediafile.views.main.url %]" /> -->
+
+  <meta property="og:video:url" content="[% server %]s/e/[% mediafile.share_uuid %]" />
+  <meta property="og:video:secure_url" content="[% server %]s/e/[% mediafile.share_uuid %]" />
+
+  <meta property="og:video:type" content="[% mediafile.views.main.mimetype %]">
 
   <meta name="twitter:card" content="summary" />
   <meta	name="twitter:site" content="iviblio" />
