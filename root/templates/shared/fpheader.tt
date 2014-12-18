@@ -33,20 +33,52 @@
       <meta property="og:video:height" content="720">
 -->
 
-  <meta property="og:site_name" content="VIBLIO" />
+<!--
+<meta property="og:url" content="http://flowplayer.blacktrash.org/fbshare.html">
+<meta property="og:site_name" content="Flowplayer Demos">
+<meta property="og:type" content="movie">
+<meta property="og:title" content="Flowplayer Demo Video">
+<meta property="og:description" content=
+"This Flowplayer demo video is coming from a page providing only the most minimal content to share a video on Facebook with Flowplayer.">
+<meta property="og:video:height" content="300">
+<meta property="og:video:width" content="500">
+<meta property="og:image" content="http://flowplayer.org/img/home/flow_eye.jpg">
+<meta property="og:image:secure_url" content=
+"https://d12zt1n3pd4xhr.cloudfront.net/fp/img/flow_eye.jpg">
+<meta property="og:video:type" content="application/x-shockwave-flash">
+<meta property="og:video" content=
+"http://flowplayer.blacktrash.org/flowplayer-3.2.18.swf?config=%7B%27clip%27%3A%7B%27url%27%3A%27http%3A%2F%2Fstream.flowplayer.org%2Fflowplayer-700.flv%27%7D%7D">
+<meta property="og:video:secure_url" content=
+"https://d12zt1n3pd4xhr.cloudfront.net/fp/swf/flowplayer-3.2.18.swf?config=%7B%27clip%27%3A%7B%27url%27%3A%27https%3A%2F%2Fd12zt1n3pd4xhr.cloudfront.net%2Ffp%2Fflowplayer-700.flv%27%7D%7D">
+-->
+
+
+
   <meta property="og:url" content="[% server %]s/p/[% mediafile.uuid %]" />
+  <meta property="og:site_name" content="VIBLIO" />
+  <meta property="og:type" content="movie" />
+
   <meta property="og:title" content="[% mediafile.title || 'My VIBLIO Video' %]" />
-  <meta property="og:image" content="[% server %]s/ip/[% mediafile.views.poster.uri %]" />
   <meta property="og:description" content="[% mediafile.description || 'I am sharing this video from my VIBLIO collection.' %]" />
 
-  <meta property="og:type" content="movie" />
+  <meta property="og:image" content="[% server %]s/ip/[% mediafile.views.poster.uri %]" />
 
   <!-- <meta property="og:video:secure_url" content="[% mediafile.views.main.url %]" /> -->
 
-  <meta property="og:video:url" content="[% server %]s/e/[% mediafile.share_uuid %]" />
+  <!-- <meta property="og:video:type" content="[% mediafile.views.main.mimetype %]"> -->
+
+  <meta property="og:video:type" content="application/x-shockwave-flash">
+
+  <!-- <meta property="og:video" content="[% server %]s/e/[% mediafile.share_uuid %]" /> -->
+
+  <meta property="og:video" content="http://releases.flowplayer.org/swf/flowplayer-3.2.18.swf?config=[% mediafile.encoded_config %]" >
+  <meta property="og:video" content="https://releases.flowplayer.org/swf/flowplayer-3.2.18.swf?config=[% mediafile.encoded_secure_config %]" >
+
+
+" />
+
   <meta property="og:video:secure_url" content="[% server %]s/e/[% mediafile.share_uuid %]" />
 
-  <meta property="og:video:type" content="[% mediafile.views.main.mimetype %]">
 
   <meta name="twitter:card" content="summary" />
   <meta	name="twitter:site" content="iviblio" />

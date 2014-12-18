@@ -36,6 +36,9 @@ sub p :Local {
 	use Data::Dumper;
 	$c->log->error( 'Published: ', Dumper( $published ) );
 
+	my $secure = '{"clip":{"url":"mp4:amazons3/' . $c->config->{s3}->{bucket} . '/' . $published->{views}->{main}->{uri} . '","scaling":"fit","provider":"rtmp"},"plugins":{"rtmp":{"url":"https://releases.flowplayer.org/swf/flowplayer.rtmp-3.2.12.swf","netConnectionUrl":"rtmp://s2gdj4u4bxrah6.cloudfront.net"}}}';
+	my $not_secure = '{"clip":{"url":"mp4:amazons3/' . $c->config->{s3}->{bucket} . '/' . $published->{views}->{main}->{uri} . '","scaling":"fit","provider":"rtmp"},"plugins":{"rtmp":{"url":"http://releases.flowplayer.org/swf/flowplayer.rtmp-3.2.12.swf","netConnectionUrl":"rtmp://s2gdj4u4bxrah6.cloudfront.net"}}}';
+
 	my $mhash = {
 	    title => $mediafile->title,
 	    description => $mediafile->description,
@@ -49,8 +52,12 @@ sub p :Local {
 		    mimetype => $published->{views}->{main}->{mimetype},
 		}
 	    },
+	    encoded_secure_config => uri_escape( $secure ),
+	    encoded_config => uri_escape( $not_secure ),
 	    share_uuid => '120C52CE-8627-11E4-BE4D-7188EB796919',
 	};
+
+
 
 	$c->log->error( 'Published: ', Dumper( $mhash ) );
 
