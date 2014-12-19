@@ -612,16 +612,22 @@ sub add_media :Local {
 	#$c->log->debug( 'index=' . $index );
 	#$c->log->debug( $encoder->encode( \@to ) );
 	# Prepare message model
-	my $model = {
-	    user => $c->user->obj->TO_JSON,
-	    album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ),
-	    video => VA::MediaFile->new->publish( $c, $media, { views => ['poster'] } ),
-	    url => sprintf( "%s#web_player?mid=%s", $c->server, $media->uuid ),
-	    num => ( $#list + 1 ),
-	};
 	# Send them to the message queue and send email
 	foreach my $to ( @to ) {
 	    if ( $to->{user} ) {
+
+		my $model = {
+		    user => $c->user->obj->TO_JSON,
+		    album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ),
+		    video => VA::MediaFile->new->publish( $c, $media, { views => ['poster'] } ),
+		    #url => sprintf( "%s#web_player?mid=%s", $c->server, $media->uuid ),
+		    url => sprintf( "%s#register?email=%s&url=%s",
+				    $c->server,
+				    uri_escape( $to->{email} ),
+				    uri_escape( '#home?aid=' . $album->uuid ) ),
+		    num => ( $#list + 1 ),
+		};
+
 		$c->model( 'MQ' )->post( '/enqueue', {
 		    uid => $to->{user}->uuid,
 		    type => 'new_album_video',
