@@ -1663,6 +1663,38 @@ sub add_video_to_email :Local {
     $self->status_ok( $c, $result );
 }
 
+sub find_share_info_for_album :Local {
+    my( $self, $c ) = @_;
+    my $email = $self->sanitize( $c, $c->req->param( 'email' ) );
+    my $aid = $self->sanitize( $c, $c->req->param( 'aid' ) );
+
+    my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
+
+    unless( $album ) {
+	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+    }
+
+    my $com = $album->community;
+    if ( $com ) {
+	my $owner = $album->user();
+
+	my $members = { $owner->email() => 1 };
+	foreach my $member ( $com->members->contacts->all() ) {
+	    $members->{$member->contact_email()} = 1;
+	}
+	unless ( exists( $members->{$email} ) ) {
+	    $self->status_bad_request( $c, $c->loc( 'Email [_1] is not authorized to view album [_2]', $email, $aid ) );
+	}
+
+	my $album_data = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
+
+	$self->status_ok( $c, { 'album' => $album_data, 'owner' => { 'displayname' => $owner->displayname(),
+								     'uuid' => $owner->uuid() } } )
+    } else {
+	$self->status_bad_request( $c, $c->loc( 'Email [_1] is not authorized to view album [_2]', $email, $aid ) );
+    }
+}
+
 sub find_share_info_for_pending :Local {
     my( $self, $c ) = @_;
     my $email = $self->sanitize( $c, $c->req->param( 'email' ) );
