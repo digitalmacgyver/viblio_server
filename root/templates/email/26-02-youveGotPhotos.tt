@@ -1,0 +1,87 @@
+[% INCLUDE email/top.tt 
+    previewText = "Got a video?  Now you have photos too!"
+%]
+
+[%# The trigger that is expected to send email:
+
+A new or existing user tries photo finder.
+
+%]
+
+[%# The data model that this template expects:
+
+  user:  The JSON object for a Viblio user, the one who is receiving the email
+  media: An array of mediafiles that are being shared (should only contain one mf object)
+  url:   The link user should click on to go view the video
+%]
+    
+    <div class="leftAligned regSize darkText">
+        <p class='xLargeText darkText' style='text-align: left;'>Success!</p>
+
+        <span class="darkText">VIBLIO has found some fun photos from the video you uploaded.  Because we care about your <a href="[% c.server %]#about?showPrivacy=true" class="tomato"><span class="tomato">privacy</span></a>, we have saved your photos and the original video in your own private account.</span>
+
+        <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
+            <tbody>
+                <tr>
+                [% FOREACH media IN model.media %]
+                    [% LAST IF loop.count > 2 %]
+                        <td class="video" valign="bottom">
+                            <table cellspacing="0">
+                                <tbody>
+                                    <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
+                                        <td class="name" cellspacing="0" cellpadding="0" style="margin: 0;">
+                                            [% IF media.title != 'Untitled' %] Title: [% media.title %] [% END %]
+                                        </td>
+                                    </tr>
+                                    <tr cellspacing="0" cellpadding="0" style="margin: 0;">
+                                        <td cellspacing="0" cellpadding="0">
+                                            <a href='[% c.server  %]#home?photos=more'>
+                                                <img class='videoThumb boxShadowed' src="[% c.server %]s/ip/[% media.views.poster.uri %]" />
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table> 
+                        </td>
+                [% END %]
+                </tr>
+            </tbody>
+        </table>
+
+
+       <span class="darkTest"> <a href="[% c.server %]#home?photos=more" class="tomato"><span class="tomato">Login</span></a>
+        [% IF  user.provider == 'facebook' %]
+          with Facebook.
+  	  <br />
+	  <br />
+        [% ELSE %]
+          with your email
+	  .</span>
+	  <ul>
+	  <li>login: [% user.email %]</li>  
+	  </ul>
+	[% END %]
+        </span>
+	<span class="darkText">Download your photos or select some to post directly to Facebook.</span>
+    <br />
+    <span class="darkText">Movingly yours</span>
+    <br />
+    <span class="darkText">VIBLIO, your personal video manager</span>
+    <br />
+    </div>	
+	
+        <div class="centered">
+            <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
+            <span class="smallPrivacy">
+                Privacy is important to you - and to us too. We do not sell, rent, barter for beads, or otherwise share your name or address. At any point, you can select the link at the bottom of any email to unsubscribe or change your email preferences.
+                <br />
+                <br />
+                Questions? Suggestions?  I'm all ears! Email me at <a class="tomato" href="mailto:feedback@support.viblio.com"><span class="tomato">feedback@viblio.com</span></a>.
+                <br />
+                <br />
+                Follow our <a href="[% c.server %]/viblio-blog" class="tomato"><span class="tomato">blog</span></a>.
+            </span>
+        </div>
+    </div>
+
+[% INCLUDE email/bottom.tt %]
