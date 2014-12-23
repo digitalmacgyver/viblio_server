@@ -30,7 +30,7 @@ A new or existing user tries photo finder.
                                 <tbody>
                                     <tr class="name-Wrap" cellspacing="0" cellpadding="0" style="margin: 0;">
                                         <td class="name" cellspacing="0" cellpadding="0" style="margin: 0;">
-                                            [% IF media.title != 'Untitled' %] Title: [% media.title %] [% END %]
+                                            [% IF media.title %] Title: [% media.title %] [% END %]
                                         </td>
                                     </tr>
                                     <tr cellspacing="0" cellpadding="0" style="margin: 0;">
