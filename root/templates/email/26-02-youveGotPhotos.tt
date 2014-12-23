@@ -16,9 +16,9 @@ A new or existing user tries photo finder.
 %]
     
     <div class="leftAligned regSize darkText">
-        <p class='xLargeText darkText' style='text-align: left;'>Success!</p>
+        <p class='darkText' style='text-align: left;'>Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %]!</p>
 
-        <span class="darkText">VIBLIO has found some fun photos from the video you uploaded.  Because we care about your <a href="[% c.server %]#about?showPrivacy=true" class="tomato"><span class="tomato">privacy</span></a>, we have saved your photos and the original video in your own private account.</span>
+        <p class='darkText' style='text-align: left;'>I wanted to remind you to take a look at the fun photos that VIBLIO found from the videos you oploaded.</p>
 
         <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
             <tbody>
@@ -64,6 +64,12 @@ A new or existing user tries photo finder.
         </span>
 	<span class="darkText">Download your photos or select some to post directly to Facebook.</span>
     <br />
+
+        <span class="darkText">VIBLIO has found some fun photos from the video you uploaded.  Because we care about your <a href="[% c.server %]#about?showPrivacy=true" class="tomato"><span class="tomato">privacy</span></a>, we have saved your photos and the original video in your own private account.</span>
+
+	<br />
+
+
     <span class="darkText">Movingly yours</span>
     <br />
     <span class="darkText">VIBLIO, your personal video manager</span>
