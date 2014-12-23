@@ -64,9 +64,11 @@ A new or existing user tries photo finder.
         </span>
 	<span class="darkText">Download your photos or select some to post directly to Facebook.</span>
     <br />
+    <br />
 
-        <span class="darkText">VIBLIO has found some fun photos from the video you uploaded.  Because we care about your <a href="[% c.server %]#about?showPrivacy=true" class="tomato"><span class="tomato">privacy</span></a>, we have saved your photos and the original video in your own private account.</span>
+        <p class="darkText">Because we care about your <a href="[% c.server %]#about?showPrivacy=true" class="tomato"><span class="tomato">privacy</span></a>, we have saved your photos and the original video in your own private account.</p>
 
+	<br />
 	<br />
 
 
