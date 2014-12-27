@@ -18,7 +18,7 @@ A new or existing user tries photo finder.
     <div class="leftAligned regSize darkText">
         <p class='darkText' style='text-align: left;'>Hi [% IF user.displayname %][% user.displayname %][% ELSE %]there[% END %]!</p>
 
-        <p class='darkText' style='text-align: left;'>I wanted to remind you to take a look at the fun photos that VIBLIO found from the videos you oploaded.</p>
+        <p class='darkText' style='text-align: left;'>I wanted to remind you to take a look at the fun photos that VIBLIO found from the videos you uploaded.</p>
 
         <table cellspacing="0" cellpadding="0" style="text-align:center; margin-right:auto; margin-left:auto; margin-bottom: 20px;">
             <tbody>
