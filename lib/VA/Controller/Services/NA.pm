@@ -803,7 +803,7 @@ sub account_confirm :Local {
     my $user = $c->model( 'RDS::User' )->find({uuid => $uuid});
     unless( $user ) {
 	$c->log->error( "Account confirm: cannot find a record for $uuid" );
-	$self->status_bad_request( $c, $c->loc( 'Cannot find user for uuid: [_1]', $uuid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find user for uuid: [_1]', $uuid ), $uuid );
     }
     $user->confirmed( 1 ); $user->update;
 
@@ -927,14 +927,14 @@ sub new_password :Local {
 
     my $user = $c->model( 'RDS::User' )->find({ email => $args->{email} });
     unless( $user ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Cannot find user for [_1]", $args->{email} ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Cannot find user for [_1]", $args->{email} ), $args->{email} );
     }
 
     my $rec = $c->model( 'RDS::PasswordReset' )->find({ email => $args->{email} });
     unless( $rec ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Cannot find password reset record for [_1]", $args->{email} ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Cannot find password reset record for [_1]", $args->{email} ), $args->{email} );
     }
 
     unless( $rec->code eq $args->{code} ) {
@@ -951,7 +951,7 @@ sub new_password :Local {
 	$self->status_ok( $c, { user => $c->user->obj } );
     }
     else {
-	$self->status_bad_request
+	$self->status_forbidden
 	    ( $c, $c->loc( "Unable to authenticate user with new password." ) );
     }
 }
@@ -1137,7 +1137,7 @@ sub test_secure_token :Local {
     $site_token = $c->req->param( 'site-token' ) unless( $site_token );
     if ( $c->secure_token( $uid ) ne $site_token ) {
 	$c->log->error( "mediafile_create() authentication failure: calculated(" . $c->secure_token( $uid ) . ") does not match $site_token" );
-	$self->status_bad_request( $c, 'mediafile_create() authentication failure.' );
+	$self->status_forbidden( $c, 'mediafile_create() authentication failure.' );
     }
     $self->status_ok( $c, {} );
 }
@@ -1161,18 +1161,18 @@ sub mediafile_create :Local {
     unless( $site_token eq 'maryhadalittlelamb' ) {
 	if ( $c->secure_token( $uid ) ne $site_token ) {
 	    $c->log->error( "mediafile_create() authentication failure: calculated(" . $c->secure_token( $uid ) . ") does not match $site_token" );
-	    $self->status_bad_request( $c, 'mediafile_create() authentication failure.' );
+	    $self->status_forbidden( $c, 'mediafile_create() authentication failure.' );
 	}
     }
 
     my $user = $c->model( 'RDS::User' )->find({uuid=>$uid});
     if ( ! $user ) {
-	$self->status_bad_request( $c, 'Cannot find user for $uid' );
+	$self->status_not_found( $c, 'Cannot find user for $uid', $uid );
     }
 
     my $mediafile = $user->media->find({ uuid => $mid });
     unless( $mediafile ) {
-	$self->status_bad_request( $c, 'Cannot find media for $mid' );
+	$self->status_not_found( $c, 'Cannot find media for $mid', $mid );
     }
 
     ## Do the geo location stuff here, as the videos arrive
@@ -1268,18 +1268,18 @@ sub create_fb_album :Local {
     unless( $site_token eq 'maryhadalittlelamb' ) {
 	if ( $c->secure_token( $uid ) ne $site_token ) {
 	    $c->log->error( "mediafile_create() authentication failure: calculated(" . $c->secure_token( $uid ) . ") does not match $site_token" );
-	    $self->status_bad_request( $c, 'mediafile_create() authentication failure.' );
+	    $self->status_forbidden( $c, 'mediafile_create() authentication failure.' );
 	}
     }
 
     my $user = $c->model( 'RDS::User' )->find({uuid=>$uid});
     if ( ! $user ) {
-	$self->status_bad_request( $c, 'Cannot find user for $uid' );
+	$self->status_not_found( $c, 'Cannot find user for $uid', $uid );
     }
 
     my $mediafile = $user->media->find({ uuid => $mid });
     unless( $mediafile ) {
-	$self->status_bad_request( $c, 'Cannot find media for $mid' );
+	$self->status_not_found( $c, 'Cannot find media for $mid', $mid );
     }
     my $asset = $mediafile->assets->first( { asset_type => 'fb_album' } );
 
@@ -1636,7 +1636,7 @@ sub add_video_to_email :Local {
     my $mid = $c->req->param( 'mid' );
     my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid }, {prefetch => 'user'});
     unless( $mediafile ) {
-	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
+	$self->status_not_found( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ), $mid );
     }
 
     my $user = $c->model( 'RDS::User' )->find( { email => $email } );
@@ -1671,7 +1671,7 @@ sub find_share_info_for_album :Local {
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
 
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
 
     my $com = $album->community;
@@ -1683,7 +1683,7 @@ sub find_share_info_for_album :Local {
 	    $members->{$member->contact_email()} = 1;
 	}
 	unless ( exists( $members->{$email} ) ) {
-	    $self->status_bad_request( $c, $c->loc( 'Email [_1] is not authorized to view album [_2]', $email, $aid ) );
+	    $self->status_forbidden( $c, $c->loc( 'Email [_1] is not authorized to view album [_2]', $email, $aid ), $aid );
 	}
 
 	my $album_data = VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } );
@@ -1691,7 +1691,7 @@ sub find_share_info_for_album :Local {
 	$self->status_ok( $c, { 'album' => $album_data, 'owner' => { 'displayname' => $owner->displayname(),
 								     'uuid' => $owner->uuid() } } )
     } else {
-	$self->status_bad_request( $c, $c->loc( 'Email [_1] is not authorized to view album [_2]', $email, $aid ) );
+	$self->status_forbidden( $c, $c->loc( 'Email [_1] is not authorized to view album [_2]', $email, $aid ), $aid );
     }
 }
 
@@ -1859,8 +1859,8 @@ sub media_comments :Local {
 
     my $mf = $c->model( 'RDS::Media' )->find({ uuid => $mid }, { prefetch => 'user' });
     unless( $mf ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ), $mid );
     }
     my @comments = $mf->comments->search({},{prefetch=>'user', order_by=>'me.created_date desc'});
     my @data = ();
@@ -1879,9 +1879,9 @@ sub faces_in_mediafile :Local {
     my $mid = $c->req->param( 'mid' );
     my $m = $c->model( 'RDS::Media' )->find({uuid=>$mid});
     unless( $m ) {
-	$self->status_bad_request
+	$self->status_not_found
 	    ( $c, 
-	      $c->loc( 'Unable to find mediafile for [_1]', $mid ) );
+	      $c->loc( 'Unable to find mediafile for [_1]', $mid ), $mid );
     }
     my $mf = VA::MediaFile->new->publish( $c, $m, { assets=>[],include_contact_info=>1} );
     $self->status_ok( $c, { faces => $mf->{views}->{face} } );
@@ -1960,7 +1960,7 @@ sub send_push_notification :Local {
 
     my $user = $c->model( 'RDS::User' )->find({ uuid => $uid });
     unless( $user ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find user for [_1]', $uid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find user for [_1]', $uid ), $uid );
     }
 
     unless( $network ) {

@@ -332,13 +332,13 @@ sub add_or_replace_profile_photo :Local {
     }
 
     unless( $user ) {
-	$self->status_bad_request
-	    ( $c, $c->loc("User for uuid=[_1] not found!", $uid ) );
+	$self->status_not_found
+	    ( $c, $c->loc("User for uuid=[_1] not found!", $uid ), $uid );
     }
 
     my $profile = $user->profile;
     unless( $profile ) {
-	$self->status_bad_request
+	$self->status_not_found
 	    ( $c, $c->loc("[_1] does not have a profile", $user->email) );
     }
 
@@ -403,7 +403,7 @@ sub add_or_replace_banner_photo :Local {
 
     my $user = $c->user->obj;
     unless( $user ) {
-	$self->status_bad_request
+	$self->status_not_found
 	    ( $c, $c->loc("User for not found!" ) );
     }
 
@@ -468,7 +468,7 @@ sub original :Local {
     my $photo = $c->user->obj->profile->image;
 
     unless( $photo ) {
-	$self->status_bad_request( $c, $c->loc("no photo available") );
+	$self->status_not_found( $c, $c->loc("no photo available") );
     }
 
     my $type = $c->user->obj->profile->image_mimetype;

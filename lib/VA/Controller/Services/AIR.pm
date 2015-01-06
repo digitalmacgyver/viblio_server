@@ -18,7 +18,7 @@ sub years :Local {
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
     my $media_rs = $album->media;
     my @dates = $self->dates( $c, $media_rs );
@@ -38,7 +38,7 @@ sub months :Local {
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
     my $media_rs = $album->media;
     my @dates = $self->dates( $c, $media_rs );
@@ -97,7 +97,7 @@ sub videos_for_year :Local {
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
     my $media_rs = $album->media;
 
@@ -218,7 +218,7 @@ sub videos_for_month :Local {
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
     my $media_rs = $album->media;
 

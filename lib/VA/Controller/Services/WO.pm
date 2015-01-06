@@ -104,8 +104,8 @@ sub submit :Local {
     my $wo = $c->user->workorders->find({uuid => $id });
 
     unless( $wo ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ), $id );
     }
 
     my @media = $wo->media->search({},{prefetch=>'assets'});
@@ -168,8 +168,8 @@ sub bom :Local {
     my $wo = $c->user->workorders->find({uuid => $id });
 
     unless( $wo ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ), $id );
     }
 
     my @media = $wo->media->search({},{prefetch=>'assets', order_by => { -desc => 'medias.id' }});
@@ -289,8 +289,8 @@ sub highlight :Local {
     my $wo = $c->user->workorders->find({uuid => $id });
 
     unless( $wo ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Failed to find workorder for id=[_1]", $id ), $id );
     }
 
     my $mf = $wo->media->find({ media_type => 'highlight' });

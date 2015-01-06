@@ -52,9 +52,9 @@ sub change_latlng :Local {
     my $mid = $c->req->param( 'mid' );
     my $m = $c->user->media->find({uuid=>$mid});
     unless( $m ) {
-	$self->status_bad_request
+	$self->status_not_found
 	    ( $c, 
-	      $c->loc( 'Unable to find mediafile for [_1]', $mid ) );
+	      $c->loc( 'Unable to find mediafile for [_1]', $mid ), $mid );
     }
 
     $m->lat( $lat );

@@ -99,8 +99,8 @@ sub media_face_appears_in :Local {
 	    } );
 	my $asset = ( $rs->all() )[0];
 	unless( $asset ) {
-	    $self->status_bad_request( $c, 
-				       $c->loc( 'Unable to find asset for [_1]', $asset_id ) );
+	    $self->status_not_found( $c, 
+				     $c->loc( 'Unable to find asset for [_1]', $asset_id ), $asset_id );
 	}
 	my $mediafile = VA::MediaFile->new->publish( $c, $asset->media, { $args->{'views[]'} } );
 	$self->status_ok( $c, { media => [ $mediafile ], page => $self->pagerToJson( $rs->pager ) } );
@@ -177,12 +177,9 @@ sub contact_mediafile_count :Local {
     
     my $cid = $c->req->param( 'cid' );
     my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
-    # DEBUG - we should only be looking up by uuid.
-    #unless( $contact ) {
-	#$contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
-    #}
+
     unless( $contact ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find contact for [_1]', $cid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find contact for [_1]', $cid ), $cid );
     }
 
     my $where = { contact_id => $contact->id, 
@@ -432,8 +429,8 @@ sub contact :Local {
 	$contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
     }
     unless( $contact ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( 'Cannot find contact for [_1]', $cid ) );
+	$self->status_not_found
+	    ( $c, $c->loc( 'Cannot find contact for [_1]', $cid ), $cid );
     }
 
     my $klass = $c->config->{mediafile}->{'us'};
@@ -518,7 +515,7 @@ sub photos_of :Local {
     }
 
 =perl
-    # THIS WAS HERE TO DEBUG, NEEDED BEFORE IV CAN AGGRAGATE FACES
+    # THIS WAS HERE TO DEBUG, NEEDED BEFORE I CAN AGGRAGATE FACES
     my @features = $c->model( 'RDS::Contact' )->search({contact_name => undef, user_id => $c->user->id});
     my @data = ();
     foreach my $feat ( @features ) {
@@ -577,7 +574,7 @@ sub change_contact :Local {
 	$contact = $c->user->contacts->find({ id => $args->{uuid} });
     }
     unless( $contact ) {
-	$self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ));
+	$self->status_not_found($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ), $args->{uuid} );
     }
 
     if ( $args->{contact_name} ) {
@@ -611,12 +608,9 @@ sub tag :Local {
 	], @_ );
 
     my $contact = $c->user->contacts->find({ uuid => $args->{uuid} });
-    # DEBUG - I don't think this can ever happen.
-    #unless( $contact ) {
-    #$contact = $c->user->contacts->find({ id => $args->{uuid} });
-    #}
+
     unless( $contact ) {
-	$self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ));
+	$self->status_not_found($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ), $args->{uuid} );
     }
 
     if ( ! $args->{cid} ) {
@@ -639,7 +633,7 @@ sub tag :Local {
 	    $identified = $c->user->contacts->find({ id => $args->{cid} });
 	}
 	unless( $identified ) {
-	    $self->status_bad_request($c, $c->loc("Cannot find contact for [_1]", $args->{cid} ));
+	    $self->status_not_found($c, $c->loc("Cannot find contact for [_1]", $args->{cid} ), $args->{cid} );
 	}
 
 	my @fids = ();
@@ -723,7 +717,7 @@ sub delete_contact :Local {
     my $cid = $c->req->param( 'cid' );
     my $contact = $c->user->contacts->find({ uuid => $cid });
     unless( $contact ) {
-	$self->status_bad_request($c, $c->loc('Unable to find contact for [_1]', $cid ) );
+	$self->status_not_found($c, $c->loc('Unable to find contact for [_1]', $cid ), $cid );
     }
     # Both fb_face and regular face.
     my @feats = $c->model( 'RDS::MediaAssetFeature' )->search({ contact_id => $contact->id });
@@ -854,11 +848,11 @@ sub remove_from_video :Local {
     my $mid = $c->req->param( 'mid' );
     my $contact = $c->user->contacts->find({ uuid => $cid });
     unless( $contact ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find contact for [_1]', $cid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find contact for [_1]', $cid ), $cid );
     }
     my $mediafile = $c->user->media->find({ uuid => $mid });
     unless( $mediafile ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find media file for [_1]', $mid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find media file for [_1]', $mid ), $mid );
     }
 
     # Is this the only occurence, fb_face or otherwise, of this person?
@@ -940,7 +934,7 @@ sub add_contact_to_mediafile :Local {
 
     my $media = $c->user->media->find({ uuid => $mid });
     unless( $media ) {
-	$self->status_bad_request( $c, $c->loc( "Cannot find mediafile for [_1]", $mid ) );
+	$self->status_not_found( $c, $c->loc( "Cannot find mediafile for [_1]", $mid ), $mid );
     }
 
     my $contact;
@@ -957,7 +951,7 @@ sub add_contact_to_mediafile :Local {
     }
     unless( $contact ) {
 	if ( $cid ) {
-	    $self->status_bad_request( $c, $c->loc( "Cannot find contact for [_1]", $cid ) );
+	    $self->status_not_found( $c, $c->loc( "Cannot find contact for [_1]", $cid ), $cid );
 	}
 	else {
 	    $self->status_bad_request( $c, $c->loc( "Cannot find/create contact for [_1]", $contact_name ) );

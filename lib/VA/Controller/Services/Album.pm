@@ -273,7 +273,7 @@ sub create :Local {
     if ( $initial_mid ) {
 	my $media = $c->user->videos->find( { uuid => $initial_mid } );
 	unless( $media ) {
-	    $self->status_bad_request( $c, $c->loc( 'Bad initial media uuid' ) );
+	    $self->status_not_found( $c, $c->loc( 'Bad initial media uuid' ), $initial_mid );
 	}
 	my $rel = $c->model( 'RDS::MediaAlbum' )->find_or_create({ album_id => $album->id, media_id => $media->id });
 	unless( $rel ) {
@@ -312,7 +312,7 @@ sub create :Local {
     foreach my $vid ( @list ) {
 	my $media = $c->user->videos->find({ uuid => $vid });
 	unless( $media ) {
-	    $self->status_bad_request( $c, $c->loc( 'Bad media uuid' ) );
+	    $self->status_not_found( $c, $c->loc( 'Bad media uuid' ), $vid );
 	}
 	my $rel = $c->model( 'RDS::MediaAlbum' )->find_or_create({ album_id => $album->id, media_id => $media->id });
 	unless( $rel ) {
@@ -400,7 +400,7 @@ sub get :Local {
     
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
 
     my $album_owner_uuid = undef;
@@ -422,7 +422,7 @@ sub get :Local {
 	    }
 	}
 	if ( ! $found ) {
-	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to view this album.' ) );
+	    $self->status_forbidden( $c, $c->loc( 'You do not have permission to view this album.' ), $album->uuid() );
 	}
     } else {
 	$album_owner_uuid = $c->user->uuid;
@@ -551,7 +551,7 @@ sub add_media :Local {
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
 
     my $media;
@@ -564,7 +564,7 @@ sub add_media :Local {
     if ( $mid ) {
 	$media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
 	unless( $media ) {
-	    $self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+	    $self->status_not_found( $c, $c->loc( 'Cannot find media for [_1]', $mid ), $mid );
 	}
 
 	my $rel = $c->model( 'RDS::MediaAlbum' )->find_or_create({ album_id => $album->id, media_id => $media->id });
@@ -576,7 +576,7 @@ sub add_media :Local {
 	foreach $mid ( @list ) {
 	    $media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
 	    unless( $media ) {
-		$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+		$self->status_not_found( $c, $c->loc( 'Cannot find media for [_1]', $mid ), $mid );
 	    }
 
 	    my $rel = $c->model( 'RDS::MediaAlbum' )->find_or_create({ album_id => $album->id, media_id => $media->id });
@@ -664,10 +664,10 @@ sub remove_media :Local {
     my $media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
     
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
     unless( $media ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find media for [_1]', $mid ), $mid );
     }
 
     my $com = $album->community;
@@ -696,7 +696,7 @@ sub change_title :Local {
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
 
     $album->title( $title );
@@ -712,7 +712,7 @@ sub delete_album :Local {
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for [_1]', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
 
     my $community = $album->community;
@@ -856,8 +856,8 @@ sub get_shared_video :Local {
 	$self->status_ok( $c, { media => VA::MediaFile->new->publish( $c, $media, { views => ['poster'] } ) } );
     }
     else {
-	$self->status_bad_request( 
-	    $c, $c->loc( 'User is not allowed to access this video' ) ); 
+	$self->status_forbidden( 
+	    $c, $c->loc( 'User is not allowed to access this video' ), $mid ); 
     }
 }
 
@@ -869,8 +869,8 @@ sub share_album :Local {
     my $members = \@clean;
     my $album = $c->user->albums->find({ uuid => $aid });
     unless( $album ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find this album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find this album' ), $aid );
     }
 
     # If this album is already shared, then do not create another one!
@@ -928,13 +928,13 @@ sub add_members_to_shared :Local {
     my $members = \@clean;
     my $album = $c->user->albums->find({ uuid => $aid });
     unless( $album ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find this album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find this album' ), $aid );
     }
     my $community = $album->community;
     unless( $community ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find community container for album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find community container for album' ), $aid );
     }
 
     # Have to determine the new people actually added, so we can notify them
@@ -968,13 +968,13 @@ sub remove_members_from_shared :Local {
     my $members = \@clean;
     my $album = $c->user->albums->find({ uuid => $aid });
     unless( $album ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find this album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find this album' ), $aid );
     }
     my $community = $album->community;
     unless( $community ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find community container for album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find community container for album' ), $aid );
     }
     my @removed = $community->members->contacts->search({
 	contact_email => { -in => $members } });
@@ -993,13 +993,13 @@ sub remove_me_from_shared :Local {
     my $aid = $c->req->param( 'aid' );
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid });
     unless( $album ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find this album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find this album' ), $aid );
     }
     my $community = $album->community;
     unless( $community ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find community container for album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find community container for album' ), $aid );
     }
     $community->members->remove_contacts( $c->user->obj->email );
     $self->status_ok( $c, {} );        
@@ -1010,13 +1010,13 @@ sub delete_shared_album :Local {
     my $aid = $c->req->param( 'aid' );
     my $album = $c->user->albums->find({ uuid => $aid });
     unless( $album ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not delete this album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not delete this album' ), $aid );
     }
     my $community = $album->community;
     unless( $community ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find community container for album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find community container for album' ), $aid );
     }
     # Send an event to users in case they are viewing this share
     $self->send_event_to_members(
@@ -1039,13 +1039,13 @@ sub shared_with :Local {
     my $aid = $c->req->param( 'aid' );
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid });
     unless( $album ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find shared with info for this album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find shared with info for this album' ), $aid );
     }
     my $community = $album->community;
     unless( $community ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find community container for album' ) );
+	$self->status_not_found(
+	    $c, $c->loc( 'Could not find community container for album' ), $aid);
     }
     my @members = $community->members->contacts;
     my $displayname = $c->loc( 'Shared with no one' );
@@ -1082,7 +1082,7 @@ sub create_face_album :Local {
 
     my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $contact_uuid });
     unless( $contact ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find contact' ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find contact' ), $contact_uuid );
     }
 
     unless( $title ) {
@@ -1170,15 +1170,20 @@ sub add_or_replace_banner_photo :Local {
 
     my $user = $c->user->obj;
     unless( $user ) {
-	$self->status_bad_request
-	    ( $c, $c->loc("User for not found!" ) );
+	$self->status_not_found( $c, $c->loc("User for not found!" ) );
     }
 
     my $aid = $c->req->param( 'aid' );
     my $album = $c->model( 'RDS::Media' )->find( { uuid => $aid, user_id => $user->id() } );
     unless( $album ) {
-	$self->status_bad_request(
-	    $c, $c->loc( 'Could not find album, or this user does not own the album.' ) );
+	my $album = $c->model( 'RDS::Media' )->find( { uuid => $aid } );
+	if ( $album ) {
+	    $self->status_forbidden(
+		$c, $c->loc( 'This user does not own the album.' ), $aid );
+	} else {
+	    $self->status_not_found(
+		$c, $c->loc( 'Could not find album.' ), $aid );
+	}
     }
 
     if ( $c->req->param( 'delete' ) ) {

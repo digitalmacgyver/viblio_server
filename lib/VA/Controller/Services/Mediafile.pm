@@ -202,8 +202,8 @@ sub delete :Local {
 				    { prefetch => 'assets' } );
 
     unless( $mf ) {
-	$self->status_bad_request(
-	    $c, $c->loc( "Cannot find media file to delete." ) );
+	$self->status_not_found(
+	    $c, $c->loc( "Cannot find media file to delete." ), $id );
     }
 
     my $location = $mf->asset( 'main' )->location;
@@ -566,8 +566,8 @@ sub get :Local {
     my $mf = $c->user->media->find({uuid=>$mid},{prefetch=>['assets','user']});
 
     unless( $mf ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ), $mid );
     }
 
     my $view = VA::MediaFile->new->publish( $c, $mf, $params );
@@ -586,8 +586,8 @@ sub get_metadata :Local {
     my $mf = $c->user->media->find({uuid=>$mid});
 
     unless( $mf ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ), $mid );
     }
 
     my $hash = VA::MediaFile->new->metadata( $c, $mf );
@@ -610,8 +610,8 @@ sub set_title_description :Local {
     }
     my $mf = $c->user->media->find({uuid=>$mid});
     unless( $mf ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ), $mid );
     }
     $mf->title( $title ) if ( $title );
     $mf->description( $description ) if ( $description );
@@ -647,8 +647,8 @@ sub add_comment :Local {
     }
     my $mf = $c->model( 'RDS::Media' )->find({uuid=>$mid});
     unless( $mf ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ), $mid );
     }
 
     my $comment = $mf->create_related( 'comments', {
@@ -752,8 +752,8 @@ sub add_share :Local {
 
     my $media = $c->user->media->find({ uuid => $mid });
     unless( $media ) {
-	$self->status_bad_request
-	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ) );
+	$self->status_not_found
+	    ( $c, $c->loc( "Failed to find mediafile for uuid=[_1]", $mid ), $mid );
     }
     if ( $title ) {
 	$media->title( $title );
@@ -1152,7 +1152,7 @@ sub cf :Local {
     my $user = $c->user();
     my $mediafile = $c->model( 'RDS::Media' )->find({ uuid => $mid }, {prefetch => 'user'});
     unless( $mediafile ) {
-	$self->status_bad_request( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ) );
+	$self->status_not_found( $c, $c->loc( "Cannot find media for uuid=[_1]", $mid ), $mid );
     }
     
     my $owns_video = 0;
@@ -1170,13 +1170,13 @@ sub cf :Local {
 	      'me.asset_type' => 'main' }, { prefetch => 'media' } );
 	my $asset = $rs->first;
 	unless( $asset ) {
-	    $self->status_bad_request( $c, $c->loc( 'Cannot find main asset for media [_1]', $mid ) );
+	    $self->status_not_found( $c, $c->loc( 'Cannot find main asset for media [_1]', $mid ), $mid );
 	}
 	$self->status_ok( $c, { 
 	    url    => VA::MediaFile::US->new->uri2url( $c, $asset->uri ),
 	    cf_url => $c->cf_sign( $asset->uri, {stream=>1} ) } );
     } else {
-	$self->status_bad_request( $c, $c->loc( 'Not authorized to views this video.' ) );
+	$self->status_forbidden( $c, $c->loc( 'Not authorized to views this video.' ), $mid );
     }
 }
 
@@ -1257,7 +1257,7 @@ sub related :Local {
     my $media = $c->model( 'RDS::Media' )->find( $where, {prefetch=>'media_shares'} );
 
     unless( $media ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find mediafile for [_1]', $mid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find mediafile for [_1]', $mid ), $mid );
     }
 
     # Array of media objects to publish and return.
@@ -1416,7 +1416,7 @@ sub change_recording_date :Local {
     my $dstring = $self->sanitize( $c, $c->req->param( 'date' ) );
     my $media = $c->user->media->find({uuid => $mid });
     unless( $media ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find media for [_1]', $mid ), $mid );
     }
 
     my $new_date = DateTime::Format::Flexible->parse_datetime( $dstring );
@@ -1629,7 +1629,7 @@ sub search_by_title_or_description_in_album :Local {
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find album for "[_1]"', $aid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find album for "[_1]"', $aid ), $aid );
     }
 
     my @mids = map { $_->id } $album->videos;
@@ -1887,7 +1887,7 @@ sub add_tag :Local {
     my $tagname = $self->sanitize( $c, $c->req->param( 'tag' ) );
     my $video = $c->user->videos->find({ uuid => $mid });
     unless( $video ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find media for [_1]', $mid ), $mid );
     }
     my $tag = $video->add_tag( $tagname );
     unless( $tag ) {
@@ -1903,7 +1903,7 @@ sub rm_tag :Local {
     my $tagname = $c->req->param( 'tag' );
     my $video = $c->user->videos->find({ uuid => $mid });
     unless( $video ) {
-	$self->status_bad_request( $c, $c->loc( 'Cannot find media for [_1]', $mid ) );
+	$self->status_not_found( $c, $c->loc( 'Cannot find media for [_1]', $mid ), $mid );
     }
     my $tag = $video->rm_tag( $tagname );
     unless( $tag ) {
@@ -2115,7 +2115,7 @@ sub create_video_summary :Local {
 		$c->log->debug( "OK TO ACCESS COMMUNITY VIDEO: ", $asset->uuid() );
 	    } else {
 		$c->log->error( "NOT ALLOWED TO ACCESS VIDEO: ", $asset->uuid() );
-		$self->status_bad_request( $c, $c->loc( 'You do not have permission to view the video associated with image: ' . $asset->uuid() ) );
+		$self->status_forbidden( $c, $c->loc( 'You do not have permission to view the video associated with image: ' . $asset->uuid() ), $asset->uuid() );
 	    }
 	}
     }
@@ -2216,7 +2216,7 @@ sub create_fb_album :Local {
     foreach my $asset ( @assets ) {
 	if ( !exists( $allowed->{$asset->media_id()} ) ) {
 	    $c->log->error( "CAN'T SEND UNOWNED IMAGES TO FACEBOOK: ", $asset->uuid() );
-	    $self->status_bad_request( $c, $c->loc( 'You do not have permission to share this image to Facebook: ' . $asset->uuid() ) );
+	    $self->status_forbidden( $c, $c->loc( 'You do not have permission to share this image to Facebook: ' . $asset->uuid() ), $asset->uuid() );
 	}
     }
     $c->log->debug( "OK TO ACCESS ALL IMAGES" );
@@ -2321,7 +2321,7 @@ sub find_photos :Local {
     }
     my @owned_videos = $c->model( 'RDS::Media' )->search( { user_id => $c->user->id(), uuid => $args->{media_uuid} } )->all();
     unless ( scalar( @owned_videos ) == 1 ) {
-	$self->status_bad_request( $c, $c->loc( 'No media of that UUID found for this user.' ) );
+	$self->status_not_found( $c, $c->loc( 'No media of that UUID found for this user.' ), $args->{media_uuid} );
     }
 
     # Send the request to the back end to get photos.
