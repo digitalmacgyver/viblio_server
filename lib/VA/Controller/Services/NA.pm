@@ -503,6 +503,10 @@ Supports a new API to create a user account with just an email address.
 sub new_user_no_password :Local {
     my $self = shift;
     my $c = shift;
+
+    # DEBUG
+    #$DB::single = 1;
+
     my $result = $self->_new_user_no_password( $c, @_ );
     if ( $result->{ok} ) {
 	$self->status_ok( $c, $result->{response} );
@@ -519,15 +523,16 @@ sub _new_user_no_password :Private {
 	( $c,
 	  [ email    => undef,
 	    realm => 'db',
-	    via => 'trayapp'
+	    via => 'trayapp',
+	    try_photos => 0
 	  ],
 	  @_ );
 
     if ( $self->is_email_valid( $args->{email} ) ) {
 	my $username = ( $args->{email} =~ m/^(.*?)@/ )[0];
-	my $password = $self->invite_code;
+	my $password = $self->invite_code();
 
-	return $self->_new_user( $c, $args->{email}, $password, $username, $username, $args->{realm}, $args->{via}, $password );
+	return $self->_new_user( $c, $args->{email}, $password, $username, $username, $args->{realm}, $args->{via}, $password, $args->{try_photos} );
     } else {
 	my $code = "NOLOGIN_INVALID_EMAIL";
 	return { 'ok' => 0,
@@ -768,7 +773,8 @@ sub new_user_helper :Private {
     if ( $args->{no_password} && $args->{try_photos} ) {
 	$subject = 'The first step to easy photos!';
 	$template = 'email/26-01-photoFinder.tt';
-	if ( defined( $args->{no_password} ) ) {
+
+	if ( defined( $args->{no_password} ) && $args->{no_password} ) {
 	    $user->metadata( $args->{no_password} );
 	    $user->update();
 	}
@@ -858,7 +864,7 @@ sub forgot_password_request :Local {
 	$self->status_ok( $c, {} );
     }
 
-    my $code = $self->invite_code;
+    my $code = $self->invite_code();
 
 =perl    
     Doing a simplified version of this now, by sending out a new password

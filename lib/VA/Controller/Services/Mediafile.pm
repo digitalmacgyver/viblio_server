@@ -250,28 +250,28 @@ sub delete :Local {
 	    prefetch => { 'media_asset' => 'media' }, group_by => ['media.id'] } );
 
     foreach my $face ( @faces ) {
-	$c->log->debug( "Face: name: " . $face->{contact}->{contact_name} . ", uuid: " . $face->{contact}->{uuid} );
+	#$c->log->debug( "Face: name: " . $face->{contact}->{contact_name} . ", uuid: " . $face->{contact}->{uuid} );
 	if ( ! $face->{contact}->{contact_name} ) {
 	    # unidentified
-	    $c->log->debug( "  unidentified" );
+	    #$c->log->debug( "  unidentified" );
 	    # Other mediafiles with this contact
 	    my $count = $rs->search({'me.contact_id' => $face->{contact}->{id}})->count;
-	    $c->log->debug( "  -> in $count other videos" );
+	    #$c->log->debug( "  -> in $count other videos" );
 	    if ( $count == 0 ) {
 		# No others, so delete the contact
 		my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $face->{contact}->{uuid} });
 		if ( $contact ) {
-		    $c->log->debug( "  -> DELETE " . $face->{contact}->{uuid} );
+		    #$c->log->debug( "  -> DELETE " . $face->{contact}->{uuid} );
 		    $contact->delete; $contact->update;
 		}
 	    }
 	}
 	else {
 	    # identified
-	    $c->log->debug( "  identified" );
+	    #$c->log->debug( "  identified" );
 	    # Other mediafiles with this contact
 	    my $count = $rs->search({'me.contact_id' => $face->{contact}->{id}})->count;
-	    $c->log->debug( "  -> in $count other videos" );
+	    #$c->log->debug( "  -> in $count other videos" );
 	    if ( $count == 0 ) {
 		# In no other videos.  Unset the picture_uri if it points
 		# to this video
@@ -283,7 +283,7 @@ sub delete :Local {
 		    # of this mediafile's assets, so leave it alone.  It
 		    # could be a contact with a pic, but not in any video
 		    # like a FB contact
-		    $c->log->debug( "  -> PRESERVE picture_uri" );
+		    #$c->log->debug( "  -> PRESERVE picture_uri" );
 		}
 		else {
 		    my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $face->{contact}->{uuid} });
@@ -291,7 +291,7 @@ sub delete :Local {
 			# There is a picture_uri, and it points to an asset about to be
 			# deleted, and there are no other videos to which to point to,
 			# so unset the picture_uri.
-			$c->log->debug( "  -> UNSET picture_uri " . $face->{contact}->{uuid} );
+			#$c->log->debug( "  -> UNSET picture_uri " . $face->{contact}->{uuid} );
 			$contact->picture_uri( undef ); $contact->update;
 
 			push( @contacts_in_video, $contact->uuid ); # will be returned from this call
@@ -308,11 +308,11 @@ sub delete :Local {
 		if ( $cnt == 0 ) {
 		    # There is a picture_uri, but it does not point to any
 		    # of this mediafile's assets, so leave it alone.
-		    $c->log->debug( "  -> PRESERVE picture_uri" );
+		    #$c->log->debug( "  -> PRESERVE picture_uri" );
 		}
 		else {
 		    # The picture_uri needs to be changed.
-		    $c->log->debug( "  -> SWITCH picture_uri" );
+		    #$c->log->debug( "  -> SWITCH picture_uri" );
 		    my @others = $rs->search({'me.contact_id' => $face->{contact}->{id}});
 		    if ( $#others >= 0 ) {
 			my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $face->{contact}->{uuid} });
