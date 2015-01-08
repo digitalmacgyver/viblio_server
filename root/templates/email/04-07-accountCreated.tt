@@ -28,7 +28,7 @@
         <br />
         <p style="font-size:14px; text-align:center;">You registered with: [% model.user.email %]
             <br />
-            <a class="tomato" href="[% c.server %]#login"><span class="tomato">Forgot your password?</span></a>
+            <a class="tomato" href="[% c.server %]#forgotPassword"><span class="tomato">Forgot your password?</span></a>
         </p>
     </div>
     <div class="centered">
