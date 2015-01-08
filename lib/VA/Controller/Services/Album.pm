@@ -4,6 +4,7 @@ use namespace::autoclean;
 use JSON::XS ();
 use URI::Escape;
 
+use Data::Page;
 use Try::Tiny;
 
 BEGIN { extends 'VA::Controller::Services' }
@@ -458,7 +459,10 @@ sub get :Local {
 					   'media_asset_features.contact_id' => { '!=', undef },
 					   'contact.contact_name' => { -in => $tags } ] ] };
     }
-    
+
+    my @media_list = ();
+    my $pager = undef;
+
     my $all_tags = {};
     my $media_tags = {};
     #my $media_contacts = {};
@@ -503,25 +507,33 @@ sub get :Local {
 
 	#$DB::single = 1;
 
-	$current_page = $all_videos->search( $tag_clause,
-					     { order_by => 'recording_date desc',
-					       page => $page,
-					       rows => $rows ,
-					       prefetch => 
-					       { media_assets => 
-						 { media_asset_features => 'contact' } } } );
-	
+	if ( defined( $tag_clause ) ) {
+	    $current_page = $all_videos->search( $tag_clause,
+						 { order_by => 'recording_date desc',
+						   page => $page,
+						   rows => $rows ,
+						   prefetch => 
+						   { media_assets => 
+						     { media_asset_features => 'contact' } } } );
+	    $pager = $current_page->pager();
+	    @media_list = $current_page->all();
+	} else {
+	    $pager = Data::Page->new( scalar( @everything ), $rows, $page );
+	    if ( scalar( @everything ) ) {
+		@media_list = @everything[ $pager->first - 1 .. $pager->last - 1 ];
+	    }
+	}
+
     } else {
 	$current_page = $album->media->search( $where, {
 	    order_by => 'recording_date desc',
 	    page => $page,
 	    rows => $rows
 					       } );
+	$pager = $current_page->pager();
+	@media_list = $current_page->all();
     }
 		
-
-    my @media_list = $current_page->all();
-
     #$c->log->error( "Media done : ", time(), " - ", scalar( @media_list ), " items." );
 
     # DEBUG - we'll have to change publish_mediafiles to accept
@@ -539,7 +551,7 @@ sub get :Local {
     $hash->{media} = $m;
     $hash->{owner} = $album->user->TO_JSON; 
 
-    $self->status_ok( $c, { album => $hash, pager => $self->pagerToJson( $current_page->pager() ), all_tags => $all_tags } );
+    $self->status_ok( $c, { album => $hash, pager => $self->pagerToJson( $pager ), all_tags => $all_tags } );
 }
 
 sub add_media :Local {
