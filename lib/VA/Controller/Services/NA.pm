@@ -721,8 +721,6 @@ sub new_user_helper :Private {
 				{ name => 'Vacations', s3_key => 'media/default-images/VACATION-poster.jpg' }
 	    ];
 
-	my $album_object = new VA::Controller::Services::Album();
-	
 	my $ug = new Data::UUID;
 
 	foreach my $new_user_album ( @$new_user_albums ) {
@@ -778,6 +776,10 @@ sub new_user_helper :Private {
 	    $user->metadata( $args->{no_password} );
 	    $user->update();
 	}
+    } elsif ( $args->{no_password } ) {
+	$template = 'email/04-08-no_pw_accountCreated.tt';
+	$model->{password} = $args->{no_password};
+	$model->{provider} = $user->{_column_data}->{provider};
     }
 
     # Send an instructional email too.
@@ -1550,7 +1552,7 @@ sub _media_shared :Private {
 	}
 	# In this case, we do not know how they got here.  If it has a hidden
 	# share, then we care more about this method for tracking.  
-	my $share = $mediafile->media_shares->find({ share_type => $found });
+	my $share = $mediafile->media_shares->search( { share_type => $found } )->first();
 	if ( $share ) {
 	    $share->view_count( $share->view_count + 1 ) unless( $preview );
 	    $share->update;

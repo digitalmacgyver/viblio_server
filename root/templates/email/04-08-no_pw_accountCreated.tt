@@ -1,28 +1,43 @@
 [% INCLUDE email/top.tt 
-    previewText = "Find Photos with your new VIBLIO account"
+    previewText = "Getting started with your new VIBLIO account"
 %]
 
 [%# The trigger that is expected to send email:
-  Auto send on new account creation for accounts with no password
+  Auto send on new account creation of accounts which were created without a password.
 %]
 
 [%# The data model that this template expects:
   user:  The JSON object for a Viblio user, the one who is receiving the email
+  password: The password for that user.
 %]
     <div class='regSize darkText' style='text-align: left;'>
         <p class='xLargeText' style='text-align: center;'>Success!</p>
-        <span><strong>I'm VIBLIO, your personal video assistant.  Thanks for uploading a video, I'm finding photos in it now!  You can log into your account with the login and password below:</strong></span>
+        <span><strong>I'm VIBLIO, your personal video assistant.  Here's how we can work together</strong></span>
         <br />
+
+	[% IF model.provider == 'local' %]
+	First login to your account: 
+	  <ul>
+          <li>Email: [% model.user.email %]</li>
+          <li>Temporary password: [% model.password %]</li>
+	  </ul>Then set your password <a href="[% c.server %]#settings" class="tomato"><span class="tomato">here under Settings</span></a>. Then:
+        [% END %]
+
         <br />
-	<ul>
-	<li>
-	Your login: [% model.user.email %]
-	</li>
-	<li>
-	Your password: [% model.password %]
-	</li>
-	</ul>
+        <ol>
+            <li><strong>You</strong> <a href="[% c.server %]#home?addVideos=true"><span class="tomato">UPLOAD</span></a> your videos to your private VIBLIO library.</li>
+            <li><strong>I'll</strong> go through them and find faces in your video.</li>
+            <li><strong>You</strong> let me know which faces you care about by naming them.</li>
+            <li><strong>I'll</strong> start looking for those faces in other videos you upload and over time I'll build up a video album for those people.</li>
+            <li><strong>I'll</strong> also put your videos on a map so you know where they were taken.</li>
+        </ol>
         <p>So start <a href="[% c.server %]#home?addVideos=true"><span class="tomato">UPLOADING</span></a> your videos today.</p>
+        <p>I'll touch base with you soon and let you know how I can help you create video albums to share!</p>        
+        <br />
+        <p style="font-size:14px; text-align:center;">You registered with: [% model.user.email %]
+            <br />
+            <a class="tomato" href="[% c.server %]#forgotPassword"><span class="tomato">Forgot your password?</span></a>
+        </p>
     </div>
     <div class="centered">
         <p class="share darkText" style="font-size:14px; text-align: center;"><em>Like what you see? Follow us on Facebook <a href="https://www.facebook.com/Viblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-fb.png" alt="Facebook" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a> and Twitter <a href="https://twitter.com/iviblio" style="text-decoration:none ;"><img src="[% c.server %]/css/images/viblioEmail/viblioEmail-twitter.png" alt="Twitter" style="border:none;font-size:14px;font-weight:bold;height:auto;line-height:100%;outline:none;text-decoration:none;text-transform:capitalize;"></a></em></p>
