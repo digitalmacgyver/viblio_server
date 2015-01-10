@@ -355,23 +355,10 @@ sub get :Local {
 	    include_images => 0,
 	    only_visible => 1,
 	    only_videos => 1,
-	    'tags[]' => []
+	    'tags[]' => [],
+	    no_dates => 0
 	  ],
 	  @_ );
-
-    #my $aid = $c->req->param( 'aid' );
-    #my $page = $c->req->param( 'page' ) || 1;
-    #my $rows = $c->req->param( 'rows' ) || 100000;
-    #my $tags = $c->req->param( 'tags[]' ) || [];
-
-    #my $include_contact_info = $c->req->param( 'include_contact_info' );
-    #$include_contact_info = 0 unless( $include_contact_info );
-    #my $include_tags = $c->req->param( 'include_tags' );
-    #$include_tags = 0 unless( $include_tags );
-    #my $include_images = $c->req->param( 'include_images' );
-    #$include_images = 0 unless ( $include_images );    
-    #my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
-    #my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
 
     my $aid = $args->{aid};
     my $page = $args->{page};
@@ -383,9 +370,7 @@ sub get :Local {
     my $include_images = $args->{include_images};
     my $only_visible = $args->{only_visible};
     my $only_videos = $args->{only_videos};
-
-    # DEBUG - always get tags for testing.
-    $include_tags = 1;
+    my $no_dates = $args->{no_dates};
 
     # If we've been asked to filter by tags we may as well include
     # tags.
@@ -465,7 +450,6 @@ sub get :Local {
 
     my $all_tags = {};
     my $media_tags = {};
-    #my $media_contacts = {};
 
     my $current_page = undef;
     if ( $include_tags ) {
@@ -505,10 +489,18 @@ sub get :Local {
 	    }
 	}
 
-	#$DB::single = 1;
+	if ( defined( $tag_clause ) or $no_dates ) {
+	    my $where_clause = {};
+	    if ( defined( $tag_clause ) ) {
+		$where_clause = $tag_clause;
+	    }
+	    if ( $no_dates ) {
+		my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+		my $no_date_date = DateTime->from_epoch( epoch => 0 );
+		$where_clause->{'media.recording_date'} = $dtf->format_datetime( $no_date_date );
+	    }
 
-	if ( defined( $tag_clause ) ) {
-	    $current_page = $all_videos->search( $tag_clause,
+	    $current_page = $all_videos->search( $where_clause,
 						 { order_by => 'recording_date desc',
 						   page => $page,
 						   rows => $rows ,
@@ -525,6 +517,12 @@ sub get :Local {
 	}
 
     } else {
+	if ( $no_dates ) {
+	    my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+	    my $no_date_date = DateTime->from_epoch( epoch => 0 );
+	    $where->{'media.recording_date'} = $dtf->format_datetime( $no_date_date );
+	}
+
 	$current_page = $album->media->search( $where, {
 	    order_by => 'recording_date desc',
 	    page => $page,

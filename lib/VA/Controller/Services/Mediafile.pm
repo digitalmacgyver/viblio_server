@@ -1070,8 +1070,21 @@ sub list_all :Local {
     if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
 	@status_filters = ();
     }
+    my $no_dates = $self->boolean( $c->req->param( 'no_dates' ), 0 );
 
-    my @shares = $c->user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
+    my $share_where = { 'media.is_album' => 0 };
+
+    # Handle requests for videos without dates assigned.
+    my $dtf = undef;
+    my $no_date_date = undef;
+    if ( $no_dates ) {
+	# These values are used below as well.
+	$dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+	$no_date_date = DateTime->from_epoch( epoch => 0 );
+	$share_where->{'media.recording_date'} = $dtf->format_datetime( $no_date_date );
+    }
+
+    my @shares = $c->user->media_shares->search( $share_where ,{prefetch=>{ media => 'user'}} );
     my @media = map { $_->media } @shares;
     my $shared_uuids = {};
     foreach my $v ( @media ) { $shared_uuids->{ $v->uuid } = 1; }
@@ -1085,6 +1098,11 @@ sub list_all :Local {
     }
     if ( $only_videos ) {
 	$where->{'me.media_type'} = 'original';
+    }
+    if ( $no_dates ) {
+	my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+	my $no_date_date = DateTime->from_epoch( epoch => 0 );
+	$where->{'me.recording_date'} = $dtf->format_datetime( $no_date_date );
     }
 
     my @videos = $c->user->videos->search( $where )->all();
