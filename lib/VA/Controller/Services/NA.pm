@@ -95,6 +95,8 @@ sub authenticate :Local {
     my $password = $c->req->params->{password};
     my $realm = $c->req->params->{realm} || 'facebook';
 
+    my $creation_reason = $self->sanitize( $c, $c->req->params->{creation_reason} );
+
     # Different realms require different lookup and password values
     #
     my $creds = {};
@@ -142,7 +144,7 @@ sub authenticate :Local {
 	if ( $realm =~ /facebook/ ) {
 	    if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
 		# In this case we have just authenticated a new facebook user.
-		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email, no_password => 1, try_photos => $try_photos } );
+		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email, no_password => 1, try_photos => $try_photos, creation_reason => $creation_reason } );
 	    }
 	}
 
@@ -524,7 +526,8 @@ sub _new_user_no_password :Private {
 	  [ email    => undef,
 	    realm => 'db',
 	    via => 'trayapp',
-	    try_photos => 0
+	    try_photos => 0,
+	    creation_reason => undef
 	  ],
 	  @_ );
 
@@ -532,7 +535,7 @@ sub _new_user_no_password :Private {
 	my $username = ( $args->{email} =~ m/^(.*?)@/ )[0];
 	my $password = $self->invite_code();
 
-	return $self->_new_user( $c, $args->{email}, $password, $username, $username, $args->{realm}, $args->{via}, $password, $args->{try_photos} );
+	return $self->_new_user( $c, $args->{email}, $password, $username, $username, $args->{realm}, $args->{via}, $password, $args->{try_photos}, $args->{creation_reason} );
     } else {
 	my $code = "NOLOGIN_INVALID_EMAIL";
 	return { 'ok' => 0,
@@ -583,7 +586,8 @@ sub _new_user :Private {
 	    realm => 'db',
 	    via => 'trayapp',
 	    no_password => 0,
-	    try_photos => 0
+	    try_photos => 0,
+	    creation_reason => undef
 	  ],
 	  @_ );
 
@@ -792,6 +796,19 @@ sub new_user_helper :Private {
 	stash => {
 	    model => $model
 	}});
+
+    # Handle Mixpanel and email notifications for user creation.
+    my $creation_reason = "iPhone";
+    if ( defined( $args->{creation_reason} ) and $args->{creation_reason} ) {
+	$creation_reason = $args->{creation_reason};
+    }
+    try {
+	my $mp = WWW::Mixpanel->new( $c->config->{mixpanel_token} );
+	$mp->people_set( $c->user->obj->uuid(), "creation_reason" => $creation_reason );
+    } catch {
+	my $exception = $_;
+	$c->log->error( 'Failed to send mixpanel event for account creation.  Error was $exception. User was: ' . $c->user->obj->uuid() );
+    };
 }
 
 
