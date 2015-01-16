@@ -2007,6 +2007,7 @@ Input Options
 
 sub create_video_summary :Local {
     my $self = shift; my $c = shift;
+
     my $args = $self->parse_args
       ( $c,
         [
@@ -2016,7 +2017,7 @@ sub create_video_summary :Local {
 	 'videos[]'         => [],
 	 'audio_track'      => undef,
 	 'summary_style'    => 'classic',
-	 'order'            => 'random',
+	 'order'            => 'oldest',
 	 'effects[]'        => [],
 	 'moment_offsets[]' => [ -3.5, 3.5 ],
 	 'target_duration'  => undef,

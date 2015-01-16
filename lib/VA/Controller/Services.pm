@@ -159,7 +159,7 @@ sub parse_args : Private {
 		}
 	    }
 	}
-	elsif ( defined( $c->{data} && defined( $c->{data}->{$key} ) ) ) {
+	elsif ( defined( $c->{data} ) && defined( $c->{data}->{$key} ) ) {
 	    $ret->{$key} = $self->sanitize( $c, $c->{data}->{$key} );
 	}
 	else {
@@ -346,6 +346,7 @@ sub begin :Private {
 	    }
 	}
     }
+    
 }
 
 # Will serialize $c->stash->{entity} into JSON and send application/json

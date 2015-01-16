@@ -144,6 +144,9 @@ sub authenticate :Local {
 	if ( $realm =~ /facebook/ ) {
 	    if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
 		# In this case we have just authenticated a new facebook user.
+		if ( !defined( $creation_reason ) ) {
+		    $creation_reason = 'signup_facebook';
+		}
 		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email, no_password => 1, try_photos => $try_photos, creation_reason => $creation_reason } );
 	    }
 	}
@@ -809,6 +812,26 @@ sub new_user_helper :Private {
 	my $exception = $_;
 	$c->log->error( 'Failed to send mixpanel event for account creation.  Error was $exception. User was: ' . $c->user->obj->uuid() );
     };
+    # Send a notification email.
+    try {
+	$self->send_email( $c, {
+	    subject => "New user created via $creation_reason - " . $c->user->email(),
+	    from => {
+		email => 'notifications@viblio.com',
+		name => 'VIBLIO'
+	    },
+		    to => [ { email => 'notifications@viblio.com' } ],
+		    body => "New user created via $creation_reason - " . $c->user->email(),
+		    stash => {
+			from => 'notifications@viblio.com',
+			model => {}
+		}
+			   } );
+    } catch {
+	$c->log->error( 'Failed to send account creation notification email.  Error was $exception. User was: ' . $c->user->obj->uuid() );
+
+    };
+
 }
 
 
