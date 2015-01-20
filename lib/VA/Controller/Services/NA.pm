@@ -663,7 +663,7 @@ sub _new_user :Private {
 	};
     }
 
-    if ($c->authenticate( $creds, $args->{realm} ) ) {
+    if ( $c->authenticate( $creds, $args->{realm} ) ) {
 	$self->new_user_helper( $c, $args );
 	return { 'ok' => 1,
 		 'response' => { user => $c->user->obj } };
