@@ -1075,12 +1075,9 @@ sub list_all :Local {
     my $share_where = { 'media.is_album' => 0 };
 
     # Handle requests for videos without dates assigned.
-    my $dtf = undef;
-    my $no_date_date = undef;
+    my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+    my $no_date_date = DateTime->from_epoch( epoch => 0 );
     if ( $no_dates ) {
-	# These values are used below as well.
-	$dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
-	$no_date_date = DateTime->from_epoch( epoch => 0 );
 	$share_where->{'media.recording_date'} = $dtf->format_datetime( $no_date_date );
     }
 
@@ -1100,13 +1097,21 @@ sub list_all :Local {
 	$where->{'me.media_type'} = 'original';
     }
     if ( $no_dates ) {
-	my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
-	my $no_date_date = DateTime->from_epoch( epoch => 0 );
 	$where->{'me.recording_date'} = $dtf->format_datetime( $no_date_date );
     }
 
     my @videos = $c->user->videos->search( $where )->all();
+
     my @sorted = sort { $b->recording_date <=> $a->recording_date } ( @media, @videos );
+
+    my $no_date_return = 0;
+    for my $video ( @sorted ) {
+	if ( $video->recording_date() == $no_date_date ) {
+	    $no_date_return = 1;
+	    last;
+	}
+    }
+
     my $pager = Data::Page->new( $#sorted + 1, $rows, $page );
     my @slice = ();
     if ( $#sorted >= 0 ) {
@@ -1127,8 +1132,9 @@ sub list_all :Local {
 	    $d->{is_shared} = 0;
 	}
     }
-    $self->status_ok( $c, { albums => $data, 
-                            pager  => $self->pagerToJson( $pager ) });
+    $self->status_ok( $c, { albums => $data,
+                            pager  => $self->pagerToJson( $pager ),
+			    no_date_return => $no_date_return } );
 }
 
 =head2 /services/mediafile/delete_share

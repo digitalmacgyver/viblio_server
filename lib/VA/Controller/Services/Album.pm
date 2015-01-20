@@ -451,6 +451,11 @@ sub get :Local {
     my $all_tags = {};
     my $media_tags = {};
 
+    my $no_date_return = 0;
+
+    my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+    my $no_date_date = DateTime->from_epoch( epoch => 0 );
+
     my $current_page = undef;
     if ( $include_tags ) {
 	my $all_videos = $album->media->search( $where, {
@@ -461,6 +466,11 @@ sub get :Local {
 	
 	my @everything = $all_videos->all();
 	foreach my $m ( @everything ) {
+	    if ( ! $no_date_return ) {
+		if ( $m->recording_date() == $no_date_date ) {
+		    $no_date_return = 1;
+		}
+	    }
 	    foreach my $ma ( $m->media_assets() ) {
 		foreach my $feature ( $ma->media_asset_features() ) {
 		    my $feature_type = $feature->{_column_data}->{feature_type};
@@ -495,8 +505,6 @@ sub get :Local {
 		$where_clause = $tag_clause;
 	    }
 	    if ( $no_dates ) {
-		my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
-		my $no_date_date = DateTime->from_epoch( epoch => 0 );
 		$where_clause->{'media.recording_date'} = $dtf->format_datetime( $no_date_date );
 	    }
 
@@ -518,8 +526,6 @@ sub get :Local {
 
     } else {
 	if ( $no_dates ) {
-	    my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
-	    my $no_date_date = DateTime->from_epoch( epoch => 0 );
 	    $where->{'media.recording_date'} = $dtf->format_datetime( $no_date_date );
 	}
 
@@ -549,7 +555,7 @@ sub get :Local {
     $hash->{media} = $m;
     $hash->{owner} = $album->user->TO_JSON; 
 
-    $self->status_ok( $c, { album => $hash, pager => $self->pagerToJson( $pager ), all_tags => $all_tags } );
+    $self->status_ok( $c, { album => $hash, pager => $self->pagerToJson( $pager ), all_tags => $all_tags, no_date_return => $no_date_return } );
 }
 
 sub add_media :Local {
