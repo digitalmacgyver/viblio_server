@@ -146,15 +146,20 @@ sub authenticate :Local {
 		# In this case we have just authenticated a new facebook user.
 		if ( !defined( $creation_reason ) ) {
 		    $creation_reason = 'signup_facebook';
+		    my $device_type = device_type( $c->req->browser );
+		    if ( ( $device_type eq 'iphone' ) || ( $device_type eq 'ipad' ) ) {
+			$creation_reason = 'iPhone';
+		    }
 		}
 		$self->new_user_helper( $c, { realm => $realm, email => $c->user->email, no_password => 1, try_photos => $try_photos, creation_reason => $creation_reason } );
 	    }
 	}
 
-	# If the user does not already have an access_token, generate one now.
-	# Normally this token is generated in new_user(), but that functionality was
-	# added after many user's already exist, so this is a way to get access_tokens
-	# into the system after-the-fact.
+	# If the user does not already have an access_token, generate
+	# one now.  Normally this token is generated in new_user(),
+	# but that functionality was added after many users already
+	# existed, so this is a way to get access_tokens into the
+	# system after-the-fact.
 	#
 	if ( ! $c->user->obj->access_token ) {
 	    # Create an access token for use with the 'viblio' authenticator
@@ -163,21 +168,23 @@ sub authenticate :Local {
 	    $c->user->obj->update;
 	}
 
-	try {
-	    # Try to send Mixpanel a message about this user does
-	    # stuff from the iPhone app.  This isn't perfect - it also
-	    # sends events when the user does logins through a
-	    # browser, but it's better than the no information we get
-	    # now.
-	    my $device_type = device_type( $c->req->browser );
-	    if ( ( $device_type eq 'iphone' ) || ( $device_type eq 'ipad' ) ) {
-		my $mp = WWW::Mixpanel->new( $c->config->{mixpanel_token} );
-		$mp->people_set( $c->user->obj->uuid(), '$email' => $c->user->obj->email(), '$created' => $c->user->obj->created_date() );
-	    }
-	} catch {
-	    my $exception = $_;
-	    $c->log->error( 'Failed to send mixpanel event for login.  Error was $exception. User was: ' . $c->user->obj->uuid() );
-	};
+	if ( exists( $c->stash->{new_user} ) and $c->stash->{new_user} ) {
+	    try {
+		# Try to send Mixpanel a message about this user does
+		# stuff from the iPhone app.  This isn't perfect - it also
+		# sends events when the user does logins through a
+		# browser, but it's better than the no information we get
+		# now.
+		my $device_type = device_type( $c->req->browser );
+		if ( ( $device_type eq 'iphone' ) || ( $device_type eq 'ipad' ) ) {
+		    my $mp = WWW::Mixpanel->new( $c->config->{mixpanel_token} );
+		    $mp->people_set( $c->user->obj->uuid(), '$email' => $c->user->obj->email(), '$created' => $c->user->obj->created_date() );
+		}
+	    } catch {
+		my $exception = $_;
+		$c->log->error( 'Failed to send mixpanel event for login.  Error was $exception. User was: ' . $c->user->obj->uuid() );
+	    };
+	}
 
 	$self->status_ok( $c, { user => $c->user->obj } );
     } 
