@@ -1192,7 +1192,7 @@ sub test_secure_token :Local {
 
 # This is the endpoint called by the video processor when a new
 # video has been uploaded and processed.  We need to notify the 
-# web gui and the tray app that this event has occured.  
+# web gui and the tray app that this event has occurred.  
 #
 # This is a protected endpoint.
 #
@@ -1570,9 +1570,9 @@ sub _media_shared :Private {
     my $OK = 0;
 
     # A media file can have multiple shares.  If it has both hidden/public
-    # and private, the hidden/public view will take precidence.  But if the
+    # and private, the hidden/public view will take precedence.  But if the
     # use is logged in, we can look a bit closer to see if this is a private
-    # share specifically targetted to him, and show a private view.
+    # share specifically targeted to him, and show a private view.
     if ( $is->{private} && $user ) {
 	my $share = $mediafile->media_shares->find({ 
 	    share_type => 'private', 
@@ -1964,24 +1964,31 @@ sub form_feedback :Local {
     my $feedback_email = $c->req->param( 'feedback_email' );
     my $feedback_location = $c->req->param( 'feedback_location' );
 
-    unless ( $self->is_email_valid( $feedback_email ) ) {
+    my @addresses = Email::Address->parse( $feedback_email );
+    if ( scalar( @addresses ) < 1 ) {
 	# Silently fail.
 	$self->status_ok( $c, {} );
+    } elsif ( ( $addresses[0]->host() eq $c->config->{viblio_return_email_domain} )
+	      or ( $self->is_email_valid( $feedback_email ) ) ) {
+	
+	$self->send_email( $c, {
+	    subject => 'feedback on ' . $feedback_location,
+	    from => {
+		email => ( $c->user ? $c->user->obj->email : undef ),
+		name  => ( $c->user ? $c->user->obj->displayname : 'Anonymous' ) },
+	    to => [{ email => $feedback_email,
+		     name  => 'Feedback' }],
+	    template => 'email/feedback.tt',
+	    stash => {
+		feedback => $feedback,
+		feedback_user => ( $c->user ? $c->user->obj->email : 'Anonymous' ),
+		feedback_location => $feedback_location
+	    } });
+    } else {
+	$c->log->error( "DIDN'T SEND FEEDBACK EMAIL, INVALID DESTINATION address '$feedback_email', FEEDBACK WAS: '$feedback' ON PAGE '$feedback_location'." );
     }
-
-    $self->send_email( $c, {
-	subject => 'feedback on ' . $feedback_location,
-	from => {
-	    email => ( $c->user ? $c->user->obj->email : undef ),
-	    name  => ( $c->user ? $c->user->obj->displayname : 'Anonymous' ) },
-	to => [{ email => $feedback_email,
-		 name  => 'Feedback' }],
-	template => 'email/feedback.tt',
-	stash => {
-	    feedback => $feedback,
-	    feedback_user => ( $c->user ? $c->user->obj->email : 'Anonymous' ),
-	    feedback_location => $feedback_location
-	} });
+    # Send an OK even if we didn't send an email - we don't want the
+    # UI to barf on users if there is some mess up.
     $self->status_ok( $c, {} );
 }
 
