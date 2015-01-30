@@ -785,9 +785,14 @@ sub publish_mediafiles :Private {
     my $result = [];
     
     foreach my $m ( @$media ) {
+	# DEBUG - we are squashing a big params hash here over and
+	# over - this clearly works but we should document what we're
+	# up to, or make a copy of params.
 	$params->{assets} = $assets->{$m->id};
 	$params->{owner_uuid} = $people->{$m->user_id}->{uuid};
 	
+	# DEBUG - what is this doing here - I think it might be broken
+	# in the case where we try to pass in some media_tags.
 	if ( $params->{include_tags} ) {
 	    if ( exists( $media_tags->{$m->id} ) ) {
 		$params->{media_tags} = $media_tags->{$m->id};
