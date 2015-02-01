@@ -1311,9 +1311,6 @@ sub related :Local {
 	foreach my $owned_album ( @owned_albums ) {
 	    foreach my $album_contents ( $owned_album->album_media() ) {
 		foreach my $owned_media ( $album_contents->media() ) {
-		    
-		    $c->log->error( "WORKING ON ", $owned_media->uuid() );
-		    
 		    unless ( exists( $seen->{ $owned_media->uuid() } ) ) {
 			push( @media_results, $owned_media );
 			$seen->{ $owned_media->uuid() } = $owned_media;
@@ -1842,8 +1839,17 @@ sub recently_uploaded :Local {
 					    include_contact_info => $include_contact_info, 
 					    include_images => $include_images,
 					    media_tags => $media_tags,
-					    media_contact_features => $media_contact_features } );
+					    media_contact_features => $media_contact_features,
+					    include_owner_json => 1 } );
     
+    foreach my $d ( @$data ) {
+	if ( $d->{owner_uuid} != $c->user->uuid() ) {
+	    $d->{is_shared} = 1;
+	} else {
+	    $d->{is_shared} = 0;
+	}
+    }
+
     $self->status_ok( $c, { media => $data, 
 			    pager => $self->pagerToJson( $pager ),
 			    all_tags => $all_tags,
