@@ -315,10 +315,7 @@ sub videos_for_month :Local {
     my $pager = {};
     if ( $cid ) {
 	my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$cid});
-	# DEBUG shouldn't need this? What are we doing here?
-	unless( $contact ) {
-	    $contact = $c->model( 'RDS::Contact' )->find({id=>$cid});
-	}
+
 	if ( $contact ) {
 	    @posters = $self->posters_for_contact( $c, $contact->id, $dtf, $from, $to, $page, $rows, \$pager );
 	}

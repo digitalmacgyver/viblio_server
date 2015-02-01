@@ -1072,50 +1072,27 @@ sub list_all :Local {
     }
     my $no_dates = $self->boolean( $c->req->param( 'no_dates' ), 0 );
 
-    my $share_where = { 'media.is_album' => 0 };
-
-    # Handle requests for videos without dates assigned.
-    my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
-    my $no_date_date = DateTime->from_epoch( epoch => 0 );
-    if ( $no_dates ) {
-	$share_where->{'media.recording_date'} = $dtf->format_datetime( $no_date_date );
-    }
-
-    my @shares = $c->user->media_shares->search( $share_where ,{prefetch=>{ media => 'user'}} );
-    my @media = map { $_->media } @shares;
+    my @videos = $c->user->visible_media( {
+	include_contact_info => $include_contact_info,
+	include_images => $include_images,
+	include_tags => $include_tags,
+	only_visible => $only_visible,
+	only_videos => $only_videos,
+	'status[]' => \@status_filters } );
+	   
+    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
+ 
     my $shared_uuids = {};
-    foreach my $v ( @media ) { $shared_uuids->{ $v->uuid } = 1; }
-
-    my $where = {};
-    if ( $only_visible ) {
-	$where->{'status'} = [ 'visible', 'complete' ];
-    }
-    if ( scalar( @status_filters ) ) {
-	$where->{'status'} = \@status_filters;
-    }
-    if ( $only_videos ) {
-	$where->{'me.media_type'} = 'original';
-    }
-    if ( $no_dates ) {
-	$where->{'me.recording_date'} = $dtf->format_datetime( $no_date_date );
-    }
-
-    my @videos = $c->user->videos->search( $where )->all();
-
-    my @sorted = sort { $b->recording_date <=> $a->recording_date } ( @media, @videos );
-
-    my $no_date_return = 0;
-    for my $video ( @sorted ) {
-	if ( $video->recording_date() == $no_date_date ) {
-	    $no_date_return = 1;
-	    last;
+    for my $video ( @videos ) {
+	if ( $video->user_id() != $c->user->id() ) {
+	    $shared_uuids->{$video->uuid} = 1;
 	}
     }
-
-    my $pager = Data::Page->new( $#sorted + 1, $rows, $page );
+    
+    my $pager = Data::Page->new( $#videos + 1, $rows, $page );
     my @slice = ();
-    if ( $#sorted >= 0 ) {
-        @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
+    if ( $#videos >= 0 ) {
+        @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ];
     }
 
     my $views = ['poster', 'main'];
@@ -1123,7 +1100,15 @@ sub list_all :Local {
 	push( @$views, 'image' );
     }
 
-    my $data = $self->publish_mediafiles( $c, \@slice, { views => $views, include_tags => $include_tags, include_shared => 1, include_owner_json => 1, include_images=>$include_images, include_contact_info=>$include_contact_info } );
+    my $data = $self->publish_mediafiles( $c, \@slice, { 
+	views                  => $views, 
+	include_tags           => $include_tags, 
+	include_shared         => 1, 
+	include_owner_json     => 1, 
+	include_images         => $include_images, 
+	include_contact_info   => $include_contact_info,
+	media_tags             => $media_tags,
+	media_contact_features => $media_contact_features } );
 
     foreach my $d ( @$data ) {
 	if ( $shared_uuids->{$d->{uuid}} ) {
@@ -1134,6 +1119,7 @@ sub list_all :Local {
     }
     $self->status_ok( $c, { albums => $data,
                             pager  => $self->pagerToJson( $pager ),
+			    all_tags => $all_tags,
 			    no_date_return => $no_date_return } );
 }
 
@@ -1186,7 +1172,7 @@ sub cf :Local {
 	$owns_video = 1;
     }
 
-    my @result = $c->user->obj->visible_media( [ $mid ], 1, undef, 1 );
+    my @result = $c->user->obj->visible_media( { 'media_uuids[]' => [ $mid ] } );
 
     if ( $owns_video || scalar( @result ) ) {
 	my $rs = $c->model( 'RDS::MediaAsset' )->search(
@@ -1198,7 +1184,7 @@ sub cf :Local {
 	}
 	$self->status_ok( $c, { 
 	    url    => VA::MediaFile::US->new->uri2url( $c, $asset->uri ),
-	    cf_url => $c->cf_sign( $asset->uri, {stream=>1} ) } );
+	    cf_url => $c->cf_sign( $asset->uri, { stream => 1 } ) } );
     } else {
 	$self->status_forbidden( $c, $c->loc( 'Not authorized to views this video.' ), $mid );
     }
@@ -1291,7 +1277,11 @@ sub related :Local {
 	# If we were provided a list of related media, just return the
 	# ones the current user can see.
 	
-	@media_results = $user->visible_media( \@related_media, $only_visible, \@status_filters, $only_videos );
+	@media_results = $user->visible_media( { 
+	    'media_uuids[]' => \@related_media, 
+	    only_visible => $only_visible, 
+	    'status[]' => \@status_filters, 
+	    only_videos => $only_videos } );
     } else {
 
 	# First determine if this media is in any albums that this
@@ -1374,7 +1364,10 @@ sub related :Local {
 		# least one of these faces, ordered by most recently recorded.
 		#
 		my @contact_ids = map { $_->contact->id } @face_features;
-		my @visible_media = $user->visible_media( [], $only_visible, \@status_filters, $only_videos );
+		my @visible_media = $user->visible_media( { 
+		    only_visible => $only_visible, 
+		    'status[]' => \@status_filters, 
+		    only_videos => $only_videos } );
 
 		my @media_ids   = map { $_->id } @visible_media;
 		
@@ -1526,110 +1519,62 @@ sub search_by_title_or_description :Local {
 	@status_filters = ();
     }
 
-    # get uuids of all media shared to this user
-    my @shares = $c->user->media_shares->search({ 'media.is_album' => 0 },{prefetch=>'media'});
-    my @mids = map { $_->media->id } @shares;
+    my @videos = $c->user->visible_media( {
+	include_contact_info => $include_contact_info,
+	include_image => $include_images,
+	include_tags => $include_tags,
+	search_string => $q,
+	only_videos => $only_videos,
+	only_visible => $only_visible,
+	'status[]' => \@status_filters } );
 
-    # Videos owned or shared to user where title or description match
-    my $where = undef;
-
-    if ( $only_visible ) {
-	$where = { 'me.status' => [ 'visible', 'complete' ],
-		   -and => [
-		       'me.is_album' => 0,
-		       -or => [ 'me.user_id' => $c->user->id,
-				'me.id' => { -in => \@mids } ],
-		       -or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
-				'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
-    } else {
-	$where = { -and => [
-			'me.is_album' => 0,
-			-or => [ 'me.user_id' => $c->user->id,
-				 'me.id' => { -in => \@mids } ],
-			-or => [ 'LOWER(me.title)' => { 'like', '%'.lc($q).'%' },
-				 'LOWER(me.description)' => { 'like', '%'.lc($q).'%' } ] ] };
-    }
-    if ( scalar( @status_filters ) ) {
-	$where->{'me.status'} = \@status_filters;
-    }
-    if ( $only_videos ) {
-	$where->{'me.media_type'} = 'original';
-    }
-    my @tord = $c->model( 'RDS::Media' )->search( $where );
-
-    # Videos owned or shared to user which are tagged with the expression
-    my @features = $c->model( 'RDS::MediaAssetFeature' )->search(
-	{ -and => [ 
-	       -or => [ 'media.user_id' => $c->user->id,
-			'media.id' => { -in => \@mids } ],
-	       'LOWER(me.coordinates)' => { 'like', '%'.lc($q).'%' } ] },
-	{ prefetch => { 'media_asset' => 'media' } });
-
-    # Videos owned or shared to user which have the passed in person's name
-    # associated with them
-    my @faces = $c->model( 'RDS::MediaAssetFeature' )->search(
-	{ feature_type => 'face',
-	  -and => [ 
-	      -or => [ 'media.user_id' => $c->user->id,
-		       'media.id' => { -in => \@mids } ],
-	      'LOWER(contact.contact_name)' => { 'like', '%'.lc($q).'%' } ] },
-	{ prefetch => [ 'contact', { 'media_asset' => 'media' } ] });
-
+    # DEBUG - can we actually have dupes now that we refactored here?
     # We will have dups.  De-dup, then page.
     my $seen = {};
-    my @tagged = ();
-
-    foreach my $a ( @tord ) {
-	my $media = $a;
-	if ( ! $seen->{$media->id} ) {
-	    $seen->{$media->id} = 1;
-	    push( @tagged, $media );
+    my @tmp = ();
+    for my $media ( @videos ) {
+	if ( !exists( $seen->{$media->id()} ) ) {
+	    $seen->{$media->id()} = 1;
+	    push( @tmp, $media );
 	}
     }
+    @videos = @tmp;
 
-    foreach my $a ( @features ) {
-	my $media = $a->media_asset->media;
-	if ( ! $seen->{$media->id} ) {
-	    $seen->{$media->id} = 1;
-	    push( @tagged, $media );
-	}
+    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
+
+    my $pager = Data::Page->new( $#videos + 1, $rows, $page );
+    my @slice = ();
+    if ( $#videos >= 0 ) { 
+	@slice = @videos[ $pager->first - 1 .. $pager->last - 1 ]; 
     }
-
-    foreach my $a ( @faces ) {
-	my $media = $a->media_asset->media;
-	if ( ! $seen->{$media->id} ) {
-	    $seen->{$media->id} = 1;
-	    push( @tagged, $media );
-	}
-    }
-
-    my @media = sort { $b->recording_date <=> $a->recording_date } ( @tagged );
-
-    my $pager = Data::Page->new( $#media + 1, $rows, $page );
-    my @sliced = ();
-    if ( $#media >= 0 ) { 
-	@sliced = @media[ $pager->first - 1 .. $pager->last - 1 ]; 
-    }
-
-    my $shared;
-    foreach my $m ( @mids ) { $shared->{$m} = 1; }
 
     my $views = ['poster', 'main'];
     if ( $include_images )  {
 	push( @{$views}, 'image' );
     }
 
-    my $data = $self->publish_mediafiles( $c, \@sliced, { views => $views, include_tags => $include_tags, include_shared => 1, include_contact_info => $include_contact_info, include_owner_json => 1, include_images => $include_images } );
+    my $data = $self->publish_mediafiles( $c, \@slice, { 
+	views => $views, 
+	include_tags => $include_tags, 
+	include_shared => 1, 
+	include_contact_info => $include_contact_info, 
+	include_owner_json => 1, 
+	include_images => $include_images,
+	media_tags => $media_tags,
+	media_contact_features => $media_contact_features } );
 
     foreach my $d ( @$data ) {
-	if ( $shared->{ $d->{id} } ) {
+	if ( $d->{user_id} != $c->user->id() ) {
 	    $d->{is_shared} = 1;
 	} else {
 	    $d->{is_shared} = 0;
 	}
     }
 
-    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $pager ) } );
+    $self->status_ok( $c, { media => $data, 
+			    pager => $self->pagerToJson( $pager ),
+			    all_tags => $all_tags,
+			    no_date_return => $no_date_return } );
 }
 
 # IN ALBUM : Search by title or description OR TAG
@@ -1753,7 +1698,8 @@ sub search_by_title_or_description_in_album :Local {
     $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $pager ) } );
 }
 
-# Return all the unique cities that a user's video appears in
+# Return all the unique cities that the videos a user can see occur
+# in.
 sub cities :Local {
     my( $self, $c ) = @_;
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
@@ -1763,21 +1709,17 @@ sub cities :Local {
 	@status_filters = ();
     }
 
-    my $where = { geo_city => { '!=' => undef } };
-    if ( $only_visible ) {
-	$where->{'status'} = [ 'visible', 'complete' ];
-    }
-    if ( scalar( @status_filters ) ) {
-	$where->{'status'} = \@status_filters;
-    }
-    if ( $only_videos ) {
-	$where->{'me.media_type'} = 'original';
-    }
+    my @videos = $c->user->visible_media( {
+	only_visible => $only_visible,
+	only_videos => $only_videos,
+	'status[]' => \@status_filters,
+	where => { 'me.geo_city' => { '!=' => undef } } } );
 
-    my @media = $c->user->videos->search(
-	$where,
-	{ group_by => ['geo_city'] } );
-    my @cities = sort map { $_->geo_city } @media;
+    my $unique_cities = {};
+    for my $city ( @videos ) {
+	$unique_cities->{$city->geo_city()} = 1;
+    }
+    my @cities = sort( keys( %$unique_cities ) );
     $self->status_ok( $c, { cities => \@cities } );
 }
 
@@ -1797,33 +1739,47 @@ sub taken_in_city :Local {
 	@status_filters = ();
     }
 
-    my $where = { geo_city => $q };
-    if ( $only_visible ) {
-	$where->{'status'} = [ 'visible', 'complete' ];
+    my $where = { 'me.geo_city' => $q };
+
+    my @videos = $c->user->visible_media( {
+	include_contact_info => $include_contact_info,
+	include_image => $include_images,
+	include_tags => $include_tags,
+	only_visible => $only_visible,
+	only_videos => $only_videos,
+	'status[]' => \@status_filters,
+	where => $where } );
+
+    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
+
+    my $pager = Data::Page->new( $#videos + 1, $rows, $page );
+    my @slice = ();
+    if ( $#videos >= 0 ) {
+        @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ];
     }
-    if ( scalar( @status_filters ) ) {
-	$where->{'status'} = \@status_filters;
-    }
-    if ( $only_videos ) {
-	$where->{'me.media_type'} = 'original';
-    }
-    my $rs = $c->user->videos->search(
-	$where,
-	{ order_by => 'recording_date desc',
-	  page => $page, rows => $rows } );
-    
+
     my $views = ['poster', 'main'];
     if ( $include_images ) {
 	push( @$views, 'image' );
     }
 
-    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => $views, include_tags => $include_tags, include_contact_info => $include_contact_info, include_images => $include_images } );
+    my $data = $self->publish_mediafiles( $c, \@videos, { 
+	views => $views, 
+	include_tags => $include_tags, 
+	include_contact_info => $include_contact_info, 
+	include_images => $include_images,
+	media_tags => $media_tags,
+	media_contact_features => $media_contact_features } );
 
-     $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
+    $self->status_ok( $c, { media => $data, 
+			    pager => $self->pagerToJson( $pager ),
+			    all_tags => $all_tags,
+			    no_date_return => $no_date_return } );
 }
 
-# Return all videos recently uploaded.  Pass in a number of days
-# to include.  Defaults to 7 days.
+# Return a list of all videos whose created_date (not recording_date)
+# is within 7 days of the most recent video visible in the account.
+#
 sub recently_uploaded :Local {
     my $self = shift; my $c = shift;
     my $args = $self->parse_args
@@ -1850,58 +1806,48 @@ sub recently_uploaded :Local {
     my $only_videos = $args->{only_videos};
     my $status = $args->{'status[]'};
 
-    my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
-
-    # Find the most recent one
-    my $where = {};
-    if ( $only_visible ) {
-	$where->{'status'} = [ 'visible', 'complete' ];
-    }
-    # Overwrite the only_visible setting if the user provided
-    # particular status filters.
-    if ( scalar( @$status ) ) {
-	$where->{'status'} = $status;
-    }
-    if ( $only_videos ) {
-	$where->{'me.media_type'} = 'original';
-    }
-    my @recent = $c->user->videos->search( 
-	$where,
-	{ order_by => 'me.created_date desc', rows => 1 } );
-    unless( $#recent >= 0 ) {
-	$self->status_ok( $c, { media => [], pager => { next_page => undef } } );
+    if ( $days < 0 ) {
+	$self->status_bad_request( $c, $c->loc( 'Days argument: [_1] must be >= 0.', $days ) );
     }
 
-    my $from = $recent[0]->created_date;
-    my $to   = $from->clone;
-    $to->subtract( days => $days );
-
-    $where = { 'me.created_date' => {
-	-between => [
-	     $dtf->format_datetime( $to ),
-	     $dtf->format_datetime( $from ) ] } };
-    if ( $only_visible ) {
-	$where->{'status'} = [ 'visible', 'complete' ];
-    }
-    if ( scalar( @$status ) ) {
-	$where->{'status'} = $status;
-    }
-    if ( $only_videos ) {
-	$where->{'me.media_type'} = 'original';
-    }
-    my $rs = $c->user->videos->search(
-	$where,
-	{ order_by => 'me.created_date desc',
-	  page => $page, rows => $rows } );
-    
+    # This one is a bit unusual in that we return our results in
+    # descending order of creation date, as opposed to recording_date,
+    # creation_date like most other endpoints.
+    my @videos = sort( { $b->created_date->epoch() <=> $a->created_date->epoch() }
+		       $c->user->visible_media( {
+			   include_contact_info => $include_contact_info,
+			   include_image => $include_images,
+			   include_tags => $include_tags,
+			   recent_created_days => $days,
+			   only_videos => $only_videos,
+			   only_visible => $only_visible,
+			   'status[]' => $status } ) );
+	
     my $views = ['poster', 'main'];
     if ( $include_images ) {
 	push( @$views, 'image' );
     }
 
-    my $data = $self->publish_mediafiles( $c, [$rs->all], { views => $views, include_tags => $include_tags, include_contact_info => $include_contact_info, include_images => $include_images } );
+    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
 
-    $self->status_ok( $c, { media => $data, pager => $self->pagerToJson( $rs->pager ) } );
+    my $pager = Data::Page->new( $#videos + 1, $rows, $page );
+    my @slice = ();
+    if ( $#videos >= 0 ) {
+        @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ];
+    }
+    
+    my $data = $self->publish_mediafiles( $c, \@slice, 
+					  { views => $views, 
+					    include_tags => $include_tags, 
+					    include_contact_info => $include_contact_info, 
+					    include_images => $include_images,
+					    media_tags => $media_tags,
+					    media_contact_features => $media_contact_features } );
+    
+    $self->status_ok( $c, { media => $data, 
+			    pager => $self->pagerToJson( $pager ),
+			    all_tags => $all_tags,
+			    no_date_return => $no_date_return } );
 }
 
 # Add a tag to a video
@@ -2133,17 +2079,22 @@ sub create_video_summary :Local {
     # If a video isn't owned by the user, or directly shared, check if
     # user->can_view_video, which looks in their communities.
     my @assets = $c->model( 'RDS::MediaAsset' )->search( { uuid => { '-in' => $args->{'images[]'} } } )->all();
+    my $suspect_media = {};
     foreach my $asset ( @assets ) {
-	if ( !exists( $allowed->{$asset->media_id()} ) ) {
-	    if ( $c->user->can_view_video( $asset->media->uuid() ) ) {
-		$allowed->{$asset->media_id()} = 1;
-		$c->log->debug( "OK TO ACCESS COMMUNITY VIDEO: ", $asset->uuid() );
-	    } else {
-		$c->log->error( "NOT ALLOWED TO ACCESS VIDEO: ", $asset->uuid() );
-		$self->status_forbidden( $c, $c->loc( 'You do not have permission to view the video associated with image: ' . $asset->uuid() ), $asset->uuid() );
-	    }
+	if ( !exists( $allowed->{$asset->media_id()} ) and !exists( $suspect_media->{$asset->media_id()} ) ){
+	    $suspect_media->{$asset->media->uuid()} = 1;
 	}
     }
+    my $requested = scalar( keys( %$suspect_media ) );
+    my @approved = $c->user->visible_videos( { 'media_uuids[]' => [ keys( %$suspect_media ) ] } );
+
+    if ( scalar( @approved ) != $requested ) {
+	$c->log->error( "NOT ALLOWED TO ACCESS SHARED VIDEOS." );
+	$self->status_forbidden( $c, $c->loc( 'You do not have permission to view all videos associated with selected images ' ) );
+    } else {
+	$c->log->debug( "OK TO ACCESS ALL SHARED VIDEOS: ", keys( %$suspect_media ) );
+    }
+
     $c->log->debug( "OK TO ACCESS ALL VIDEOS" );
 
     my $ug = new Data::UUID;

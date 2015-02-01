@@ -172,8 +172,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-15 08:17:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:qolM+UdNX6JPWm8i64BU9w
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:vGyqG477CYVDxZKRwYswVQ
 
 # I like this relation name better
 __PACKAGE__->has_many(

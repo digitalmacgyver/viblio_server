@@ -596,6 +596,9 @@ sub publish_mediafiles :Private {
     my $media = shift;
     my $params = shift;
 
+    # DEBUG - we might want to de-duplicate the inbound media list
+    # here.
+
     # If set to 1, includes all images, if set to a false value,
     # includes none, if set to a non-1 true value it is assumed to be
     # an integer that limits the number of images returned.
@@ -645,6 +648,8 @@ sub publish_mediafiles :Private {
 
     #$c->log->error( "Step 1", time() );
 
+    # DEBUG - Relocate similar code to this into
+    # ...User::visible_media and pass it in as an input variable.
     foreach my $m ( @$media ) {
 	my $owner_id = $m->user_id;
 	unless ( exists( $people->{$owner_id} ) ) {
@@ -663,7 +668,12 @@ sub publish_mediafiles :Private {
     if ( !$include_images ) {
 	$search->{'me.asset_type'} = { '!=', 'image' };
     }
-    # The sort order here is important to the logic below.
+
+    # DEBUG - Relocate this into ...User::visible_media and pass it as
+    # an input variable.
+    #
+    # NOTE: The sort order of images by increasing timecode in the
+    # source movie is important to the logic below.
     my @mas = $c->model( 'RDS::MediaAsset' )->search( $search, { order_by => 'me.timecode' } )->all();
     
     # We will handle images sperately because we wish to only return
@@ -751,19 +761,23 @@ sub publish_mediafiles :Private {
     #$c->log->error( "Step 4", time() );
 
     if ( $params->{include_contact_info} ) {
-	my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( 
-	    { 
-		'me.media_id' => { -in => $mids },
-		'contact.id' => { '!=', undef },
-		'me.feature_type'=>'face',
-		'me.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] } },
-	    { prefetch => ['contact', 'media_asset'],
-	      group_by => [ 'me.media_id', 'contact.id'] } );
-	foreach my $maf ( @mafs ) {
-	    if ( exists( $contact_features->{$maf->media_id} ) ) {
-		push( @{$contact_features->{$maf->media_id}},  $maf );
-	    } else {
-		$contact_features->{$maf->media_id} = [ $maf ];
+	if ( exists( $params->{media_contact_features} ) ) {
+	    $contact_features = $params->{media_contact_features};
+	} else {
+	    my @mafs = $c->model( 'RDS::MediaAssetFeature' )->search( 
+		{ 
+		    'me.media_id' => { -in => $mids },
+		    'contact.id' => { '!=', undef },
+		    'me.feature_type'=>'face',
+		    'me.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] } },
+		{ prefetch => ['contact', 'media_asset'],
+		  group_by => [ 'me.media_id', 'contact.id'] } );
+	    foreach my $maf ( @mafs ) {
+		if ( exists( $contact_features->{$maf->media_id} ) ) {
+		    push( @{$contact_features->{$maf->media_id}},  $maf );
+		} else {
+		    $contact_features->{$maf->media_id} = [ $maf ];
+		}
 	    }
 	}
     }
@@ -877,7 +891,6 @@ sub validate_facebook_token :Private {
 }
 
 # Utility function to make user input for comments, names, tags, etc. safe.
-
 sub sanitize :Private {
     my( $self, $c, $txt ) = @_;
 
@@ -890,6 +903,81 @@ sub sanitize :Private {
     } else {
 	return undef;
     }
+}
+
+# Utility function to build a tags information suitable for feeding
+# into publish_mediafilesresponse to the UI given a list of media
+# items.
+#
+# Returns an array with the following elements:
+#
+# media_tags - a hash keyed off media_uuid for passing down to
+# publish_mediafiles to eliminate subqueries there.
+#
+# all_tags - a hash suitable for returning to the UI with the tag
+# information for these videos.
+#
+# no_date_return - a boolean suitable for returning to the UI
+# indicating whether or not this result set contains media with no
+# date attribute.
+sub get_tags :Private {
+    my ( $self, $c, $media_list, $datetime_parser ) = @_;
+
+    my $media_tags = {};
+    my $media_contact_features = {};
+    my $all_tags = {};
+    my $no_date_return = 0;
+
+    my $valid_faces = {
+	'machine_recognized' => 1,
+	'human_recognized' => 1,
+	'new_face' => 1
+    };
+
+    my $dtf = $datetime_parser;
+    if ( !defined( $dtf ) ) {
+	$dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
+    }
+    my $no_date_date = DateTime->from_epoch( epoch => 0 );
+
+    foreach my $m ( @$media_list ) {
+
+	if ( ! $no_date_return ) {
+	    if ( $m->recording_date() == $no_date_date ) {
+		$no_date_return = 1;
+	    }
+	}
+
+	foreach my $ma ( $m->media_assets() ) {
+	    foreach my $feature ( $ma->media_asset_features() ) {
+		my $feature_type = $feature->{_column_data}->{feature_type};
+		if ( $feature_type eq 'activity' ) {
+		    $media_tags->{ $m->id() }->{ $feature->coordinates() } = 1;
+		    if ( exists( $all_tags->{ $feature->coordinates() } ) ) {
+			$all_tags->{ $feature->coordinates() }++;
+		    } else {
+			$all_tags->{ $feature->coordinates() } = 1;
+		    }
+		} elsif ( ( $feature_type eq 'face' ) 
+			  and ( $feature->contact() )
+			  and exists( $valid_faces->{ $feature->recognition_result() } ) ) {
+		    if ( defined( $feature->contact->contact_name() ) ) {
+			if ( exists( $media_contact_features->{ $m->id() } ) ) {
+			    push( @{$media_contact_features->{ $m->id() }}, $feature );
+			} else {
+			    $media_contact_features->{ $m->id() } = [ $feature ];
+			}
+			if ( exists( $all_tags->{ $feature->contact->contact_name() } ) ) {
+			    $all_tags->{ $feature->contact->contact_name() }++;
+			} else {
+			    $all_tags->{ $feature->contact->contact_name() } = 1;
+			}
+		    }
+		}
+	    }
+	}
+    }
+    return ( $media_tags, $media_contact_features, $all_tags, $no_date_return );
 }
 
 

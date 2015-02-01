@@ -369,8 +369,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-04-02 23:10:26
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:MWVJ0udmFy4gRpjNyyIYdA
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:40
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:J9lju9z/gj5NFzAemOOXQQ
 
 __PACKAGE__->uuid_columns( 'uuid' );
 

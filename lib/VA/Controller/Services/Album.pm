@@ -186,8 +186,6 @@ sub album_names :Local {
 sub create_album_helper :Private {
     my ( $self, $c, $name, $aid, $is_viblio_created, $set_album_cover ) = @_;
 
-    #$DB::single = 1;
-
     my $where = {
 	user_id => $c->user->id(),
 	is_album => 1,
@@ -389,32 +387,10 @@ sub get :Local {
 	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
     }
 
-    my $album_owner_uuid = undef;
+    # DEBUG - Make sure if I ask for an album I can't see I get
+    # nothing.  Should I get an error instead?
 
-    #$c->log->error( "Setup done: ", time() );
-
-    # Is this album viewable by the user?
-    if ( $album->user_id != $c->user->id ) {
-	# check shared albums
-	my $rs = $c->model( 'RDS::ContactGroup' )->search
-	    ( { 'contact.contact_email' => $c->user->email },
-	     { prefetch=>['contact',{'cgroup'=>'community'}]});
-	my @communities = map { $_->cgroup->community } $rs->all;
-	my @albums = map { $_->album } @communities;
-	my $found = 0;
-	foreach my $sa ( @albums ) {
-	    if ( $sa->id == $album->id ) {
-		$found = 1;
-	    }
-	}
-	if ( ! $found ) {
-	    $self->status_forbidden( $c, $c->loc( 'You do not have permission to view this album.' ), $album->uuid() );
-	}
-    } else {
-	$album_owner_uuid = $c->user->uuid;
-    }
-
-    #$c->log->error( "Auth done  : ", time() );
+    my $album_owner_uuid = $c->user->uuid;
 
     my $poster_params = { views => ['poster'] };
     if ( $album_owner_uuid ) {
@@ -423,139 +399,63 @@ sub get :Local {
     my $hash = VA::MediaFile->new->publish( $c, $album, $poster_params );
     $hash->{is_shared} = ( $album->community ? 1 : 0 );
 
-
-    my $where = {};
-    if ( $only_visible ) {
-	$where = { -or => [ status => 'visible',
-			    status => 'complete' ]  };
-    }
-    if ( $only_videos ) {
-	$where->{'media_type'} = 'original';
-    }
-
-    my $tag_clause = undef;
-    if ( scalar( @$tags ) ) {
-	#$where->{ 'media_asset_features.feature_type' } = 'activity';
-	# To be included with the -or.
-	$tag_clause = { -or => [ -and => [ 'media_asset_features.feature_type' => 'activity', 
-					   'media_asset_features.coordinates' => { -in => $tags } ],
-				 -and => [ 'media_asset_features.feature_type' => 'face',
-					   'media_asset_features.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] },
-					   'media_asset_features.contact_id' => { '!=', undef },
-					   'contact.contact_name' => { -in => $tags } ] ] };
-    }
-
-    my @media_list = ();
     my $pager = undef;
 
     my $all_tags = {};
     my $media_tags = {};
-
+    my $media_contact_features = {};
     my $no_date_return = 0;
-
-    my $dtf = $c->model( 'RDS' )->schema->storage->datetime_parser;
-    my $no_date_date = DateTime->from_epoch( epoch => 0 );
 
     my $current_page = undef;
     if ( $include_tags ) {
-	my $all_videos = $album->media->search( $where, {
-	    order_by => 'recording_date desc',
-	    prefetch => 
-	    { media_assets => 
-	      { media_asset_features => 'contact' } } } );
-	
-	my @everything = $all_videos->all();
-	foreach my $m ( @everything ) {
-	    if ( ! $no_date_return ) {
-		if ( $m->recording_date() == $no_date_date ) {
-		    $no_date_return = 1;
-		}
-	    }
-	    foreach my $ma ( $m->media_assets() ) {
-		foreach my $feature ( $ma->media_asset_features() ) {
-		    my $feature_type = $feature->{_column_data}->{feature_type};
-		    if ( $feature_type eq 'activity' ) {
-			$media_tags->{ $m->id() }->{ $feature->coordinates() } = 1;
-			if ( exists( $all_tags->{ $feature->coordinates() } ) ) {
-			    $all_tags->{ $feature->coordinates() }++;
-			} else {
-			    $all_tags->{ $feature->coordinates() } = 1;
-			}
-		    } elsif ( ( $feature_type eq 'face' ) and ( $feature->contact() ) ) {
-			if ( defined( $feature->contact->contact_name() ) ) {
-			    #if ( exists( $media_contacts->{ $m->id() } ) ) {
-			    #push( @{$media_contacts->{ $m->id() }}, $feature );
-			    #} else {
-			    #		$media_contacts->{ $m->id() } = [ $feature ];
-			    #}
-			    if ( exists( $all_tags->{ $feature->contact->contact_name() } ) ) {
-				$all_tags->{ $feature->contact->contact_name() }++;
-			    } else {
-				$all_tags->{ $feature->contact->contact_name() } = 1;
-			    }
-			}
-		    }
-		}
-	    }
-	}
+	my @everything = $c->user->visible_media( {
+	    only_visible => $only_visible,
+	    only_videos => $only_videos,
+	    include_tags => 1,
+	    include_contacts => 1,
+	    'album_uuids[]' => [ $aid ] } );
 
-	if ( defined( $tag_clause ) or $no_dates ) {
-	    my $where_clause = {};
-	    if ( defined( $tag_clause ) ) {
-		$where_clause = $tag_clause;
-	    }
-	    if ( $no_dates ) {
-		$where_clause->{'media.recording_date'} = $dtf->format_datetime( $no_date_date );
-	    }
-
-	    $current_page = $all_videos->search( $where_clause,
-						 { order_by => 'recording_date desc',
-						   page => $page,
-						   rows => $rows ,
-						   prefetch => 
-						   { media_assets => 
-						     { media_asset_features => 'contact' } } } );
-	    $pager = $current_page->pager();
-	    @media_list = $current_page->all();
-	} else {
-	    $pager = Data::Page->new( scalar( @everything ), $rows, $page );
-	    if ( scalar( @everything ) ) {
-		@media_list = @everything[ $pager->first - 1 .. $pager->last - 1 ];
-	    }
-	}
-
-    } else {
-	if ( $no_dates ) {
-	    $where->{'media.recording_date'} = $dtf->format_datetime( $no_date_date );
-	}
-
-	$current_page = $album->media->search( $where, {
-	    order_by => 'recording_date desc',
-	    page => $page,
-	    rows => $rows
-					       } );
-	$pager = $current_page->pager();
-	@media_list = $current_page->all();
+	( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@everything );
     }
-		
-    #$c->log->error( "Media done : ", time(), " - ", scalar( @media_list ), " items." );
+    
+    my @videos = $c->user->visible_media( {
+	include_contact_info => $include_contact_info,
+	include_image => $include_images,
+	include_tags => $include_tags,
+	'album_uuids[]' => [ $aid ],
+	no_dates => $no_dates,
+	'tags[]' => $tags,
+	only_videos => $only_videos,
+	only_visible => $only_visible } );
+	
+    $pager = Data::Page->new( scalar( @videos ), $rows, $page );
+    my @media_list = ();
+    if ( scalar( @videos ) ) {
+	@media_list = @videos[ $pager->first - 1 .. $pager->last - 1 ];
+    }
 
-    # DEBUG - we'll have to change publish_mediafiles to accept
-    # prefetched data in the result set to avoid N queries.
-    my $m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
-							     include_contact_info => $include_contact_info,
-							     include_tags => $include_tags,
-							     include_images => $include_images,
-							     media_tags => $media_tags,
-							     #media_contacts => $media_contacts 
-					 } ) );
-
-    #$c->log->error( "Publish done: ", time() );
+    my $m = undef;
+    if ( $include_tags ) {
+	$m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
+								 include_contact_info => $include_contact_info,
+								 include_tags => $include_tags,
+								 include_images => $include_images,
+								 media_tags => $media_tags,
+								 media_contact_features => $media_contact_features } ) );
+    } else {
+	$m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
+								 include_contact_info => $include_contact_info,
+								 include_tags => $include_tags,
+								 include_images => $include_images } ) );
+    }
 
     $hash->{media} = $m;
     $hash->{owner} = $album->user->TO_JSON; 
 
-    $self->status_ok( $c, { album => $hash, pager => $self->pagerToJson( $pager ), all_tags => $all_tags, no_date_return => $no_date_return } );
+    $self->status_ok( $c, { album => $hash, 
+			    pager => $self->pagerToJson( $pager ), 
+			    all_tags => $all_tags, 
+			    no_date_return => $no_date_return } );
 }
 
 sub add_media :Local {
@@ -681,6 +581,8 @@ sub remove_media :Local {
     
     unless( $album ) {
 	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
+    } elsif ( $album->user_id() != $self->user->id() ) {
+	$self->status_forbidden( $c, $c->loc( 'Cannot remove items from album you do not own [_1]', $aid ), $aid );
     }
     unless( $media ) {
 	$self->status_not_found( $c, $c->loc( 'Cannot find media for [_1]', $mid ), $mid );
@@ -713,6 +615,8 @@ sub change_title :Local {
     
     unless( $album ) {
 	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
+    } elsif ( $album->user_id() != $c->user->id() ) {
+	$self->status_forbidden( $c, $c->loc( 'You do not have permission to edit [_1]', $aid ), $aid );
     }
 
     $album->title( $title );
@@ -754,9 +658,6 @@ sub list_shared :Local {
     my( $self, $c ) = @_;
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 100000;
-
-    # Following copied from User::is_community_member_of() to enable paging
-    # my @albums = map { $_->album } $c->user->is_community_member_of();
 
     my $rs = $c->model( 'RDS::ContactGroup' )->search
 	({'contact.contact_email'=>$c->user->email},
@@ -865,7 +766,7 @@ sub get_shared_video :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
     
-    my @result = $c->user->obj->visible_media( [ $mid ], 1, undef, 1 );
+    my @result = $c->user->obj->visible_media( { 'media_uuids[]' => [ $mid ] } );
 
     if ( scalar( @result ) ) {
 	my $media = $c->model( 'RDS::Media' )->find({ uuid => $mid });
@@ -887,13 +788,16 @@ sub share_album :Local {
     unless( $album ) {
 	$self->status_not_found(
 	    $c, $c->loc( 'Could not find this album' ), $aid );
+    } elsif ( $album->user_id() != $self->user->id() ) {
+	$self->status_forbidden(
+	    $c, $c->loc( 'Can not share album you do not own.' ), $aid );
     }
 
     # If this album is already shared, then do not create another one!
-    # Although technically possible to have multiple communities pointing to
-    # a single album, this makes the GUI very problematic!!  So, if the album is
-    # already shared, then merge the new list of members into the existing
-    # list of members.
+    # Although technically possible to have multiple communities
+    # pointing to a single album, this makes the GUI very problematic!
+    # So, if the album is already shared, then merge the new list of
+    # members into the existing list of members.
     #
     my $com = $album->community;
     my @to = ();
@@ -1213,8 +1117,6 @@ sub add_or_replace_banner_photo :Local {
     }
 
     my $result = {};
-
-    #$DB::single = 1;
 
     my $upload = $c->req->upload( 'upload' );
     my $photo;

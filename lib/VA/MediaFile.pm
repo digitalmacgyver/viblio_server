@@ -110,35 +110,56 @@ sub publish {
 
     #$DB::single = 1;
 
-    # If our caller was kind enough to pass us the owner_uuid of the
-    # mediafile in question, pass it on down.
+    # The VA::RDSSchema::Result::Media::TO_JSON method will perform a
+    # database query to get the value of mediafile->user->uuid(),
+    # however our caller can send this to us by specifying the
+    # owner_uuid field of the input params array, in which case that
+    # value will be used.
     my $mf_json = $mediafile->TO_JSON( $params );
     $mf_json->{'views'} = {}; 
+
+    # "Views" in the terminology of our system are the media_assets
+    # associated with a media object.  Each view has a type
+    # (e.g. image, poster, main, original, ...)
+    # 
+    # Face information is further down, in the media_asset_features
+    # associated with a given media_asset of type face, so we treat
+    # faces as a special case below.
     my @views;
     if ( $params->{assets} ) {
 	@views = @{$params->{assets}};
     }
     else {
-	# We'll do faces later if requested
-	@views = $mediafile->assets;
+	@views = $mediafile->assets();
     }
-    my %include;
+    
+    # The params->{views} argument is the list of asset_types we
+    # should publish if present in the @views array.
+    my %include = ();
     if ( $params->{views} ) {
 	%include = map { $_ => 1 } @{$params->{views}};
 	if ( $include{poster} ) {
+	    # The poster_animated and banner types are implictly
+	    # included whenever the UI asks for the poster type, for
+	    # forward compatibility.
 	    $include{poster_animated} = 1;
 	    $include{banner} = 1;
 	}
     }
+
+    # The 'images' asset_type is handled seperately for historical and
+    # performance reasons.
     my $include_images = 0;
     if ( exists( $params->{include_images} ) ) {
 	$include_images = $params->{include_images};
     }
     foreach my $view ( @views ) {
+	# Can't call $view->asset_type() due to ORM stupidity with the
+	# domain table resulting in an extra query.
 	my $type = $view->{_column_data}->{asset_type};
 	
 	next if ( $type eq 'face' ); # We will do faces later if requested
-	next if ( $params->{views} && !defined($include{$type}) );
+	next if ( $params->{views} && !defined( $include{$type} ) );
 	# Skip the new image asset type, of which there will be many,
 	# unless they have been specifically requested.
 	next if ( $type eq 'image' && !$include_images );
@@ -322,7 +343,5 @@ sub generate_signed_url {
         return "$URL_BASE/$path&Signature=$encoded_canonical&Expires=$expiration&AWSAccessKeyId=$AWS_ACCESS_KEY_ID";
     }
 }
-
-
 
 1;

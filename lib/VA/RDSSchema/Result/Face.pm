@@ -198,8 +198,8 @@ __PACKAGE__->set_primary_key("id");
 __PACKAGE__->add_unique_constraint("user_id_UNIQUE", ["user_id", "contact_id", "face_id"]);
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-27 19:26:42
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cch0GmG5qx76A+9Cv2/sdg
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:40
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:LC13WTtPXha1Zxgje/8SDg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

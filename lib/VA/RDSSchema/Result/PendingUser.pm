@@ -136,8 +136,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("email");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-06 00:50:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:tEh+DrfmYtC5sHnISQJgCw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ExFHqCOzMnMdOtYbnFRJmg
 
 sub TO_JSON {
     my $self = shift;

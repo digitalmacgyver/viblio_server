@@ -171,8 +171,8 @@ __PACKAGE__->set_primary_key("id");
 __PACKAGE__->add_unique_constraint("app_UNIQUE", ["app", "version_string", "feature"]);
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-22 09:23:21
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:F6p8kXyygfFJLOezsy7Itg
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:39
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jup5Z7MIM78CsLF891UOYA
 
 sub TO_JSON {
     my $self = shift;

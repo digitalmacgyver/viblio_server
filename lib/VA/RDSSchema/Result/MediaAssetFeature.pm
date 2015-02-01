@@ -254,8 +254,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-07 08:33:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:veysmD9joDf4ZjThtfOdtA
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:C5GA26+waohA6kDNr30qyQ
 
 sub TO_JSON {
     my $self = shift;

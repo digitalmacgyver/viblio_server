@@ -145,8 +145,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-07 15:56:59
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FFplvxzIIuuidKy7lGmcHw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:fkQIKGd63r4TTNBmu8iJ9g
 use JSON::XS;
 
 __PACKAGE__->filter_column(

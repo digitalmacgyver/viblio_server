@@ -58,11 +58,6 @@ sub media_face_appears_in :Local {
 
     if ( $args->{contact_uuid} ) {
 	my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$args->{contact_uuid}});
-	# DEBUG - what does this do - it shouldn't work unless
-	# somewhere in our system we're leaking out the contact id.
-	#if ( ! $contact ) {
-	#    $contact = $c->model( 'RDS::Contact' )->find({id=>$args->{contact_uuid}});
-	#}
 	if ( $contact ) {
 	    $contact_id = $contact->id;
 	}
@@ -204,12 +199,32 @@ sub contact_mediafile_count :Local {
 
 =head2 /services/faces/contacts
 
-Return all contacts for logged in user that appear in at
-least one video.
+Return all contacts for logged in user that appear in a video visible
+by the user.
 
 Here a contact is defined to be:
     * Someone who shows up in a video
     * Who has been named
+
+Return value is a hash with one key: "faces", whose value is an array reference to hashes of:
+
+contact JSON structures, agumented with the picture_URI of the person
+in a field called url and the asset_id field which is the UUID of the
+media asset, and the "appears_in" field which is a number of videos
+this contact appears in.
+
+{
+    contact => contact object,
+    media_asset => media asset object,
+    hash => contact object TO_JSON,
+    url => URL to the picture_uri of the contact or a default image.  If  default image is set nopoc=1 is also set.
+    asset_id => media_asset uuid
+    appears_in => # of movies this contact appears in
+}
+
+DEPRECATED: Also the three contacts that appear in the most videos
+used to return 'star_power' = star1,2 or 3, however this doesn't do
+that any longer.
 
 =cut
 
@@ -217,70 +232,78 @@ sub contacts :Local {
     my $self = shift; my $c = shift;
     my $args = $self->parse_args
       ( $c,
-        [ page => undef,
+        [ 
+	  page => undef,
           rows => 10,
         ],
         @_ );
-
+    
     my $user = $c->user->obj;
 
-    my @features = $c->model( 'RDS::MediaAssetFeature' )->search(
-	{ 'me.user_id' => $user->id,
-	  'contact_id' => { '!=', undef },
-	  'contact.contact_name' => { '!=', undef },
-	  # We don't want fb_face rows here - they may not appear in any videos.
-	  'me.feature_type' => 'face' },
-	{ prefetch => [ 'contact', 'media_asset' ] } )->all();
+    my @videos = $c->user->visible_media( { include_contact_info => 1 } );
+    
+    my $media = {};
+    for my $m ( @videos ) {
+	$media->{$m->id()} = $m;
+    }
 
-    # Build a hash of hash:
-    # contact_id-> hash of movies they are in
-    # We'll use the number of keys in the inner hash to compute appears_in.
-    my $contact_data = {};
-    my $contact_movies = {};
-    foreach my $f ( @features ) {
-	$contact_movies->{$f->contact_id}->{$f->media_id} = 1;
-	# For a given contact, just pick an arbitrary asset to
-	# represent them.
-	unless ( exists( $contact_data->{$f->contact_id} ) ) {
-	    $contact_data->{$f->contact_id} = { 
-		contact => $f->contact,
-		media_asset => $f->media_asset,
-		hash => $f->contact->TO_JSON
+    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
+
+    my $results = {};
+    for my $media_id ( keys( %$media_contact_features ) ) {
+	for my $feature ( @{$media_contact_features->{$media_id}} ) {
+	    my $contact = $feature->contact();
+	    my $asset = $feature->media_asset();
+	    
+	    $c->log->error( "WORKING ON '".$contact->contact_name()."'" );
+	    
+	    if ( exists( $results->{$contact->id()} ) ) {
+		$results->{$contact->id()}->{appears_in}->{$asset->media_id()} = 1;
+	    } else {
+		$results->{$contact->id()} = { 
+		    contact => $contact,
+		    media_asset => $asset,
+		    asset_id => $asset->uuid,
+		    appears_in => { $asset->media_id() => 1 } 
+		};
 	    }
 	}
     }
 
-    my @data = ();
-    foreach my $contact_id ( keys( %$contact_data ) ) {
-	my $contact = $contact_data->{$contact_id}->{contact};
-	my $asset = $contact_data->{$contact_id}->{media_asset};
-	my $hash = $contact_data->{$contact_id}->{hash};
+    my @result = ();
+    for my $contact_id ( keys( %$results ) ) {
+	my $current = $results->{$contact_id};
+	$current->{appears_in} = scalar( keys( %{$current->{appears_in}} ) );
+	my $contact = $current->{contact};
+	my $asset = $current->{media_asset};
+	
+	my $tmp = $current->{contact}->TO_JSON;
+	$tmp->{appears_in} = $current->{appears_in};
+	$tmp->{asset_id} = $current->{asset_id};
 
 	if ( $contact->picture_uri ) {
 	    my $klass = $c->config->{mediafile}->{$asset->location};
 	    my $fp = new $klass;
 	    my $url = $fp->uri2url( $c, $contact->picture_uri );
-	    $hash->{url} = $url;
+	    $tmp->{url} = $url;
+	} else {
+	    $tmp->{url} = '/css/images/avatar-nobd.png';
+	    $tmp->{nopic} = 1;  # in case UI needs to know
 	}
-	else {
-	    $hash->{url} = '/css/images/avatar-nobd.png';
-	    $hash->{nopic} = 1;  # in case UI needs to know
-	}
-	$hash->{asset_id} = $asset->uuid;
 
-	$hash->{appears_in} = scalar( keys( %{$contact_movies->{$contact_id}} ) );
-
-	push( @data, $hash );
+	push( @result, $tmp );
     }
 
     # Because of the nature of this query, I could not use the native DBIX pager,
     # and therefore I need to implement that functionality myself, including the
     # sort.
     #
-    my @sorted = sort { $b->{appears_in} <=> $a->{appears_in} } @data;
-    $sorted[0]->{star_power} = 'star1' if ( $#sorted >=0 );
-    $sorted[1]->{star_power} = 'star2' if ( $#sorted >=1 );
-    $sorted[2]->{star_power} = 'star3' if ( $#sorted >=2 );
+    my @sorted = sort { $b->{appears_in} <=> $a->{appears_in} } @result;
+    
+    # DEBUG - DEPRECATED - REMOVE IF COMMENTING THIS DOESN'T CAUSE PROBLEMS
+    #$sorted[0]->{star_power} = 'star1' if ( $#sorted >=0 );
+    #$sorted[1]->{star_power} = 'star2' if ( $#sorted >=1 );
+    #$sorted[2]->{star_power} = 'star3' if ( $#sorted >=2 );
     
     if ( $args->{page} ) {
 	my $pager = Data::Page->new( $#sorted + 1, $args->{rows}, $args->{page} );
@@ -291,8 +314,7 @@ sub contacts :Local {
 	
 	$self->status_ok( $c, { faces => \@slice, 
 				pager => $self->pagerToJson( $pager ) });
-    }
-    else {
+    } else {
 	$self->status_ok( $c, { faces => \@sorted } );
     }
 }
@@ -570,9 +592,7 @@ sub change_contact :Local {
 	], @_ );
 
     my $contact = $c->user->contacts->find({ uuid => $args->{uuid} });
-    unless( $contact ) {
-	$contact = $c->user->contacts->find({ id => $args->{uuid} });
-    }
+
     unless( $contact ) {
 	$self->status_not_found($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ), $args->{uuid} );
     }

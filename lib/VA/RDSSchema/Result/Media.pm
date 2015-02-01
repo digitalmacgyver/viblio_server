@@ -484,8 +484,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-10-08 21:47:10
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:XwqhTEJEudQT41vlQZZH8g
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9url+kNbuPPvATKLiITV/w
 
 __PACKAGE__->uuid_columns( 'uuid' );
 
@@ -558,24 +558,6 @@ sub face_data {
 }
 
 __PACKAGE__->has_many(
-  "media_albums_albums",
-  "VA::RDSSchema::Result::MediaAlbum",
-  { "foreign.media_id" => "self.id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-__PACKAGE__->has_many(
-    "media_albums_medias",
-    "VA::RDSSchema::Result::MediaAlbum",
-    { "foreign.album_id" => "self.id" },
-    { cascade_copy => 0, cascade_delete => 0,
-    },
-    # DEBUG - this seems to be causing a problem, and this
-    #relationship is otherwise unusued.
-    # where => { "media.is_album" => 0 } },
-);
-
-__PACKAGE__->has_many(
     "media_albums_videos",
     "VA::RDSSchema::Result::MediaAlbum",
     { "foreign.album_id" => "self.id" },
@@ -585,6 +567,14 @@ __PACKAGE__->has_many(
 __PACKAGE__->many_to_many( 'albums' => 'media_albums_albums', 'album' );
 __PACKAGE__->many_to_many( 'media' =>  'media_albums_medias', 'media' );
 __PACKAGE__->many_to_many( 'videos' =>  'media_albums_videos', 'videos' );
+
+
+__PACKAGE__->has_many(
+    "media_albums_other",
+    "VA::RDSSchema::Result::MediaAlbum",
+    { "foreign.media_id" => "self.id" },
+    { cascade_copy => 0, cascade_delete => 0},
+);
 
 __PACKAGE__->has_one(
     "community",

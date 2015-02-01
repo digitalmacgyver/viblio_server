@@ -181,8 +181,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-01-04 12:11:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Xk8gktSdUfusUjAWqq550A
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:39
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:IFoZwkBV+3ufrYEW0UQgiA
 
 # Need to create another relation who's name is not "group", because "group"
 # causes syntax errors (its a reserved word).

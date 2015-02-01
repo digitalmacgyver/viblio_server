@@ -516,9 +516,6 @@ sub new_user_no_password :Local {
     my $self = shift;
     my $c = shift;
 
-    # DEBUG
-    #$DB::single = 1;
-
     my $result = $self->_new_user_no_password( $c, @_ );
     if ( $result->{ok} ) {
 	$self->status_ok( $c, $result->{response} );
@@ -1350,7 +1347,6 @@ sub create_fb_album :Local {
 	    template => 'email/22-fbAlbumCreated.tt',
 	    stash => {
 		user => $user,
-		# DEBUG - Do we need $mf here as above for email header or footer?
 		server => $c->server,
 		model => {
 		    media => $mediafile,

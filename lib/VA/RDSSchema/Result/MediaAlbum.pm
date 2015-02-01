@@ -153,8 +153,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-02-01 18:58:45
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1NnU+gw+qvYmytDYxn8MVA
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2015-01-31 04:37:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:2o6ZFfcDENAlzTfJ9yAZ7A
 
 __PACKAGE__->belongs_to(
     "videos",
@@ -171,12 +171,21 @@ __PACKAGE__->belongs_to(
     { is_deferrable => 1, on_delete => "CASCADE", on_update => "CASCADE" },
 );
 
-
 # Allow self joins.
 __PACKAGE__->belongs_to( 
     'album_media',
     'VA::RDSSchema::Result::MediaAlbum',
     { 'foreign.album_id' => 'self.album_id' },
+    { cascade_copy => 0, cascade_delete => 0 },
+    );
+
+# Allow optional realtionship to communities (this is a little cheeky
+# - there is no direct relationship between these tables in terms of
+# DB constraints).
+__PACKAGE__->has_many(
+    'community',
+    'VA::RDSSchema::Result::Community',
+    { 'foreign.media_id' => 'self.album_id' },
     { cascade_copy => 0, cascade_delete => 0 },
     );
 
