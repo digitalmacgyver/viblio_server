@@ -774,9 +774,11 @@ sub publish_mediafiles :Private {
 		  group_by => [ 'me.media_id', 'contact.id'] } );
 	    foreach my $maf ( @mafs ) {
 		if ( exists( $contact_features->{$maf->media_id} ) ) {
-		    push( @{$contact_features->{$maf->media_id}},  $maf );
+		    push( @{$contact_features->{$maf->media_id}},  { 'media_asset' => $maf->media_asset(),
+								     'media_asset_feature' => $maf } );
 		} else {
-		    $contact_features->{$maf->media_id} = [ $maf ];
+		    $contact_features->{$maf->media_id} = [ { 'media_asset' => $maf->media_asset(),
+							      'media_asset_feature' => $maf } ];
 		}
 	    }
 	}
@@ -963,9 +965,11 @@ sub get_tags :Private {
 			  and exists( $valid_faces->{ $feature->recognition_result() } ) ) {
 		    if ( defined( $feature->contact->contact_name() ) ) {
 			if ( exists( $media_contact_features->{ $m->id() } ) ) {
-			    push( @{$media_contact_features->{ $m->id() }}, $feature );
+			    push( @{$media_contact_features->{ $m->id() }}, { 'media_asset' => $ma,
+									      'media_asset_feature' => $feature } );
 			} else {
-			    $media_contact_features->{ $m->id() } = [ $feature ];
+			    $media_contact_features->{ $m->id() } = [ { 'media_asset' => $ma,
+									'media_asset_feature' => $feature } ];
 			}
 			if ( exists( $all_tags->{ $feature->contact->contact_name() } ) ) {
 			    $all_tags->{ $feature->contact->contact_name() }++;

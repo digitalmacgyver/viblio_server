@@ -1100,6 +1100,9 @@ sub list_all :Local {
 	push( @$views, 'image' );
     }
 
+    # DEBUG
+    #$DB::single = 1;
+
     my $data = $self->publish_mediafiles( $c, \@slice, { 
 	views                  => $views, 
 	include_tags           => $include_tags, 
@@ -1441,7 +1444,7 @@ sub change_recording_date :Local {
     if ( $old_date == DateTime->from_epoch( epoch => 0 ) ) {
 	# We are updating from the default, add a new tag.
 	$media->asset( 'main' )->create_related( 'media_asset_features', { feature_type => 'activity',
-									     coordinates => $date_string } );
+									   coordinates => $date_string } );
     } else {
 	# We are updating from a prior date, update existing or add
 	# new tag if none.
@@ -1452,7 +1455,7 @@ sub change_recording_date :Local {
 	    $old_tag->update();
 	} else {
 	    $media->asset( 'main' )->create_related( 'media_asset_features', { feature_type => 'activity',
-										 coordinates => $date_string } );
+									       coordinates => $date_string } );
 	}
     }
 
@@ -1550,6 +1553,8 @@ sub search_by_title_or_description :Local {
 	push( @{$views}, 'image' );
     }
 
+    #$DB::single = 1;
+
     my $data = $self->publish_mediafiles( $c, \@slice, { 
 	views => $views, 
 	include_tags => $include_tags, 
@@ -1561,7 +1566,7 @@ sub search_by_title_or_description :Local {
 	media_contact_features => $media_contact_features } );
 
     foreach my $d ( @$data ) {
-	if ( $d->{user_id} != $c->user->id() ) {
+	if ( $d->{user_id} ne $c->user->id() ) {
 	    $d->{is_shared} = 1;
 	} else {
 	    $d->{is_shared} = 0;
@@ -1843,7 +1848,7 @@ sub recently_uploaded :Local {
 					    include_owner_json => 1 } );
     
     foreach my $d ( @$data ) {
-	if ( $d->{owner_uuid} != $c->user->uuid() ) {
+	if ( $d->{owner_uuid} ne $c->user->uuid() ) {
 	    $d->{is_shared} = 1;
 	} else {
 	    $d->{is_shared} = 0;
@@ -2092,7 +2097,10 @@ sub create_video_summary :Local {
 	}
     }
     my $requested = scalar( keys( %$suspect_media ) );
-    my @approved = $c->user->visible_videos( { 'media_uuids[]' => [ keys( %$suspect_media ) ] } );
+    my @approved = ();
+    if ( $requested ) {
+	@approved = $c->user->visible_videos( { 'media_uuids[]' => [ keys( %$suspect_media ) ] } );
+    }
 
     if ( scalar( @approved ) != $requested ) {
 	$c->log->error( "NOT ALLOWED TO ACCESS SHARED VIDEOS." );

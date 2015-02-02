@@ -220,11 +220,13 @@ sub publish {
 
     # If faces were requested ...
     if ( $params->{include_contact_info} ) {
-	my @feat = ();
+	my @feats = ();
+	my $passed_in_features = 0;
 	if ( exists( $params->{features} ) ) {
-	    @feat = @{$params->{features}};
+	    @feats = @{$params->{features}};
+	    $passed_in_features = 1;
 	} else {
-	    @feat = $c->model( 'RDS::MediaAssetFeature' )
+	    @feats = $c->model( 'RDS::MediaAssetFeature' )
 		->search({'me.media_id'=>$mediafile->id,
 			  'contact.id' => { '!=', undef },
 			  'me.feature_type'=> [ 'face', 'fb_face'] },
@@ -233,18 +235,27 @@ sub publish {
 			 });
 	}
 	my @data = ();
-	foreach my $feat ( @feat ) {
-	    my $hash = $feat->media_asset->TO_JSON;
-	    if ( $feat->media_asset->uri ) {
-		my $klass = $c->config->{mediafile}->{$feat->media_asset->location};
+	for my $feat_data ( @feats ) {
+	    my $asset = undef;
+	    my $feat = undef;
+	    if ( $passed_in_features ) {
+		$feat = $feat_data->{media_asset_feature};
+		$asset = $feat_data->{media_asset};
+	    } else {
+		$feat = $feat_data;
+		$asset = $feat_data->media_asset();
+	    }
+	    my $hash = $asset->TO_JSON();
+	    if ( $asset->uri() ) {
+		my $klass = $c->config->{mediafile}->{$asset->location()};
 		my $fp = new $klass;
-		my $url = $fp->uri2url( $c, $feat->media_asset->uri );
+		my $url = $fp->uri2url( $c, $asset->uri() );
 		$hash->{url} = $url;
 	    }
 	    else {
 		$hash->{url} = $c->server() . 'css/images/avatar-nobd.png';
 	    }
-	    $hash->{contact} = $feat->contact->TO_JSON;
+	    $hash->{contact} = $feat->contact->TO_JSON();
 	    push( @data, $hash );
 	}
 	$mf_json->{views}->{face} = \@data;

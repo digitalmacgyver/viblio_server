@@ -582,7 +582,10 @@ sub private_and_shared_videos {
 	$only_videos = 1;
     }
 
-    my $where = dclone( $where_arg );
+    my $where = {};
+    if ( defined( $where_arg ) ) {
+	$where = dclone( $where_arg );
+    }
     $where->{'-or'} = ['me.user_id' => $self->id, 
 		       'media_shares.user_id' => $self->id];
     if ( $only_visible ) {
@@ -1133,12 +1136,12 @@ sub visible_media {
 	# Get the media that is in community albums.
 	{ 'media_albums_other' => { 'community' => 'community_album' } },
 	# Get the media that is in an abum period.
-	{ 'media_albums_other' => 'album' } 
+	{ 'media_albums_other' => 'album' }
 	];
     if ( $args->{include_contact_info} or $args->{include_tags} ) {
 	push( @$prefetch, { 'media_assets' => { 'media_asset_features' => 'contact' } } );
-    } elsif ( $args->{include_images} ) {
-	push( @$prefetch, 'media_assets'  );
+    } else {
+	push( @$prefetch, 'media_assets' );
     }
 
     my $rs = $self->result_source->schema->resultset( 'Media' )->search
@@ -1202,11 +1205,11 @@ sub visible_media {
 	my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = VA::Controller::Services->new()->get_tags( undef, \@output,  $self->result_source->schema->storage->datetime_parser );
 	my @tmp = ();
 	for my $media ( @output ) {
-	    if ( $media->title() =~ m/\Q$args->{search_string}/i ) {
+	    if ( defined( $media->title() ) and $media->title() =~ m/\Q$args->{search_string}/i ) {
 		push( @tmp, $media );
 		next;
 	    }
-	    if ( $media->description() =~ m/\Q$args->{search_string}/i ) {
+	    if ( defined( $media->description() ) and $media->description() =~ m/\Q$args->{search_string}/i ) {
 		push( @tmp, $media );
 		next;
 	    }
@@ -1221,7 +1224,7 @@ sub visible_media {
 		}
 	    }
 	    next if $found;
-	    if ( grep( $_->contact->contact_name() =~ m/\Q$args->{search_string}/i, 
+	    if ( grep( $_->{media_asset_feature}->contact->contact_name() =~ m/\Q$args->{search_string}/i, 
 		       @{$media_contact_features->{$media->id()}} ) ) {
 		push( @tmp, $media );
 		next;

@@ -34,7 +34,8 @@ Return the list of published media files belonging to the logged in user that th
 =cut
 
 sub media_face_appears_in :Local {
-    my $self = shift; my $c = shift;
+    my $self = shift; 
+    my $c = shift;
     my $args = $self->parse_args
       ( $c,
         [ page => undef,
@@ -212,9 +213,9 @@ reference to hashes of:
 contact JSON structures, agumented with:
 * A URL to the picture_uri of the person in a field called url
 * appears_in - the number of movies this contact appears in
-
-DEPRECATED: This return value also used to put the UUID of the media
-asset associated with the picture URI, it does not do so any longer.
+* asset_id - the UUID of the media asset associated with this face -
+  this is used for unidentified faces to locate the videos they appear
+  in.
 
 DEPRECATED: Also the three contacts that appear in the most videos
 used to return 'star_power' = star1,2 or 3, however this doesn't do
@@ -233,7 +234,7 @@ sub contacts :Local {
         @_ );
     
     # DEBUG
-    $DB::single = 1;
+    #$DB::single = 1;
 
     my $user = $c->user->obj;
 
@@ -249,7 +250,10 @@ sub contacts :Local {
     my $results = {};
     for my $media_id ( keys( %$media_contact_features ) ) {
 	for my $feature ( @{$media_contact_features->{$media_id}} ) {
-	    my $contact = $feature->contact();
+	    my $contact = $feature->{media_asset_feature}->contact();
+	    
+	    $contact->{location} = $feature->{media_asset}->location();
+	    $contact->{asset_uuid} = $feature->{media_asset}->uuid();
 
 	    if ( exists( $results->{$contact->id()} ) ) {
 		$results->{$contact->id()}->{appears_in}->{$media_id} = 1;
@@ -266,12 +270,10 @@ sub contacts :Local {
 	
 	my $tmp = $contact->TO_JSON();
 	$tmp->{appears_in} = scalar( keys( %{$contact->{appears_in}} ) );
+	$tmp->{asset_id} = $contact->{asset_uuid};
 
-	if ( $contact->picture_uri ) {
-	    # DEBUG - we hard code the location for performance
-	    # reasons here, if we ever have contacts from multiple
-	    # locations we'll have to make this dynamic.
-	    my $klass = $c->config->{mediafile}->{'us'};
+	if ( $contact->picture_uri() ) {
+	    my $klass = $c->config->{mediafile}->{$contact->{location}};
 	    my $fp = new $klass;
 	    my $url = $fp->uri2url( $c, $contact->picture_uri );
 	    $tmp->{url} = $url;
