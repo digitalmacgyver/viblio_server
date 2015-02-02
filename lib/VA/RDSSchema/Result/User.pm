@@ -1120,7 +1120,8 @@ sub visible_media {
     
     my $where = $args->{where};
     $where->{ '-or' } = [ 'community.id' => { -in => \@user_community_ids },
-			  'me.user_id' => $self->id() ];
+			  'me.user_id' => $self->id(),
+			  'media_shares.user_id' => $self->id() ];
     if ( $args->{only_visible} ) {
 	$where->{'me.status'} = [ 'visible', 'complete' ];
     }
@@ -1136,7 +1137,9 @@ sub visible_media {
 	# Get the media that is in community albums.
 	{ 'media_albums_other' => { 'community' => 'community_album' } },
 	# Get the media that is in an abum period.
-	{ 'media_albums_other' => 'album' }
+	{ 'media_albums_other' => 'album' },
+	# Get media that is shared via the old style share mechanism.
+	'media_shares'
 	];
     if ( $args->{include_contact_info} or $args->{include_tags} ) {
 	push( @$prefetch, { 'media_assets' => { 'media_asset_features' => 'contact' } } );

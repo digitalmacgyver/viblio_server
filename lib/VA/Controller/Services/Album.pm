@@ -788,9 +788,6 @@ sub share_album :Local {
     unless( $album ) {
 	$self->status_not_found(
 	    $c, $c->loc( 'Could not find this album' ), $aid );
-    } elsif ( $album->user_id() != $self->user->id() ) {
-	$self->status_forbidden(
-	    $c, $c->loc( 'Can not share album you do not own.' ), $aid );
     }
 
     # If this album is already shared, then do not create another one!
