@@ -206,21 +206,15 @@ Here a contact is defined to be:
     * Someone who shows up in a video
     * Who has been named
 
-Return value is a hash with one key: "faces", whose value is an array reference to hashes of:
+Return value is a hash with one key: "faces", whose value is an array
+reference to hashes of:
 
-contact JSON structures, agumented with the picture_URI of the person
-in a field called url and the asset_id field which is the UUID of the
-media asset, and the "appears_in" field which is a number of videos
-this contact appears in.
+contact JSON structures, agumented with:
+* A URL to the picture_uri of the person in a field called url
+* appears_in - the number of movies this contact appears in
 
-{
-    contact => contact object,
-    media_asset => media asset object,
-    hash => contact object TO_JSON,
-    url => URL to the picture_uri of the contact or a default image.  If  default image is set nopoc=1 is also set.
-    asset_id => media_asset uuid
-    appears_in => # of movies this contact appears in
-}
+DEPRECATED: This return value also used to put the UUID of the media
+asset associated with the picture URI, it does not do so any longer.
 
 DEPRECATED: Also the three contacts that appear in the most videos
 used to return 'star_power' = star1,2 or 3, however this doesn't do
@@ -238,6 +232,9 @@ sub contacts :Local {
         ],
         @_ );
     
+    # DEBUG
+    $DB::single = 1;
+
     my $user = $c->user->obj;
 
     my @videos = $c->user->visible_media( { include_contact_info => 1 } );
@@ -253,36 +250,28 @@ sub contacts :Local {
     for my $media_id ( keys( %$media_contact_features ) ) {
 	for my $feature ( @{$media_contact_features->{$media_id}} ) {
 	    my $contact = $feature->contact();
-	    my $asset = $feature->media_asset();
-	    
-	    $c->log->error( "WORKING ON '".$contact->contact_name()."'" );
-	    
+
 	    if ( exists( $results->{$contact->id()} ) ) {
-		$results->{$contact->id()}->{appears_in}->{$asset->media_id()} = 1;
+		$results->{$contact->id()}->{appears_in}->{$media_id} = 1;
 	    } else {
-		$results->{$contact->id()} = { 
-		    contact => $contact,
-		    media_asset => $asset,
-		    asset_id => $asset->uuid,
-		    appears_in => { $asset->media_id() => 1 } 
-		};
+		$contact->{appears_in}->{$media_id} = 1;
+		$results->{$contact->id()} = $contact; 
 	    }
 	}
     }
 
-    my @result = ();
+    my @return_value = ();
     for my $contact_id ( keys( %$results ) ) {
-	my $current = $results->{$contact_id};
-	$current->{appears_in} = scalar( keys( %{$current->{appears_in}} ) );
-	my $contact = $current->{contact};
-	my $asset = $current->{media_asset};
+	my $contact = $results->{$contact_id};
 	
-	my $tmp = $current->{contact}->TO_JSON;
-	$tmp->{appears_in} = $current->{appears_in};
-	$tmp->{asset_id} = $current->{asset_id};
+	my $tmp = $contact->TO_JSON();
+	$tmp->{appears_in} = scalar( keys( %{$contact->{appears_in}} ) );
 
 	if ( $contact->picture_uri ) {
-	    my $klass = $c->config->{mediafile}->{$asset->location};
+	    # DEBUG - we hard code the location for performance
+	    # reasons here, if we ever have contacts from multiple
+	    # locations we'll have to make this dynamic.
+	    my $klass = $c->config->{mediafile}->{'us'};
 	    my $fp = new $klass;
 	    my $url = $fp->uri2url( $c, $contact->picture_uri );
 	    $tmp->{url} = $url;
@@ -291,14 +280,14 @@ sub contacts :Local {
 	    $tmp->{nopic} = 1;  # in case UI needs to know
 	}
 
-	push( @result, $tmp );
+	push( @return_value, $tmp );
     }
 
     # Because of the nature of this query, I could not use the native DBIX pager,
     # and therefore I need to implement that functionality myself, including the
     # sort.
     #
-    my @sorted = sort { $b->{appears_in} <=> $a->{appears_in} } @result;
+    my @sorted = sort { $b->{appears_in} <=> $a->{appears_in} } @return_value;
     
     # DEBUG - DEPRECATED - REMOVE IF COMMENTING THIS DOESN'T CAUSE PROBLEMS
     #$sorted[0]->{star_power} = 'star1' if ( $#sorted >=0 );
@@ -585,7 +574,6 @@ sub change_contact :Local {
     my $args = $self->parse_args
       ( $c,
         [ uuid => undef,
-	  cid => undef,
 	  new_uri => undef,
 	  contact_name => undef,
 	  contact_email => undef
