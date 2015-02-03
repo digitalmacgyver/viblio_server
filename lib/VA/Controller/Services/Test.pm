@@ -12,7 +12,7 @@ BEGIN { extends 'VA::Controller::Services' }
 sub me :Local {
     my( $self, $c ) = @_;
 
-    $DB::single = 1;
+    #$DB::single = 1;
     $c->log->info( 'This is a test' );
     if ( $c->{data} ) {
 	$c->logdump( $c->{data} );
@@ -30,6 +30,7 @@ sub argtest :Local {
 	    'x'  => '-',
 	    'y'  => 90  ],
 	  @_ );
+
     $self->status_ok( $c, { args => $args } );
 }
 

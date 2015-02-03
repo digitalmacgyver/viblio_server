@@ -10,16 +10,26 @@ Services related to the Year In Review
 
 =cut
 
+# DEPRECATED
 sub dates_for_user :Private {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/yir/dates_for_user is deprecated." );
+
+
     return $c->user->media
 	->search($self->where_valid_mediafile(),
 		 {columns=>['recording_date'], 
 		  order_by=>'recording_date desc'});
 }
 
+# DEPRECATED
 sub dates_for_contact :Private {
     my( $self, $c, $cid ) = @_;
+
+    $self->status_bad_request( $c, "services/yir/dates_for_contact is deprecated." );
+
+
     my @features = $c->model( 'RDS::MediaAssetFeature' )
 	->search(
 	{ feature_type => 'face',
@@ -29,11 +39,17 @@ sub dates_for_contact :Private {
     return @media;
 }
 
+# DEPRECATED
+#
 # Return an array of years, from most to least recent, in which
 # there are recorded videos.
 #
 sub years :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/yir/years is deprecated." );
+
+
     my $cid = $c->req->param( 'cid' );
     my @dates = ();
     if ( $cid ) {
@@ -54,11 +70,17 @@ sub years :Local {
     $self->status_ok( $c, { years => \@data } );
 }
 
+# DEPRECATED
+#
 # Return an array of months, from most to least recent, in which
 # there are recorded videos.
 #
 sub months :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/yir/months is deprecated." );
+
+
     my $cid = $c->req->param( 'cid' );
     my @dates = ();
     if ( $cid ) {
@@ -90,8 +112,12 @@ sub months :Local {
     $self->status_ok( $c, { months => \@uniq } );
 }
 
+# DEPRECATED
 sub posters_for_user :Private {
     my( $self, $c, $dtf, $from, $to, $page, $rows, $pager ) = @_;
+
+    $self->status_bad_request( $c, "services/yir/posters_for_user is deprecated." );
+
     # Do the query
     my @posters;
     my $rs = $c->model( 'RDS::MediaAsset' )->
@@ -120,8 +146,12 @@ sub posters_for_user :Private {
     return @posters;
 }
 
+# DEPRECATED
 sub posters_for_contact :Private {
     my( $self, $c, $cid, $dtf, $from, $to, $page, $rows, $pager ) = @_;
+
+    $self->status_bad_request( $c, "services/yir/posters_for_contact is deprecated." );
+
     my @features;
 
     my $rs = $c->model( 'RDS::MediaAssetFeature' )
@@ -157,11 +187,17 @@ sub posters_for_contact :Private {
     return @posters;
 }
 
+# DEPRECATED
+#
 # Return the list of videos taken in a particular year,
 # in month bins, from most recent to least.
 #
 sub videos_for_year :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/yit/videos_for_year is deprecated." );
+
+
     my $year = $c->req->param( 'year' );
     my $page  = $c->req->param( 'page' );
     my $rows  = $c->req->param( 'rows' );
@@ -242,11 +278,16 @@ sub videos_for_year :Local {
     $self->status_ok( $c, { media => \@data, pager => $pager } );
 }
 
+# DEPRECATED
+#
 # Return the list of videos taken in a particular month/year,
 # from most recent to least.
 #
 sub videos_for_month :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/yir/videos_for_month is deprecated." );
+
     my $month = $c->req->param( 'month' );
     my $year  = $c->req->param( 'year' );
 

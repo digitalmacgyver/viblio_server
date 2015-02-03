@@ -4,17 +4,24 @@ use VA::MediaFile;
 use namespace::autoclean;
 BEGIN { extends 'VA::Controller::Services' }
 
+# DEPRECATED
 sub dates :Private {
     my( $self, $c, $rs ) = @_;
+    $self->status_bad_request( $c, "services/AIR/dates is deprecated." );
     return $rs->search({},{columns=>['recording_date']});
 }
 
+# DEPRECATED
+#
 # Return an array of years, from most to least recent, in which
 # there are recorded videos.
 #
 sub years :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
+
+    $self->status_bad_request( $c, "services/AIR/years is deprecated." );
+
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
@@ -29,12 +36,15 @@ sub years :Local {
     $self->status_ok( $c, { years => \@data } );
 }
 
+# DEPRECATED
+#
 # Return an array of months, from most to least recent, in which
 # there are recorded videos.
 #
 sub months :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
+    $self->status_bad_request( $c, "services/AIR/months is deprecated." );
 
     my $album = $c->model( 'RDS::Media' )->find({ uuid => $aid, is_album => 1 });
     unless( $album ) {
@@ -59,8 +69,10 @@ sub months :Local {
     $self->status_ok( $c, { months => \@uniq } );
 }
 
+# DEPRECATED
 sub posters :Private {
     my( $self, $c, $dtf, $from, $to, $media_rs, $page, $rows, $pager ) = @_;
+    $self->status_bad_request( $c, "services/AIR/posters is deprecated." );
 
     my $rs = $media_rs->search(
 	{ 'media.recording_date' => {
@@ -79,6 +91,8 @@ sub posters :Private {
     return @posters;
 }
 
+# DEPRECATED
+#
 # Return the list of videos taken in a particular year,
 # in month bins, from most recent to least.
 #
@@ -89,6 +103,7 @@ sub videos_for_year :Local {
     my $page  = $c->req->param( 'page' ) || 1;
     my $rows  = $c->req->param( 'rows' ) || 10000;
     my $pager;
+    $self->status_bad_request( $c, "services/AIR/videos_for_year is deprecated." );
 
     unless( $year ) {
 	$self->status_bad_request(
@@ -152,6 +167,8 @@ sub videos_for_year :Local {
     $self->status_ok( $c, { media => \@data, pager => $pager } );
 }
 
+# DEPRECATED
+#
 # Return the list of videos taken in a particular month/year,
 # from most recent to least.
 #
@@ -164,6 +181,7 @@ sub videos_for_month :Local {
     my $rows  = $c->req->param( 'rows' ) || 10000 ;
 
     my $missing = 0;
+    $self->status_bad_request( $c, "services/AIR/videos_for_month is deprecated." );
 
     unless( $month ) {
 	$self->status_bad_request(

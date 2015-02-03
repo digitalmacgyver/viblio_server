@@ -346,9 +346,12 @@ Example response (depends on user-agent):
 
 =cut
 
+# DEPRECATED
 sub device_info :Local {
     my( $self, $c ) = @_;
     my $d = $c->req->browser;
+
+    $self->status_bad_request( $c, "services/mediafiles/device_info is deprecated." );
 
     if ( $c->req->param( 'user_agent' ) ) {
 	# can over ride, for fun
@@ -412,6 +415,7 @@ was not supplied.
 
 =cut
 
+# DEPRECATED
 sub invite_request :Local {
     my $self = shift;
     my $c    = shift;
@@ -422,6 +426,9 @@ sub invite_request :Local {
 	    username => undef,
 	  ],
 	  @_ );
+
+    $self->status_bad_request( $c, "services/mediafile/invite_request is deprecated." );
+
 
     unless( $args->{email} ) {
 	$self->status_bad_request
@@ -951,6 +958,7 @@ code to this endpoint.  If everything matches, the password will be changed and 
 
 =cut
 
+# DEPRECATED
 sub new_password :Local {
     my $self = shift;
     my $c    = shift;
@@ -961,6 +969,8 @@ sub new_password :Local {
 	    code     => undef,
 	  ],
 	  @_ );
+
+    $self->status_bad_request( $c, "services/na/new_password is deprecated." );
 
     unless( $args->{email} ) {
 	$self->status_bad_request
@@ -1025,9 +1035,12 @@ the user that originally sent the workorder to be processed.
 
 =cut
 
+# DEPRECATED
 sub workorder_processed :Local {
     my( $self, $c ) = @_;
     my $incoming = $c->{data};
+
+    $self->status_bad_request( $c, "services/na/workorder_processed is deprecated." );
 
     if ( $incoming->{error} ) {
 	$c->log->error( "The incoming workorder was marked errored" );
@@ -1160,8 +1173,12 @@ sub workorder_processed :Local {
     }
 }
 
+# DEPRECATED
 sub workorder_done :Private {
     my( $self, $c, $uuid, $wo ) = @_;
+
+    $self->status_bad_request( $c, "services/na/workorder_done is deprecated." );
+
     $c->log->debug( "WORKORDER DONE" );
 
     if ( $uuid ) {
@@ -1183,8 +1200,12 @@ sub workorder_done :Private {
     }
 }
 
+# DEPRECATED
 sub test_secure_token :Local {
     my( $self, $c, $uid, $mid, $site_token ) = @_;
+
+    $self->status_bad_request( $c, "services/mediafile/test_secure_token is deprecated." );
+
     $uid = $c->req->param( 'uid' ) unless( $uid );
     $site_token = $c->req->param( 'site-token' ) unless( $site_token );
     if ( $c->secure_token( $uid ) ne $site_token ) {
@@ -1746,8 +1767,12 @@ sub find_share_info_for_album :Local {
     }
 }
 
+# DEPRECATED
 sub find_share_info_for_pending :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/mediafile/find_share_info_for_pending is deprecated." );
+
     my $email = $self->sanitize( $c, $c->req->param( 'email' ) );
     my $test  = $c->req->param( 'test' );
 
@@ -1788,8 +1813,12 @@ This will download the most current version of the tray app to the calling clien
 
 =cut
 
+# DEPRECATED
 sub download_trayapp :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/na/download_trayapp is deprecated." );
+
     my $data = $c->model( 'RDS::AppConfig' )->
 	find({ app => 'TrayAppDL', current => 1 });
     if ( $data ) {

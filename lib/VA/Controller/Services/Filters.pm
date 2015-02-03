@@ -6,6 +6,8 @@ use Data::Page;
 
 BEGIN { extends 'VA::Controller::Services' }
 
+# DEPRECATED
+#
 # Return an array of possible video filters that the user has on
 # their videos.  Ex. [ 'bithday', 'soccer', 'people' ]
 sub video_filters :Local {
@@ -15,10 +17,14 @@ sub video_filters :Local {
     if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
 	@status_filters = ();
     }
+
+    $self->status_bad_request( $c, "services/filters/video_filters is deprecated." );
+
     my @filters = $c->user->video_filters( $only_visible, \@status_filters );
     $self->status_ok( $c, { filters => \@filters } );
 }
 
+# DEPRECATED
 sub filter_by :Local {
     my( $self, $c ) = @_;
 
@@ -32,6 +38,8 @@ sub filter_by :Local {
     if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
 	@status_filters = ();
     }
+
+    $self->status_bad_request( $c, "services/filters/filter_by is deprecated." );
 
     my @activities = ();
     my $with_people = 0;
@@ -106,14 +114,19 @@ sub filter_by :Local {
     $self->status_ok( $c, { media => \@media, pager => $self->pagerToJson( $pager ), months => \@months } );
 }
 
+# DEPRECATED
 sub tags_for_video :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
+
+    $self->status_bad_request( $c, "services/filters/tags_for_video is deprecated." );
+
     my $video = $c->user->videos->find({ uuid => $mid });
     my @tags = $video->tags;
     $self->status_ok( $c, { tags => \@tags } );
 }
 
+# DEPRECATED
 sub between :Private {
     my( $month, $year ) = @_;
     my( $from, $to );

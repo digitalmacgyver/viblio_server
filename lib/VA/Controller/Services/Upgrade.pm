@@ -21,8 +21,13 @@ Tray App.
 
 =cut
 
+# DEPRECATED
 sub check :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/upgrade/check is deprecated." );
+
+
     my $app = $c->req->param( 'app' );
     unless( $app ) {
 	$self->status_bad_request(

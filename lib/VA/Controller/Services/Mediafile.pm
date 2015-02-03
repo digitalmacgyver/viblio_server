@@ -116,10 +116,14 @@ media player or image or video tag.
 
 =cut
 
+# DEPRECATED
 sub create :Local {
     my( $self, $c, $wid ) = @_;
     $wid = $c->req->param( 'workorder_id' ) unless( $wid );
     $wid = 0 unless( $wid );
+
+    $self->status_bad_request( $c, "services/mediafile/create is deprecated." );
+
 
     my $location = $c->req->param( 'location' );
     unless( $location ) {
@@ -508,6 +512,7 @@ sub list :Local {
 	} );
 }
 
+# DEPRECATED
 sub popular :Local {
     my $self = shift; my $c = shift;
     my $args = $self->parse_args
@@ -520,7 +525,9 @@ sub popular :Local {
 	  'status[]' => [],
         ],
         @_ );
-    
+
+    $self->status_bad_request( $c, "services/mediafile/popular is deprecated." );
+
     my $where = $self->where_valid_mediafile( undef, undef, $args->{only_visible}, $args->{only_videos}, $args->{'status[]'} );
     $where->{ 'me.view_count' } = { '!=', 0 };
     my $rs = $c->user->media->search( $where, 
@@ -574,9 +581,12 @@ sub get :Local {
     $self->status_ok( $c, { media => $view, owner => $mf->user->TO_JSON } );
 }
 
+# DEPRECATED
 sub get_metadata :Local {
     my( $self, $c, $mid ) = @_;
     $mid = $c->req->param( 'mid' ) unless( $mid );
+
+    $self->status_bad_request( $c, "services/medafile/get_metadata is deprecated." );
 
     unless( $mid ) {
 	$self->status_bad_request
@@ -1219,8 +1229,11 @@ descending recording_date, created_date.
 
 =cut
 
+# DEPRECATED
 sub related :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/mediafile/related is deprecated." );
 
     my $mid = $c->req->param( 'mid' );
     my $page = $c->req->param( 'page' );
@@ -1464,9 +1477,13 @@ sub change_recording_date :Local {
     $self->status_ok( $c, [ $media->tags() ] )
 }
 
+# DEPRECATED
 sub get_animated_gif :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
+
+    $self->status_bad_request( $c, "services/mediafile/get_animated_gif is deprecated." );
+
     my $asset = $c->model( 'RDS::MediaAsset' )->search(
 	{ 'media.uuid' => $mid,
 	  'me.asset_type' => 'poster_animated' },
@@ -1480,10 +1497,14 @@ sub get_animated_gif :Local {
     $self->status_ok($c,{});
 }
 
+# DEPRECATED
 # Pass in a MD5 checksum, see if a mediafile exists with that hash
 sub media_exists :Local {
     my( $self, $c ) = @_;
     my $hash = $c->req->param( 'hash' );
+
+    $self->status_bad_request( $c, "services/mediafile/media_exists is deprecated." );
+
     my $count = $c->user->media->count({
 	unique_hash => $hash });
     $self->status_ok( $c, { count => $count } );
@@ -1579,11 +1600,16 @@ sub search_by_title_or_description :Local {
 			    no_date_return => $no_date_return } );
 }
 
+# DEPRECATED
+#
 # IN ALBUM : Search by title or description OR TAG
 # Returns media owned by and shared to user that matches the
 # search criterion.
 sub search_by_title_or_description_in_album :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/mediafile/search_by_title_or_description_in_album is deprecated." );
+
     my $q = $self->sanitize( $c, $c->req->param( 'q' ) );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;

@@ -133,6 +133,8 @@ sub media_face_appears_in :Local {
     }
 }
 
+# DEPRECATED
+#
 =head2 /services/faces/contact_mediafiles_count
 
 Return the total number of mediafiles that this contact uniquely appears in.
@@ -141,6 +143,8 @@ Return the total number of mediafiles that this contact uniquely appears in.
 
 sub contact_mediafile_count :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/faces/contact_mediafile_count is deprecated." );
 
     my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
@@ -402,6 +406,8 @@ sub faces_in_mediafile :Local {
     $c->forward( '/services/na/faces_in_mediafile' );
 }
 
+# DEPRECATED
+
 =head2 /services/faces/contact
 
 Return the contact information for the passed in contact uuid
@@ -411,6 +417,9 @@ Return the contact information for the passed in contact uuid
 sub contact :Local {
     my( $self, $c ) = @_;
     my $cid = $c->req->param( 'cid' );
+
+    $self->status_bad_request( $c, "services/faces/contact is deprecated." );
+
     unless( $cid ) {
 	$self->status_bad_request
 	    ( $c, $c->loc( 'Missing required param: [_1]', 'cid' ) );
@@ -435,6 +444,8 @@ sub contact :Local {
     $self->status_ok( $c, { contact => $hash } );
 }
 
+
+# DEPRECATED
 =head2 /services/faces/all_contacts
 
 Returns list of contacts that match the regular expression passed
@@ -446,6 +457,8 @@ sub all_contacts :Local {
     my( $self, $c ) = @_;
     my $q = $c->req->param( 'term' );
     my $editable = $c->req->param( 'editable' );
+
+    $self->status_bad_request( $c, "services/faces/all_contacts is deprecated." );
 
     my $where = {};
     if ( $q ) {
@@ -530,9 +543,13 @@ sub photos_of :Local {
     $self->status_ok( $c, \@data );
 }
 
+# DEPRECATED
 sub contact_emails :Local {
     my( $self, $c ) = @_;
     my $q = $c->req->param( "q" );
+
+    $self->status_bad_request( $c, "services/faces/contact_emails is deprecated." );
+
     my $where = { -or => [
 		       'LOWER(contact_name)' => { 'like', '%'.lc($q).'%' },
 		       'LOWER(contact_email)' => { 'like', '%'.lc($q).'%' },
@@ -648,9 +665,14 @@ sub tag :Local {
     }
 }
 
+# DEPRECATED
 sub avatar_for_name :Local {
     my( $self, $c ) = @_;
     my $contact_name = $c->req->param( 'contact_name' );
+
+    $self->status_bad_request( $c, "services/faces/avatar_for_name is deprecated." );
+
+
     my @contacts = $c->user->contacts->search({ contact_name => $contact_name });
     if ( $#contacts >= 0 ) {
 	my $contact = $contacts[0];
@@ -980,6 +1002,8 @@ sub add_contact_to_mediafile :Local {
     $self->status_ok( $c, { contact => $data } );
 }
 
+# DEPRECATED
+#
 # Return unnamed contacts that have a photo
 #
 sub unnamed :Local {
@@ -989,6 +1013,8 @@ sub unnamed :Local {
         [ page => 1,
           rows => 10000]
       );
+
+    $self->status_bad_request( $c, "services/faces/unnamed is deprecated." );
 
     my $rs = $c->user->contacts->search(
 	{ contact_name => undef,

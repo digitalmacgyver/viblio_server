@@ -106,10 +106,13 @@ sub notify :Private {
 
 }
 
+# DEPRECATED
 sub list :Local {
     my( $self, $c ) = @_;
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 100000;
+
+    $self->status_bad_request( $c, "services/album/list is deprecated." );
 
     my $rs = $c->user->albums->search({},{ page => $page, rows => $rows });
     my @albums = $rs->all;
@@ -129,9 +132,14 @@ sub list :Local {
     $self->status_ok( $c, { albums => \@data, pager => $self->pagerToJson( $pager ) } );
 }
 
+# DEPRECATED
+#
 # Return a list of album titles for the albums the user owns
 sub album_names_no_shared :Local {
     my( $self, $c ) = @_;
+    
+    $self->status_bad_request( $c, "services/album/album_names_no_shared is deprecated." );
+
     my @a = $c->user->albums->search({},{order_by=>'title'});
     my @n = sort map { {title => $_->title(), uuid => $_->uuid()} } @a;
     $self->status_ok( $c, { albums => \@n } );
@@ -250,7 +258,6 @@ sub create_album_helper :Private {
 
 # Delegate the actual work to a subroutine, call the subroutine from
 # elsewhere, leave status and such in tact here.
-
 sub create :Local {
     my( $self, $c ) = @_;
     my $name = $c->req->param( 'name' ) || 'unnamed';
@@ -653,11 +660,15 @@ sub delete_album :Local {
     $self->status_ok( $c, {} );
 }
 
+# DEPRECATED
+#
 # List albums shared to me
 sub list_shared :Local {
     my( $self, $c ) = @_;
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 100000;
+
+    $self->status_bad_request( $c, "services/album/list_shared is deprecated." );
 
     my $rs = $c->model( 'RDS::ContactGroup' )->search
 	({'contact.contact_email'=>$c->user->email},
@@ -681,11 +692,15 @@ sub list_shared :Local {
     $self->status_ok( $c, { albums => \@data, pager => $self->pagerToJson( $rs->pager ) } );
 }
 
+# DEPRECATED
+#
 # This lists all albums, owned by the user and shared to the user.
 sub list_all :Local {
     my( $self, $c ) = @_;
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 100000;
+
+    $self->status_bad_request( $c, "services/album/list_all is deprecated." );
 
     my $rs = $c->model( 'RDS::ContactGroup' )->search
 	({'contact.contact_email'=>$c->user->email},
@@ -728,10 +743,15 @@ sub list_all :Local {
 			    pager  => $self->pagerToJson( $pager ) });
 }
 
+# DEPRECATED
+
 # Similar to list_shared() but organized by sharer.  No paging because of this.
 # This returns something very similar to all_shared() for videos.
 sub list_shared_by_sharer :Local {
     my( $self, $c ) = @_;
+    
+    $self->status_bad_request( $c, "serices/album/list_shared_by_sharer is deprecated." );
+
     my @albums = map { $_->album } $c->user->is_community_member_of();
     my @data = ();
     my $users = {};
@@ -760,12 +780,16 @@ sub list_shared_by_sharer :Local {
     $self->status_ok( $c, { shared => \@data } );
 }
 
+# DEPRECATED
+#
 # If the user has permission to see the passed in mid by virtue of
 # it being shred to him, then return the published content.
 sub get_shared_video :Local {
     my( $self, $c ) = @_;
     my $mid = $c->req->param( 'mid' );
-    
+ 
+    $self->status_bad_request( $c, "services/album/get_shared_video is deprecated." );
+   
     my @result = $c->user->obj->visible_media( { 'media_uuids[]' => [ $mid ] } );
 
     if ( scalar( @result ) ) {
@@ -837,10 +861,14 @@ sub share_album :Local {
     $self->status_ok( $c, {} );    
 }
 
+#DEPRECATED
 sub add_members_to_shared :Local {
     my( $self, $c ) = @_;
     my $aid = $c->req->param( 'aid' );
     my @members = $c->req->param( 'members[]' );
+
+    $self->status_bad_request( $c, "services/album/add_members_to_shared is deprecated." );
+
     my @clean = $self->expand_email_list( $c, \@members, [ $c->user->email ] );
     my $members = \@clean;
     my $album = $c->user->albums->find({ uuid => $aid });
@@ -990,12 +1018,17 @@ sub shared_with :Local {
     $self->status_ok( $c, { displayname => $displayname, members => \@data } );
 }
 
+# DEPRECATED
+# 
 # Create an album of faces for the input contact_id.
 sub create_face_album :Local {
     my( $self, $c ) = @_;
     my $title = $self->sanitize( $c, $c->req->param( 'title' ) );
     my $contact_uuid = $c->req->param( 'contact_id' );
     my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+
+    $self->status_bad_request( $c, "services/album/create_face_album is deprecated." );
+
 
     my $contact = $c->model( 'RDS::Contact' )->find({ uuid => $contact_uuid });
     unless( $contact ) {
@@ -1063,12 +1096,17 @@ sub create_face_album :Local {
     $self->status_ok( $c, { album => $hash } );
 }
 
+# DEPRECATED
+#
 # Search by title or description
 sub search_by_title_or_description :Local {
     my( $self, $c ) = @_;
     my $q = $self->sanitize( $c, $c->req->param( 'q' ) );
     my $page = $c->req->param( 'page' ) || 1;
     my $rows = $c->req->param( 'rows' ) || 10000;
+
+    $self->status_bad_request( $c, "services/album/search_by_title_or_description is deprecated." );
+
 
     my $rs = $c->user->albums->search(
 	{ -or => [ 'LOWER(title)' => { 'like', '%'.lc($q).'%' },
@@ -1155,8 +1193,6 @@ sub add_or_replace_banner_photo :Local {
     }
     $self->status_ok( $c, $result );
 }
-
-
 
 __PACKAGE__->meta->make_immutable;
 

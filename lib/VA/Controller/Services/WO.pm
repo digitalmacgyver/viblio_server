@@ -39,8 +39,12 @@ to "New Project".
 
 =cut
 
+# DEPRECATED
 sub create :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/wo/create is deprecated." );
+
     my $name = $c->req->param( 'name' ) || 'New Project';
     my $wo = $c->model( 'RDS::Workorder' )->create({name => $name, user_id => $c->user->obj->id});
     unless( $wo ) {
@@ -64,8 +68,13 @@ to "New Project".  A desired "state" is optional, and defaults to "WO_PENDING".
 
 =cut
 
+# DEPRECATED
 sub find_or_create :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/wo/find_or_create is deprecated." );
+
+
     my $name = $c->req->param( 'name' ) || 'New Project';
     my $state = $c->req->param( 'state' ) || 'WO_PENDING';
     my $wo = $c->model( 'RDS::Workorder' )->find_or_create({user_id => $c->user->obj->id, state => $state});
@@ -96,8 +105,12 @@ The "state" field will be one of WO_SUBMITTED or WO_SUBMIT_FAILED.
 
 =cut
 
+# DEPRECATED
 sub submit :Local {
     my( $self, $c, $id ) = @_;
+
+    $self->status_bad_request( $c, "services/wo/submit is deprecated." );
+
     $id = $c->req->param( 'id' ) unless( $id );
     $id = $c->req->param( 'uuid' ) unless( $id );
     
@@ -159,8 +172,11 @@ Workorder id or uuid
 
 =cut
 
+# DEPRECATED
 sub bom :Local {
     my( $self, $c, $id ) = @_;
+
+    $self->status_bad_request( $c, "services/wo/bom is deprecated." );
 
     $id = $c->req->param( 'id' ) unless( $id );
     $id = $c->req->param( 'uuid' ) unless( $id );
@@ -226,8 +242,12 @@ With paging:
 
 =cut
 
+# DEPRECATED
 sub list :Local {
     my $self = shift; my $c = shift;
+
+    $self->status_bad_request( $c, "services/wo/list is deprecated." );
+
     my $args = $self->parse_args
       ( $c,
         [ page => undef,
@@ -281,8 +301,12 @@ Workorder id or uuid.
 
 =cut
 
+# DEPRECATED
 sub highlight :Local {
     my( $self, $c, $id ) = @_;
+
+    $self->status_bad_request( $c, "services/wo/highlight is deprecated." );
+
     $id = $c->req->param( 'id' ) unless( $id );
     $id = $c->req->param( 'uuid' ) unless( $id );
     

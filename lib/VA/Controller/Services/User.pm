@@ -222,11 +222,15 @@ Returns the new user record:
 
 =cut 
 
+# DEPRECATED
 #
 # /add_user?username=xx&password=yy&fullname=zz&email=ee&role=r1&role=&r2
 #
 sub add_user :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/user/add_user is deprecated." );
+
     unless( $c->check_user_roles( 'admin' ) ) {
 	$self->status_forbidden
 	    ( $c,
@@ -460,12 +464,17 @@ sub add_or_replace_banner_photo :Local {
     $self->status_ok( $c, $result );
 }
 
+# DEPRECATED
+#
 # Leaving this in just for code example, if I need to do this
 # in the future.
 #
 sub original :Local {
     my( $self, $c ) = @_;
-    my $photo = $c->user->obj->profile->image;
+
+    $self->status_bad_request( $c, "services/user/original is deprecated." );
+
+   my $photo = $c->user->obj->profile->image;
 
     unless( $photo ) {
 	$self->status_not_found( $c, $c->loc("no photo available") );
@@ -543,8 +552,11 @@ the terms of use document.
 
 =cut
 
+# DEPRECATED
 sub accept_terms :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/user/accept_terms is deprecated." );
 
     $c->user->obj->accepted_terms( 1 );
     $c->user->obj->update;
@@ -570,8 +582,12 @@ Return the list of workorders belonging to the logged in user.  This call forwar
 
 =cut
 
+# DEPRECATED
 sub workorders :Local {
     my $self = shift; my $c = shift;
+
+    $self->status_bad_request( $c, "services/user/workorders is deprecated." );
+
     $c->forward( '/services/wo/list' );
 }
 
@@ -591,8 +607,12 @@ with the tramsmitted token.
 
 =cut
 
+# DEPRECATED
 sub auth_token :Local {
     my( $self, $c ) = @_;
+
+    $self->status_bad_request( $c, "services/user/auth_token is deprecated." );
+
     my $uuid = $c->user->obj->uuid;
     my $token = $c->secure_token( $uuid );
     $self->status_ok( $c, { uuid => $uuid, token => $token } );
