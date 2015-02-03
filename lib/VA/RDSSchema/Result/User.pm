@@ -1048,6 +1048,12 @@ use VA::Controller::Services;
 # regardless of the page of results).
 sub visible_media {
     my ( $self, $params ) = @_;
+
+    return $self->visible_media_1( $params );
+}
+
+sub visible_media_1 {
+    my ( $self, $params ) = @_;
     
     my $args = {
 	# If specified, the set of videos under consideration, if not
@@ -1067,6 +1073,8 @@ sub visible_media {
 				       # within.  If not specified
 				       # consider all albums and no
 				       # albums.
+	'contact_uuids[]'    => [],    # List of contact UUIDs to
+				       # search within.
         'owner_uuids[]'      => [],    # List of owner UUIDs to search
 				       # within.  If not specified
 				       # consdier all owners.
@@ -1109,10 +1117,6 @@ sub visible_media {
 	}
     }
 
-    # DEBUG - something goofy is happening with the album view where
-    # we do a tag subselect here, we only get that tag, all other tags
-    # are apparently eliminataed.
-
     # Get a list of all the media this user can see by virtue of
     # communities.
     my @user_communities = $self->is_community_member_of();
@@ -1131,7 +1135,7 @@ sub visible_media {
     if ( $args->{only_videos} ) {
 	$where->{ 'me.media_type' } = 'original';
     }
-    $where->{ 'me.is_album' => 0 };
+    $where->{'me.is_album'} = 0;
 
     my $prefetch = [ 
 	# Get the media that is in community albums.
@@ -1141,7 +1145,7 @@ sub visible_media {
 	# Get media that is shared via the old style share mechanism.
 	'media_shares'
 	];
-    if ( $args->{include_contact_info} or $args->{include_tags} ) {
+    if ( $args->{include_contact_info} or $args->{include_tags} or scalar( @{$args->{'contact_uuids[]'}} ) ) {
 	push( @$prefetch, { 'media_assets' => { 'media_asset_features' => 'contact' } } );
     } else {
 	push( @$prefetch, 'media_assets' );
@@ -1159,6 +1163,11 @@ sub visible_media {
 	$rs = $rs->search( { 'me.uuid' => { -in => $args->{'media_uuids[]'} } } );
     }
     
+    # Limit to the desired contact_uuids if any.
+    if ( scalar( @{$args->{'contact_uuids[]'}} ) ) {
+	$rs = $rs->search( { 'contact.uuid' => { -in => $args->{'contact_uuids[]'} } } );
+    }
+
     # Limit to the desired album_uuids if any.
     if ( scalar( @{$args->{'album_uuids[]'}} ) ) {
 	$rs = $rs->search( { -or => [ 'community_album.uuid' => { -in => $args->{'album_uuids[]'} },
@@ -1247,6 +1256,275 @@ sub visible_media {
 
 }
 
+sub visible_media_2 {
+    my ( $self, $params ) = @_;
+    
+    my $args = {
+	# If specified, the set of videos under consideration, if not
+	# set all videos visible to this user are considered.
+	'media_uuids[]'      => [],
+
+	# Controls the level of detail in our return data for each
+	# media returned.
+	include_contact_info => 0,
+	include_images       => 0,
+	include_tags         => 0,
+
+	# If any of these are set, the boolean and of these will be
+	# applied to the result to filter the results down.
+
+	'album_uuids[]'      => [],    # List of album UUIDs to search
+				       # within.  If not specified
+				       # consider all albums and no
+				       # albums.
+        'owner_uuids[]'      => [],    # List of owner UUIDs to search
+				       # within.  If not specified
+				       # consdier all owners.
+
+	no_dates             => 0,     # Limit results to videos with
+				       # no recording_date set.
+
+	recent_created_days  => 0,     # If true limit results to
+				       # those whose creation date is
+				       # within recent_created_days of
+				       # the most recenly created
+				       # video.
+
+	search_string        => undef, # Title, description, tags, contact name
+	'tags[]'             => [],    # A list of tags and/or contact names.
+
+	only_videos          => 1,     # Set by default, the results
+				       # will only include media of
+				       # type 'original' (not Facebook
+				       # faces, albums, images, etc.)
+
+	# The order of operations here is: 
+	#
+	# If only_visible is set then the media.status field must be
+	# one of 'visible' or 'complete'.
+	#
+	# However, even if only_visible is set, if status[] is set
+	# only media meeting the values in the status[] array will be
+	# returned.
+	only_visible         => 1,
+	'status[]'           => [],
+
+	# Default where clause for each query.
+	where                => {}
+    };
+
+    for my $arg ( keys( %$args ) ) {
+	if ( exists( $params->{$arg} ) ) {
+	    $args->{$arg} = $params->{$arg}
+	}
+    }
+
+    # Get a list of all the media this user can see by virtue of
+    # communities.
+    my @user_communities = $self->is_community_member_of();
+    my @user_community_ids = map { $_->id(); } @user_communities;
+    
+    
+
+    # Query for videos this user can see via communities.
+    my $where_c = dclone( $args->{where} );
+    # Query for videos this user can see due to media_shares
+    my $where_s = dclone( $args->{where} );
+    # Query for videos this user can see due to ownership.
+    my $where_o = dclone( $args->{where} );
+
+    $where_c->{'community.id'} = { -in => \@user_community_ids };
+    $where_s->{'media_shares.user_id'} = $self->id();
+    $where_o->{'me.user_id'} = $self->id();
+
+    if ( $args->{only_visible} ) {
+	$where_c->{'me.status'} = [ 'visible', 'complete' ];
+	$where_s->{'me.status'} = [ 'visible', 'complete' ];
+	$where_o->{'me.status'} = [ 'visible', 'complete' ];
+    }
+    if ( scalar( @{$args->{'status[]'}} ) ) {
+	$where_c->{'me.status'} = $args->{'status[]'};
+	$where_s->{'me.status'} = $args->{'status[]'};
+	$where_o->{'me.status'} = $args->{'status[]'};
+    }
+    if ( $args->{only_videos} ) {
+	$where_c->{ 'me.media_type' } = 'original';
+	$where_s->{ 'me.media_type' } = 'original';
+	$where_o->{ 'me.media_type' } = 'original';
+    }
+    $where_c->{'me.is_album'} = 0;
+    $where_s->{'me.is_album'} = 0;
+    $where_o->{'me.is_album'} = 0;
+
+    my $prefetch_c = [ 
+	# Get the media that is in community albums.
+	{ 'media_albums_other' => { 'community' => 'community_album' } }
+	];
+    # DEBUG - Can a user put a public share in an album?  If so, what
+    # happens here?
+    my $prefetch_s = [ 
+	'media_shares'
+	];
+    my $prefetch_o = [ ];
+    if ( scalar( @{$args->{'album_uuids[]'}} ) > 0 ) {
+	# Get the media that is in an abum period.
+	push( @$prefetch_o, { 'media_albums_other' => 'album' } );
+    }
+
+    if ( $args->{include_contact_info} or $args->{include_tags} ) {
+	push( @$prefetch_c, { 'media_assets' => { 'media_asset_features' => 'contact' } } );
+	push( @$prefetch_s, { 'media_assets' => { 'media_asset_features' => 'contact' } } );
+	push( @$prefetch_o, { 'media_assets' => { 'media_asset_features' => 'contact' } } );
+    } else {
+	push( @$prefetch_c, 'media_assets' );
+	push( @$prefetch_s, 'media_assets' );
+	push( @$prefetch_o, 'media_assets' );
+    }
+
+    my $rs_c = $self->result_source->schema->resultset( 'Media' )->search
+	( $where_c,
+	  { prefetch => $prefetch_c } );
+    my $rs_s = $self->result_source->schema->resultset( 'Media' )->search
+	( $where_s,
+	  { prefetch => $prefetch_s } );
+    my $rs_o = $self->result_source->schema->resultset( 'Media' )->search
+	( $where_o,
+	  { prefetch => $prefetch_o } );
+	  
+    # Agument result sets with the various filters we have.
+    
+    # Limit to the desired media_uuids if any.
+    if ( scalar( @{$args->{'media_uuids[]'}} ) ) {
+	$rs_c = $rs_c->search( { 'me.uuid' => { -in => $args->{'media_uuids[]'} } } );
+	$rs_s = $rs_s->search( { 'me.uuid' => { -in => $args->{'media_uuids[]'} } } );
+	$rs_o = $rs_o->search( { 'me.uuid' => { -in => $args->{'media_uuids[]'} } } );
+    }
+    
+    # Limit to the desired album_uuids if any.
+    if ( scalar( @{$args->{'album_uuids[]'}} ) ) {
+	$rs_c = $rs_c->search( { -or => [ 'community_album.uuid' => { -in => $args->{'album_uuids[]'} },
+					  'album.uuid' => { -in => $args->{'album_uuids[]'} } ] } );
+	# Note: the legacy sharing mechanism never contributes to
+	# queries by album_uuid by design.
+	$rs_o = $rs_o->search( { -or => [ 'community_album.uuid' => { -in => $args->{'album_uuids[]'} },
+					  'album.uuid' => { -in => $args->{'album_uuids[]'} } ] } );
+    }
+
+    # Limit to the desired owner_uuids if any.
+    if ( scalar( @{$args->{'owner_uuids[]'}} ) ) {
+	# DEBUG - do we need to do a pre-query to get user.uuids into
+	# ids, or should we add more prefetching here.
+	$rs_c = $rs_c->search( { 'user.uuid' => { -in => $args->{'owner_uuids[]'} } } );
+	$rs_s = $rs_s->search( { 'user.uuid' => { -in => $args->{'owner_uuids[]'} } } );
+	$rs_o = $rs_o->search( { 'user.uuid' => { -in => $args->{'owner_uuids[]'} } } );
+    }
+
+    # Limit to videos with no recording_date set if appropriate.
+    if ( $args->{no_dates} ) {
+	# DEBUG - make no_date_date a configuration element for
+	# performance and simplicity.
+	my $dtf = $self->result_source->schema->storage->datetime_parser;
+	my $no_date_date = DateTime->from_epoch( epoch => 0 );
+	$rs_c = $rs_c->search( { 'me.recording_date' => $dtf->format_datetime( $no_date_date ) } );
+	$rs_s = $rs_s->search( { 'me.recording_date' => $dtf->format_datetime( $no_date_date ) } );
+	$rs_o = $rs_o->search( { 'me.recording_date' => $dtf->format_datetime( $no_date_date ) } );
+    }
+
+    # Limit the videos to those whose tags are in tags[].
+    if ( scalar( @{$args->{'tags[]'}} ) ) {
+    	$rs_c = $rs_c->search( { -or => [ -and => [ 'media_asset_features.feature_type' => 'activity', 
+						    'media_asset_features.coordinates' => { -in => $args->{'tags[]'} } ],
+					  -and => [ 'media_asset_features.feature_type' => 'face',
+						    'media_asset_features.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] },
+						    'media_asset_features.contact_id' => { '!=', undef },
+						    'contact.contact_name' => { -in => $args->{'tags[]'} } ] ] },
+			       { prefetch => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
+    	$rs_s = $rs_s->search( { -or => [ -and => [ 'media_asset_features.feature_type' => 'activity', 
+						    'media_asset_features.coordinates' => { -in => $args->{'tags[]'} } ],
+					  -and => [ 'media_asset_features.feature_type' => 'face',
+						    'media_asset_features.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] },
+						    'media_asset_features.contact_id' => { '!=', undef },
+						    'contact.contact_name' => { -in => $args->{'tags[]'} } ] ] },
+			       { prefetch => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
+    	$rs_o = $rs_o->search( { -or => [ -and => [ 'media_asset_features.feature_type' => 'activity', 
+						    'media_asset_features.coordinates' => { -in => $args->{'tags[]'} } ],
+					  -and => [ 'media_asset_features.feature_type' => 'face',
+						    'media_asset_features.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] },
+						    'media_asset_features.contact_id' => { '!=', undef },
+						    'contact.contact_name' => { -in => $args->{'tags[]'} } ] ] },
+			       { prefetch => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
+    }
+
+    my @output = $rs_c->all();
+    if ( scalar( @{$args->{'album_uuids[]'}} ) == 0 ) {
+	push( @output, $rs_s->all() );
+    }
+    push( @output, $rs_o->all() );
+    
+    # De-duplicate our results.
+    my $seen = {};
+    my @tmp = ();
+    for my $media ( @output ) {
+	if ( exists( $seen->{$media->id()} ) ) {
+	    next;
+	} else {
+	    push( @tmp, $media );
+	    $seen->{$media->id()} = 1;
+	}
+    }
+    @output = @tmp;
+
+    # Filter out things based on recent creation date.
+    if ( $args->{recent_created_days} and scalar( @output ) ) {
+	my $max_date = ( sort { $b->created_date->epoch() <=> $a->created_date->epoch() } @output )[0]->created_date->epoch();
+	
+	my $threshold = $max_date - 60*24*24*$args->{recent_created_days};
+	
+	@output = grep( ( $_->created_date->epoch() >= $threshold ), @output );
+    }
+
+    # Filter out things based on search string.
+    if ( defined( $args->{search_string} ) ) {
+	my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = VA::Controller::Services->new()->get_tags( undef, \@output,  $self->result_source->schema->storage->datetime_parser );
+	my @tmp = ();
+	for my $media ( @output ) {
+	    if ( defined( $media->title() ) and $media->title() =~ m/\Q$args->{search_string}/i ) {
+		push( @tmp, $media );
+		next;
+	    }
+	    if ( defined( $media->description() ) and $media->description() =~ m/\Q$args->{search_string}/i ) {
+		push( @tmp, $media );
+		next;
+	    }
+	    my $found = 0;
+	    if ( exists( $media_tags->{ $media->id() } ) ) {
+		for my $tag ( keys( %{$media_tags->{$media->id()}} ) ) {
+		    if ( $tag =~ m/\Q$args->{search_string}/i ) {
+			push( @tmp, $media );
+			$found = 1;
+			last;
+		    }
+		}
+	    }
+	    next if $found;
+	    if ( grep( $_->{media_asset_feature}->contact->contact_name() =~ m/\Q$args->{search_string}/i, 
+		       @{$media_contact_features->{$media->id()}} ) ) {
+		push( @tmp, $media );
+		next;
+	    }
+	}
+	@output = @tmp;
+    }
+    
+    # Sort the result set by descending recorded date, then created date.
+    return sort {  my $rdate_cmp = ( $b->recording_date->epoch() <=> $a->recording_date->epoch() );
+		   if ( $rdate_cmp ) {
+		       return $rdate_cmp;
+		   } else {
+		       return $b->created_date->epoch() <=> $a->created_date->epoch();
+		   }
+    } @output;
+}
 
 __PACKAGE__->meta->make_immutable;
 1;

@@ -52,15 +52,18 @@ sub media_face_appears_in :Local {
         ],
         @_ );
 
+    my $rows = $args->{rows};
+    my $page = $args->{page};
+
     my $user = $c->user->obj;
 
     my $asset_id = $args->{asset_id};
-    my $contact_id;
+    my $contact_id = undef;
 
     if ( $args->{contact_uuid} ) {
-	my $contact = $c->model( 'RDS::Contact' )->find({uuid=>$args->{contact_uuid}});
+	my $contact = $c->model( 'RDS::Contact' )->find( { uuid => $args->{contact_uuid} } );
 	if ( $contact ) {
-	    $contact_id = $contact->id;
+	    $contact_id = $contact->id();
 	}
     }
 
@@ -70,88 +73,63 @@ sub media_face_appears_in :Local {
     if ( ! defined( $contact_id ) ) {
 	# This face is unidentifed, and so belongs to exactly one video, the
 	# one in which it was detected.
-
-	my $where = { 'media.user_id' => $user->id, 
-		      'me.uuid' => $asset_id };
-
-	if ( $args->{only_videos} ) {
-	    $where->{'media.media_type'} = 'original';
-	}
-	if ( $args->{only_visible} ) {
-	    $where->{'media.status'} = [ 'visible', 'complete' ];
-	}
-	if ( scalar( @{$args->{'status[]'}} ) ) {
-	    $where->{'media.status'} = $args->{'status[]'};
-	}
-
-	my $rs = $c->model( 'RDS::MediaAsset' )->search( 
-	    $where,
-	    { 
-		join => 'media', 
-		prefetch => 'media', 
-		group_by => ['media.id'],
-		page => 1,
-		rows => $args->{rows}
-	    } );
-	my $asset = ( $rs->all() )[0];
-	unless( $asset ) {
+	my $media_uuid = $c->model( 'RDS::MediaAsset' )->search( { uuid => $asset_id }, { prefetch => 'media' } )->all();
+	unless( scalar( @$media_uuid ) ) {
 	    $self->status_not_found( $c, 
 				     $c->loc( 'Unable to find asset for [_1]', $asset_id ), $asset_id );
 	}
-	my $mediafile = VA::MediaFile->new->publish( $c, $asset->media, { $args->{'views[]'} } );
-	$self->status_ok( $c, { media => [ $mediafile ], page => $self->pagerToJson( $rs->pager ) } );
+	my @videos = $c->user->visible_media( {
+	    'media_uuids[]' => [ $media_uuid->[0]->media->uuid() ],
+	    include_contact_info => $args->{include_contact_info},
+	    include_images => $args->{include_images},
+	    include_tags => $args->{include_tags},
+	    only_visible => $args->{only_visible},
+	    only_videos => $args->{only_videos} } );
+
+	unless( scalar( @videos ) == 1 ) {
+	    $self->status_forbidden( $c, $c->log( 'You do not have permission to access the video for asset [_1]', $asset_id ), $asset_id );
+	}
+
+	my $mediafile = VA::MediaFile->new->publish( $c, $videos[0], { $args->{'views[]'} } );
+
+	# This is kind of stupid in this case because we know we have
+	# one video, but we want the UI to be able to treat responses
+	# from this API in a uniform manner.
+	my $pager = Data::Page->new( $#videos + 1, $rows, $page );
+	my @slice = ();
+	if ( $#videos >= 0 ) { 
+	    @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ]; 
+	}
+	
+	$self->status_ok( $c, { media => [ $mediafile ], page => $self->pagerToJson( $pager ) } );
     }
     else {
 	# This is an identified face and may appear in multiple media files.
-	my @features = ();
-	my $pager;
-
-	my $where = { contact_id => $contact_id, 
-		      feature_type => 'face',
-		      'me.user_id' => $user->id };
-
-	if ( $args->{only_videos} ) {
-	    $where->{'media.media_type'} = 'original';
-	}
-	if ( $args->{only_visible} ) {
-	    $where->{'media.status'} = [ 'visible', 'complete' ];
-	}
-
-	my $rs = $c->model( 'RDS::MediaAssetFeature' )->search( 
-	    $where,
-	    { prefetch => { 'media_asset' => 'media' }, 
-	      group_by => ['media.id'] } );
-	my $features = ();
-	if ( $args->{page} ) {
-	    my $features = $rs->search({},{page=>$args->{page}, rows=>$args->{rows}});
-	    @features    = $features->all;
-	    $pager       = $features->pager;
-	}
-	else {
-	    @features = $rs->all();
-	}
-
-	my $media_ids = {};
-	my @media_objs = ();
-	for my $f ( @features ) {
-	    unless ( exists( $media_ids->{$f->media_id} ) ) {
-		$media_ids->{$f->media_id} = 1;
-		push( @media_objs, $f->media_asset->media )
-	    }
-	}
+	my @videos = $c->user->visible_media( {
+	    'contact_uuids[]' => [ $args->{contact_uuid} ],
+	    include_contact_info => $args->{include_contact_info},
+	    include_images => $args->{include_images},
+	    include_tags => $args->{include_tags},
+	    only_visible => $args->{only_visible},
+	    only_videos => $args->{only_videos} } );
 
 	if ( $args->{include_images} ) {
 	    push( @{$args->{'views[]'}}, 'image' );
 	}
-	my $media = $self->publish_mediafiles( $c, \@media_objs, { views=>$args->{'views[]'}, include_contact_info => $args->{include_contact_info}, include_images => $args->{include_images}, include_tags => $args->{include_tags} } );
+	my $media = $self->publish_mediafiles( $c, \@videos, { 
+	    views => $args->{'views[]'}, 
+	    include_contact_info => $args->{include_contact_info}, 
+	    include_images => $args->{include_images}, 
+	    include_tags => $args->{include_tags} } );
 
-	if ( $pager ) {
-	    $self->status_ok( $c, { media => $media,
-				    pager => $self->pagerToJson( $pager ) } );
+	my $pager = Data::Page->new( $#videos + 1, $rows, $page );
+	my @slice = ();
+	if ( $#videos >= 0 ) { 
+	    @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ]; 
 	}
-	else {
-	    $self->status_ok( $c, { media => $media } );
-	}
+
+	$self->status_ok( $c, { media => $media,
+				pager => $self->pagerToJson( $pager ) } );
     }
 }
 
