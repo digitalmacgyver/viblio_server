@@ -445,7 +445,6 @@ sub contact :Local {
 }
 
 
-# DEPRECATED
 =head2 /services/faces/all_contacts
 
 Returns list of contacts that match the regular expression passed
@@ -457,8 +456,6 @@ sub all_contacts :Local {
     my( $self, $c ) = @_;
     my $q = $c->req->param( 'term' );
     my $editable = $c->req->param( 'editable' );
-
-    $self->status_bad_request( $c, "services/faces/all_contacts is deprecated." );
 
     my $where = {};
     if ( $q ) {
@@ -543,12 +540,9 @@ sub photos_of :Local {
     $self->status_ok( $c, \@data );
 }
 
-# DEPRECATED
 sub contact_emails :Local {
     my( $self, $c ) = @_;
     my $q = $c->req->param( "q" );
-
-    $self->status_bad_request( $c, "services/faces/contact_emails is deprecated." );
 
     my $where = { -or => [
 		       'LOWER(contact_name)' => { 'like', '%'.lc($q).'%' },
@@ -665,13 +659,9 @@ sub tag :Local {
     }
 }
 
-# DEPRECATED
 sub avatar_for_name :Local {
     my( $self, $c ) = @_;
     my $contact_name = $c->req->param( 'contact_name' );
-
-    $self->status_bad_request( $c, "services/faces/avatar_for_name is deprecated." );
-
 
     my @contacts = $c->user->contacts->search({ contact_name => $contact_name });
     if ( $#contacts >= 0 ) {
