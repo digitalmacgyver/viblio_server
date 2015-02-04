@@ -1219,11 +1219,8 @@ descending recording_date, created_date.
 
 =cut
 
-# DEPRECATED
 sub related :Local {
     my( $self, $c ) = @_;
-
-    $self->status_bad_request( $c, "services/mediafile/related is deprecated." );
 
     my $mid = $c->req->param( 'mid' );
     my $page = $c->req->param( 'page' );
