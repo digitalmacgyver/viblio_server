@@ -799,6 +799,8 @@ sub publish_mediafiles :Private {
     #$c->log->error( "Step 6", time() );
 
     my $result = [];
+
+    my $logged_in_user_id = $c->user->id();
     
     foreach my $m ( @$media ) {
 	# DEBUG - we are squashing a big params hash here over and
@@ -838,6 +840,13 @@ sub publish_mediafiles :Private {
 	if ( $params->{include_owner_json} ) {
 	    $hash->{owner} = $people->{$m->user_id}->{json};
 	}
+	
+	if ( $m->user_id() != $logged_in_user_id ) {
+	    $hash->{is_shared} = 1;
+	} else {
+	    $hash->{is_shared} = 0;
+	}
+	
 	push( @$result, $hash );
     }
 
@@ -962,6 +971,7 @@ sub get_tags :Private {
 		    }
 		} elsif ( ( $feature_type eq 'face' ) 
 			  and ( $feature->contact() )
+			  and defined( $feature->recognition_result() )
 			  and exists( $valid_faces->{ $feature->recognition_result() } ) ) {
 		    if ( defined( $feature->contact->contact_name() ) ) {
 			if ( exists( $media_contact_features->{ $m->id() } ) ) {

@@ -92,6 +92,12 @@ sub media_face_appears_in :Local {
 
 	my $mediafile = VA::MediaFile->new->publish( $c, $videos[0], { $args->{'views[]'} } );
 
+	if ( $videos[0]->user_id != $c->user->id() ) {
+	    $mediafile->{is_shared} = 1;
+	} else {
+	    $mediafile->{is_shared} = 0;
+	}
+
 	# This is kind of stupid in this case because we know we have
 	# one video, but we want the UI to be able to treat responses
 	# from this API in a uniform manner.

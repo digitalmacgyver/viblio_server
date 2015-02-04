@@ -444,16 +444,16 @@ sub get :Local {
     my $m = undef;
     if ( $include_tags ) {
 	$m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
-								 include_contact_info => $include_contact_info,
-								 include_tags => $include_tags,
-								 include_images => $include_images,
-								 media_tags => $media_tags,
-								 media_contact_features => $media_contact_features } ) );
+							      include_contact_info => $include_contact_info,
+							      include_tags => $include_tags,
+							      include_images => $include_images,
+							      media_tags => $media_tags,
+							      media_contact_features => $media_contact_features } ) );
     } else {
 	$m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
-								 include_contact_info => $include_contact_info,
-								 include_tags => $include_tags,
-								 include_images => $include_images } ) );
+							      include_contact_info => $include_contact_info,
+							      include_tags => $include_tags,
+							      include_images => $include_images } ) );
     }
 
     $hash->{media} = $m;

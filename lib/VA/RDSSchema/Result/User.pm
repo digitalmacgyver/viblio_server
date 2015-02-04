@@ -1049,7 +1049,7 @@ use VA::Controller::Services;
 sub visible_media {
     my ( $self, $params ) = @_;
 
-    return $self->visible_media_1( $params );
+    return $self->visible_media_2( $params );
 }
 
 sub visible_media_1 {
@@ -1402,12 +1402,10 @@ sub visible_media_2 {
     
     # Limit to the desired album_uuids if any.
     if ( scalar( @{$args->{'album_uuids[]'}} ) ) {
-	$rs_c = $rs_c->search( { -or => [ 'community_album.uuid' => { -in => $args->{'album_uuids[]'} },
-					  'album.uuid' => { -in => $args->{'album_uuids[]'} } ] } );
+	$rs_c = $rs_c->search( { 'community_album.uuid' => { -in => $args->{'album_uuids[]'} } } );
 	# Note: the legacy sharing mechanism never contributes to
 	# queries by album_uuid by design.
-	$rs_o = $rs_o->search( { -or => [ 'community_album.uuid' => { -in => $args->{'album_uuids[]'} },
-					  'album.uuid' => { -in => $args->{'album_uuids[]'} } ] } );
+	$rs_o = $rs_o->search( { 'album.uuid' => { -in => $args->{'album_uuids[]'} } } );
     }
 
     # Limit to the desired owner_uuids if any.

@@ -1110,9 +1110,6 @@ sub list_all :Local {
 	push( @$views, 'image' );
     }
 
-    # DEBUG
-    #$DB::single = 1;
-
     my $data = $self->publish_mediafiles( $c, \@slice, { 
 	views                  => $views, 
 	include_tags           => $include_tags, 
@@ -1123,13 +1120,6 @@ sub list_all :Local {
 	media_tags             => $media_tags,
 	media_contact_features => $media_contact_features } );
 
-    foreach my $d ( @$data ) {
-	if ( $shared_uuids->{$d->{uuid}} ) {
-	    $d->{is_shared} = 1; 
-	} else {
-	    $d->{is_shared} = 0;
-	}
-    }
     $self->status_ok( $c, { albums => $data,
                             pager  => $self->pagerToJson( $pager ),
 			    all_tags => $all_tags,
@@ -1586,14 +1576,6 @@ sub search_by_title_or_description :Local {
 	media_tags => $media_tags,
 	media_contact_features => $media_contact_features } );
 
-    foreach my $d ( @$data ) {
-	if ( $d->{user_id} ne $c->user->id() ) {
-	    $d->{is_shared} = 1;
-	} else {
-	    $d->{is_shared} = 0;
-	}
-    }
-
     $self->status_ok( $c, { media => $data, 
 			    pager => $self->pagerToJson( $pager ),
 			    all_tags => $all_tags,
@@ -1873,14 +1855,6 @@ sub recently_uploaded :Local {
 					    media_contact_features => $media_contact_features,
 					    include_owner_json => 1 } );
     
-    foreach my $d ( @$data ) {
-	if ( $d->{owner_uuid} ne $c->user->uuid() ) {
-	    $d->{is_shared} = 1;
-	} else {
-	    $d->{is_shared} = 0;
-	}
-    }
-
     $self->status_ok( $c, { media => $data, 
 			    pager => $self->pagerToJson( $pager ),
 			    all_tags => $all_tags,
