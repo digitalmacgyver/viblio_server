@@ -959,6 +959,8 @@ sub get_tags :Private {
 	    }
 	}
 
+	my $seen_in_media = {};
+
 	foreach my $ma ( $m->media_assets() ) {
 	    foreach my $feature ( $ma->media_asset_features() ) {
 		my $feature_type = $feature->{_column_data}->{feature_type};
@@ -970,10 +972,14 @@ sub get_tags :Private {
 			$all_tags->{ $feature->coordinates() } = 1;
 		    }
 		} elsif ( ( $feature_type eq 'face' ) 
-			  and ( $feature->contact() )
+			  and defined( $feature->contact() )
 			  and defined( $feature->recognition_result() )
 			  and exists( $valid_faces->{ $feature->recognition_result() } ) ) {
-		    if ( defined( $feature->contact->contact_name() ) ) {
+
+		    # We only want at most one feature / image per contact per media.
+		    if ( !exists( $seen_in_media->{$m->id()}->{$feature->contact->id()} ) ) {
+			$seen_in_media->{$m->id()}->{$feature->contact->id()} = 1;
+			
 			if ( exists( $media_contact_features->{ $m->id() } ) ) {
 			    push( @{$media_contact_features->{ $m->id() }}, { 'media_asset' => $ma,
 									      'media_asset_feature' => $feature } );
@@ -981,10 +987,12 @@ sub get_tags :Private {
 			    $media_contact_features->{ $m->id() } = [ { 'media_asset' => $ma,
 									'media_asset_feature' => $feature } ];
 			}
-			if ( exists( $all_tags->{ $feature->contact->contact_name() } ) ) {
-			    $all_tags->{ $feature->contact->contact_name() }++;
-			} else {
-			    $all_tags->{ $feature->contact->contact_name() } = 1;
+			if ( defined( $feature->contact->contact_name() ) ) {
+			    if ( exists( $all_tags->{ $feature->contact->contact_name() } ) ) {
+				$all_tags->{ $feature->contact->contact_name() }++;
+			    } else {
+				$all_tags->{ $feature->contact->contact_name() } = 1;
+			    }
 			}
 		    }
 		}

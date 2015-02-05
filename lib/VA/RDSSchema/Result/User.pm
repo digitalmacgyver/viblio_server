@@ -1277,6 +1277,8 @@ sub visible_media_2 {
 				       # within.  If not specified
 				       # consider all albums and no
 				       # albums.
+	'contact_uuids[]'    => [],    # List of contact UUIDs to
+				       # search within.
         'owner_uuids[]'      => [],    # List of owner UUIDs to search
 				       # within.  If not specified
 				       # consdier all owners.
@@ -1309,6 +1311,8 @@ sub visible_media_2 {
 	only_visible         => 1,
 	'status[]'           => [],
 
+	'views[]'            => [],
+
 	# Default where clause for each query.
 	where                => {}
     };
@@ -1319,12 +1323,27 @@ sub visible_media_2 {
 	}
     }
 
+    # Fix up the views argument if specified.
+    if ( scalar( @{$args->{'views[]'}} ) ) {
+	my $requested_views = {};
+	for my $rv ( $args->{'views[]'} ) {
+	    $requested_views->{$rv} = 1;
+	}
+	if ( $args->{include_contact_info} and !exists( $requested_views->{'face'} ) ) {
+	    # Include face views if the user wantes contact info.
+	    push( @{$args->{'views[]'}}, 'face' );
+	}
+	if ( $args->{include_tags} and !exists( $requested_views->{'main'} ) ) {
+	    # Include the main view (which has the features related to
+	    # the tags associate with it).
+	    push( @{$args->{'views[]'}}, 'main' );
+	}
+    }
+
     # Get a list of all the media this user can see by virtue of
     # communities.
     my @user_communities = $self->is_community_member_of();
     my @user_community_ids = map { $_->id(); } @user_communities;
-    
-    
 
     # Query for videos this user can see via communities.
     my $where_c = dclone( $args->{where} );
@@ -1333,7 +1352,7 @@ sub visible_media_2 {
     # Query for videos this user can see due to ownership.
     my $where_o = dclone( $args->{where} );
 
-    $where_c->{'community.id'} = { -in => \@user_community_ids };
+    $where_c->{'community.id'} = { '-in' => \@user_community_ids };
     $where_s->{'media_shares.user_id'} = $self->id();
     $where_o->{'me.user_id'} = $self->id();
 
@@ -1355,6 +1374,11 @@ sub visible_media_2 {
     $where_c->{'me.is_album'} = 0;
     $where_s->{'me.is_album'} = 0;
     $where_o->{'me.is_album'} = 0;
+    if ( scalar( @{$args->{'views[]'}} ) ) {
+	$where_c->{'media_assets.asset_type'} = { '-in' => $args->{'views[]'} };
+	$where_s->{'media_assets.asset_type'} = { '-in' => $args->{'views[]'} };
+	$where_o->{'media_assets.asset_type'} = { '-in' => $args->{'views[]'} };
+    }
 
     my $prefetch_c = [ 
 	# Get the media that is in community albums.
@@ -1398,6 +1422,13 @@ sub visible_media_2 {
 	$rs_c = $rs_c->search( { 'me.uuid' => { -in => $args->{'media_uuids[]'} } } );
 	$rs_s = $rs_s->search( { 'me.uuid' => { -in => $args->{'media_uuids[]'} } } );
 	$rs_o = $rs_o->search( { 'me.uuid' => { -in => $args->{'media_uuids[]'} } } );
+    }
+
+    # Limit to the desired contact_uuids if any.
+    if ( scalar( @{$args->{'contact_uuids[]'}} ) ) {
+	$rs_c = $rs_c->search( { 'contact.uuid' => { -in => $args->{'contact_uuids[]'} } } );
+	$rs_s = $rs_s->search( { 'contact.uuid' => { -in => $args->{'contact_uuids[]'} } } );
+	$rs_o = $rs_o->search( { 'contact.uuid' => { -in => $args->{'contact_uuids[]'} } } );
     }
     
     # Limit to the desired album_uuids if any.
@@ -1505,7 +1536,8 @@ sub visible_media_2 {
 		}
 	    }
 	    next if $found;
-	    if ( grep( $_->{media_asset_feature}->contact->contact_name() =~ m/\Q$args->{search_string}/i, 
+	    if ( grep( ( defined( $_->{media_asset_feature}->contact->contact_name() ) 
+			 and $_->{media_asset_feature}->contact->contact_name() =~ m/\Q$args->{search_string}/i ), 
 		       @{$media_contact_features->{$media->id()}} ) ) {
 		push( @tmp, $media );
 		next;

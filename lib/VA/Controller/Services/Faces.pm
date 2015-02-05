@@ -52,6 +52,10 @@ sub media_face_appears_in :Local {
         ],
         @_ );
 
+    if ( $args->{include_images} ) {
+	push( @{$args->{'views[]'}}, 'image' );
+    }
+
     my $rows = $args->{rows};
     my $page = $args->{page};
 
@@ -84,7 +88,8 @@ sub media_face_appears_in :Local {
 	    include_images => $args->{include_images},
 	    include_tags => $args->{include_tags},
 	    only_visible => $args->{only_visible},
-	    only_videos => $args->{only_videos} } );
+	    only_videos => $args->{only_videos},
+	    'views[]' => $args->{'views[]'} } );
 
 	unless( scalar( @videos ) == 1 ) {
 	    $self->status_forbidden( $c, $c->log( 'You do not have permission to access the video for asset [_1]', $asset_id ), $asset_id );
@@ -117,11 +122,9 @@ sub media_face_appears_in :Local {
 	    include_images => $args->{include_images},
 	    include_tags => $args->{include_tags},
 	    only_visible => $args->{only_visible},
-	    only_videos => $args->{only_videos} } );
+	    only_videos => $args->{only_videos},
+	    'views[]' => $args->{'views[]'} } );
 
-	if ( $args->{include_images} ) {
-	    push( @{$args->{'views[]'}}, 'image' );
-	}
 	my $media = $self->publish_mediafiles( $c, \@videos, { 
 	    views => $args->{'views[]'}, 
 	    include_contact_info => $args->{include_contact_info}, 
@@ -226,7 +229,8 @@ sub contacts :Local {
 
     my $user = $c->user->obj;
 
-    my @videos = $c->user->visible_media( { include_contact_info => 1 } );
+    my @videos = $c->user->visible_media( { include_contact_info => 1,
+					   where => { 'contact.contact_name' => { '!=' => undef } } } );
     
     my $media = {};
     for my $m ( @videos ) {

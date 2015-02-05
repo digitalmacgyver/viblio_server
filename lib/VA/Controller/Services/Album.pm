@@ -377,6 +377,8 @@ sub get :Local {
     my $only_videos = $args->{only_videos};
     my $no_dates = $args->{no_dates};
 
+    #$DB::single = 1;
+
     # If we've been asked to filter by tags we may as well include
     # tags.
     if ( scalar( @$tags ) ) {
@@ -414,8 +416,9 @@ sub get :Local {
     my $no_date_return = 0;
 
     my $current_page = undef;
+    my @everything = ();
     if ( $include_tags ) {
-	my @everything = $c->user->visible_media( {
+	@everything = $c->user->visible_media( {
 	    only_visible => $only_visible,
 	    only_videos => $only_videos,
 	    include_tags => 1,
@@ -425,15 +428,22 @@ sub get :Local {
 	( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@everything );
     }
     
-    my @videos = $c->user->visible_media( {
-	include_contact_info => $include_contact_info,
-	include_image => $include_images,
-	include_tags => $include_tags,
-	'album_uuids[]' => [ $aid ],
-	no_dates => $no_dates,
-	'tags[]' => $tags,
-	only_videos => $only_videos,
-	only_visible => $only_visible } );
+    my @videos = ();
+    # Avoid re-running a video query above if it would give us the
+    # same list of videos as we have from above.
+    if ( !$include_tags or $no_dates or scalar( @{$args->{'tags[]'}} ) ) {
+	@videos = $c->user->visible_media( {
+	    include_contact_info => $include_contact_info,
+	    include_image => $include_images,
+	    include_tags => $include_tags,
+	    'album_uuids[]' => [ $aid ],
+	    no_dates => $no_dates,
+	    'tags[]' => $tags,
+	    only_videos => $only_videos,
+	    only_visible => $only_visible } );
+    } else {
+	@videos = @everything;
+    }
 	
     $pager = Data::Page->new( scalar( @videos ), $rows, $page );
     my @media_list = ();

@@ -1082,13 +1082,19 @@ sub list_all :Local {
     }
     my $no_dates = $self->boolean( $c->req->param( 'no_dates' ), 0 );
 
+    my $views = ['poster', 'main'];
+    if ( $include_images ) {
+	push( @$views, 'image' );
+    }
+
     my @videos = $c->user->visible_media( {
 	include_contact_info => $include_contact_info,
 	include_images => $include_images,
 	include_tags => $include_tags,
 	only_visible => $only_visible,
 	only_videos => $only_videos,
-	'status[]' => \@status_filters } );
+	'status[]' => \@status_filters,
+	'views[]' => $views } );
 	   
     my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
  
@@ -1103,11 +1109,6 @@ sub list_all :Local {
     my @slice = ();
     if ( $#videos >= 0 ) {
         @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ];
-    }
-
-    my $views = ['poster', 'main'];
-    if ( $include_images ) {
-	push( @$views, 'image' );
     }
 
     my $data = $self->publish_mediafiles( $c, \@slice, { 
@@ -1527,6 +1528,11 @@ sub search_by_title_or_description :Local {
 	@status_filters = ();
     }
 
+    my $views = ['poster', 'main'];
+    if ( $include_images )  {
+	push( @{$views}, 'image' );
+    }
+
     my @videos = $c->user->visible_media( {
 	include_contact_info => $include_contact_info,
 	include_image => $include_images,
@@ -1534,7 +1540,8 @@ sub search_by_title_or_description :Local {
 	search_string => $q,
 	only_videos => $only_videos,
 	only_visible => $only_visible,
-	'status[]' => \@status_filters } );
+	'status[]' => \@status_filters,
+	'views[]' => $views } );
 
     # DEBUG - can we actually have dupes now that we refactored here?
     # We will have dups.  De-dup, then page.
@@ -1554,11 +1561,6 @@ sub search_by_title_or_description :Local {
     my @slice = ();
     if ( $#videos >= 0 ) { 
 	@slice = @videos[ $pager->first - 1 .. $pager->last - 1 ]; 
-    }
-
-    my $views = ['poster', 'main'];
-    if ( $include_images )  {
-	push( @{$views}, 'image' );
     }
 
     #$DB::single = 1;
@@ -1813,6 +1815,11 @@ sub recently_uploaded :Local {
     my $only_videos = $args->{only_videos};
     my $status = $args->{'status[]'};
 
+    my $views = ['poster', 'main'];
+    if ( $include_images ) {
+	push( @$views, 'image' );
+    }
+
     if ( $days < 0 ) {
 	$self->status_bad_request( $c, $c->loc( 'Days argument: [_1] must be >= 0.', $days ) );
     }
@@ -1828,13 +1835,9 @@ sub recently_uploaded :Local {
 			   recent_created_days => $days,
 			   only_videos => $only_videos,
 			   only_visible => $only_visible,
-			   'status[]' => $status } ) );
+			   'status[]' => $status,
+			   'views[]' => $views } ) );
 	
-    my $views = ['poster', 'main'];
-    if ( $include_images ) {
-	push( @$views, 'image' );
-    }
-
     my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
 
     my $pager = Data::Page->new( $#videos + 1, $rows, $page );
