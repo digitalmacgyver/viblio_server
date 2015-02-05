@@ -237,6 +237,31 @@ sub new_video_test :Local {
     }
 }
 
+sub cache_test :Local {
+    my $self = shift;
+    my $c = shift;
+
+    my $db_query = $c->request->param('db') || 0;
+    my $load_cache = $c->request->param('cache') || 0;
+
+    my $cache = $c->cache;
+
+    # DEBUG - this much is working - maybe I need to regenerate my
+    # schema / add some flags to the generation tool.
+    if ( !$db_query ) {
+	$cache->set( 'turtles', { ilike => 'turtles' }, 15 );
+	
+	my $val = undef;
+	if ( $load_cache ) {
+	    $val = $cache->get( 'turtles' );
+	}
+	$self->status_ok( $c,  { result => $val } );
+    } else {
+	my $rs = $c->model( 'RDS::Media' )->search( { id => 12260 },
+						    { cache_for => 15 } );
+	$self->status_ok( $c, { result => [ $rs->all() ] } );
+    }
+}
 
 __PACKAGE__->meta->make_immutable;
 

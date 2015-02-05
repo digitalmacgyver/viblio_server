@@ -1086,7 +1086,7 @@ sub list_all :Local {
     if ( $include_images ) {
 	push( @$views, 'image' );
     }
-
+    
     my @videos = $c->user->visible_media( {
 	include_contact_info => $include_contact_info,
 	include_images => $include_images,

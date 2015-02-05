@@ -139,6 +139,14 @@ Model::RDS:
     password: Yn8U!2Y52Pt#5MEK
     mysql_enable_utf8: 1
     AutoCommit: 1
+    cursor_class: DBIx::Class::Cursor::Cached
+    traits: Caching
+
+Plugin::Cache:
+  backend:
+    class: 'Cache::Memcached'
+    servers: ['127.0.0.1:11211']
+    namespace: 'VA:'
 
 Log::Dispatch:
   - class: File

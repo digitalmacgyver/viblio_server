@@ -17,8 +17,13 @@ requires 'Moose';
 requires 'namespace::autoclean';
 requires 'Config::General';
 
+requires 'Cache::Memcached';
+requires 'Cache::Memcached::GetParserXS';
+
 requires 'DBIx::Class';
 requires 'DBIx::Class::Schema::Loader';
+requires 'DBIx::Class::Cursor::Cached';
+requires 'Catalyst::Plugin::Cache';
 requires 'Catalyst::Plugin::ConfigLoader';
 requires 'Catalyst::Plugin::Static::Simple';
 requires 'Catalyst::Plugin::Redirect';

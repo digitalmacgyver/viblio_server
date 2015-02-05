@@ -34,6 +34,7 @@ use Catalyst qw/
     Session
     Session::Store::DBIC
     Session::State::Cookie
+    Cache
 
     VAUtils
     Cloudfront
@@ -43,6 +44,9 @@ use Catalyst qw/
     +CatalystX::I18N::Role::Base
     +CatalystX::I18N::Role::GetLocale
 /;
+
+use Cache::Memcached::GetParserXS;
+use Cache::Memcached;
 
 extends 'Catalyst';
 

@@ -1407,14 +1407,17 @@ sub visible_media_2 {
 
     my $rs_c = $self->result_source->schema->resultset( 'Media' )->search
 	( $where_c,
-	  { prefetch => $prefetch_c } );
+	  { prefetch => $prefetch_c,
+	    cache_for => 60*60*24 } );
     my $rs_s = $self->result_source->schema->resultset( 'Media' )->search
 	( $where_s,
-	  { prefetch => $prefetch_s } );
+	  { prefetch => $prefetch_s,
+	    cache_for => 60*60*24 } );
     my $rs_o = $self->result_source->schema->resultset( 'Media' )->search
 	( $where_o,
-	  { prefetch => $prefetch_o } );
-	  
+	  { prefetch => $prefetch_o,
+	    cache_for => 60*60*24 } );
+    
     # Agument result sets with the various filters we have.
     
     # Limit to the desired media_uuids if any.
