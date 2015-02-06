@@ -1487,12 +1487,23 @@ sub visible_media_2 {
 			       { prefetch => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
     }
 
+    # DEBUG
+    #$ENV{DBIC_TRACE_PROFILE}='console';
+    #$rs_c->result_source->storage->debug( 1 );
+    #$rs_s->result_source->storage->debug( 1 );
+    #$rs_o->result_source->storage->debug( 1 );
+
     my @output = $rs_c->all();
     if ( scalar( @{$args->{'album_uuids[]'}} ) == 0 ) {
 	push( @output, $rs_s->all() );
     }
     push( @output, $rs_o->all() );
-    
+
+    # DEBUG
+    #$rs_c->result_source->storage->debug( 0 );
+    #$rs_s->result_source->storage->debug( 0 );
+    #$rs_o->result_source->storage->debug( 0 );
+
     # De-duplicate our results.
     my $seen = {};
     my @tmp = ();

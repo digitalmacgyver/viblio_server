@@ -241,26 +241,47 @@ sub cache_test :Local {
     my $self = shift;
     my $c = shift;
 
-    my $db_query = $c->request->param('db') || 0;
-    my $load_cache = $c->request->param('cache') || 0;
+    my $memory = $c->request->param('memory') || 1;
+    my $db = $c->request->param('db') || 1;
+    my $set = $c->request->param('set') || 1;
+    my $clear = $c->request->param('clear') || 0;
 
-    my $cache = $c->cache;
+    my $memory_result = -1;
+    my $database_result = -1;
 
-    # DEBUG - this much is working - maybe I need to regenerate my
-    # schema / add some flags to the generation tool.
-    if ( !$db_query ) {
-	$cache->set( 'turtles', { ilike => 'turtles' }, 15 );
-	
-	my $val = undef;
-	if ( $load_cache ) {
-	    $val = $cache->get( 'turtles' );
+    if ( $memory ) {
+	my $cache = $c->cache;
+
+	if ( $set ) {
+	    $cache->set( 'turtles', { ilike => 'turtles' }, 15 );
 	}
-	$self->status_ok( $c,  { result => $val } );
-    } else {
-	my $rs = $c->model( 'RDS::Media' )->search( { id => 12260 },
-						    { cache_for => 15 } );
-	$self->status_ok( $c, { result => [ $rs->all() ] } );
+
+	$memory_result = $cache->get( 'turtles' );
+
+	if ( $clear ) {
+	    $cache->remove( 'turtles' );
+	}
     }
+    if ( $db ) {
+	my $rs = undef;
+	if ( $set ) {
+	    $rs = $c->model( 'RDS::Media' )->search( { id => 12260 },
+						     { cache_for => 15 } );
+	} else {
+	    $rs = $c->model( 'RDS::Media' )->search( { id => 12260 } );
+	}
+	$ENV{DBIC_TRACE_PROFILE}='console';
+	$rs->result_source->storage->debug( 1 );
+	$database_result = [ $rs->all() ];
+	$rs->result_source->storage->debug( 0 );
+
+	if ( $clear ) {
+	    $rs->cursor->clear_cache();
+	}
+       	
+    }
+    $self->status_ok( $c, { mr => $memory_result, dr => $database_result } );
+
 }
 
 __PACKAGE__->meta->make_immutable;

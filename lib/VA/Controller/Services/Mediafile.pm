@@ -1086,6 +1086,8 @@ sub list_all :Local {
     if ( $include_images ) {
 	push( @$views, 'image' );
     }
+
+    #$c->log->error( "Before visible_media: ", time() );
     
     my @videos = $c->user->visible_media( {
 	include_contact_info => $include_contact_info,
@@ -1095,6 +1097,8 @@ sub list_all :Local {
 	only_videos => $only_videos,
 	'status[]' => \@status_filters,
 	'views[]' => $views } );
+
+    #$c->log->error( "After visible_media: ", time() );
 	   
     my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
  
@@ -1111,6 +1115,8 @@ sub list_all :Local {
         @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ];
     }
 
+    #$c->log->error( "Before publish_mediafiles: ", time() );
+
     my $data = $self->publish_mediafiles( $c, \@slice, { 
 	views                  => $views, 
 	include_tags           => $include_tags, 
@@ -1120,6 +1126,8 @@ sub list_all :Local {
 	include_contact_info   => $include_contact_info,
 	media_tags             => $media_tags,
 	media_contact_features => $media_contact_features } );
+
+    #$c->log->error( "After publish_mediafiles: ", time() );
 
     $self->status_ok( $c, { albums => $data,
                             pager  => $self->pagerToJson( $pager ),
