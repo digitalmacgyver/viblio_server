@@ -658,16 +658,18 @@ sub is_community_member_of {
     my( $self, $gid ) = @_;
     if ( $gid ) {
 	my $rs = $self->result_source->schema->resultset( 'ContactGroup' )->search
-	    ({'contact.contact_email'=>$self->email,
-	      'community.uuid' => $gid},
-	     {prefetch=>['contact',{'cgroup'=>'community'}]});
+	    ( { 'contact.contact_email' => $self->email,
+		'community.uuid' => $gid },
+	      { prefetch => [ 'contact', { 'cgroup' => 'community' } ] } );
 	if ( $rs ) { return $rs->count; }
 	else { return 0; }
     }
     else {
 	my @cgroups = $self->result_source->schema->resultset( 'ContactGroup' )->search
-	    ({'contact.contact_email'=>$self->email},
-	     {prefetch=>['contact',{'cgroup'=>'community'}]});
+	    ( { 'contact.contact_email' => $self->email },
+	      { cache_for => 60*10,
+		prefetch => [ 'contact', { 'cgroup' => 'community' } ] } );
+	
 	return map { $_->cgroup->community } @cgroups;
     }
 }
@@ -1408,15 +1410,15 @@ sub visible_media_2 {
     my $rs_c = $self->result_source->schema->resultset( 'Media' )->search
 	( $where_c,
 	  { prefetch => $prefetch_c,
-	    cache_for => 60*60*24 } );
+	    cache_for => 60*10 } );
     my $rs_s = $self->result_source->schema->resultset( 'Media' )->search
 	( $where_s,
 	  { prefetch => $prefetch_s,
-	    cache_for => 60*60*24 } );
+	    cache_for => 60*10 } );
     my $rs_o = $self->result_source->schema->resultset( 'Media' )->search
 	( $where_o,
 	  { prefetch => $prefetch_o,
-	    cache_for => 60*60*24 } );
+	    cache_for => 60*10 } );
     
     # Agument result sets with the various filters we have.
     
