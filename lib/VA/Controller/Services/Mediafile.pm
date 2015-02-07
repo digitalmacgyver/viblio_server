@@ -1068,19 +1068,38 @@ sub list_status :Local {
 
 ## List all videos, owned by and shared to the user
 sub list_all :Local {
-    my( $self, $c ) = @_;
-    my $page = $c->req->param( 'page' ) || 1;
-    my $rows = $c->req->param( 'rows' ) || 100000;
-    my $include_images = $self->boolean( $c->req->param( 'include_images' ), 0 );
-    my $include_contact_info = $self->boolean( $c->req->param( 'include_contact_info' ), 0 );
-    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
-    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
-    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
-    my @status_filters = $c->req->param( 'status[]' );
-    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
-	@status_filters = ();
-    }
-    my $no_dates = $self->boolean( $c->req->param( 'no_dates' ), 0 );
+    my $self = shift; my $c = shift;
+
+    # DEBUG
+    my $now = time();
+    DB::enable_profile("/tmp/list_all_trace_$now");
+
+    my $args = $self->parse_args(
+	$c,
+	[ page => 1,
+	  rows => 10000,
+	  include_images => 0,
+	  include_contact_info => 0,
+	  include_tags => 1,
+	  only_visible => 1,
+	  only_videos => 1,
+	  'status[]' => [],
+	  no_dates => 0,
+	  'tags[]' => [],
+	  'media_uuids[]' => []
+	], @_ );
+
+    my $page = $args->{page};
+    my $rows = $args->{rows};
+    my $include_images = $args->{include_images};
+    my $include_contact_info = $args->{include_contact_info};
+    my $include_tags = $args->{include_tags};
+    my $only_visible = $args->{only_visible};
+    my $only_videos = $args->{only_videos};
+    my $status_filters = $args->{'status[]'};
+    my $no_dates = $args->{no_dates};
+    my $tags = $args->{'tags[]'};
+    my $media_uuids = $args->{'media_uuids[]'};
 
     my $views = ['poster', 'main'];
     if ( $include_images ) {
@@ -1093,8 +1112,10 @@ sub list_all :Local {
 	include_tags => $include_tags,
 	only_visible => $only_visible,
 	only_videos => $only_videos,
-	'status[]' => \@status_filters,
-	'views[]' => $views } );
+	'status[]' => $status_filters,
+	'views[]' => $views,
+	'tags[]' => $tags, 
+	'media_uuids[]' => $media_uuids } );
 	   
     my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
  
@@ -1120,6 +1141,10 @@ sub list_all :Local {
 	include_contact_info   => $include_contact_info,
 	media_tags             => $media_tags,
 	media_contact_features => $media_contact_features } );
+
+    # DEBUG
+    DB::disable_profile();
+    DB::finish_profile();
 
     $self->status_ok( $c, { albums => $data,
                             pager  => $self->pagerToJson( $pager ),
@@ -1512,21 +1537,36 @@ sub has_been_shared :Local {
 # Returns media owned by and shared to user that matches the
 # search criterion.
 sub search_by_title_or_description :Local {
-    my( $self, $c ) = @_;
-    my $q = $self->sanitize( $c, $c->req->param( 'q' ) );
-    my $page = $c->req->param( 'page' ) || 1;
-    my $rows = $c->req->param( 'rows' ) || 10000;
+    my $self = shift; my $c = shift;
+    
+    my $args = $self->parse_args(
+	$c,
+	[ q => undef,
+	  page => 1,
+	  rows => 10000,
+	  only_visible => 1,
+	  only_videos => 1,
+	  include_contact_info => 1,
+	  include_images => 0,
+	  include_tags => 1,
+	  'status[]' => [],
+	  'tags[]' => [],
+	  'media_uuids[]' => []
+	], @_ );
 
-    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
-    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
+    my $q = $args->{q};
+    my $page = $args->{page};
+    my $rows = $args->{rows};
 
-    my $include_contact_info = $self->boolean( $c->req->param( 'include_contact_info' ), 1 );
-    my $include_images = $c->req->param( 'include_images' ) || 0;
-    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
-    my @status_filters = $c->req->param( 'status[]' );
-    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
-	@status_filters = ();
-    }
+    my $only_visible = $args->{only_visible};
+    my $only_videos = $args->{only_videos};
+
+    my $include_contact_info = $args->{include_contact_info};
+    my $include_images = $args->{include_images};
+    my $include_tags = $args->{include_tags};
+    my $status_filters = $args->{'status[]'};
+    my $tags = $args->{'tags[]'};
+    my $media_uuids = $args->{'media_uuids[]'};
 
     my $views = ['poster', 'main'];
     if ( $include_images )  {
@@ -1540,8 +1580,10 @@ sub search_by_title_or_description :Local {
 	search_string => $q,
 	only_videos => $only_videos,
 	only_visible => $only_visible,
-	'status[]' => \@status_filters,
-	'views[]' => $views } );
+	'status[]' => $status_filters,
+	'views[]' => $views,
+	'tags[]' => $tags, 
+	'media_uuids[]' => $media_uuids } );
 
     # DEBUG - can we actually have dupes now that we refactored here?
     # We will have dups.  De-dup, then page.
@@ -1734,20 +1776,35 @@ sub cities :Local {
 
 # Return all videos taken in the passed in city
 sub taken_in_city :Local {
-    my( $self, $c ) = @_;
-    my $q = $self->sanitize( $c, $c->req->param( 'q' ) );
-    my $page = $c->req->param( 'page' ) || 1;
-    my $rows = $c->req->param( 'rows' ) || 10000;
-    my $include_contact_info = $c->req->param( 'include_contact_info' ) || 0;
-    my $include_images = $c->req->param( 'include_images' ) || 0;
-    my $include_tags = $self->boolean( $c->req->param( 'include_tags' ), 1 );
-    my $only_visible = $self->boolean( $c->req->param( 'only_visible' ), 1 );
-    my $only_videos = $self->boolean( $c->req->param( 'only_videos' ), 1 );
-    my @status_filters = $c->req->param( 'status[]' );
-    if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
-	@status_filters = ();
-    }
+    my $self = shift; my $c = shift;
+    
+    my $args = $self->parse_args(
+	$c,
+	[ q => undef,
+	  page => 1,
+	  rows => 10000,
+	  include_contact_info => 0,
+	  include_images => 0,
+	  include_tags => 1,
+	  only_visible => 1,
+	  only_videos => 1,
+	  'status[]' => [],
+	  'tags[]' => [],
+	  'media_uuids[]' => []
+	], @_ );
 
+    my $q = $args->{q};
+    my $page = $args->{page};
+    my $rows = $args->{rows};
+    my $include_contact_info = $args->{include_contact_info};
+    my $include_images = $args->{include_images};
+    my $include_tags = $args->{include_tags};
+    my $only_visible = $args->{only_visible};
+    my $only_videos = $args->{only_videos};
+    my $status_filters = $args->{'status[]'};
+    my $tags = $args->{'tags[]'};
+    my $media_uuids = $args->{'media_uuids[]'};
+    
     my $where = { 'me.geo_city' => $q };
 
     my @videos = $c->user->visible_media( {
@@ -1756,8 +1813,10 @@ sub taken_in_city :Local {
 	include_tags => $include_tags,
 	only_visible => $only_visible,
 	only_videos => $only_videos,
-	'status[]' => \@status_filters,
-	where => $where } );
+	'status[]' => $status_filters,
+	where => $where,
+	'tags[]' => $tags, 
+	'media_uuids[]' => $media_uuids } );
 
     my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
 
@@ -1801,7 +1860,9 @@ sub recently_uploaded :Local {
 	  include_images => 0,
 	  only_visible => 1,
 	  only_videos => 1,
-	  'status[]' => []
+	  'status[]' => [],
+	  'tags[]' => [],
+	  'media_uuids[]' => []
         ],
         @_ );
 
@@ -1814,6 +1875,8 @@ sub recently_uploaded :Local {
     my $only_visible = $args->{only_visible};
     my $only_videos = $args->{only_videos};
     my $status = $args->{'status[]'};
+    my $tags = $args->{'tags[]'};
+    my $media_uuids = $args->{'media_uuids[]'};
 
     my $views = ['poster', 'main'];
     if ( $include_images ) {
@@ -1836,7 +1899,9 @@ sub recently_uploaded :Local {
 			   only_videos => $only_videos,
 			   only_visible => $only_visible,
 			   'status[]' => $status,
-			   'views[]' => $views } ) );
+			   'views[]' => $views,
+			   'tags[]' => $tags, 
+			   'media_uuids[]' => $media_uuids } ) );
 	
     my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
 

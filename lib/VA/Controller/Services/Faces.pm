@@ -48,7 +48,9 @@ sub media_face_appears_in :Local {
 	  include_tags => 0,
 	  only_visible => 1,
 	  only_videos => 1,
-	  'status[]' => []
+	  'status[]' => [],
+	  'tags[]' => [],
+	  'media_uuids[]' => []
         ],
         @_ );
 
@@ -89,7 +91,9 @@ sub media_face_appears_in :Local {
 	    include_tags => $args->{include_tags},
 	    only_visible => $args->{only_visible},
 	    only_videos => $args->{only_videos},
-	    'views[]' => $args->{'views[]'} } );
+	    'views[]' => $args->{'views[]'},
+	    'tags[]' => $args->{'tags[]'},
+	    'media_uuids[]' => $args->{'media_uuids[]'} } );
 
 	unless( scalar( @videos ) == 1 ) {
 	    $self->status_forbidden( $c, $c->log( 'You do not have permission to access the video for asset [_1]', $asset_id ), $asset_id );
@@ -123,7 +127,9 @@ sub media_face_appears_in :Local {
 	    include_tags => $args->{include_tags},
 	    only_visible => $args->{only_visible},
 	    only_videos => $args->{only_videos},
-	    'views[]' => $args->{'views[]'} } );
+	    'views[]' => $args->{'views[]'},
+	    'tags[]' => $args->{'tags[]'},
+	    'media_uuids[]' => $args->{'media_uuids[]'} } );
 
 	my $media = $self->publish_mediafiles( $c, \@videos, { 
 	    views => $args->{'views[]'}, 

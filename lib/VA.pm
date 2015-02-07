@@ -42,7 +42,10 @@ use Catalyst qw/
     Unicode
     +CatalystX::I18N::Role::Base
     +CatalystX::I18N::Role::GetLocale
+
 /;
+
+use Devel::NYTProf;
 
 extends 'Catalyst';
 

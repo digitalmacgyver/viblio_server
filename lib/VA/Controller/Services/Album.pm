@@ -361,7 +361,8 @@ sub get :Local {
 	    only_visible => 1,
 	    only_videos => 1,
 	    'tags[]' => [],
-	    no_dates => 0
+	    no_dates => 0,
+	    'media_uuids[]' => []
 	  ],
 	  @_ );
 
@@ -376,6 +377,7 @@ sub get :Local {
     my $only_visible = $args->{only_visible};
     my $only_videos = $args->{only_videos};
     my $no_dates = $args->{no_dates};
+    my $media_uuids = $args->{'media_uuids[]'};
 
     #$DB::single = 1;
 
@@ -431,7 +433,10 @@ sub get :Local {
     my @videos = ();
     # Avoid re-running a video query above if it would give us the
     # same list of videos as we have from above.
-    if ( !$include_tags or $no_dates or scalar( @{$args->{'tags[]'}} ) ) {
+    if ( !$include_tags 
+	 or $no_dates 
+	 or scalar( @{$args->{'tags[]'}} )
+	 or scalar( @{$args->{'media_uuids[]'}} ) ) {
 	@videos = $c->user->visible_media( {
 	    include_contact_info => $include_contact_info,
 	    include_image => $include_images,
@@ -440,7 +445,8 @@ sub get :Local {
 	    no_dates => $no_dates,
 	    'tags[]' => $tags,
 	    only_videos => $only_videos,
-	    only_visible => $only_visible } );
+	    only_visible => $only_visible,
+	    'media_uuids[]' => $media_uuids } );
     } else {
 	@videos = @everything;
     }
