@@ -43,10 +43,12 @@ use Catalyst qw/
     Unicode
     +CatalystX::I18N::Role::Base
     +CatalystX::I18N::Role::GetLocale
+
 /;
 
 use Cache::Memcached::GetParserXS;
 use Cache::Memcached;
+use Devel::NYTProf;
 
 extends 'Catalyst';
 
