@@ -1484,9 +1484,13 @@ sub visible_media_2 {
 			       { prefetch => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
     }
 
-    my @output = $rs_c->all();
+
+    # DEBUG
+    my @output = ();
+    #my @output = $rs_c->all();
     if ( scalar( @{$args->{'album_uuids[]'}} ) == 0 ) {
-	push( @output, $rs_s->all() );
+	# DEBUG
+	#push( @output, $rs_s->all() );
     }
     push( @output, $rs_o->all() );
     

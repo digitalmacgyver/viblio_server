@@ -1072,7 +1072,7 @@ sub list_all :Local {
 
     # DEBUG
     my $now = time();
-    DB::enable_profile("/tmp/list_all_trace_$now");
+    DB::enable_profile("/tmp/list_all_trace_default_select_$now");
 
     my $args = $self->parse_args(
 	$c,
