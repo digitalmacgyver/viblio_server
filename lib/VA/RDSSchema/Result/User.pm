@@ -1411,9 +1411,22 @@ sub visible_media_2 {
     my $rs_s = $self->result_source->schema->resultset( 'Media' )->search
 	( $where_s,
 	  { prefetch => $prefetch_s } );
+
+    # DEBUG
+    #my $rs_o = $self->result_source->schema->resultset( 'Media' )->search
+    #( $where_o,
+	#  { prefetch => $prefetch_o } );
     my $rs_o = $self->result_source->schema->resultset( 'Media' )->search
-	( $where_o,
-	  { prefetch => $prefetch_o } );
+	( $where_o, {
+	    join => $prefetch_o,
+	    collapse => 1,
+	    '+columns' => [
+		(map { +{ "media_assets.$_" => "media_assets.$_" } } $self->result_source->schema->source( 'Media' )->related_source( 'media_assets' )->columns() ),
+		(map { +{ "media_assets.media_asset_features.$_" => "media_asset_features.$_" } } $self->result_source->schema->source( 'Media' )->related_source( 'media_assets' )->related_source( 'media_asset_features' )->columns() ),
+		(map { +{ "media_assets.media_asset_features.contact.$_" => "contact.$_" } } $self->result_source->schema->source( 'Media' )->related_source( 'media_assets' )->related_source( 'media_asset_features' )->related_source( 'contact' )->columns() ) ] } );
+	  
+
+
 	  
     # Agument result sets with the various filters we have.
     
@@ -1484,11 +1497,50 @@ sub visible_media_2 {
 			       { prefetch => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
     }
 
-    my @output = $rs_c->all();
+    # DEBUG
+    my @output = ();
+    #my @output = $rs_c->all();
     if ( scalar( @{$args->{'album_uuids[]'}} ) == 0 ) {
-	push( @output, $rs_s->all() );
+	# DEBUG
+	# push( @output, $rs_s->all() );
     }
+
+    #$DB::single = 1;
+    
+    # DEBUG
+    #$ENV{DBIC_TRACE_PROFILE} = 'console';
+    #$rs_o->result_source->storage->debug( 1 );
+    $rs_o = $rs_o->search( undef,
+			   { columns => [ 'me.id', 'me.user_id', 'me.uuid', 'me.title', 'me.description', 'me.recording_date', 'me.lat', 'me.lng', 'me.geo_address', 'me.geo_city', 'me.skip_faces', 'me.created_date' ],
+			     '+columns' => {
+				 'media_assets.id' => 'media_assets.id', 
+				 'media_assets.media_id' => 'media_assets.media_id', 
+				 'media_assets.user_id' => 'media_assets.user_id', 
+				 'media_assets.uuid' => 'media_assets.uuid', 
+				 'media_assets.asset_type' => 'media_assets.asset_type', 
+				 'media_assets.mimetype' => 'media_assets.mimetype', 
+				 'media_assets.uri' => 'media_assets.uri', 
+				 'media_assets.location' => 'media_assets.location', 
+				 'media_assets.timecode' => 'media_assets.timecode', 
+				 'media_assets.face_score' => 'media_assets.face_score', 
+				 'media_assets.view_count' => 'media_assets.view_count',
+				 'media_assets.media_asset_features.id' => 'media_asset_features.id', 
+				 'media_assets.media_asset_features.media_asset_id' => 'media_asset_features.media_asset_id', 
+				 'media_assets.media_asset_features.media_id' => 'media_asset_features.media_id', 
+				 'media_assets.media_asset_features.user_id' => 'media_asset_features.user_id', 
+				 'media_assets.media_asset_features.feature_type' => 'media_asset_features.feature_type', 
+				 'media_assets.media_asset_features.coordinates' => 'media_asset_features.coordinates', 
+				 'media_assets.media_asset_features.contact_id' => 'media_asset_features.contact_id', 
+				 'media_assets.media_asset_features.recognition_result' => 'media_asset_features.recognition_result',
+				 'media_assets.media_asset_features.contact.id' => 'contact.id', 
+				 'media_assets.media_asset_features.contact.uuid' => 'contact.uuid', 
+				 'media_assets.media_asset_features.contact.user_id' => 'contact.user_id', 
+				 'media_assets.media_asset_features.contact.contact_name' => 'contact.contact_name', 
+				 'media_assets.media_asset_features.contact.contact_email' => 'contact.contact_email', 
+				 'media_assets.media_asset_features.contact.picture_uri' => 'contact.picture_uri' 
+			     } } );
     push( @output, $rs_o->all() );
+    #$rs_o->result_source->storage->debug( 0 );
     
     # De-duplicate our results.
     my $seen = {};

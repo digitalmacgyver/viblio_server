@@ -1071,8 +1071,8 @@ sub list_all :Local {
     my $self = shift; my $c = shift;
 
     # DEBUG
-    my $now = time();
-    DB::enable_profile("/tmp/list_all_trace_$now");
+    #my $now = time();
+    #DB::enable_profile("/tmp/list_all_trace_$now");
 
     my $args = $self->parse_args(
 	$c,
@@ -1143,8 +1143,8 @@ sub list_all :Local {
 	media_contact_features => $media_contact_features } );
 
     # DEBUG
-    DB::disable_profile();
-    DB::finish_profile();
+    #DB::disable_profile();
+    #DB::finish_profile();
 
     $self->status_ok( $c, { albums => $data,
                             pager  => $self->pagerToJson( $pager ),
