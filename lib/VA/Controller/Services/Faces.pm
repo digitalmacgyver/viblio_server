@@ -84,7 +84,7 @@ sub media_face_appears_in :Local {
 	    $self->status_not_found( $c, 
 				     $c->loc( 'Unable to find asset for [_1]', $asset_id ), $asset_id );
 	}
-	my @videos = $c->user->visible_media( {
+	my ( $videos, $pager ) = $c->user->visible_media( {
 	    'media_uuids[]' => [ $media_uuid->[0]->media->uuid() ],
 	    include_contact_info => $args->{include_contact_info},
 	    include_images => $args->{include_images},
@@ -93,34 +93,27 @@ sub media_face_appears_in :Local {
 	    only_videos => $args->{only_videos},
 	    'views[]' => $args->{'views[]'},
 	    'tags[]' => $args->{'tags[]'},
-	    'media_uuids[]' => $args->{'media_uuids[]'} } );
+	    'media_uuids[]' => $args->{'media_uuids[]'},
+	    rows => $rows,
+	    page => $page } );
 
-	unless( scalar( @videos ) == 1 ) {
+	unless( scalar( @$videos ) == 1 ) {
 	    $self->status_forbidden( $c, $c->log( 'You do not have permission to access the video for asset [_1]', $asset_id ), $asset_id );
 	}
 
-	my $mediafile = VA::MediaFile->new->publish( $c, $videos[0], { $args->{'views[]'} } );
+	my $mediafile = VA::MediaFile->new->publish( $c, $videos->[0], { $args->{'views[]'} } );
 
-	if ( $videos[0]->user_id != $c->user->id() ) {
+	if ( $videos->[0]->user_id != $c->user->id() ) {
 	    $mediafile->{is_shared} = 1;
 	} else {
 	    $mediafile->{is_shared} = 0;
 	}
 
-	# This is kind of stupid in this case because we know we have
-	# one video, but we want the UI to be able to treat responses
-	# from this API in a uniform manner.
-	my $pager = Data::Page->new( $#videos + 1, $rows, $page );
-	my @slice = ();
-	if ( $#videos >= 0 ) { 
-	    @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ]; 
-	}
-	
 	$self->status_ok( $c, { media => [ $mediafile ], page => $self->pagerToJson( $pager ) } );
     }
     else {
 	# This is an identified face and may appear in multiple media files.
-	my @videos = $c->user->visible_media( {
+	my ( $videos, $pager ) = $c->user->visible_media( {
 	    'contact_uuids[]' => [ $args->{contact_uuid} ],
 	    include_contact_info => $args->{include_contact_info},
 	    include_images => $args->{include_images},
@@ -129,19 +122,15 @@ sub media_face_appears_in :Local {
 	    only_videos => $args->{only_videos},
 	    'views[]' => $args->{'views[]'},
 	    'tags[]' => $args->{'tags[]'},
-	    'media_uuids[]' => $args->{'media_uuids[]'} } );
+	    'media_uuids[]' => $args->{'media_uuids[]'},
+	    rows => $rows,
+	    page => $page } );
 
-	my $media = $self->publish_mediafiles( $c, \@videos, { 
+	my $media = $self->publish_mediafiles( $c, $videos, { 
 	    views => $args->{'views[]'}, 
 	    include_contact_info => $args->{include_contact_info}, 
 	    include_images => $args->{include_images}, 
 	    include_tags => $args->{include_tags} } );
-
-	my $pager = Data::Page->new( $#videos + 1, $rows, $page );
-	my @slice = ();
-	if ( $#videos >= 0 ) { 
-	    @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ]; 
-	}
 
 	$self->status_ok( $c, { media => $media,
 				pager => $self->pagerToJson( $pager ) } );

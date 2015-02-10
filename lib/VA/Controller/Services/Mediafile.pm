@@ -979,7 +979,8 @@ sub all_shared :Local {
     else {
 	#my @shares = $user->media_shares->search( {'media.is_album' => 0},{prefetch=>{ media => 'user'}} );
 	#@media = map { $_->media } @shares;
-	@media = $user->visible_media();
+	my ( $videos, $pager ) = $user->visible_media( { rows => undef, page => undef } );
+	@media = @$videos;
     }
     
     # partition this into an array of users, each with an array of videos they've
@@ -1140,21 +1141,15 @@ sub list_all :Local {
     my $face_tag_params = dclone( $tags_params );
     $face_tag_params->{include_contact_info} = 1;
     my $face_tags = $c->user->get_face_tags( $face_tag_params );
-    
-    #$c->log->error( keys( %{$_->{_column_data}} ) ) foreach @face_tags;
-    #$c->log->error( $_->{_column_data}->{contact_name} . " " .
-	#	    $_->{_column_data}->{contact_uuid} . " " .
-	#	    $_->{_column_data}->{picture_uri} . " " .
-	#	    $_->{_column_data}->{face_count} ) foreach @face_tags;
-
-    my ( $media_tags, $media_contact_features ) = $self->get_tags( $c, $videos );
-    
-    my $shared_uuids = {};
-    for my $video ( @$videos ) {
-	if ( $video->user_id() != $c->user->id() ) {
-	    $shared_uuids->{$video->uuid} = 1;
+    for my $face_tag ( keys( %$face_tags ) ) {
+	if ( exists( $all_tags->{$face_tags->{$face_tag}->{contact_name}} ) ) {
+	    $all_tags->{$face_tags->{$face_tag}->{contact_name}} += $face_tags->{$face_tag}->{face_count};
+	} else {
+	    $all_tags->{$face_tags->{$face_tag}->{contact_name}} = $face_tags->{$face_tag}->{face_count};
 	}
     }
+    
+    my ( $media_tags, $media_contact_features ) = $self->get_tags( $c, $videos );
     
     my $data = $self->publish_mediafiles( $c, $videos, { 
 	views                  => $views, 
@@ -1225,9 +1220,9 @@ sub cf :Local {
 	$owns_video = 1;
     }
 
-    my @result = $c->user->obj->visible_media( { 'media_uuids[]' => [ $mid ] } );
+    my ( $result, $pager ) = $c->user->obj->visible_media( { 'media_uuids[]' => [ $mid ] } );
 
-    if ( $owns_video || scalar( @result ) ) {
+    if ( $owns_video || scalar( @$result ) ) {
 	my $rs = $c->model( 'RDS::MediaAsset' )->search(
 	    { 'media.uuid' => $mid,
 	      'me.asset_type' => 'main' }, { prefetch => 'media' } );
@@ -1330,11 +1325,14 @@ sub related :Local {
 	# If we were provided a list of related media, just return the
 	# ones the current user can see.
 	
-	@media_results = $user->visible_media( { 
+	my ( $videos, $pager ) = $user->visible_media( { 
 	    'media_uuids[]' => \@related_media, 
 	    only_visible => $only_visible, 
 	    'status[]' => \@status_filters, 
-	    only_videos => $only_videos } );
+	    only_videos => $only_videos,
+	    page => $page,
+	    rows => $rows } );
+	push( @media_results, @$videos );
     } else {
 
 	# First determine if this media is in any albums that this
@@ -1414,12 +1412,14 @@ sub related :Local {
 		# least one of these faces, ordered by most recently recorded.
 		#
 		my @contact_ids = map { $_->contact->id } @face_features;
-		my @visible_media = $user->visible_media( { 
+		my ( $visible_media, $pager ) = $user->visible_media( { 
 		    only_visible => $only_visible, 
 		    'status[]' => \@status_filters, 
-		    only_videos => $only_videos } );
+		    only_videos => $only_videos,
+		    page => $page,
+		    rows => $rows } );
 
-		my @media_ids   = map { $_->id } @visible_media;
+		my @media_ids = map { $_->id } @$visible_media;
 		
 		# $c->log->error( $_->contact->contact_name, "\n" ) foreach @face_features;
 		
@@ -1597,7 +1597,7 @@ sub search_by_title_or_description :Local {
 	push( @{$views}, 'image' );
     }
 
-    my @videos = $c->user->visible_media( {
+    my ( $videos, $pager ) = $c->user->visible_media( {
 	include_contact_info => $include_contact_info,
 	include_image => $include_images,
 	include_tags => $include_tags,
@@ -1607,31 +1607,41 @@ sub search_by_title_or_description :Local {
 	'status[]' => $status_filters,
 	'views[]' => $views,
 	'tags[]' => $tags, 
-	'media_uuids[]' => $media_uuids } );
-
-    # DEBUG - can we actually have dupes now that we refactored here?
-    # We will have dups.  De-dup, then page.
-    my $seen = {};
-    my @tmp = ();
-    for my $media ( @videos ) {
-	if ( !exists( $seen->{$media->id()} ) ) {
-	    $seen->{$media->id()} = 1;
-	    push( @tmp, $media );
+	'media_uuids[]' => $media_uuids,
+	page => $page,
+	rows => $rows } );
+    
+    my $tags_params = {
+	page => undef,
+	rows => undef,
+	include_contact_info => 0,
+	include_images => 0,
+	include_tags => 1,
+	only_visible => 1,
+	only_videos => 1,
+	'views[]' => ['main'],
+	search_string => $q };
+    my $all_tags = $c->user->get_tags( $tags_params );
+    
+    my $no_date_return = 0;
+    if ( exists( $all_tags->{'No Dates'} ) ) {
+	$no_date_return = 1;
+    }
+    
+    my $face_tag_params = dclone( $tags_params );
+    $face_tag_params->{include_contact_info} = 1;
+    my $face_tags = $c->user->get_face_tags( $face_tag_params );
+    for my $face_tag ( keys( %$face_tags ) ) {
+	if ( exists( $all_tags->{$face_tags->{$face_tag}->{contact_name}} ) ) {
+	    $all_tags->{$face_tags->{$face_tag}->{contact_name}} += $face_tags->{$face_tag}->{face_count};
+	} else {
+	    $all_tags->{$face_tags->{$face_tag}->{contact_name}} = $face_tags->{$face_tag}->{face_count};
 	}
     }
-    @videos = @tmp;
 
-    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
+    my ( $media_tags, $media_contact_features ) = $self->get_tags( $c, $videos );
 
-    my $pager = Data::Page->new( $#videos + 1, $rows, $page );
-    my @slice = ();
-    if ( $#videos >= 0 ) { 
-	@slice = @videos[ $pager->first - 1 .. $pager->last - 1 ]; 
-    }
-
-    #$DB::single = 1;
-
-    my $data = $self->publish_mediafiles( $c, \@slice, { 
+    my $data = $self->publish_mediafiles( $c, $videos, { 
 	views => $views, 
 	include_tags => $include_tags, 
 	include_shared => 1, 
@@ -1784,14 +1794,14 @@ sub cities :Local {
 	@status_filters = ();
     }
 
-    my @videos = $c->user->visible_media( {
+    my ( $videos, $pager ) = $c->user->visible_media( {
 	only_visible => $only_visible,
 	only_videos => $only_videos,
 	'status[]' => \@status_filters,
 	where => { 'me.geo_city' => { '!=' => undef } } } );
 
     my $unique_cities = {};
-    for my $city ( @videos ) {
+    for my $city ( @$videos ) {
 	$unique_cities->{$city->geo_city()} = 1;
     }
     my @cities = sort( keys( %$unique_cities ) );
@@ -1831,7 +1841,12 @@ sub taken_in_city :Local {
     
     my $where = { 'me.geo_city' => $q };
 
-    my @videos = $c->user->visible_media( {
+    my $views = ['poster', 'main'];
+    if ( $include_images ) {
+	push( @$views, 'image' );
+    }
+
+    my ( $videos, $pager ) = $c->user->visible_media( {
 	include_contact_info => $include_contact_info,
 	include_image => $include_images,
 	include_tags => $include_tags,
@@ -1840,22 +1855,42 @@ sub taken_in_city :Local {
 	'status[]' => $status_filters,
 	where => $where,
 	'tags[]' => $tags, 
-	'media_uuids[]' => $media_uuids } );
+	'media_uuids[]' => $media_uuids,
+	'views[]' => $views,
+	page => $page,
+	rows => $rows } );
 
-    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
-
-    my $pager = Data::Page->new( $#videos + 1, $rows, $page );
-    my @slice = ();
-    if ( $#videos >= 0 ) {
-        @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ];
+  my $tags_params = {
+	page => undef,
+	rows => undef,
+	include_contact_info => 0,
+	include_images => 0,
+	include_tags => 1,
+	only_visible => 1,
+	only_videos => 1,
+	'views[]' => ['main'],
+	where => $where };
+    my $all_tags = $c->user->get_tags( $tags_params );
+    
+    my $no_date_return = 0;
+    if ( exists( $all_tags->{'No Dates'} ) ) {
+	$no_date_return = 1;
+    }
+    
+    my $face_tag_params = dclone( $tags_params );
+    $face_tag_params->{include_contact_info} = 1;
+    my $face_tags = $c->user->get_face_tags( $face_tag_params );
+    for my $face_tag ( keys( %$face_tags ) ) {
+	if ( exists( $all_tags->{$face_tags->{$face_tag}->{contact_name}} ) ) {
+	    $all_tags->{$face_tags->{$face_tag}->{contact_name}} += $face_tags->{$face_tag}->{face_count};
+	} else {
+	    $all_tags->{$face_tags->{$face_tag}->{contact_name}} = $face_tags->{$face_tag}->{face_count};
+	}
     }
 
-    my $views = ['poster', 'main'];
-    if ( $include_images ) {
-	push( @$views, 'image' );
-    }
+    my ( $media_tags, $media_contact_features ) = $self->get_tags( $c, $videos );
 
-    my $data = $self->publish_mediafiles( $c, \@videos, { 
+    my $data = $self->publish_mediafiles( $c, $videos, { 
 	views => $views, 
 	include_tags => $include_tags, 
 	include_contact_info => $include_contact_info, 
@@ -1911,31 +1946,54 @@ sub recently_uploaded :Local {
 	$self->status_bad_request( $c, $c->loc( 'Days argument: [_1] must be >= 0.', $days ) );
     }
 
-    # This one is a bit unusual in that we return our results in
-    # descending order of creation date, as opposed to recording_date,
-    # creation_date like most other endpoints.
-    my @videos = sort( { $b->created_date->epoch() <=> $a->created_date->epoch() }
-		       $c->user->visible_media( {
-			   include_contact_info => $include_contact_info,
-			   include_image => $include_images,
-			   include_tags => $include_tags,
-			   recent_created_days => $days,
-			   only_videos => $only_videos,
-			   only_visible => $only_visible,
-			   'status[]' => $status,
-			   'views[]' => $views,
-			   'tags[]' => $tags, 
-			   'media_uuids[]' => $media_uuids } ) );
-	
-    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
-
-    my $pager = Data::Page->new( $#videos + 1, $rows, $page );
-    my @slice = ();
-    if ( $#videos >= 0 ) {
-        @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ];
+    # DEBUG - have to fix this whole thing to actually work, and to
+    # return things in sort order of descending created date.
+    my ( $videos, $pager ) = $c->user->visible_media( {
+	include_contact_info => $include_contact_info,
+	include_image => $include_images,
+	include_tags => $include_tags,
+	recent_created_days => $days,
+	only_videos => $only_videos,
+	only_visible => $only_visible,
+	'status[]' => $status,
+	'views[]' => $views,
+	'tags[]' => $tags, 
+	'media_uuids[]' => $media_uuids,
+	'order' => [ 'me.created_date desc' ],
+	page => $page,
+	rows => $rows } );
+    
+    my $tags_params = {
+	page => undef,
+	rows => undef,
+	include_contact_info => 0,
+	include_images => 0,
+	include_tags => 1,
+	only_visible => 1,
+	only_videos => 1,
+	'views[]' => ['main'],
+	recent_created_days => $days };
+    my $all_tags = $c->user->get_tags( $tags_params );
+    
+    my $no_date_return = 0;
+    if ( exists( $all_tags->{'No Dates'} ) ) {
+	$no_date_return = 1;
     }
     
-    my $data = $self->publish_mediafiles( $c, \@slice, 
+    my $face_tag_params = dclone( $tags_params );
+    $face_tag_params->{include_contact_info} = 1;
+    my $face_tags = $c->user->get_face_tags( $face_tag_params );
+    for my $face_tag ( keys( %$face_tags ) ) {
+	if ( exists( $all_tags->{$face_tags->{$face_tag}->{contact_name}} ) ) {
+	    $all_tags->{$face_tags->{$face_tag}->{contact_name}} += $face_tags->{$face_tag}->{face_count};
+	} else {
+	    $all_tags->{$face_tags->{$face_tag}->{contact_name}} = $face_tags->{$face_tag}->{face_count};
+	}
+    }
+
+    my ( $media_tags, $media_contact_features ) = $self->get_tags( $c, $videos );
+    
+    my $data = $self->publish_mediafiles( $c, $videos, 
 					  { views => $views, 
 					    include_tags => $include_tags, 
 					    include_contact_info => $include_contact_info, 

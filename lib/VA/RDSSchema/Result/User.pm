@@ -1064,7 +1064,6 @@ sub get_tags {
     
     my $tags_rs = $rs->search( { 'media_asset_features.feature_type' => 'activity' }, { join => $prefetch } );
     
-    # DEBUG - at long last this is basically working.
     $tags_rs = $tags_rs->search( undef,
 				 { columns => [
 				       { 'tag_name' => 'media_asset_features.coordinates' }, 
@@ -1099,6 +1098,8 @@ sub get_tags {
     return $result_hash;
 }
 
+# Note - this returns it's result based on contact_uuid, because two
+# contacts can have the same name.
 sub get_face_tags {
     my ( $self, $params ) = @_;
 
@@ -1113,7 +1114,6 @@ sub get_face_tags {
 	'contact.contact_name' => { '!=', undef }
 		       }, { join => $prefetch } );
 
-    # DEBUG - at long last this is basically working.
     my $faces_rs = $rs->search( undef,
 				{ columns => [
 				      { 'contact_name' => 'contact.contact_name' }, 
@@ -1122,15 +1122,18 @@ sub get_face_tags {
 				      { 'face_count' => { count => { distinct => 'media_asset_features.media_id' } } } ],
 				      group_by => 'contact.id',
 				      order_by => undef } );
-
-    my @results = $faces_rs->all();
+    
+    my @result = ();
+    push( @result, $faces_rs->all() );
     my $result_hash = {};
     foreach my $result ( @result ) {
-	$result_hash->{$result->{_column_data}->{contact_name}} = $result->{_column_data}->{tag_count};
+	$result_hash->{$result->{_column_data}->{contact_uuid}} = 
+	    { contact_name => $result->{_column_data}->{contact_name},
+	      picture_uri => $result->{_column_data}->{picture_uri},
+	      face_count => $result->{_column_data}->{face_count} };
     }
     
     return $result_hash;
-
 }
 
 sub visible_media_1 {
@@ -1145,15 +1148,6 @@ sub visible_media_1 {
 	order_by => [ 'me.recording_date desc', 'me.created_date desc' ] } );
     
     my @output = $rs->all();
-
-    # Filter out things based on recent creation date.
-    if ( $args->{recent_created_days} and scalar( @output ) ) {
-	my $max_date = ( sort { $b->created_date->epoch() <=> $a->created_date->epoch() } @output )[0]->created_date->epoch();
-	
-	my $threshold = $max_date - 60*24*24*$args->{recent_created_days};
-	
-	@output = grep( ( $_->created_date->epoch() >= $threshold ), @output );
-    }
 
     # Sort the result set by descending recorded date, then created date.
     return ( \@output, $rs->pager() );
@@ -1221,7 +1215,9 @@ sub _get_args {
 	'views[]'            => [],
 
 	# Default where clause for each query.
-	where                => {}
+	where                => {},
+	# Default order clause for each query.
+	order                => [ 'me.recording_date desc', 'me.created_date desc' ]
     };
 
     for my $arg ( keys( %$args ) ) {
@@ -1294,7 +1290,7 @@ sub _get_visible_result_set {
 
     my $rs = $self->result_source->schema->resultset( 'Media' )->search
 	( $where,
-	  { order_by => [ 'me.recording_date desc', 'me.created_date desc' ] } );
+	  { order_by => $args->{order_by} } );
 	  
     # Agument result sets with the various filters we have.
     
@@ -1356,8 +1352,21 @@ sub _get_visible_result_set {
 	    } } );
     }
 
-    # DEBUG - limit to recent videos.
-
+    # Limit the videos to those recently created (not recorded).
+    if ( $args->{recent_created_days} ) {
+	# Hoo boy...
+	my $recent_rs = $rs;
+	my $latest = $rs->search( { prefetch => $prefetch,
+				    order_by => [ 'me.created_date desc' ],
+				    page => 1,
+				    rows => 1 } )->single();
+	if ( defined( $latest ) and defined( $latest->created_date() ) ) {
+	    my $dtf = $self->result_source->schema->storage->datetime_parser;
+	    my $from_when = DateTime->from_epoch( epoch => DateTime->now() - 60*60*24*$args->{recent_created_days} );
+	    $rs = $rs->search( { 'me.created_date' =>  { '>=', $dtf->format_datetime( $from_when ) } } );
+	}
+    }
+    
     if ( defined( $args->{page} ) ) {
 	$rs = $rs->search( undef, { page => $args->{page} } );
     }
