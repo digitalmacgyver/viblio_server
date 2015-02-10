@@ -445,6 +445,8 @@ sub get :Local {
     }
 
     my ( $videos, $pager ) = $c->user->visible_media( {
+	page => $page,
+	rows => $rows,
 	include_contact_info => $include_contact_info,
 	include_image => $include_images,
 	include_tags => $include_tags,
