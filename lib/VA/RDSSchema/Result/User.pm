@@ -1123,7 +1123,14 @@ sub get_face_tags {
 				      group_by => 'contact.id',
 				      order_by => undef } );
 
-    return $faces_rs->all();
+    my @results = $faces_rs->all();
+    my $result_hash = {};
+    foreach my $result ( @result ) {
+	$result_hash->{$result->{_column_data}->{contact_name}} = $result->{_column_data}->{tag_count};
+    }
+    
+    return $result_hash;
+
 }
 
 sub visible_media_1 {
