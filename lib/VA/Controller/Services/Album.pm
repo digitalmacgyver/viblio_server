@@ -7,6 +7,8 @@ use URI::Escape;
 use Data::Page;
 use Try::Tiny;
 
+use Storable qw/ dclone /;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 my $encoder = JSON::XS
@@ -410,66 +412,64 @@ sub get :Local {
     my $hash = VA::MediaFile->new->publish( $c, $album, $poster_params );
     $hash->{is_shared} = ( $album->community ? 1 : 0 );
 
-    my $pager = undef;
-
     my $all_tags = {};
-    my $media_tags = {};
-    my $media_contact_features = {};
     my $no_date_return = 0;
 
-    my $current_page = undef;
-    my @everything = ();
     if ( $include_tags ) {
-	@everything = $c->user->visible_media( {
-	    only_visible => $only_visible,
-	    only_videos => $only_videos,
+	my $tags_params = {
+	    page => undef,
+	    rows => undef,
+	    include_contact_info => 0,
+	    include_images => 0,
 	    include_tags => 1,
-	    include_contacts => 1,
-	    'album_uuids[]' => [ $aid ] } );
-
-	( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@everything );
-    }
-    
-    my @videos = ();
-    # Avoid re-running a video query above if it would give us the
-    # same list of videos as we have from above.
-    if ( !$include_tags 
-	 or $no_dates 
-	 or scalar( @{$args->{'tags[]'}} )
-	 or scalar( @{$args->{'media_uuids[]'}} ) ) {
-	@videos = $c->user->visible_media( {
-	    include_contact_info => $include_contact_info,
-	    include_image => $include_images,
-	    include_tags => $include_tags,
-	    'album_uuids[]' => [ $aid ],
-	    no_dates => $no_dates,
-	    'tags[]' => $tags,
-	    only_videos => $only_videos,
-	    only_visible => $only_visible,
-	    'media_uuids[]' => $media_uuids } );
-    } else {
-	@videos = @everything;
-    }
+	    only_visible => 1,
+	    only_videos => 1,
+	    'views[]' => ['main'],
+	    'album_uuids[]' => [ $aid ] };
+	$all_tags = $c->user->get_tags( $tags_params );
 	
-    $pager = Data::Page->new( scalar( @videos ), $rows, $page );
-    my @media_list = ();
-    if ( scalar( @videos ) ) {
-	@media_list = @videos[ $pager->first - 1 .. $pager->last - 1 ];
+	if ( exists( $all_tags->{'No Dates'} ) ) {
+	    $no_date_return = 1;
+	}
+    
+	my $face_tag_params = dclone( $tags_params );
+	$face_tag_params->{include_contact_info} = 1;
+	my $face_tags = $c->user->get_face_tags( $face_tag_params );
+	for my $face_tag ( keys( %$face_tags ) ) {
+	    if ( exists( $all_tags->{$face_tags->{$face_tag}->{contact_name}} ) ) {
+		$all_tags->{$face_tags->{$face_tag}->{contact_name}} += $face_tags->{$face_tag}->{face_count};
+	    } else {
+		$all_tags->{$face_tags->{$face_tag}->{contact_name}} = $face_tags->{$face_tag}->{face_count};
+	    }
+	}
     }
+
+    my ( $videos, $pager ) = $c->user->visible_media( {
+	include_contact_info => $include_contact_info,
+	include_image => $include_images,
+	include_tags => $include_tags,
+	'album_uuids[]' => [ $aid ],
+	no_dates => $no_dates,
+	'tags[]' => $tags,
+	only_videos => $only_videos,
+	only_visible => $only_visible,
+	'media_uuids[]' => $media_uuids } );
+
+    my ( $media_tags, $media_contact_features ) = $self->get_tags( $c, $videos );
 
     my $m = undef;
     if ( $include_tags ) {
-	$m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
-							      include_contact_info => $include_contact_info,
-							      include_tags => $include_tags,
-							      include_images => $include_images,
-							      media_tags => $media_tags,
-							      media_contact_features => $media_contact_features } ) );
+	$m = ( $self->publish_mediafiles( $c, $videos, { include_owner_json => 1,
+							 include_contact_info => $include_contact_info,
+							 include_tags => $include_tags,
+							 include_images => $include_images,
+							 media_tags => $media_tags,
+							 media_contact_features => $media_contact_features } ) );
     } else {
-	$m = ( $self->publish_mediafiles( $c, \@media_list, { include_owner_json => 1,
-							      include_contact_info => $include_contact_info,
-							      include_tags => $include_tags,
-							      include_images => $include_images } ) );
+	$m = ( $self->publish_mediafiles( $c, $videos, { include_owner_json => 1,
+							 include_contact_info => $include_contact_info,
+							 include_tags => $include_tags,
+							 include_images => $include_images } ) );
     }
 
     $hash->{media} = $m;

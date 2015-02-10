@@ -84,7 +84,7 @@ sub media_face_appears_in :Local {
 	    $self->status_not_found( $c, 
 				     $c->loc( 'Unable to find asset for [_1]', $asset_id ), $asset_id );
 	}
-	my @videos = $c->user->visible_media( {
+	my ( $videos, $pager ) = $c->user->visible_media( {
 	    'media_uuids[]' => [ $media_uuid->[0]->media->uuid() ],
 	    include_contact_info => $args->{include_contact_info},
 	    include_images => $args->{include_images},
@@ -93,34 +93,27 @@ sub media_face_appears_in :Local {
 	    only_videos => $args->{only_videos},
 	    'views[]' => $args->{'views[]'},
 	    'tags[]' => $args->{'tags[]'},
-	    'media_uuids[]' => $args->{'media_uuids[]'} } );
+	    'media_uuids[]' => $args->{'media_uuids[]'},
+	    rows => $rows,
+	    page => $page } );
 
-	unless( scalar( @videos ) == 1 ) {
+	unless( scalar( @$videos ) == 1 ) {
 	    $self->status_forbidden( $c, $c->log( 'You do not have permission to access the video for asset [_1]', $asset_id ), $asset_id );
 	}
 
-	my $mediafile = VA::MediaFile->new->publish( $c, $videos[0], { $args->{'views[]'} } );
+	my $mediafile = VA::MediaFile->new->publish( $c, $videos->[0], { $args->{'views[]'} } );
 
-	if ( $videos[0]->user_id != $c->user->id() ) {
+	if ( $videos->[0]->user_id != $c->user->id() ) {
 	    $mediafile->{is_shared} = 1;
 	} else {
 	    $mediafile->{is_shared} = 0;
 	}
 
-	# This is kind of stupid in this case because we know we have
-	# one video, but we want the UI to be able to treat responses
-	# from this API in a uniform manner.
-	my $pager = Data::Page->new( $#videos + 1, $rows, $page );
-	my @slice = ();
-	if ( $#videos >= 0 ) { 
-	    @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ]; 
-	}
-	
 	$self->status_ok( $c, { media => [ $mediafile ], page => $self->pagerToJson( $pager ) } );
     }
     else {
 	# This is an identified face and may appear in multiple media files.
-	my @videos = $c->user->visible_media( {
+	my ( $videos, $pager ) = $c->user->visible_media( {
 	    'contact_uuids[]' => [ $args->{contact_uuid} ],
 	    include_contact_info => $args->{include_contact_info},
 	    include_images => $args->{include_images},
@@ -129,19 +122,15 @@ sub media_face_appears_in :Local {
 	    only_videos => $args->{only_videos},
 	    'views[]' => $args->{'views[]'},
 	    'tags[]' => $args->{'tags[]'},
-	    'media_uuids[]' => $args->{'media_uuids[]'} } );
+	    'media_uuids[]' => $args->{'media_uuids[]'},
+	    rows => $rows,
+	    page => $page } );
 
-	my $media = $self->publish_mediafiles( $c, \@videos, { 
+	my $media = $self->publish_mediafiles( $c, $videos, { 
 	    views => $args->{'views[]'}, 
 	    include_contact_info => $args->{include_contact_info}, 
 	    include_images => $args->{include_images}, 
 	    include_tags => $args->{include_tags} } );
-
-	my $pager = Data::Page->new( $#videos + 1, $rows, $page );
-	my @slice = ();
-	if ( $#videos >= 0 ) { 
-	    @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ]; 
-	}
 
 	$self->status_ok( $c, { media => $media,
 				pager => $self->pagerToJson( $pager ) } );
@@ -235,59 +224,34 @@ sub contacts :Local {
 
     my $user = $c->user->obj;
 
-    my @videos = $c->user->visible_media( { include_contact_info => 1,
-					   where => { 'contact.contact_name' => { '!=' => undef } } } );
-    
-    my $media = {};
-    for my $m ( @videos ) {
-	$media->{$m->id()} = $m;
-    }
+    my $face_tags = $c->user->get_face_tags( { include_contact_info => 1 } );
 
-    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
+    my @result = ();
+    for my $face_uuid ( keys( %$face_tags ) ) {
+	my $face = $face_tags->{$face_uuid};
+	push( @result, { url => undef,
+			 appears_in => $face->{face_count},
+			 asset_id => $face->{asset_uuid},
+			 contact_name => $face->{contact_name},
+			 uuid => $face->{contact_uuid},
+			 asset_location => $face->{asset_location} } );
 
-    my $results = {};
-    for my $media_id ( keys( %$media_contact_features ) ) {
-	for my $feature ( @{$media_contact_features->{$media_id}} ) {
-	    my $contact = $feature->{media_asset_feature}->contact();
-	    
-	    $contact->{location} = $feature->{media_asset}->location();
-	    $contact->{asset_uuid} = $feature->{media_asset}->uuid();
-
-	    if ( exists( $results->{$contact->id()} ) ) {
-		$results->{$contact->id()}->{appears_in}->{$media_id} = 1;
-	    } else {
-		$contact->{appears_in}->{$media_id} = 1;
-		$results->{$contact->id()} = $contact; 
-	    }
-	}
-    }
-
-    my @return_value = ();
-    for my $contact_id ( keys( %$results ) ) {
-	my $contact = $results->{$contact_id};
-	
-	my $tmp = $contact->TO_JSON();
-	$tmp->{appears_in} = scalar( keys( %{$contact->{appears_in}} ) );
-	$tmp->{asset_id} = $contact->{asset_uuid};
-
-	if ( $contact->picture_uri() ) {
-	    my $klass = $c->config->{mediafile}->{$contact->{location}};
+	if ( defined( $face->{picture_uri} ) ) {
+	    my $klass = $c->config->{mediafile}->{$face->{asset_location}};
 	    my $fp = new $klass;
-	    my $url = $fp->uri2url( $c, $contact->picture_uri );
-	    $tmp->{url} = $url;
+	    my $url = $fp->uri2url( $c, $face->{picture_uri} );
+	    $result[-1]->{url} = $url;
 	} else {
-	    $tmp->{url} = '/css/images/avatar-nobd.png';
-	    $tmp->{nopic} = 1;  # in case UI needs to know
+	    $result[-1]->{url} = '/css/images/avatar-nobd.png';
+	    $result[-1]->{nopic} = 1;  # in case UI needs to know
 	}
-
-	push( @return_value, $tmp );
     }
 
     # Because of the nature of this query, I could not use the native DBIX pager,
     # and therefore I need to implement that functionality myself, including the
     # sort.
     #
-    my @sorted = sort { $b->{appears_in} <=> $a->{appears_in} } @return_value;
+    my @sorted = sort { $b->{appears_in} <=> $a->{appears_in} } @result;
     
     # DEBUG - DEPRECATED - REMOVE IF COMMENTING THIS DOESN'T CAUSE PROBLEMS
     #$sorted[0]->{star_power} = 'star1' if ( $#sorted >=0 );
