@@ -1052,6 +1052,26 @@ sub visible_media {
     return $self->visible_media_1( $params );
 }
 
+sub get_cities {
+    my ( $self, $params ) = @_;
+    
+    my $args = $self->_get_args( $params );
+    
+    $args->{rows} = undef;
+    $args->{page} = undef;
+    
+    my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
+    
+    my $cities_rs = $rs->search( undef, { join => $prefetch } );
+    
+    $cities_rs = $cities_rs->search( undef,
+				     { columns => [
+					   { 'city_name' => { distinct => 'me.geo_city' } } ],
+					   order_by => undef } );
+    
+    return map { $_->{_column_data}->{city_name}  } $cities_rs->all();
+}
+
 sub get_tags {
     my ( $self, $params ) = @_;
     

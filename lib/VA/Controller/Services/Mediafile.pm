@@ -1794,17 +1794,13 @@ sub cities :Local {
 	@status_filters = ();
     }
 
-    my ( $videos, $pager ) = $c->user->visible_media( {
+    my @unique_cities = $c->user->get_cities( {
 	only_visible => $only_visible,
 	only_videos => $only_videos,
 	'status[]' => \@status_filters,
 	where => { 'me.geo_city' => { '!=' => undef } } } );
-
-    my $unique_cities = {};
-    for my $city ( @$videos ) {
-	$unique_cities->{$city->geo_city()} = 1;
-    }
-    my @cities = sort( keys( %$unique_cities ) );
+    
+    my @cities = sort( @unique_cities );
     $self->status_ok( $c, { cities => \@cities } );
 }
 
