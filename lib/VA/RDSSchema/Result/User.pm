@@ -1083,7 +1083,7 @@ sub get_tags {
 					order_by => undef } );
     
     my @no_date_result = $no_date_rs->all();
-    if ( scalar( @no_date_result ) ) {
+    if ( scalar( @no_date_result ) and $no_date_result[0]->{no_date_count} > 0 ) {
 	push( @result, {
 	    _column_data => { 
 		tag_name => 'No Dates',
