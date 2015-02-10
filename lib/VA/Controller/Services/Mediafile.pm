@@ -1824,7 +1824,8 @@ sub taken_in_city :Local {
 	  only_videos => 1,
 	  'status[]' => [],
 	  'tags[]' => [],
-	  'media_uuids[]' => []
+	  'media_uuids[]' => [],
+	  no_location => 0
 	], @_ );
 
     my $q = $args->{q};
@@ -1838,8 +1839,14 @@ sub taken_in_city :Local {
     my $status_filters = $args->{'status[]'};
     my $tags = $args->{'tags[]'};
     my $media_uuids = $args->{'media_uuids[]'};
-    
-    my $where = { 'me.geo_city' => $q };
+    my $no_location => 0;
+
+    my $where = {};
+    if ( $q ) {
+	$where = { 'me.geo_city' => $q };
+    } elsif ( $no_location ) {
+	$where = { 'me.geo_city' => { '=', undef } };
+    }
 
     my $views = ['poster', 'main'];
     if ( $include_images ) {
