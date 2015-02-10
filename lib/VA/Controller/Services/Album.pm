@@ -426,8 +426,8 @@ sub get :Local {
 	    only_videos => 1,
 	    'views[]' => ['main'],
 	    'album_uuids[]' => [ $aid ] };
-	my $all_tags = $c->user->get_tags( $tags_params );
-    
+	$all_tags = $c->user->get_tags( $tags_params );
+	
 	if ( exists( $all_tags->{'No Dates'} ) ) {
 	    $no_date_return = 1;
 	}

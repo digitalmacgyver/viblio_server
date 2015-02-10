@@ -1098,7 +1098,7 @@ sub get_tags {
     return $result_hash;
 }
 
-# Note - this returns it's result based on contact_uuid, because two
+# Note - this returns its result based on contact_uuid, because two
 # contacts can have the same name.
 sub get_face_tags {
     my ( $self, $params ) = @_;
@@ -1111,17 +1111,20 @@ sub get_face_tags {
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
     $rs = $rs->search( { 
 	'media_asset_features.feature_type' => 'face',
-	'contact.contact_name' => { '!=', undef }
+	'contact.contact_name' => { '!=', undef },
+	'contact.picture_uri' => { -ident => 'media_assets.uri' }
 		       }, { join => $prefetch } );
 
     my $faces_rs = $rs->search( undef,
 				{ columns => [
 				      { 'contact_name' => 'contact.contact_name' }, 
 				      { 'contact_uuid' => 'contact.uuid' }, 
-				      { 'picture_uri' => 'contact.picture_uri' }, 
+				      { 'asset_uuid' => 'media_assets.uuid' },
+				      { 'asset_location' => 'media_assets.location' },
+				      { 'picture_uri' => 'contact.picture_uri' },
 				      { 'face_count' => { count => { distinct => 'media_asset_features.media_id' } } } ],
-				      group_by => 'contact.id',
-				      order_by => undef } );
+				  group_by => 'contact.id',
+				  order_by => undef } );
     
     my @result = ();
     push( @result, $faces_rs->all() );
@@ -1129,6 +1132,9 @@ sub get_face_tags {
     foreach my $result ( @result ) {
 	$result_hash->{$result->{_column_data}->{contact_uuid}} = 
 	    { contact_name => $result->{_column_data}->{contact_name},
+	      contact_uuid => $result->{_column_data}->{contact_uuid},
+	      asset_uuid => $result->{_column_data}->{asset_uuid},
+	      asset_location => $result->{_column_data}->{asset_location},
 	      picture_uri => $result->{_column_data}->{picture_uri},
 	      face_count => $result->{_column_data}->{face_count} };
     }
@@ -1144,8 +1150,7 @@ sub visible_media_1 {
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
 
     $rs = $rs->search( undef, { 
-	prefetch => $prefetch,
-	order_by => [ 'me.recording_date desc', 'me.created_date desc' ] } );
+	prefetch => $prefetch } );
     
     my @output = $rs->all();
 
@@ -1340,29 +1345,29 @@ sub _get_visible_result_set {
     # Limit the videos to things in the search criteria.
     if ( defined( $args->{search_string} ) ) {
 	$rs = $rs->search( { 
-	    { -or => [ 'LOWER(media.title)' => { 'like' => '%'.lc( $args->{search_string} ) . '%' },
-		       'LOWER(media.description)' => { 'like' => '%'.lc( $args->{search_string} ) . '%' },
-		       -and => [ 'media_asset_features.feature_type' => 'activity', 
-				 'LOWER(media_asset_features.coordinates)' => { like => '%'.lc( $args->{search_string} ).'%' } ],
-		       -and => [ 'media_asset_features.feature_type' => 'face',
-				 'media_asset_features.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] },
-				 'media_asset_features.contact_id' => { '!=', undef },
-				 'LOWER(contact.contact_name)' => { 'like' => '%'.lc( $args->{search_string} ).'%' } ]
-		       ]
-	    } } );
+	    -or => [ 'LOWER(me.title)' => { 'like' => '%'.lc( $args->{search_string} ) . '%' },
+		     'LOWER(me.description)' => { 'like' => '%'.lc( $args->{search_string} ) . '%' },
+		     -and => [ 'media_asset_features.feature_type' => 'activity', 
+			       'LOWER(media_asset_features.coordinates)' => { like => '%'.lc( $args->{search_string} ).'%' } ],
+		     -and => [ 'media_asset_features.feature_type' => 'face',
+			       'media_asset_features.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] },
+			       'media_asset_features.contact_id' => { '!=', undef },
+			       'LOWER(contact.contact_name)' => { 'like' => '%'.lc( $args->{search_string} ).'%' } ]
+		]
+			   } );
     }
 
     # Limit the videos to those recently created (not recorded).
     if ( $args->{recent_created_days} ) {
 	# Hoo boy...
 	my $recent_rs = $rs;
-	my $latest = $rs->search( { prefetch => $prefetch,
-				    order_by => [ 'me.created_date desc' ],
-				    page => 1,
-				    rows => 1 } )->single();
-	if ( defined( $latest ) and defined( $latest->created_date() ) ) {
+	my @latest = $rs->search( undef, { prefetch => $prefetch,
+					   order_by => [ 'me.created_date desc' ],
+					   page => 1,
+					   rows => 1 } )->all();
+	if ( scalar( @latest ) and defined( $latest[0]->created_date() ) ) {
 	    my $dtf = $self->result_source->schema->storage->datetime_parser;
-	    my $from_when = DateTime->from_epoch( epoch => DateTime->now() - 60*60*24*$args->{recent_created_days} );
+	    my $from_when = DateTime->from_epoch( epoch => $latest[0]->created_date()->epoch() - 60*60*24*$args->{recent_created_days} );
 	    $rs = $rs->search( { 'me.created_date' =>  { '>=', $dtf->format_datetime( $from_when ) } } );
 	}
     }

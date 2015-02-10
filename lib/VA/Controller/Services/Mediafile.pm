@@ -1269,7 +1269,7 @@ sub related :Local {
 
     my $mid = $c->req->param( 'mid' );
     my $page = $c->req->param( 'page' );
-    my $rows = $c->req->param( 'rows' ) || 10;
+    my $rows = $c->req->param( 'rows' );
 
     my @status_filters = $c->req->param( 'status[]' );
     if ( scalar( @status_filters ) == 1 && !defined( $status_filters[0] ) ) {
