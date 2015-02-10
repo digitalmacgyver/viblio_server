@@ -936,8 +936,6 @@ sub get_tags :Private {
 
     my $media_tags = {};
     my $media_contact_features = {};
-    my $all_tags = {};
-    my $no_date_return = 0;
 
     my $valid_faces = {
 	'machine_recognized' => 1,
@@ -953,12 +951,6 @@ sub get_tags :Private {
 
     foreach my $m ( @$media_list ) {
 
-	if ( ! $no_date_return ) {
-	    if ( $m->recording_date() == $no_date_date ) {
-		$no_date_return = 1;
-	    }
-	}
-
 	my $seen_in_media = {};
 
 	foreach my $ma ( $m->media_assets() ) {
@@ -966,11 +958,6 @@ sub get_tags :Private {
 		my $feature_type = $feature->{_column_data}->{feature_type};
 		if ( $feature_type eq 'activity' ) {
 		    $media_tags->{ $m->id() }->{ $feature->coordinates() } = 1;
-		    if ( exists( $all_tags->{ $feature->coordinates() } ) ) {
-			$all_tags->{ $feature->coordinates() }++;
-		    } else {
-			$all_tags->{ $feature->coordinates() } = 1;
-		    }
 		} elsif ( ( $feature_type eq 'face' ) 
 			  and defined( $feature->contact() )
 			  and defined( $feature->recognition_result() )
@@ -987,19 +974,12 @@ sub get_tags :Private {
 			    $media_contact_features->{ $m->id() } = [ { 'media_asset' => $ma,
 									'media_asset_feature' => $feature } ];
 			}
-			if ( defined( $feature->contact->contact_name() ) ) {
-			    if ( exists( $all_tags->{ $feature->contact->contact_name() } ) ) {
-				$all_tags->{ $feature->contact->contact_name() }++;
-			    } else {
-				$all_tags->{ $feature->contact->contact_name() } = 1;
-			    }
-			}
 		    }
 		}
 	    }
 	}
     }
-    return ( $media_tags, $media_contact_features, $all_tags, $no_date_return );
+    return ( $media_tags, $media_contact_features );
 }
 
 

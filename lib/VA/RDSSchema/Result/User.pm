@@ -1054,6 +1054,53 @@ sub visible_media {
 
 sub get_tags {
     my ( $self, $params ) = @_;
+    
+    my $args = $self->_get_args( $params );
+    
+    $args->{rows} = undef;
+    $args->{page} = undef;
+    
+    my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
+    
+    my $tags_rs = $rs->search( { 'media_asset_features.feature_type' => 'activity' }, { join => $prefetch } );
+    
+    # DEBUG - at long last this is basically working.
+    $tags_rs = $tags_rs->search( undef,
+				 { columns => [
+				       { 'tag_name' => 'media_asset_features.coordinates' }, 
+				       { 'tag_count' => { count => { distinct => 'media_asset_features.media_id' } } } ],
+				       group_by => 'media_asset_features.coordinates',
+				       order_by => undef } );
+    
+    my @result = ();
+    push( @result, $tags_rs->all() );
+    
+    my $dtf = $self->result_source->schema->storage->datetime_parser;
+    my $no_date_date = DateTime->from_epoch( epoch => 0 );
+    my $no_date_rs = $rs->search( { 'me.recording_date' => $dtf->format_datetime( $no_date_date ) },
+				  { join => $prefetch,
+				    columns => [
+					{ 'no_date_count' => { count => { distinct => 'me.id' } } } ],
+					order_by => undef } );
+    
+    my @no_date_result = $no_date_rs->all();
+    if ( scalar( @no_date_result ) ) {
+	push( @result, {
+	    _column_data => { 
+		tag_name => 'No Dates',
+		tag_count => $no_date_result[0]->{_column_data}->{no_date_count} } } );
+    }
+    
+    my $result_hash = {};
+    foreach my $result ( @result ) {
+	$result_hash->{$result->{_column_data}->{tag_name}} = $result->{_column_data}->{tag_count};
+    }
+    
+    return $result_hash;
+}
+
+sub get_face_tags {
+    my ( $self, $params ) = @_;
 
     my $args = $self->_get_args( $params );
 
@@ -1061,38 +1108,22 @@ sub get_tags {
     $args->{page} = undef;
 
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
-    $rs = $rs->search( { 'media_asset_features.feature_type' => 'activity' }, { join => $prefetch } );
+    $rs = $rs->search( { 
+	'media_asset_features.feature_type' => 'face',
+	'contact.contact_name' => { '!=', undef }
+		       }, { join => $prefetch } );
 
-    my $tags_rs = $rs->search( undef,
-			       { select => [ 'media_asset_features.feature_type', { count => { distinct => 'media_asset_features.media_id' } } ],
-				 group_by => 'media_asset_features.feature_type' } );
+    # DEBUG - at long last this is basically working.
+    my $faces_rs = $rs->search( undef,
+				{ columns => [
+				      { 'contact_name' => 'contact.contact_name' }, 
+				      { 'contact_uuid' => 'contact.uuid' }, 
+				      { 'picture_uri' => 'contact.picture_uri' }, 
+				      { 'face_count' => { count => { distinct => 'media_asset_features.media_id' } } } ],
+				      group_by => 'contact.id',
+				      order_by => undef } );
 
-    # DEBUG
-    # 
-    # We are going through this hassle because we want the faces,
-    # places, search, and recent filters to show tags appropriate to
-    # their sub selection.
-    #
-    # Next thing to try, have get_visible_result_set return a rs and a
-    # prefetch block, it uses prefetch for the other queries, and we
-    # use it as a join and manually specify the columns we want.
-
-    #$DB::single = 1;
-    #my $tags_rs = $self->result_source->schema->resultset( 'MediaAssetFeature' )->search(
-#	undef,
-#	{ select => [ 'media_asset_features.feature_type', { count => { distinct => 'media_asset_features.media_id' } } ],
-#	  join => [ $rs->as_query() ],
-#	  #as => ['count'],
-#	  #from => $rs->as_query(), 
-#	  source_name => 'tag_count',
-#	  group_by => ['media_asset_features.feature_type'] } );
-
-    my @x = $tags_rs->all();
-
-
-    my $contacts_rs = undef;
-
-
+    return $faces_rs->all();
 }
 
 sub visible_media_1 {
@@ -1102,16 +1133,11 @@ sub visible_media_1 {
     
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
 
-    #$DB::single = 1;
-
-    use Data::Dumper;
-    print Dumper( $prefetch );
-
-    $rs = $rs->search( undef, { prefetch => $prefetch } );
+    $rs = $rs->search( undef, { 
+	prefetch => $prefetch,
+	order_by => [ 'me.recording_date desc', 'me.created_date desc' ] } );
     
     my @output = $rs->all();
-
-    # DEBUG - if we go theo route of this branch, this code will have to change.
 
     # Filter out things based on recent creation date.
     if ( $args->{recent_created_days} and scalar( @output ) ) {
@@ -1123,15 +1149,7 @@ sub visible_media_1 {
     }
 
     # Sort the result set by descending recorded date, then created date.
-    return sort {  my $rdate_cmp = ( $b->recording_date->epoch() <=> $a->recording_date->epoch() );
-		   if ( $rdate_cmp ) {
-		       return $rdate_cmp;
-		   } else {
-		       return $b->created_date->epoch() <=> $a->created_date->epoch();
-		   }
-    } @output;
-
-    
+    return ( \@output, $rs->pager() );
 }
 
 sub _get_args {
@@ -1252,7 +1270,6 @@ sub _get_visible_result_set {
     if ( scalar( @{$args->{'views[]'}} ) ) {
 	$where->{'media_assets.asset_type'} = { '-in' => $args->{'views[]'} };
     }
-
 
     my $prefetch = [ 
 	# Get the media that is in community albums.

@@ -13,6 +13,8 @@ use POSIX 'strftime';
 use Data::UUID;
 use Geo::Distance;
 
+use Storable qw/ dclone /;
+
 BEGIN { extends 'VA::Controller::Services' }
 
 =head1 Mediafile
@@ -1106,7 +1108,7 @@ sub list_all :Local {
 	push( @$views, 'image' );
     }
 
-    my @videos = $c->user->visible_media( {
+    my ( $videos, $pager ) = $c->user->visible_media( {
 	page => $page,
 	rows => $rows,
 	include_contact_info => $include_contact_info,
@@ -1119,35 +1121,42 @@ sub list_all :Local {
 	'tags[]' => $tags, 
 	'media_uuids[]' => $media_uuids } );
 
-    my @tags = $c->user->get_tags( {
+    my $tags_params = {
 	page => undef,
 	rows => undef,
-	include_contact_info => $include_contact_info,
-	include_images => $include_images,
-	include_tags => $include_tags,
-	only_visible => $only_visible,
-	only_videos => $only_videos,
-	'status[]' => $status_filters,
-	'views[]' => $views,
-	'tags[]' => $tags, 
-	'media_uuids[]' => $media_uuids } );
-	   
-    my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = $self->get_tags( $c, \@videos );
- 
+	include_contact_info => 0,
+	include_images => 0,
+	include_tags => 1,
+	only_visible => 1,
+	only_videos => 1,
+	'views[]' => ['main'] };
+    my $all_tags = $c->user->get_tags( $tags_params );
+    
+    my $no_date_return = 0;
+    if ( exists( $all_tags->{'No Dates'} ) ) {
+	$no_date_return = 1;
+    }
+    
+    my $face_tag_params = dclone( $tags_params );
+    $face_tag_params->{include_contact_info} = 1;
+    my $face_tags = $c->user->get_face_tags( $face_tag_params );
+    
+    #$c->log->error( keys( %{$_->{_column_data}} ) ) foreach @face_tags;
+    #$c->log->error( $_->{_column_data}->{contact_name} . " " .
+	#	    $_->{_column_data}->{contact_uuid} . " " .
+	#	    $_->{_column_data}->{picture_uri} . " " .
+	#	    $_->{_column_data}->{face_count} ) foreach @face_tags;
+
+    my ( $media_tags, $media_contact_features ) = $self->get_tags( $c, $videos );
+    
     my $shared_uuids = {};
-    for my $video ( @videos ) {
+    for my $video ( @$videos ) {
 	if ( $video->user_id() != $c->user->id() ) {
 	    $shared_uuids->{$video->uuid} = 1;
 	}
     }
     
-    my $pager = Data::Page->new( $#videos + 1, $rows, $page );
-    my @slice = ();
-    if ( $#videos >= 0 ) {
-        @slice = @videos[ $pager->first - 1 .. $pager->last - 1 ];
-    }
-
-    my $data = $self->publish_mediafiles( $c, \@slice, { 
+    my $data = $self->publish_mediafiles( $c, $videos, { 
 	views                  => $views, 
 	include_tags           => $include_tags, 
 	include_shared         => 1, 
@@ -1156,7 +1165,7 @@ sub list_all :Local {
 	include_contact_info   => $include_contact_info,
 	media_tags             => $media_tags,
 	media_contact_features => $media_contact_features } );
-
+    
     # DEBUG
     #DB::disable_profile();
     #DB::finish_profile();
