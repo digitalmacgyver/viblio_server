@@ -1154,8 +1154,13 @@ sub visible_media_1 {
     
     my @output = $rs->all();
 
+    my $pager = undef;
+    if ( $args->{page} and $args->{rows} ) {
+	$pager = $rs->pager();
+    }
+
     # Sort the result set by descending recorded date, then created date.
-    return ( \@output, $rs->pager() );
+    return ( \@output, $pager );
 }
 
 sub _get_args {
@@ -1222,7 +1227,7 @@ sub _get_args {
 	# Default where clause for each query.
 	where                => {},
 	# Default order clause for each query.
-	order                => [ 'me.recording_date desc', 'me.created_date desc' ]
+	order_by                => [ 'me.recording_date desc', 'me.created_date desc' ]
     };
 
     for my $arg ( keys( %$args ) ) {
@@ -1245,6 +1250,12 @@ sub _get_args {
 	    # Include the main view (which has the features related to
 	    # the tags associate with it).
 	    push( @{$args->{'views[]'}}, 'main' );
+	}
+	if ( $args->{recent_created_days} ) {
+	    # When looking at recent videos we want to show things
+	    # which may not yet have any assets, so we override this
+	    # functionality.
+	    $args->{'views[]'} = [];
 	}
     }
 
@@ -1361,7 +1372,8 @@ sub _get_visible_result_set {
     if ( $args->{recent_created_days} ) {
 	# Hoo boy...
 	my $recent_rs = $rs;
-	my @latest = $rs->search( undef, { prefetch => $prefetch,
+	my $recent_rs_prefetch = dclone( $prefetch );
+	my @latest = $recent_rs->search( undef, { prefetch => $recent_rs_prefetch,
 					   order_by => [ 'me.created_date desc' ],
 					   page => 1,
 					   rows => 1 } )->all();

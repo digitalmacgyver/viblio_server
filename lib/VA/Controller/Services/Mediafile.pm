@@ -1917,9 +1917,9 @@ sub recently_uploaded :Local {
 	  include_contact_info => 0,
 	  include_tags => 1,
 	  include_images => 0,
-	  only_visible => 1,
+	  only_visible => 0,
 	  only_videos => 1,
-	  'status[]' => [],
+	  'status[]' => [ 'pending', 'visible', 'complete' ],
 	  'tags[]' => [],
 	  'media_uuids[]' => []
         ],
@@ -1948,6 +1948,9 @@ sub recently_uploaded :Local {
 
     # DEBUG - have to fix this whole thing to actually work, and to
     # return things in sort order of descending created date.
+    #
+    # Note - we can't send views[] to visible_media with
+    # recent_created_days also.
     my ( $videos, $pager ) = $c->user->visible_media( {
 	include_contact_info => $include_contact_info,
 	include_image => $include_images,
@@ -1956,10 +1959,9 @@ sub recently_uploaded :Local {
 	only_videos => $only_videos,
 	only_visible => $only_visible,
 	'status[]' => $status,
-	'views[]' => $views,
 	'tags[]' => $tags, 
 	'media_uuids[]' => $media_uuids,
-	'order' => [ 'me.created_date desc' ],
+	'order_by' => [ 'me.created_date desc' ],
 	page => $page,
 	rows => $rows } );
     
@@ -1971,7 +1973,9 @@ sub recently_uploaded :Local {
 	include_tags => 1,
 	only_visible => 1,
 	only_videos => 1,
-	'views[]' => ['main'],
+	'status[]' => $status, # Unlike other queries, the tags and
+			       # faces can run over videos which
+			       # aren't complete for this query
 	recent_created_days => $days };
     my $all_tags = $c->user->get_tags( $tags_params );
     
