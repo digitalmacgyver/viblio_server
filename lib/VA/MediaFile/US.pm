@@ -252,17 +252,25 @@ sub metadata {
 sub uri2url {
     my( $self, $c, $view, $params ) = @_;
 
+    # Need this for state variable declarations, which are like statics.
+    use v5.10;
+
+    # Performance optimizations - only do these once per request.
+    state $default_expires = $c->config->{s3}->{expires};
+
     my $s3key = ( ref $view eq 'HASH' ? $view->{uri} : $view );
 
     if ( $params->{use_cf} ) {
 	return $c->cf_sign( $s3key, {
 	    stream => 0,
-	    expires => ( $params && $params->{expires} ? $params->{expires} : $c->config->{s3}->{expires} ),
+	    expires => ( $params && $params->{expires} ? $params->{expires} : $default_expires ),
 	});
     }
 
-    my $aws_key = $c->config->{'Model::S3'}->{aws_access_key_id};
-    my $aws_secret = $c->config->{'Model::S3'}->{aws_secret_access_key};
+    # Performance optimizations - only do these once per request.
+    state $aws_key = $c->config->{'Model::S3'}->{aws_access_key_id};
+    state $aws_secret = $c->config->{'Model::S3'}->{aws_secret_access_key};
+
     my $aws_use_https = 0;
     if ( $params && defined($params->{aws_use_https}) ) {
         $aws_use_https = $params->{aws_use_https};
@@ -270,14 +278,18 @@ sub uri2url {
     elsif ( $c->config->{s3}->{aws_use_https} == 1 ) {
         $aws_use_https = 1;
     }
-    my $aws_bucket_name = $c->config->{s3}->{bucket};
+
+    # Performance optimizations - only do these once per request.
+    state $aws_bucket_name = $c->config->{s3}->{bucket};
     if ( $params && defined($params->{bucket}) ) {
 	$aws_bucket_name = $params->{bucket};
     }
     my $aws_endpoint = $aws_bucket_name . ".s3.amazonaws.com";
     my $aws_generator = Muck::FS::S3::QueryStringAuthGenerator->new(
         $aws_key, $aws_secret, $aws_use_https, $aws_endpoint );
-    my $expires = undef;
+
+    # Performance optimizations - only do this once per request.
+    state $default_expire_date = undef;
     my $expires_in = undef;
     if ( $params && $params->{expires} ) {
 	$aws_generator->expires_in( $params->{expires} );
@@ -287,18 +299,20 @@ sub uri2url {
 	# Have to have an expires, but if we keep it constant then the browser
 	# can cache images.  So, get the current year, add 1 to it and set the
 	# expire to Jan 1 of next year.
-	# 
-	$expires = DateTime->new(
-	    year => (DateTime->now->year + 1),
-	    month => 1, day => 1,
-	    hour => 23, minute => 59 )->epoch;
-	$aws_generator->expires( $expires );
+	#
+	if ( !defined( $default_expire_date ) ) {
+	    $default_expire_date = DateTime->new(
+		year => (DateTime->now->year + 1),
+		month => 1, day => 1,
+		hour => 23, minute => 59 )->epoch;
+	}
+	$aws_generator->expires( $default_expire_date );
     }
     my $url = '';
     if ( exists( $params->{'download_url'} ) && $params->{'download_url'} ) {
 	my $expiration = {};
-	if ( defined( $expires ) ) {
-	    $expiration->{'EXPIRES'} = $expires;
+	if ( defined( $default_expire_date ) ) {
+	    $expiration->{'EXPIRES'} = $default_expire_date;
 	} elsif ( defined( $expires_in ) ) {
 	    $expiration->{'EXPIRES_IN'} = $expires_in;
 	}

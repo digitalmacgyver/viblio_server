@@ -48,7 +48,7 @@ use Catalyst qw/
 
 use Cache::Memcached::GetParserXS;
 use Cache::Memcached;
-use Devel::NYTProf;
+#use Devel::NYTProf;
 
 extends 'Catalyst';
 

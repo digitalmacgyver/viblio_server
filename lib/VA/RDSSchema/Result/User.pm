@@ -1051,13 +1051,128 @@ use VA::Controller::Services;
 sub visible_media {
     my ( $self, $params ) = @_;
 
-    return $self->visible_media_2( $params );
+    return $self->visible_media_1( $params );
+}
+
+sub get_tags {
+    my ( $self, $params ) = @_;
+    
+    my $args = $self->_get_args( $params );
+    
+    $args->{rows} = undef;
+    $args->{page} = undef;
+    
+    my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
+    
+    my $tags_rs = $rs->search( { 'media_asset_features.feature_type' => 'activity' }, { join => $prefetch } );
+    
+    $tags_rs = $tags_rs->search( undef,
+				 { columns => [
+				       { 'tag_name' => 'media_asset_features.coordinates' }, 
+				       { 'tag_count' => { count => { distinct => 'media_asset_features.media_id' } } } ],
+				       group_by => 'media_asset_features.coordinates',
+				       order_by => undef } );
+    
+    my @result = ();
+    push( @result, $tags_rs->all() );
+    
+    my $dtf = $self->result_source->schema->storage->datetime_parser;
+    my $no_date_date = DateTime->from_epoch( epoch => 0 );
+    my $no_date_rs = $rs->search( { 'me.recording_date' => $dtf->format_datetime( $no_date_date ) },
+				  { join => $prefetch,
+				    columns => [
+					{ 'no_date_count' => { count => { distinct => 'me.id' } } } ],
+					order_by => undef } );
+    
+    my @no_date_result = $no_date_rs->all();
+    if ( scalar( @no_date_result ) and $no_date_result[0]->{no_date_count} > 0 ) {
+	push( @result, {
+	    _column_data => { 
+		tag_name => 'No Dates',
+		tag_count => $no_date_result[0]->{_column_data}->{no_date_count} } } );
+    }
+    
+    my $result_hash = {};
+    foreach my $result ( @result ) {
+	$result_hash->{$result->{_column_data}->{tag_name}} = $result->{_column_data}->{tag_count};
+    }
+    
+    return $result_hash;
+}
+
+# Note - this returns its result based on contact_uuid, because two
+# contacts can have the same name.
+sub get_face_tags {
+    my ( $self, $params ) = @_;
+
+    my $args = $self->_get_args( $params );
+
+    $args->{rows} = undef;
+    $args->{page} = undef;
+
+    my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
+    $rs = $rs->search( { 
+	'media_asset_features.feature_type' => 'face',
+	'contact.contact_name' => { '!=', undef },
+	'contact.picture_uri' => { -ident => 'media_assets.uri' }
+		       }, { join => $prefetch } );
+
+    my $faces_rs = $rs->search( undef,
+				{ columns => [
+				      { 'contact_name' => 'contact.contact_name' }, 
+				      { 'contact_uuid' => 'contact.uuid' }, 
+				      { 'asset_uuid' => 'media_assets.uuid' },
+				      { 'asset_location' => 'media_assets.location' },
+				      { 'picture_uri' => 'contact.picture_uri' },
+				      { 'face_count' => { count => { distinct => 'media_asset_features.media_id' } } } ],
+				  group_by => 'contact.id',
+				  order_by => undef } );
+    
+    my @result = ();
+    push( @result, $faces_rs->all() );
+    my $result_hash = {};
+    foreach my $result ( @result ) {
+	$result_hash->{$result->{_column_data}->{contact_uuid}} = 
+	    { contact_name => $result->{_column_data}->{contact_name},
+	      contact_uuid => $result->{_column_data}->{contact_uuid},
+	      asset_uuid => $result->{_column_data}->{asset_uuid},
+	      asset_location => $result->{_column_data}->{asset_location},
+	      picture_uri => $result->{_column_data}->{picture_uri},
+	      face_count => $result->{_column_data}->{face_count} };
+    }
+    
+    return $result_hash;
 }
 
 sub visible_media_1 {
     my ( $self, $params ) = @_;
+
+    my $args = $self->_get_args( $params );
     
+    my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
+
+    $rs = $rs->search( undef, { 
+	prefetch => $prefetch } );
+    
+    my @output = $rs->all();
+
+    my $pager = undef;
+    if ( $args->{page} and $args->{rows} ) {
+	$pager = $rs->pager();
+    }
+
+    # Sort the result set by descending recorded date, then created date.
+    return ( \@output, $pager );
+}
+
+sub _get_args {
+    my ( $self, $params ) = @_;
+
     my $args = {
+	# Default result pages and rows.
+	page                => 1,
+	rows                => 10000,
+
 	# If specified, the set of videos under consideration, if not
 	# set all videos visible to this user are considered.
 	'media_uuids[]'      => [],
@@ -1107,10 +1222,14 @@ sub visible_media_1 {
 	# only media meeting the values in the status[] array will be
 	# returned.
 	only_visible         => 1,
-	'status[]'           => [],
+	'status[]'           => [],	
+	
+	'views[]'            => [],
 
 	# Default where clause for each query.
-	where                => {}
+	where                => {},
+	# Default order clause for each query.
+	order_by                => [ 'me.recording_date desc', 'me.created_date desc' ]
     };
 
     for my $arg ( keys( %$args ) ) {
@@ -1118,6 +1237,37 @@ sub visible_media_1 {
 	    $args->{$arg} = $params->{$arg}
 	}
     }
+
+    # Fix up the views argument if specified.
+    if ( scalar( @{$args->{'views[]'}} ) ) {
+	my $requested_views = {};
+	for my $rv ( @{$args->{'views[]'}} ) {
+	    $requested_views->{$rv} = 1;
+	}
+	if ( $args->{include_contact_info} and !exists( $requested_views->{'face'} ) ) {
+	    # Include face views if the user wants contact info.
+	    push( @{$args->{'views[]'}}, 'face' );
+	}
+	if ( $args->{include_tags} and !exists( $requested_views->{'main'} ) ) {
+	    # Include the main view (which has the features related to
+	    # the tags associate with it).
+	    push( @{$args->{'views[]'}}, 'main' );
+	}
+	if ( $args->{recent_created_days} ) {
+	    # When looking at recent videos we want to show things
+	    # which may not yet have any assets, so we override this
+	    # functionality.
+	    $args->{'views[]'} = [];
+	}
+    }
+
+    return $args;
+}
+
+sub _get_visible_result_set {
+    my ( $self, $params ) = @_;
+
+    my $args = $self->_get_args( $params );
 
     # Get a list of all the media this user can see by virtue of
     # communities.
@@ -1138,6 +1288,9 @@ sub visible_media_1 {
 	$where->{ 'me.media_type' } = 'original';
     }
     $where->{'me.is_album'} = 0;
+    if ( scalar( @{$args->{'views[]'}} ) ) {
+	$where->{'media_assets.asset_type'} = { '-in' => $args->{'views[]'} };
+    }
 
     my $prefetch = [ 
 	# Get the media that is in community albums.
@@ -1155,8 +1308,7 @@ sub visible_media_1 {
 
     my $rs = $self->result_source->schema->resultset( 'Media' )->search
 	( $where,
-	  { prefetch => $prefetch,
-	    order_by => [ 'me.recording_date desc', 'me.created_date desc' ] } );
+	  { order_by => $args->{order_by} } );
 	  
     # Agument result sets with the various filters we have.
     
@@ -1202,60 +1354,46 @@ sub visible_media_1 {
 						'contact.contact_name' => { -in => $args->{'tags[]'} } ] ] },
 			   { prefetch => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
     }
-    
-    my @output = $rs->all();
 
-    # Filter out things based on recent creation date.
-    if ( $args->{recent_created_days} and scalar( @output ) ) {
-	my $max_date = ( sort { $b->created_date->epoch() <=> $a->created_date->epoch() } @output )[0]->created_date->epoch();
-	
-	my $threshold = $max_date - 60*24*24*$args->{recent_created_days};
-	
-	@output = grep( ( $_->created_date->epoch() >= $threshold ), @output );
-    }
-
-    # Filter out things based on search string.
+    # Limit the videos to things in the search criteria.
     if ( defined( $args->{search_string} ) ) {
-	my ( $media_tags, $media_contact_features, $all_tags, $no_date_return ) = VA::Controller::Services->new()->get_tags( undef, \@output,  $self->result_source->schema->storage->datetime_parser );
-	my @tmp = ();
-	for my $media ( @output ) {
-	    if ( defined( $media->title() ) and $media->title() =~ m/\Q$args->{search_string}/i ) {
-		push( @tmp, $media );
-		next;
-	    }
-	    if ( defined( $media->description() ) and $media->description() =~ m/\Q$args->{search_string}/i ) {
-		push( @tmp, $media );
-		next;
-	    }
-	    my $found = 0;
-	    if ( exists( $media_tags->{ $media->id() } ) ) {
-		for my $tag ( keys( %{$media_tags->{$media->id()}} ) ) {
-		    if ( $tag =~ m/\Q$args->{search_string}/i ) {
-			push( @tmp, $media );
-			$found = 1;
-			last;
-		    }
-		}
-	    }
-	    next if $found;
-	    if ( grep( $_->{media_asset_feature}->contact->contact_name() =~ m/\Q$args->{search_string}/i, 
-		       @{$media_contact_features->{$media->id()}} ) ) {
-		push( @tmp, $media );
-		next;
-	    }
+	$rs = $rs->search( { 
+	    -or => [ 'LOWER(me.title)' => { 'like' => '%'.lc( $args->{search_string} ) . '%' },
+		     'LOWER(me.description)' => { 'like' => '%'.lc( $args->{search_string} ) . '%' },
+		     -and => [ 'media_asset_features.feature_type' => 'activity', 
+			       'LOWER(media_asset_features.coordinates)' => { like => '%'.lc( $args->{search_string} ).'%' } ],
+		     -and => [ 'media_asset_features.feature_type' => 'face',
+			       'media_asset_features.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] },
+			       'media_asset_features.contact_id' => { '!=', undef },
+			       'LOWER(contact.contact_name)' => { 'like' => '%'.lc( $args->{search_string} ).'%' } ]
+		]
+			   } );
+    }
+
+    # Limit the videos to those recently created (not recorded).
+    if ( $args->{recent_created_days} ) {
+	# Hoo boy...
+	my $recent_rs = $rs;
+	my $recent_rs_prefetch = dclone( $prefetch );
+	my @latest = $recent_rs->search( undef, { prefetch => $recent_rs_prefetch,
+					   order_by => [ 'me.created_date desc' ],
+					   page => 1,
+					   rows => 1 } )->all();
+	if ( scalar( @latest ) and defined( $latest[0]->created_date() ) ) {
+	    my $dtf = $self->result_source->schema->storage->datetime_parser;
+	    my $from_when = DateTime->from_epoch( epoch => $latest[0]->created_date()->epoch() - 60*60*24*$args->{recent_created_days} );
+	    $rs = $rs->search( { 'me.created_date' =>  { '>=', $dtf->format_datetime( $from_when ) } } );
 	}
-	@output = @tmp;
     }
     
-    # Sort the result set by descending recorded date, then created date.
-    return sort {  my $rdate_cmp = ( $b->recording_date->epoch() <=> $a->recording_date->epoch() );
-		   if ( $rdate_cmp ) {
-		       return $rdate_cmp;
-		   } else {
-		       return $b->created_date->epoch() <=> $a->created_date->epoch();
-		   }
-    } @output;
+    if ( defined( $args->{page} ) ) {
+	$rs = $rs->search( undef, { page => $args->{page} } );
+    }
+    if ( defined( $args->{rows} ) ) {
+	$rs = $rs->search( undef, { rows => $args->{rows} } );
+    }
 
+    return ( $rs, $prefetch );
 }
 
 sub visible_media_2 {
@@ -1328,11 +1466,11 @@ sub visible_media_2 {
     # Fix up the views argument if specified.
     if ( scalar( @{$args->{'views[]'}} ) ) {
 	my $requested_views = {};
-	for my $rv ( $args->{'views[]'} ) {
+	for my $rv ( @{$args->{'views[]'}} ) {
 	    $requested_views->{$rv} = 1;
 	}
 	if ( $args->{include_contact_info} and !exists( $requested_views->{'face'} ) ) {
-	    # Include face views if the user wantes contact info.
+	    # Include face views if the user wants contact info.
 	    push( @{$args->{'views[]'}}, 'face' );
 	}
 	if ( $args->{include_tags} and !exists( $requested_views->{'main'} ) ) {
@@ -1495,9 +1633,13 @@ sub visible_media_2 {
     #$rs_s->result_source->storage->debug( 1 );
     #$rs_o->result_source->storage->debug( 1 );
 
-    my @output = $rs_c->all();
+
+    # DEBUG
+    my @output = ();
+    #my @output = $rs_c->all();
     if ( scalar( @{$args->{'album_uuids[]'}} ) == 0 ) {
-	push( @output, $rs_s->all() );
+	# DEBUG
+	#push( @output, $rs_s->all() );
     }
     push( @output, $rs_o->all() );
 
