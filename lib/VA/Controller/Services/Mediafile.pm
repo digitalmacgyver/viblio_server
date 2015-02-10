@@ -1071,8 +1071,8 @@ sub list_all :Local {
     my $self = shift; my $c = shift;
 
     # DEBUG
-    my $now = time();
-    DB::enable_profile("/tmp/list_all_trace_default_select_$now");
+    #my $now = time();
+    #DB::enable_profile("/tmp/list_all_trace_paged_$now");
 
     my $args = $self->parse_args(
 	$c,
@@ -1107,6 +1107,21 @@ sub list_all :Local {
     }
 
     my @videos = $c->user->visible_media( {
+	page => $page,
+	rows => $rows,
+	include_contact_info => $include_contact_info,
+	include_images => $include_images,
+	include_tags => $include_tags,
+	only_visible => $only_visible,
+	only_videos => $only_videos,
+	'status[]' => $status_filters,
+	'views[]' => $views,
+	'tags[]' => $tags, 
+	'media_uuids[]' => $media_uuids } );
+
+    my @tags = $c->user->get_tags( {
+	page => undef,
+	rows => undef,
 	include_contact_info => $include_contact_info,
 	include_images => $include_images,
 	include_tags => $include_tags,
@@ -1143,8 +1158,8 @@ sub list_all :Local {
 	media_contact_features => $media_contact_features } );
 
     # DEBUG
-    DB::disable_profile();
-    DB::finish_profile();
+    #DB::disable_profile();
+    #DB::finish_profile();
 
     $self->status_ok( $c, { albums => $data,
                             pager  => $self->pagerToJson( $pager ),

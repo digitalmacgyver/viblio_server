@@ -45,7 +45,7 @@ use Catalyst qw/
 
 /;
 
-use Devel::NYTProf;
+#use Devel::NYTProf;
 
 extends 'Catalyst';
 
