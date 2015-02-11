@@ -52,7 +52,8 @@ sub media_face_appears_in :Local {
 	  only_videos => 1,
 	  'status[]' => [],
 	  'tags[]' => [],
-	  'media_uuids[]' => []
+	  'media_uuids[]' => [],
+	  no_dates => 0
         ],
         @_ );
 
@@ -99,7 +100,8 @@ sub media_face_appears_in :Local {
 	    'views[]' => $args->{'views[]'},
 	    'tags[]' => $args->{'tags[]'},
 	    rows => $rows,
-	    page => $page } );
+	    page => $page,
+	    no_dates => $args->{no_dates} } );
 
 	unless( scalar( @$videos ) == 1 ) {
 	    $self->status_forbidden( $c, $c->loc( 'You do not have permission to access the video for asset [_1]', $asset_id ), $asset_id );
@@ -160,7 +162,8 @@ sub media_face_appears_in :Local {
 	    'tags[]' => $args->{'tags[]'},
 	    'media_uuids[]' => $args->{'media_uuids[]'},
 	    rows => $rows,
-	    page => $page } );
+	    page => $page,
+	    no_dates => $args->{no_dates} } );
 
 	unless( scalar( @$videos ) > 0 ) {
 	    $self->status_forbidden( $c, $c->loc( 'You do not have permission to access any videos for contact [_1]', $args->{contact_uuid} ), $args->{contact_uuid} );

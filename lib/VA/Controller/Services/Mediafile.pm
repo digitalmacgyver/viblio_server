@@ -1117,6 +1117,7 @@ sub list_all :Local {
 	include_tags => $include_tags,
 	only_visible => $only_visible,
 	only_videos => $only_videos,
+	no_dates => $no_dates,
 	'status[]' => $status_filters,
 	'views[]' => $views,
 	'tags[]' => $tags, 
@@ -1575,7 +1576,8 @@ sub search_by_title_or_description :Local {
 	  include_tags => 1,
 	  'status[]' => [],
 	  'tags[]' => [],
-	  'media_uuids[]' => []
+	  'media_uuids[]' => [],
+	  no_dates => 0
 	], @_ );
 
     my $q = $args->{q};
@@ -1609,7 +1611,8 @@ sub search_by_title_or_description :Local {
 	'tags[]' => $tags, 
 	'media_uuids[]' => $media_uuids,
 	page => $page,
-	rows => $rows } );
+	rows => $rows,
+	no_dates => $args->{no_dates} } );
     
     my $tags_params = {
 	page => undef,
@@ -1821,7 +1824,8 @@ sub taken_in_city :Local {
 	  'status[]' => [],
 	  'tags[]' => [],
 	  'media_uuids[]' => [],
-	  no_location => 0
+	  no_location => 0,
+	  no_dates => 0
 	], @_ );
 
     my $q = $args->{q};
@@ -1861,7 +1865,8 @@ sub taken_in_city :Local {
 	'media_uuids[]' => $media_uuids,
 	'views[]' => $views,
 	page => $page,
-	rows => $rows } );
+	rows => $rows,
+	no_dates => $args->{no_dates} } );
 
   my $tags_params = {
 	page => undef,
@@ -1924,7 +1929,8 @@ sub recently_uploaded :Local {
 	  only_videos => 1,
 	  'status[]' => [ 'pending', 'visible', 'complete' ],
 	  'tags[]' => [],
-	  'media_uuids[]' => []
+	  'media_uuids[]' => [],
+	  no_dates => 0
         ],
         @_ );
 
@@ -1965,6 +1971,7 @@ sub recently_uploaded :Local {
 	'tags[]' => $tags, 
 	'media_uuids[]' => $media_uuids,
 	'order_by' => [ 'me.created_date desc' ],
+	no_dates => $args->{no_dates},
 	page => $page,
 	rows => $rows } );
     
