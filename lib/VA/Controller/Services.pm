@@ -925,12 +925,11 @@ sub sanitize :Private {
 # media_tags - a hash keyed off media_uuid for passing down to
 # publish_mediafiles to eliminate subqueries there.
 #
-# all_tags - a hash suitable for returning to the UI with the tag
-# information for these videos.
+# media_contact_features - a hash keyed off media_id where the value
+# is an array ref to an array of { media_asset => MA_OBJECT,
+# media_asset_feaute => MAF_OBJECT } hashes, one for each contact in
+# this media.
 #
-# no_date_return - a boolean suitable for returning to the UI
-# indicating whether or not this result set contains media with no
-# date attribute.
 sub get_tags :Private {
     my ( $self, $c, $media_list, $datetime_parser ) = @_;
 

@@ -6,6 +6,8 @@ use Data::Page;
 use JSON;
 use Try::Tiny;
 
+use Storable qw/ dclone /;
+
 use namespace::autoclean;
 
 BEGIN { extends 'VA::Controller::Services' }
@@ -38,8 +40,8 @@ sub media_face_appears_in :Local {
     my $c = shift;
     my $args = $self->parse_args
       ( $c,
-        [ page => undef,
-          rows => 10,
+        [ page => 1,
+          rows => 20,
 	  asset_id => undef,
 	  contact_uuid => undef,
 	  'views[]' => ['poster'],
@@ -53,6 +55,9 @@ sub media_face_appears_in :Local {
 	  'media_uuids[]' => []
         ],
         @_ );
+
+    # DEBUG
+    #$DB::single = 1;
 
     if ( $args->{include_images} ) {
 	push( @{$args->{'views[]'}}, 'image' );
@@ -79,13 +84,13 @@ sub media_face_appears_in :Local {
     if ( ! defined( $contact_id ) ) {
 	# This face is unidentifed, and so belongs to exactly one video, the
 	# one in which it was detected.
-	my $media_uuid = $c->model( 'RDS::MediaAsset' )->search( { uuid => $asset_id }, { prefetch => 'media' } )->all();
-	unless( scalar( @$media_uuid ) ) {
+	my @media_uuid = $c->model( 'RDS::MediaAsset' )->search( { 'me.uuid' => $asset_id }, { prefetch => 'media' } )->all();
+	unless( scalar( @media_uuid ) ) {
 	    $self->status_not_found( $c, 
 				     $c->loc( 'Unable to find asset for [_1]', $asset_id ), $asset_id );
 	}
 	my ( $videos, $pager ) = $c->user->visible_media( {
-	    'media_uuids[]' => [ $media_uuid->[0]->media->uuid() ],
+	    'media_uuids[]' => [ $media_uuid[0]->media->uuid() ],
 	    include_contact_info => $args->{include_contact_info},
 	    include_images => $args->{include_images},
 	    include_tags => $args->{include_tags},
@@ -93,14 +98,41 @@ sub media_face_appears_in :Local {
 	    only_videos => $args->{only_videos},
 	    'views[]' => $args->{'views[]'},
 	    'tags[]' => $args->{'tags[]'},
-	    'media_uuids[]' => $args->{'media_uuids[]'},
 	    rows => $rows,
 	    page => $page } );
 
 	unless( scalar( @$videos ) == 1 ) {
-	    $self->status_forbidden( $c, $c->log( 'You do not have permission to access the video for asset [_1]', $asset_id ), $asset_id );
+	    $self->status_forbidden( $c, $c->loc( 'You do not have permission to access the video for asset [_1]', $asset_id ), $asset_id );
 	}
 
+	my $tags_params = {
+	    page => undef,
+	    rows => undef,
+	    include_contact_info => 0,
+	    include_images => 0,
+	    include_tags => 1,
+	    only_visible => 1,
+	    only_videos => 1,
+	    'views[]' => ['main'],
+	    'media_uuids[]' => [ $media_uuid[0]->media->uuid() ] };
+	my $all_tags = $c->user->get_tags( $tags_params );
+    
+	my $no_date_return = 0;
+	if ( exists( $all_tags->{'No Dates'} ) ) {
+	    $no_date_return = 1;
+	}
+    
+	my $face_tag_params = dclone( $tags_params );
+	$face_tag_params->{include_contact_info} = 1;
+	my $face_tags = $c->user->get_face_tags( $face_tag_params );
+	for my $face_tag ( keys( %$face_tags ) ) {
+	    if ( exists( $all_tags->{$face_tags->{$face_tag}->{contact_name}} ) ) {
+		$all_tags->{$face_tags->{$face_tag}->{contact_name}} += $face_tags->{$face_tag}->{face_count};
+	    } else {
+		$all_tags->{$face_tags->{$face_tag}->{contact_name}} = $face_tags->{$face_tag}->{face_count};
+	    }
+	}
+    
 	my $mediafile = VA::MediaFile->new->publish( $c, $videos->[0], { $args->{'views[]'} } );
 
 	if ( $videos->[0]->user_id != $c->user->id() ) {
@@ -109,7 +141,11 @@ sub media_face_appears_in :Local {
 	    $mediafile->{is_shared} = 0;
 	}
 
-	$self->status_ok( $c, { media => [ $mediafile ], page => $self->pagerToJson( $pager ) } );
+	$self->status_ok( $c, { 
+	    media => [ $mediafile ], 
+	    all_tags => $all_tags,
+	    no_date_return => $no_date_return,
+	    page => $self->pagerToJson( $pager ) } );
     }
     else {
 	# This is an identified face and may appear in multiple media files.
@@ -126,13 +162,52 @@ sub media_face_appears_in :Local {
 	    rows => $rows,
 	    page => $page } );
 
+	unless( scalar( @$videos ) > 0 ) {
+	    $self->status_forbidden( $c, $c->loc( 'You do not have permission to access any videos for contact [_1]', $args->{contact_uuid} ), $args->{contact_uuid} );
+	}
+
+	my $tags_params = {
+	    'contact_uuids[]' => [ $args->{contact_uuid} ],
+	    page => undef,
+	    rows => undef,
+	    include_contact_info => 0,
+	    include_images => 0,
+	    include_tags => 1,
+	    only_visible => 1,
+	    only_videos => 1,
+	    'views[]' => ['main'],
+	    'media_uuids[]' => $args->{'media_uuids[]'} };
+	my $all_tags = $c->user->get_tags( $tags_params );
+    
+	my $no_date_return = 0;
+	if ( exists( $all_tags->{'No Dates'} ) ) {
+	    $no_date_return = 1;
+	}
+    
+	my $face_tag_params = dclone( $tags_params );
+	$face_tag_params->{include_contact_info} = 1;
+	my $face_tags = $c->user->get_face_tags( $face_tag_params );
+	for my $face_tag ( keys( %$face_tags ) ) {
+	    if ( exists( $all_tags->{$face_tags->{$face_tag}->{contact_name}} ) ) {
+		$all_tags->{$face_tags->{$face_tag}->{contact_name}} += $face_tags->{$face_tag}->{face_count};
+	    } else {
+		$all_tags->{$face_tags->{$face_tag}->{contact_name}} = $face_tags->{$face_tag}->{face_count};
+	    }
+	}
+    
+	my ( $media_tags, $media_contact_features ) = $self->get_tags( $c, $videos );
+
 	my $media = $self->publish_mediafiles( $c, $videos, { 
 	    views => $args->{'views[]'}, 
 	    include_contact_info => $args->{include_contact_info}, 
 	    include_images => $args->{include_images}, 
-	    include_tags => $args->{include_tags} } );
+	    include_tags => $args->{include_tags},
+	    media_tags => $media_tags,
+	    media_contact_features => $media_contact_features } );
 
 	$self->status_ok( $c, { media => $media,
+				all_tags => $all_tags,
+				no_date_return => $no_date_return,
 				pager => $self->pagerToJson( $pager ) } );
     }
 }
