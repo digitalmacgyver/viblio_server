@@ -148,8 +148,7 @@ sub media_face_appears_in :Local {
 	    all_tags => $all_tags,
 	    no_date_return => $no_date_return,
 	    page => $self->pagerToJson( $pager ) } );
-    }
-    else {
+    } else {
 	# This is an identified face and may appear in multiple media files.
 	my ( $videos, $pager ) = $c->user->visible_media( {
 	    'contact_uuids[]' => [ $args->{contact_uuid} ],

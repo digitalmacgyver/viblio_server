@@ -1082,14 +1082,17 @@ sub get_tags {
     
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
     
-    my $tags_rs = $rs->search( { 'media_asset_features.feature_type' => 'activity' }, { join => $prefetch } );
-    
-    $tags_rs = $tags_rs->search( undef,
-				 { columns => [
-				       { 'tag_name' => 'media_asset_features.coordinates' }, 
-				       { 'tag_count' => { count => { distinct => 'media_asset_features.media_id' } } } ],
-				       group_by => 'media_asset_features.coordinates',
-				       order_by => undef } );
+    my $tags_search = { 'media_asset_features.feature_type' => 'activity' };
+    my $tags_columns = [
+	{ 'tag_name' => 'media_asset_features.coordinates' }, 
+	{ 'tag_count' => { count => { distinct => 'media_asset_features.media_id' } } } ];
+    my $tags_group_by = 'media_asset_features.coordinates';
+
+    my $tags_rs = $rs->search( $tags_search, 
+			       { join => $prefetch,
+				 columns => $tags_columns,
+				 group_by => $tags_group_by,
+				 order_by => undef } );
     
     my @result = ();
     push( @result, $tags_rs->all() );
@@ -1129,25 +1132,36 @@ sub get_face_tags {
     $args->{page} = undef;
 
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
-    $rs = $rs->search( { 
-	'media_asset_features.feature_type' => 'face',
-	'contact.contact_name' => { '!=', undef },
-	'contact.picture_uri' => { -ident => 'media_assets.uri' }
-		       }, { join => $prefetch } );
 
-    my $faces_rs = $rs->search( undef,
-				{ columns => [
-				      { 'contact_name' => 'contact.contact_name' }, 
-				      { 'contact_uuid' => 'contact.uuid' }, 
-				      { 'asset_uuid' => 'media_assets.uuid' },
-				      { 'asset_location' => 'media_assets.location' },
-				      { 'picture_uri' => 'contact.picture_uri' },
-				      { 'face_count' => { count => { distinct => 'media_asset_features.media_id' } } } ],
-				  group_by => 'contact.id',
-				  order_by => undef } );
+    # Do this goofy thing here for performance reasons - the more
+    # direct approach takes several seconds.
+    my $media_rs = $rs->search( undef,
+				{  join => [ 'media_assets'],
+				   columns => [
+				       { 'media_ids' => { distinct => 'me.id' } } ],
+				       order_by => undef } );
     
+    my $search = { 'media_asset_features.feature_type' => 'face',
+		   'contact.contact_name' => { '!=', undef } };
+    my $faces_columns = [
+	{ 'contact_name' => 'contact.contact_name' }, 
+	{ 'contact_uuid' => 'contact.uuid' }, 
+	{ 'asset_uuid' => 'me.uuid' },
+	{ 'asset_location' => 'me.location' },
+	{ 'picture_uri' => 'contact.picture_uri' },
+	{ 'face_count' => { count => { distinct => 'media_asset_features.media_id' } } } ];
+    my $group_by = 'contact.id';
+    
+    $search->{'media_asset_features.media_id'} = { -in => $media_rs->get_column('media_ids')->as_query() };
+    my $face_rs = $self->result_source->schema->resultset( 'MediaAsset' )->search
+	( $search,
+	  { join => { media_asset_features => 'contact' },
+	    columns => $faces_columns,
+	    group_by => $group_by } );
+    $rs = $face_rs;
+
     my @result = ();
-    push( @result, $faces_rs->all() );
+    push( @result, $rs->all() );
     my $result_hash = {};
     foreach my $result ( @result ) {
 	$result_hash->{$result->{_column_data}->{contact_uuid}} = 
@@ -1247,7 +1261,7 @@ sub _get_args {
 	# Default where clause for each query.
 	where                => {},
 	# Default order clause for each query.
-	order_by                => [ 'me.recording_date desc', 'me.created_date desc' ]
+	order_by             => [ 'me.recording_date desc', 'me.created_date desc' ]
     };
 
     for my $arg ( keys( %$args ) ) {
@@ -1307,9 +1321,6 @@ sub _get_visible_result_set {
 	$where->{ 'me.media_type' } = 'original';
     }
     $where->{'me.is_album'} = 0;
-    if ( scalar( @{$args->{'views[]'}} ) ) {
-	$where->{'media_assets.asset_type'} = { '-in' => $args->{'views[]'} };
-    }
 
     my $prefetch = [ 
 	# Get the media that is in community albums.
@@ -1319,28 +1330,25 @@ sub _get_visible_result_set {
 	# Get media that is shared via the old style share mechanism.
 	'media_shares'
 	];
-    if ( $args->{include_contact_info} or $args->{include_tags} or scalar( @{$args->{'contact_uuids[]'}} ) ) {
+
+    if ( scalar( @{$args->{'contact_uuids[]'}} )
+	 or scalar( @{$args->{'tags[]'}} )
+	 or defined( $args->{search_string} ) ) {
 	push( @$prefetch, { 'media_assets' => { 'media_asset_features' => 'contact' } } );
     } else {
 	push( @$prefetch, 'media_assets' );
     }
-
+    
     my $rs = $self->result_source->schema->resultset( 'Media' )->search
 	( $where,
-	  { order_by => $args->{order_by} } );
-	  
-    # Agument result sets with the various filters we have.
-    
+	  { columns => [ { 'media_ids' => { distinct => 'me.id' } } ],
+	    join => $prefetch } );
+
     # Limit to the desired media_uuids if any.
     if ( scalar( @{$args->{'media_uuids[]'}} ) ) {
 	$rs = $rs->search( { 'me.uuid' => { -in => $args->{'media_uuids[]'} } } );
     }
     
-    # Limit to the desired contact_uuids if any.
-    if ( scalar( @{$args->{'contact_uuids[]'}} ) ) {
-	$rs = $rs->search( { 'contact.uuid' => { -in => $args->{'contact_uuids[]'} } } );
-    }
-
     # Limit to the desired album_uuids if any.
     if ( scalar( @{$args->{'album_uuids[]'}} ) ) {
 	$rs = $rs->search( { -or => [ 'community_album.uuid' => { -in => $args->{'album_uuids[]'} },
@@ -1363,19 +1371,42 @@ sub _get_visible_result_set {
 	$rs = $rs->search( { 'me.recording_date' => $dtf->format_datetime( $no_date_date ) } );
     }
 
+    # Searches over contacts, tags, and search strings all collide
+    # with one another over what they want from features, if more than
+    # one are present we have to daisy chain the queries together.
+    my $mutually_exclusive_tag_searches = 0;
+
+    # Limit to the desired contact_uuids if any.
+    if ( scalar( @{$args->{'contact_uuids[]'}} ) ) {
+	$rs = $rs->search( { 'contact.uuid' => { -in => $args->{'contact_uuids[]'} } } );
+	$mutually_exclusive_tag_searches++;
+    }
+
     # Limit the videos to those whose tags are in tags[].
     if ( scalar( @{$args->{'tags[]'}} ) ) {
-    	$rs = $rs->search( { -or => [ -and => [ 'media_asset_features.feature_type' => 'activity', 
+	if ( $mutually_exclusive_tag_searches ) {
+	    my $tmp_rs = $self->result_source->schema->resultset( 'Media' )->search( { 'me.id' => { -in => $rs->get_column('media_ids')->as_query() } },
+										     { columns => [ { 'media_ids' => { distinct => 'me.id' } } ],
+										       join => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
+	    $rs = $tmp_rs;
+	}
+	$rs = $rs->search( { -or => [ -and => [ 'media_asset_features.feature_type' => 'activity', 
 						'media_asset_features.coordinates' => { -in => $args->{'tags[]'} } ],
 				      -and => [ 'media_asset_features.feature_type' => 'face',
 						'media_asset_features.recognition_result' => { -in => [ 'machine_recognized', 'human_recognized', 'new_face' ] },
 						'media_asset_features.contact_id' => { '!=', undef },
-						'contact.contact_name' => { -in => $args->{'tags[]'} } ] ] },
-			   { prefetch => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
+						'contact.contact_name' => { -in => $args->{'tags[]'} } ] ] } );
+	$mutually_exclusive_tag_searches++;
     }
 
     # Limit the videos to things in the search criteria.
     if ( defined( $args->{search_string} ) ) {
+	if ( $mutually_exclusive_tag_searches ) {
+	    my $tmp_rs = $self->result_source->schema->resultset( 'Media' )->search( { 'me.id' => { -in => $rs->get_column('media_ids')->as_query() } },
+										     { columns => [ { 'media_ids' => { distinct => 'me.id' } } ],
+										       join => { 'media_assets' => { 'media_asset_features' => 'contact' } } } );
+	    $rs = $tmp_rs;
+	}
 	$rs = $rs->search( { 
 	    -or => [ 'LOWER(me.title)' => { 'like' => '%'.lc( $args->{search_string} ) . '%' },
 		     'LOWER(me.description)' => { 'like' => '%'.lc( $args->{search_string} ) . '%' },
@@ -1387,32 +1418,53 @@ sub _get_visible_result_set {
 			       'LOWER(contact.contact_name)' => { 'like' => '%'.lc( $args->{search_string} ).'%' } ]
 		]
 			   } );
+	$mutually_exclusive_tag_searches++;
     }
 
+    # NOTE: This has to be the last search we make.
     # Limit the videos to those recently created (not recorded).
     if ( $args->{recent_created_days} ) {
 	# Hoo boy...
 	my $recent_rs = $rs;
 	my $recent_rs_prefetch = dclone( $prefetch );
-	my @latest = $recent_rs->search( undef, { prefetch => $recent_rs_prefetch,
-					   order_by => [ 'me.created_date desc' ],
-					   page => 1,
-					   rows => 1 } )->all();
+	my @latest = $recent_rs->search( undef, { 
+	    join => $recent_rs_prefetch,
+	    order_by => [ 'me.created_date desc' ],
+	    page => 1,
+	    rows => 1 } )->all();
 	if ( scalar( @latest ) and defined( $latest[0]->created_date() ) ) {
 	    my $dtf = $self->result_source->schema->storage->datetime_parser;
 	    my $from_when = DateTime->from_epoch( epoch => $latest[0]->created_date()->epoch() - 60*60*24*$args->{recent_created_days} );
 	    $rs = $rs->search( { 'me.created_date' =>  { '>=', $dtf->format_datetime( $from_when ) } } );
 	}
     }
-    
-    if ( defined( $args->{page} ) ) {
-	$rs = $rs->search( undef, { page => $args->{page} } );
-    }
-    if ( defined( $args->{rows} ) ) {
-	$rs = $rs->search( undef, { rows => $args->{rows} } );
+
+    # This is a modifier of the secondary resultset.
+    my $where2 = { 'me.id' => { -in => $rs->get_column('media_ids')->as_query() } };
+    if ( scalar( @{$args->{'views[]'}} ) ) {
+	$where2->{'media_assets.asset_type'} = { '-in' => $args->{'views[]'} };
     }
 
-    return ( $rs, $prefetch );
+    my $rs2 = $self->result_source->schema->resultset( 'Media' )->search( 
+	$where2,
+	{ order_by => $args->{order_by} } );
+
+    my $prefetch2 = [ 'media_assets' ];
+
+    # The secondary query will look at these to decide what to add to prefetch.
+    if ( $args->{include_contact_info} or $args->{include_tags} ) {
+	$prefetch2 = { 'media_assets' => { 'media_asset_features' => 'contact' } };
+    }
+    
+    # Agument result sets with the various filters we have.    
+    if ( defined( $args->{page} ) ) {
+	$rs2 = $rs2->search( undef, { page => $args->{page} } );
+    }
+    if ( defined( $args->{rows} ) ) {
+	$rs2 = $rs2->search( undef, { rows => $args->{rows} } );
+    }
+
+    return ( $rs2, $prefetch2 );
 }
 
 __PACKAGE__->meta->make_immutable;
