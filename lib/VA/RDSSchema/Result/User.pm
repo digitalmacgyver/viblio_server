@@ -1055,10 +1055,8 @@ sub visible_media {
 sub get_cities {
     my ( $self, $params ) = @_;
     
-    my $args = $self->_get_args( $params );
-    
-    $args->{rows} = undef;
-    $args->{page} = undef;
+    $params->{rows} = undef;
+    $params->{page} = undef;
     
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
     
@@ -1075,10 +1073,8 @@ sub get_cities {
 sub get_tags {
     my ( $self, $params ) = @_;
     
-    my $args = $self->_get_args( $params );
-    
-    $args->{rows} = undef;
-    $args->{page} = undef;
+    $params->{rows} = undef;
+    $params->{page} = undef;
     
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
     
@@ -1126,17 +1122,15 @@ sub get_tags {
 sub get_face_tags {
     my ( $self, $params ) = @_;
 
-    my $args = $self->_get_args( $params );
-
-    $args->{rows} = undef;
-    $args->{page} = undef;
+    $params->{rows} = undef;
+    $params->{page} = undef;
 
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
 
     # Do this goofy thing here for performance reasons - the more
     # direct approach takes several seconds.
     my $media_rs = $rs->search( undef,
-				{  join => [ 'media_assets'],
+				{  join => [ 'media_assets' ],
 				   columns => [
 				       { 'media_ids' => { distinct => 'me.id' } } ],
 				       order_by => undef } );
