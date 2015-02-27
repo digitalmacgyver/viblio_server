@@ -1839,13 +1839,13 @@ sub taken_in_city :Local {
     my $status_filters = $args->{'status[]'};
     my $tags = $args->{'tags[]'};
     my $media_uuids = $args->{'media_uuids[]'};
-    my $no_location => 0;
+    my $no_location = $args->{'no_location'};
 
     my $where = {};
-    if ( $q ) {
+    if ( defined( $q ) and $q ) {
 	$where = { 'me.geo_city' => $q };
     } elsif ( $no_location ) {
-	$where = { 'me.geo_city' => { '=', undef } };
+	$where = { 'me.geo_city' => undef };
     }
 
     my $views = ['poster', 'main'];

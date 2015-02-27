@@ -1767,11 +1767,8 @@ sub find_share_info_for_album :Local {
     }
 }
 
-# DEPRECATED
 sub find_share_info_for_pending :Local {
     my( $self, $c ) = @_;
-
-    $self->status_bad_request( $c, "services/mediafile/find_share_info_for_pending is deprecated." );
 
     my $email = $self->sanitize( $c, $c->req->param( 'email' ) );
     my $test  = $c->req->param( 'test' );
