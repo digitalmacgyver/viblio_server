@@ -606,7 +606,7 @@ sub remove_media :Local {
     
     unless( $album ) {
 	$self->status_not_found( $c, $c->loc( 'Cannot find album for [_1]', $aid ), $aid );
-    } elsif ( $album->user_id() != $self->user->id() ) {
+    } elsif ( $album->user_id() != $c->user->id() ) {
 	$self->status_forbidden( $c, $c->loc( 'Cannot remove items from album you do not own [_1]', $aid ), $aid );
     }
     unless( $media ) {
