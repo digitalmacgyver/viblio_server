@@ -358,7 +358,7 @@ sub contacts_present_in_videos :Local {
     my $self = shift; my $c = shift;
     my $args = $self->parse_args
       ( $c,
-        [ page => undef,
+        [ page => 1,
           rows => 10,
         ],
         @_ );
@@ -379,7 +379,8 @@ sub contacts_present_in_videos :Local {
     };
     my @feats = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
 
-    my @data = ();
+    my @id_data = ();
+    my @unknown_data = ();
     foreach my $feat ( @feats ) {
 
 	my $contact = $feat->contact;
@@ -398,10 +399,14 @@ sub contacts_present_in_videos :Local {
 	}
 	$hash->{asset_id} = $asset->uuid;
 
-	push( @data, $hash );
+	if ( defined( $contact->contact_name() ) ) {
+	    push( @id_data, $hash );
+	} else {
+	    push( @unknown_data, $hash );
+	}
     }
 
-    my @sorted = @data;
+    my @sorted = @unknown_data;
 
     if ( $args->{page} ) {
 	my $pager = Data::Page->new( $#sorted + 1, $args->{rows}, $args->{page} );
@@ -410,11 +415,13 @@ sub contacts_present_in_videos :Local {
 	    @slice = @sorted[ $pager->first - 1 .. $pager->last - 1 ];
 	}
 	
-	$self->status_ok( $c, { faces => \@slice, 
+	my @result = ( @id_data, @slice );
+
+	$self->status_ok( $c, { faces => \@result, 
 				pager => $self->pagerToJson( $pager ) });
-    }
-    else {
-	$self->status_ok( $c, { faces => \@sorted } );
+    } else {
+	my @result = ( @id_data, @sorted );
+	$self->status_ok( $c, { faces => \@result } );
     }
 }
 
