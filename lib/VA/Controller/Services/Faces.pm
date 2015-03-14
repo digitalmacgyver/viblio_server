@@ -633,9 +633,7 @@ sub change_contact :Local {
 	$self->status_not_found($c, $c->loc("Cannot find contact for [_1]", $args->{uuid} ), $args->{uuid} );
     }
 
-    if ( $args->{contact_name} ) {
-	$contact->contact_name( $args->{contact_name} );
-    }
+    $contact->contact_name( $args->{contact_name} );
     if ( $args->{contact_email} ) {
 	$contact->contact_email( $args->{contact_email} );
     }
