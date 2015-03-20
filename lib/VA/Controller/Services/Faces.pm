@@ -373,9 +373,10 @@ sub contacts_present_in_videos :Local {
 	'me.feature_type' => 'face'
     };
     my $where = {
-	select => ['contact_id', 'media_asset_id'],
-	prefetch=>['contact', 'media_asset'],
+	select   => ['contact_id', 'media_asset_id'],
+	prefetch => ['contact', 'media_asset'],
 	group_by => ['contact_id'],
+	order_by => 'media_asset.created_date desc'
     };
     my @feats = $c->model( 'RDS::MediaAssetFeature' )->search( $search, $where );
 
@@ -407,6 +408,7 @@ sub contacts_present_in_videos :Local {
     }
 
     my @sorted = @unknown_data;
+    @id_data = sort { uc( $a->{'contact_name'} ) cmp uc( $b->{'contact_name'} ) } @id_data;
 
     if ( $args->{page} ) {
 	my $pager = Data::Page->new( $#sorted + 1, $args->{rows}, $args->{page} );
