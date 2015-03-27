@@ -1421,11 +1421,19 @@ sub _get_visible_result_set {
 	# Hoo boy...
 	my $recent_rs = $rs;
 	my $recent_rs_prefetch = dclone( $prefetch );
-	my @latest = $recent_rs->search( undef, { 
+
+	my @latest = $self->result_source->schema->resultset( 'Media' )->search( { 'me.id' => { -in => $recent_rs->get_column('media_ids')->as_query() } },  { 
 	    join => $recent_rs_prefetch,
 	    order_by => [ 'me.created_date desc' ],
 	    page => 1,
 	    rows => 1 } )->all();
+	
+	#my @latest = $recent_rs->search( undef, {
+	#    join => $recent_rs_prefetch,
+	#    order_by => [ 'me.created_date desc' ],
+	#    page => 1,
+	#    rows => 1 } )->all();
+
 	if ( scalar( @latest ) and defined( $latest[0]->created_date() ) ) {
 	    my $dtf = $self->result_source->schema->storage->datetime_parser;
 	    my $from_when = DateTime->from_epoch( epoch => $latest[0]->created_date()->epoch() - 60*60*24*$args->{recent_created_days} );
