@@ -149,6 +149,33 @@ sub media_face_appears_in :Local {
 	    no_date_return => $no_date_return,
 	    page => $self->pagerToJson( $pager ) } );
     } else {
+	# We had performance problems in this query, so try a
+	# different approach where we get the media_uuids only first.
+	#
+	# This is facilitated by the understanding that a given
+	# contact can only appear in videos owned by the owner of the
+	# video they appear in
+
+	# DEBUG
+	#$DB::single = 1;
+
+	# First get all videos that contact is in:
+	my ( $videos, $pager ) = $c->user->visible_media( {
+	    'contact_uuids[]' => [ $args->{contact_uuid} ],
+	    only_visible => $args->{only_visible},
+	    only_videos => $args->{only_videos} } );
+
+	# Merge the media_uuids lists.
+	my $media_uuids = $args->{'media_uuids[]'};
+	
+	for my $video ( @$videos ) {
+	    push ( @$media_uuids, $video->uuid() );
+	}
+
+	# Maybe 5 seconds.
+
+	# Now do the searches based only on these media_uuids.
+	
 	# This is an identified face and may appear in multiple media files.
 	my ( $videos, $pager ) = $c->user->visible_media( {
 	    'contact_uuids[]' => [ $args->{contact_uuid} ],
@@ -159,7 +186,7 @@ sub media_face_appears_in :Local {
 	    only_videos => $args->{only_videos},
 	    'views[]' => $args->{'views[]'},
 	    'tags[]' => $args->{'tags[]'},
-	    'media_uuids[]' => $args->{'media_uuids[]'},
+	    'media_uuids[]' => $media_uuids,
 	    rows => $rows,
 	    page => $page,
 	    no_dates => $args->{no_dates} } );
@@ -178,7 +205,7 @@ sub media_face_appears_in :Local {
 	    only_visible => 1,
 	    only_videos => 1,
 	    'views[]' => ['main'],
-	    'media_uuids[]' => $args->{'media_uuids[]'} };
+	    'media_uuids[]' => $media_uuids };
 	my $all_tags = $c->user->get_tags( $tags_params );
     
 	my $no_date_return = 0;
@@ -188,7 +215,10 @@ sub media_face_appears_in :Local {
     
 	my $face_tag_params = dclone( $tags_params );
 	$face_tag_params->{include_contact_info} = 1;
+
+	# 10 seconds.
 	my $face_tags = $c->user->get_face_tags( $face_tag_params );
+
 	for my $face_tag ( keys( %$face_tags ) ) {
 	    if ( exists( $all_tags->{$face_tags->{$face_tag}->{contact_name}} ) ) {
 		$all_tags->{$face_tags->{$face_tag}->{contact_name}} += $face_tags->{$face_tag}->{face_count};
@@ -643,6 +673,7 @@ sub change_contact :Local {
     }
 
     $contact->contact_name( $args->{contact_name} );
+
     if ( $args->{contact_email} ) {
 	$contact->contact_email( $args->{contact_email} );
     }

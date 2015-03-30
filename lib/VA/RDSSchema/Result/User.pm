@@ -1127,6 +1127,9 @@ sub get_face_tags {
 
     my ( $rs, $prefetch ) = $self->_get_visible_result_set( $params );
 
+    # DEBUG
+    #$DB::single = 1;
+
     # Do this goofy thing here for performance reasons - the more
     # direct approach takes several seconds.
     my $media_rs = $rs->search( undef,
