@@ -31,7 +31,8 @@ Services related to getting and manipulating face data
 
 =head2 /services/faces/media_face_appears_in
 
-Return the list of published media files belonging to the logged in user that the passed in face appears in.
+Return the list of published media files visible to the logged in user
+that the passed in face appears in.
 
 =cut
 
@@ -153,32 +154,49 @@ sub media_face_appears_in :Local {
 	# different approach where we get the media_uuids only first.
 	#
 	# This is facilitated by the understanding that a given
-	# contact can only appear in videos owned by the owner of the
-	# video they appear in
+	# contact only appears in videos owned by one user.
 
 	# DEBUG
 	#$DB::single = 1;
 
 	# First get all videos that contact is in:
-	my ( $videos, $pager ) = $c->user->visible_media( {
+	my ( $contact_videos, $contact_pager ) = $c->user->visible_media( {
 	    'contact_uuids[]' => [ $args->{contact_uuid} ],
 	    only_visible => $args->{only_visible},
 	    only_videos => $args->{only_videos} } );
-
-	# Merge the media_uuids lists.
-	my $media_uuids = $args->{'media_uuids[]'};
 	
-	for my $video ( @$videos ) {
-	    push ( @$media_uuids, $video->uuid() );
+	# Limit this to the optional list of requested media_uuids
+	# that have the desired contact.
+	my $media_uuids = $args->{'media_uuids[]'};
+	my $relevant_media = [];
+	my $relevant_media_ids = [];
+	if ( scalar( @$media_uuids ) ) {
+	    my $requested_media = {};
+	    for my $media_uuid ( @$media_uuids ) {
+		$requested_media->{$media_uuid} = 1;
+	    }
+	    
+	    for my $video ( @$contact_videos ) {
+		if ( exists( $requested_media->{$video->uuid()} ) ) {
+		    push ( @$relevant_media, $video->uuid() );
+		    push ( @$relevant_media_ids, $video->id() );
+		}
+	    }
+	} else {
+	    # In this case all videos with the contact are relevant.
+	    for my $video ( @$contact_videos ) {
+		push ( @$relevant_media, $video->uuid() );
+		push ( @$relevant_media_ids, $video->id() );
+	    }
 	}
-
-	# Maybe 5 seconds.
+	$media_uuids = $relevant_media;
 
 	# Now do the searches based only on these media_uuids.
 	
 	# This is an identified face and may appear in multiple media files.
 	my ( $videos, $pager ) = $c->user->visible_media( {
-	    'contact_uuids[]' => [ $args->{contact_uuid} ],
+	    # We handled this above.
+	    #'contact_uuids[]' => [ $args->{contact_uuid} ],
 	    include_contact_info => $args->{include_contact_info},
 	    include_images => $args->{include_images},
 	    include_tags => $args->{include_tags},
@@ -196,7 +214,8 @@ sub media_face_appears_in :Local {
 	}
 
 	my $tags_params = {
-	    'contact_uuids[]' => [ $args->{contact_uuid} ],
+	    # We handled this above.
+	    #'contact_uuids[]' => [ $args->{contact_uuid} ],
 	    page => undef,
 	    rows => undef,
 	    include_contact_info => 0,
@@ -217,7 +236,7 @@ sub media_face_appears_in :Local {
 	$face_tag_params->{include_contact_info} = 1;
 
 	# 10 seconds.
-	my $face_tags = $c->user->get_face_tags( $face_tag_params );
+	my $face_tags = $c->user->get_face_tags_for_media_id( $relevant_media_ids );
 
 	for my $face_tag ( keys( %$face_tags ) ) {
 	    if ( exists( $all_tags->{$face_tags->{$face_tag}->{contact_name}} ) ) {

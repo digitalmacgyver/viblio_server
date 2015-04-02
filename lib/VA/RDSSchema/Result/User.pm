@@ -1070,6 +1070,11 @@ sub get_cities {
     return map { $_->{_column_data}->{city_name}  } $cities_rs->all();
 }
 
+# Returns only string tags, not also faces associated with the videos,
+# those are handlded by get_face_tags.
+# 
+# For a given result set returns a hash of of tag_name : unique_videos_with_tag
+#
 sub get_tags {
     my ( $self, $params ) = @_;
     
@@ -1119,6 +1124,13 @@ sub get_tags {
 
 # Note - this returns its result based on contact_uuid, because two
 # contacts can have the same name.
+#
+# Called when various APIs have a true include_contact_info flag.
+# This information is used to build the tag clouds with approrpiate
+# sizes for face tags.
+#
+# For a given result set returns a hash of of contact_uuid : unique_videos_with_contact_uuid
+#
 sub get_face_tags {
     my ( $self, $params ) = @_;
 
@@ -1156,6 +1168,50 @@ sub get_face_tags {
 	    columns => $faces_columns,
 	    group_by => $group_by } );
     $rs = $face_rs;
+
+    my @result = ();
+    push( @result, $rs->all() );
+    my $result_hash = {};
+    foreach my $result ( @result ) {
+	$result_hash->{$result->{_column_data}->{contact_uuid}} = 
+	    { contact_name => $result->{_column_data}->{contact_name},
+	      contact_uuid => $result->{_column_data}->{contact_uuid},
+	      asset_uuid => $result->{_column_data}->{asset_uuid},
+	      asset_location => $result->{_column_data}->{asset_location},
+	      picture_uri => $result->{_column_data}->{picture_uri},
+	      face_count => $result->{_column_data}->{face_count} };
+    }
+    
+    return $result_hash;
+}
+
+# Note - this returns its result based on contact_uuid, because two
+# contacts can have the same name.
+#
+# NOTE: This method enforces no access control, the caller must ensure
+# only appropriate data is returned.
+#
+sub get_face_tags_for_media_id {
+    my ( $self, $media_ids ) = @_;
+
+    my $search = { 'media_asset_features.feature_type' => 'face',
+		   'contact.contact_name' => { '!=', undef },
+		   # Not UUIDs, but IDs here - this is a hack.
+		   'me.media_id' => { -in => $media_ids } };
+    my $faces_columns = [
+	{ 'contact_name' => 'contact.contact_name' }, 
+	{ 'contact_uuid' => 'contact.uuid' }, 
+	{ 'asset_uuid' => 'me.uuid' },
+	{ 'asset_location' => 'me.location' },
+	{ 'picture_uri' => 'contact.picture_uri' },
+	{ 'face_count' => { count => { distinct => 'media_asset_features.media_id' } } } ];
+    my $group_by = 'contact.id';
+
+    my $rs = $self->result_source->schema->resultset( 'MediaAsset' )->search( 
+	$search,
+	{ join => { media_asset_features => 'contact' },
+	  columns => $faces_columns,
+	  group_by => $group_by } );
 
     my @result = ();
     push( @result, $rs->all() );
