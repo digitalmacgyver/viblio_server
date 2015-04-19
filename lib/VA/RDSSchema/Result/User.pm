@@ -1476,29 +1476,38 @@ sub _get_visible_result_set {
 
     # NOTE: This has to be the last search we make.
     # Limit the videos to those recently created (not recorded).
+    #
+    # NOTE: We used to do a query by finding videos within
+    # recent_created_days of the latest visible video - this ended up
+    # having very poor performance.  So we changed the definition to
+    # just be videos within recent_created_days of the present.
+    
     if ( $args->{recent_created_days} ) {
+	# OLD CODE.
+	#
 	# Hoo boy...
-	my $recent_rs = $rs;
-	my $recent_rs_prefetch = dclone( $prefetch );
-
-	my @latest = $self->result_source->schema->resultset( 'Media' )->search( { 'me.id' => { -in => $recent_rs->get_column('media_ids')->as_query() } },  { 
-	    join => $recent_rs_prefetch,
-	    order_by => [ 'me.created_date desc' ],
-	    page => 1,
-	    rows => 1 } )->all();
-	
-	#my @latest = $recent_rs->search( undef, {
+	#my $recent_rs = $rs;
+	#my $recent_rs_prefetch = dclone( $prefetch );
+	#
+	#my @latest = $self->result_source->schema->resultset( 'Media' )->search( { 'me.id' => { -in => $recent_rs->get_column('media_ids')->as_query() } },  { 
 	#    join => $recent_rs_prefetch,
 	#    order_by => [ 'me.created_date desc' ],
 	#    page => 1,
 	#    rows => 1 } )->all();
+	#
+	#if ( scalar( @latest ) and defined( $latest[0]->created_date() ) ) {
+	#    my $dtf = $self->result_source->schema->storage->datetime_parser;
+	#    my $from_when = DateTime->from_epoch( epoch => $latest[0]->created_date()->epoch() - 60*60*24*$args->{recent_created_days} );
+	#    $rs = $rs->search( { 'me.created_date' =>  { '>=', $dtf->format_datetime( $from_when ) } } );
+	#}
 
-	if ( scalar( @latest ) and defined( $latest[0]->created_date() ) ) {
-	    my $dtf = $self->result_source->schema->storage->datetime_parser;
-	    my $from_when = DateTime->from_epoch( epoch => $latest[0]->created_date()->epoch() - 60*60*24*$args->{recent_created_days} );
-	    $rs = $rs->search( { 'me.created_date' =>  { '>=', $dtf->format_datetime( $from_when ) } } );
-	}
+	# NEW CODE
+	my $dtf = $self->result_source->schema->storage->datetime_parser;
+	my $from_when = DateTime->from_epoch( epoch => localtime() - 60*60*24*$args->{recent_created_days} );
+	$rs = $rs->search( { 'me.created_date' =>  { '>=', $dtf->format_datetime( $from_when ) } } );
     }
+
+
 
     # This is a modifier of the secondary resultset.
     my $where2 = { 'me.id' => { -in => $rs->get_column('media_ids')->as_query() } };

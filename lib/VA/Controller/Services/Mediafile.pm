@@ -1913,13 +1913,13 @@ sub taken_in_city :Local {
 }
 
 # Return a list of all videos whose created_date (not recording_date)
-# is within 7 days of the most recent video visible in the account.
+# is within 60 days.
 #
 sub recently_uploaded :Local {
     my $self = shift; my $c = shift;
     my $args = $self->parse_args
       ( $c,
-        [ days => 7,
+        [ days => 60,
 	  page => 1,
           rows => 10000,
 	  include_contact_info => 0,
