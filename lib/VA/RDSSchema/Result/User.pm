@@ -1503,11 +1503,9 @@ sub _get_visible_result_set {
 
 	# NEW CODE
 	my $dtf = $self->result_source->schema->storage->datetime_parser;
-	my $from_when = DateTime->from_epoch( epoch => localtime() - 60*60*24*$args->{recent_created_days} );
+	my $from_when = DateTime->from_epoch( epoch => time() - 60*60*24*$args->{recent_created_days} );
 	$rs = $rs->search( { 'me.created_date' =>  { '>=', $dtf->format_datetime( $from_when ) } } );
     }
-
-
 
     # This is a modifier of the secondary resultset.
     my $where2 = { 'me.id' => { -in => $rs->get_column('media_ids')->as_query() } };
