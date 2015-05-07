@@ -12,6 +12,7 @@ use lib "lib";
 use Data::Dumper;
 use DateTime;
 use Try::Tiny;
+use URI::Escape;
 use VA;
 
 my $Usage = "VA_CONFIG_LOCAL_SUFFIX=staging|prod|local $0 --days-ago N [--page N --rows M] [--report] [--user test-email] [--force-one-day]";
@@ -97,6 +98,7 @@ if ( $report ) {
     print sprintf( "%-30s %-7s %-7s %-7s %-7s %-7s\n", "User", "Videos", "Albums", "Faces", "Unamed", "Tagged" );
 }
 
+# The original report.
 foreach my $user ( @users ) {
     try {
 	unless ( $user->profile->setting( 'email_notifications' ) && $user->profile->setting( 'email_upload' ) ) {
@@ -231,6 +233,78 @@ foreach my $user ( @users ) {
 	}
     } catch {
 	$c->log->error( "Error: ", $_, " sending message to user: ", $user->email );
+    }
+}
+
+# A new report of shared album updates.
+
+# For each user.
+foreach my $user ( @users ) {
+    try {
+	my $user_json = $user->TO_JSON;
+
+	unless ( $user->profile->setting( 'email_notifications' ) && $user->profile->setting( 'email_upload' ) ) {
+	    print sprintf( "%-30s %s\n", $user->email, "does not want email" ) if ( $report );
+	    next;
+	}
+
+	# Get a list of shared albums for the user.
+	my $rs = $c->model( 'RDS::ContactGroup' )->search
+	    ({'contact.contact_email'=>$user->email()},
+	     { prefetch=>['contact',{'cgroup'=>'community'}]});
+
+	my @communities = map { $_->cgroup->community } $rs->all;
+	my @albums = map { $_->album } @communities;
+	
+	foreach my $album ( @albums ) {
+
+	    # Pull up a list of all videos added to that album in the
+	    # last day.
+	    my ( $all_videos, $pager ) = $user->visible_media( { recent_created_days => 1, 'album_uuids[]' => [ $album->uuid() ] } );
+
+	    # And that aren't owned by the user under consideration.
+	    my @videos = ();
+	    foreach my $video ( @$all_videos ) {
+		if ( $video->user_id() != $user->id() ) {
+		    push( @videos, $video );
+		}
+	    }
+
+	    my $template = undef;
+
+	    if ( scalar( @videos ) > 1 ) {
+		$template = 'email/20-newVideosAddedToAlbum.tt';
+	    } elsif ( scalar( @videos ) == 1 ) {
+		$template = 'email/20-newVideoAddedToAlbum.tt';
+	    } else {
+		# No new videos for this user/album combination.
+	    }
+
+	    if ( defined( $template ) ) {
+		my $model = {
+		    user => $user_json,
+		    album => VA::MediaFile->new->publish( $c, $album, { views => ['poster'] } ),
+		    video => VA::MediaFile->new->publish( $c, $videos[0], { views => ['poster'] } ),
+		    url => sprintf( "%s#register?email=%s&url=%s",
+				    $c->server,
+				    uri_escape( $user->email() ),
+				    uri_escape( '#home?aid=' . $album->uuid() ) ),
+		    num => scalar( @videos )
+		};
+
+		my $res = VA::Controller::Services->send_email( $c, {
+		    subject => $c->loc( "New videos in your shared [_1] Album", $album->title() ),
+		    to => [ { email => $user->email(), name => $user->displayname() } ],
+		    template => $template,
+		    stash => $model } );
+		if ( $res ) {
+		    $c->log->error( "Failed to send ($days_ago) email to " . $user->email() );
+		}
+		
+	    }
+	}
+    } catch {
+	$c->log->error( "Error: ", $_, " sending message to user: ", $user->email() );
     }
 }
 
