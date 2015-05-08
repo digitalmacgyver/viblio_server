@@ -273,9 +273,9 @@ foreach my $user ( @users ) {
 	    my $template = undef;
 
 	    if ( scalar( @videos ) > 1 ) {
-		$template = 'email/20-newVideosAddedToAlbum.tt';
+		$template = 'email/28-newVideosAddedToAlbum.tt';
 	    } elsif ( scalar( @videos ) == 1 ) {
-		$template = 'email/20-newVideoAddedToAlbum.tt';
+		$template = 'email/28-newVideoAddedToAlbum.tt';
 	    } else {
 		# No new videos for this user/album combination.
 	    }
